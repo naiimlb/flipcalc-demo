@@ -1,0 +1,191 @@
+Voici le code complet, un seul fichier, à copier-coller dans un `.html` :
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Revendeurs - Aperçu</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"></script>
+<style>
+  body { background-color: #f6f7fb; font-family: -apple-system, sans-serif; }
+  .brand-bg { background-color: #3b6df0; }
+  .brand-bg:hover { background-color: #2f57c4; }
+  .brand-text { color: #2f57c4; }
+  .brand-bg-light { background-color: #eef4ff; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .nav-link.active { background-color: #eef4ff; color: #27479d; }
+</style>
+</head>
+<body>
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white border-r border-gray-100 flex flex-col px-4 py-6">
+    <div class="px-2 mb-8">
+      <p class="text-xs uppercase tracking-wide text-gray-400 mb-1">Espace revendeur</p>
+      <p class="font-semibold text-gray-900">Mon Agence Web</p>
+    </div>
+    <nav class="flex-1 space-y-1">
+      <a href="#" onclick="showTab('overview')" id="nav-overview" class="nav-link active block rounded-lg px-3 py-2 text-sm font-medium text-gray-600">Vue d'ensemble</a>
+      <a href="#" onclick="showTab('clients')" id="nav-clients" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-gray-600">Mes clients</a>
+      <a href="#" onclick="showTab('commissions')" id="nav-commissions" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-gray-600">Commissions</a>
+    </nav>
+    <a href="#" class="text-sm text-gray-500 px-3 py-2">Se déconnecter</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-8 max-w-6xl mx-auto w-full">
+
+    <!-- Overview -->
+    <div id="tab-overview" class="tab-content active space-y-8">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900">Vue d'ensemble</h1>
+        <p class="text-sm text-gray-500 mt-1">Résumé de ton activité de revendeur.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">Clients actifs</p>
+          <p class="text-2xl font-semibold text-gray-900">3</p>
+          <p class="text-xs text-gray-400 mt-1">4 au total</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">MRR généré</p>
+          <p class="text-2xl font-semibold text-gray-900">227,00 €</p>
+          <p class="text-xs text-gray-400 mt-1">revenu mensuel récurrent</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">Commissions totales</p>
+          <p class="text-2xl font-semibold text-gray-900">68,10 €</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">Commissions en attente</p>
+          <p class="text-2xl font-semibold text-gray-900">19,80 €</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clients -->
+    <div id="tab-clients" class="tab-content space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900">Mes clients</h1>
+          <p class="text-sm text-gray-500 mt-1">Gère les clients que tu as apportés à la plateforme.</p>
+        </div>
+        <button class="brand-bg text-white text-sm font-medium rounded-lg px-4 py-2">+ Ajouter un client</button>
+      </div>
+      <div class="bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="px-5 py-3 font-medium">Client</th>
+              <th class="px-5 py-3 font-medium">Plan</th>
+              <th class="px-5 py-3 font-medium">Valeur / mois</th>
+              <th class="px-5 py-3 font-medium">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-50">
+              <td class="px-5 py-3"><div class="font-medium text-gray-900">Acme Corp</div><div class="text-gray-400 text-xs">contact@acme.com</div></td>
+              <td class="px-5 py-3 text-gray-700">Pro</td>
+              <td class="px-5 py-3 text-gray-700">99,00 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Actif</span></td>
+            </tr>
+            <tr class="border-b border-gray-50">
+              <td class="px-5 py-3"><div class="font-medium text-gray-900">Boulangerie Dupont</div><div class="text-gray-400 text-xs">dupont@mail.com</div></td>
+              <td class="px-5 py-3 text-gray-700">Starter</td>
+              <td class="px-5 py-3 text-gray-700">29,00 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-amber-50 text-amber-700">Essai</span></td>
+            </tr>
+            <tr class="border-b border-gray-50">
+              <td class="px-5 py-3"><div class="font-medium text-gray-900">Studio Lumière</div><div class="text-gray-400 text-xs">contact@lumiere.fr</div></td>
+              <td class="px-5 py-3 text-gray-700">Pro</td>
+              <td class="px-5 py-3 text-gray-700">99,00 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Actif</span></td>
+            </tr>
+            <tr>
+              <td class="px-5 py-3"><div class="font-medium text-gray-900">Garage Martin</div><div class="text-gray-400 text-xs">martin@garage.fr</div></td>
+              <td class="px-5 py-3 text-gray-700">Enterprise</td>
+              <td class="px-5 py-3 text-gray-700">199,00 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Actif</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Commissions -->
+    <div id="tab-commissions" class="tab-content space-y-6">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900">Commissions</h1>
+        <p class="text-sm text-gray-500 mt-1">Taux de commission actuel : 20%</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">Déjà versées</p>
+          <p class="text-2xl font-semibold text-gray-900">48,30 €</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">En attente de versement</p>
+          <p class="text-2xl font-semibold text-gray-900">19,80 €</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p class="text-sm text-gray-500 mb-1">Total cumulé</p>
+          <p class="text-2xl font-semibold text-gray-900">68,10 €</p>
+        </div>
+      </div>
+      <div class="bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="px-5 py-3 font-medium">Date</th>
+              <th class="px-5 py-3 font-medium">Client</th>
+              <th class="px-5 py-3 font-medium">Montant payé</th>
+              <th class="px-5 py-3 font-medium">Ta commission</th>
+              <th class="px-5 py-3 font-medium">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-50">
+              <td class="px-5 py-3 text-gray-700">15 juin 2026</td>
+              <td class="px-5 py-3 text-gray-900 font-medium">Acme Corp</td>
+              <td class="px-5 py-3 text-gray-700">99,00 €</td>
+              <td class="px-5 py-3 text-gray-900 font-medium">19,80 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-amber-50 text-amber-700">En attente</span></td>
+            </tr>
+            <tr class="border-b border-gray-50">
+              <td class="px-5 py-3 text-gray-700">02 juin 2026</td>
+              <td class="px-5 py-3 text-gray-900 font-medium">Studio Lumière</td>
+              <td class="px-5 py-3 text-gray-700">99,00 €</td>
+              <td class="px-5 py-3 text-gray-900 font-medium">19,80 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Payée</span></td>
+            </tr>
+            <tr>
+              <td class="px-5 py-3 text-gray-700">18 mai 2026</td>
+              <td class="px-5 py-3 text-gray-900 font-medium">Garage Martin</td>
+              <td class="px-5 py-3 text-gray-700">199,00 €</td>
+              <td class="px-5 py-3 text-gray-900 font-medium">39,80 €</td>
+              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Payée</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+</script>
+
+</body>
+</html>
+```
