@@ -1,189 +1,473 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard Revendeurs - Aperçu</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlipCalc — Calculateur Achat-Revente</title>
 <style>
-  body { background-color: #f6f7fb; font-family: -apple-system, sans-serif; }
-  .brand-bg { background-color: #3b6df0; }
-  .brand-bg:hover { background-color: #2f57c4; }
-  .brand-text { color: #2f57c4; }
-  .brand-bg-light { background-color: #eef4ff; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  .nav-link.active { background-color: #eef4ff; color: #27479d; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0A0A0A;
+    color: #F0F0F0;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  header {
+    text-align: center;
+    padding: 32px 0 24px;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  header h1 span { color: #00FF87; }
+
+  header p {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+
+  .container { max-width: 480px; margin: 0 auto; }
+
+  /* RÉSULTAT PRINCIPAL */
+  .result-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 20px;
+    padding: 28px 24px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .result-label {
+    font-size: 0.75rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .result-amount {
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: #00FF87;
+    transition: color 0.3s;
+  }
+
+  .result-amount.loss { color: #FF4757; }
+  .result-amount.warning { color: #FFA502; }
+
+  .result-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .badge-green { background: rgba(0,255,135,0.12); color: #00FF87; }
+  .badge-orange { background: rgba(255,165,2,0.12); color: #FFA502; }
+  .badge-red { background: rgba(255,71,87,0.12); color: #FF4757; }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .stat-box {
+    background: #0D0D0D;
+    border: 1px solid #1E1E1E;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: left;
+  }
+
+  .stat-box .slabel {
+    font-size: 0.7rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-box .sval {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ddd;
+    margin-top: 4px;
+  }
+
+  /* FORMULAIRE */
+  .form-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .form-card h2 {
+    font-size: 0.8rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+
+  .field { margin-bottom: 14px; }
+
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    color: #777;
+    margin-bottom: 6px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    background: #0D0D0D;
+    border: 1px solid #1E1E1E;
+    border-radius: 10px;
+    padding: 13px 14px;
+    color: #F0F0F0;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: #00FF87;
+  }
+
+  .field select option { background: #1A1A1A; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* HISTORIQUE */
+  .history-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .history-header h2 {
+    font-size: 0.8rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .total-gains {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #00FF87;
+  }
+
+  .btn-save {
+    width: 100%;
+    background: #00FF87;
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-bottom: 16px;
+  }
+
+  .btn-save:hover { opacity: 0.85; }
+
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .history-item {
+    background: #0D0D0D;
+    border: 1px solid #1E1E1E;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .history-item .hname {
+    font-size: 0.85rem;
+    color: #ccc;
+    font-weight: 500;
+  }
+
+  .history-item .hdate {
+    font-size: 0.7rem;
+    color: #444;
+    margin-top: 2px;
+  }
+
+  .history-item .hprofit {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .hprofit.pos { color: #00FF87; }
+  .hprofit.neg { color: #FF4757; }
+
+  .empty-history {
+    text-align: center;
+    color: #333;
+    font-size: 0.85rem;
+    padding: 20px 0;
+  }
+
+  .btn-clear {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 10px;
+    color: #444;
+    font-size: 0.8rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-clear:hover { border-color: #FF4757; color: #FF4757; }
 </style>
 </head>
 <body>
+<div class="container">
 
-<div class="flex min-h-screen">
+  <header>
+    <h1>Flip<span>Calc</span></h1>
+    <p>Calcule ton vrai bénéfice en temps réel</p>
+  </header>
 
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white border-r border-gray-100 flex flex-col px-4 py-6">
-    <div class="px-2 mb-8">
-      <p class="text-xs uppercase tracking-wide text-gray-400 mb-1">Espace revendeur</p>
-      <p class="font-semibold text-gray-900">Mon Agence Web</p>
-    </div>
-    <nav class="flex-1 space-y-1">
-      <a href="#" onclick="showTab('overview')" id="nav-overview" class="nav-link active block rounded-lg px-3 py-2 text-sm font-medium text-gray-600">Vue d'ensemble</a>
-      <a href="#" onclick="showTab('clients')" id="nav-clients" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-gray-600">Mes clients</a>
-      <a href="#" onclick="showTab('commissions')" id="nav-commissions" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-gray-600">Commissions</a>
-    </nav>
-    <a href="#" class="text-sm text-gray-500 px-3 py-2">Se déconnecter</a>
-  </aside>
-
-  <!-- Main -->
-  <main class="flex-1 p-8 max-w-6xl mx-auto w-full">
-
-    <!-- Overview -->
-    <div id="tab-overview" class="tab-content active space-y-8">
-      <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Vue d'ensemble</h1>
-        <p class="text-sm text-gray-500 mt-1">Résumé de ton activité de revendeur.</p>
+  <!-- RÉSULTAT -->
+  <div class="result-card">
+    <div class="result-label">Bénéfice net</div>
+    <div class="result-amount" id="profitAmount">0,00 €</div>
+    <div class="result-badge badge-green" id="profitBadge">— Saisis tes données</div>
+    <div class="result-stats">
+      <div class="stat-box">
+        <div class="slabel">Coût total</div>
+        <div class="sval" id="totalCost">0,00 €</div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Clients actifs</p>
-          <p class="text-2xl font-semibold text-gray-900">3</p>
-          <p class="text-xs text-gray-400 mt-1">4 au total</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">MRR généré</p>
-          <p class="text-2xl font-semibold text-gray-900">227,00 €</p>
-          <p class="text-xs text-gray-400 mt-1">revenu mensuel récurrent</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Commissions totales</p>
-          <p class="text-2xl font-semibold text-gray-900">68,10 €</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Commissions en attente</p>
-          <p class="text-2xl font-semibold text-gray-900">19,80 €</p>
-        </div>
+      <div class="stat-box">
+        <div class="slabel">Marge</div>
+        <div class="sval" id="marginPct">— %</div>
+      </div>
+      <div class="stat-box">
+        <div class="slabel">Frais plateforme</div>
+        <div class="sval" id="platformFees">0,00 €</div>
+      </div>
+      <div class="stat-box">
+        <div class="slabel">Prix de vente</div>
+        <div class="sval" id="sellPriceDisplay">0,00 €</div>
       </div>
     </div>
+  </div>
 
-    <!-- Clients -->
-    <div id="tab-clients" class="tab-content space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold text-gray-900">Mes clients</h1>
-          <p class="text-sm text-gray-500 mt-1">Gère les clients que tu as apportés à la plateforme.</p>
-        </div>
-        <button class="brand-bg text-white text-sm font-medium rounded-lg px-4 py-2">+ Ajouter un client</button>
+  <!-- FORMULAIRE -->
+  <div class="form-card">
+    <h2>Détails de la vente</h2>
+
+    <div class="field">
+      <label>Plateforme de vente</label>
+      <select id="platform" onchange="calculate()">
+        <option value="vinted">Vinted (5% + 0,70€)</option>
+        <option value="ebay">eBay (10%)</option>
+        <option value="leboncoin">LeBonCoin (gratuit)</option>
+        <option value="facebook">Facebook Marketplace (gratuit)</option>
+      </select>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Prix d'achat (€)</label>
+        <input type="number" id="buyPrice" placeholder="0" min="0" step="0.01" oninput="calculate()">
       </div>
-      <div class="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-gray-100">
-              <th class="px-5 py-3 font-medium">Client</th>
-              <th class="px-5 py-3 font-medium">Plan</th>
-              <th class="px-5 py-3 font-medium">Valeur / mois</th>
-              <th class="px-5 py-3 font-medium">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-b border-gray-50">
-              <td class="px-5 py-3"><div class="font-medium text-gray-900">Acme Corp</div><div class="text-gray-400 text-xs">contact@acme.com</div></td>
-              <td class="px-5 py-3 text-gray-700">Pro</td>
-              <td class="px-5 py-3 text-gray-700">99,00 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Actif</span></td>
-            </tr>
-            <tr class="border-b border-gray-50">
-              <td class="px-5 py-3"><div class="font-medium text-gray-900">Boulangerie Dupont</div><div class="text-gray-400 text-xs">dupont@mail.com</div></td>
-              <td class="px-5 py-3 text-gray-700">Starter</td>
-              <td class="px-5 py-3 text-gray-700">29,00 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-amber-50 text-amber-700">Essai</span></td>
-            </tr>
-            <tr class="border-b border-gray-50">
-              <td class="px-5 py-3"><div class="font-medium text-gray-900">Studio Lumière</div><div class="text-gray-400 text-xs">contact@lumiere.fr</div></td>
-              <td class="px-5 py-3 text-gray-700">Pro</td>
-              <td class="px-5 py-3 text-gray-700">99,00 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Actif</span></td>
-            </tr>
-            <tr>
-              <td class="px-5 py-3"><div class="font-medium text-gray-900">Garage Martin</div><div class="text-gray-400 text-xs">martin@garage.fr</div></td>
-              <td class="px-5 py-3 text-gray-700">Enterprise</td>
-              <td class="px-5 py-3 text-gray-700">199,00 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Actif</span></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="field">
+        <label>Prix de vente (€)</label>
+        <input type="number" id="sellPrice" placeholder="0" min="0" step="0.01" oninput="calculate()">
       </div>
     </div>
 
-    <!-- Commissions -->
-    <div id="tab-commissions" class="tab-content space-y-6">
-      <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Commissions</h1>
-        <p class="text-sm text-gray-500 mt-1">Taux de commission actuel : 20%</p>
+    <div class="field-row">
+      <div class="field">
+        <label>Port achat (€)</label>
+        <input type="number" id="shippingBuy" placeholder="0" min="0" step="0.01" oninput="calculate()">
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Déjà versées</p>
-          <p class="text-2xl font-semibold text-gray-900">48,30 €</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">En attente de versement</p>
-          <p class="text-2xl font-semibold text-gray-900">19,80 €</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Total cumulé</p>
-          <p class="text-2xl font-semibold text-gray-900">68,10 €</p>
-        </div>
-      </div>
-      <div class="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-gray-100">
-              <th class="px-5 py-3 font-medium">Date</th>
-              <th class="px-5 py-3 font-medium">Client</th>
-              <th class="px-5 py-3 font-medium">Montant payé</th>
-              <th class="px-5 py-3 font-medium">Ta commission</th>
-              <th class="px-5 py-3 font-medium">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-b border-gray-50">
-              <td class="px-5 py-3 text-gray-700">15 juin 2026</td>
-              <td class="px-5 py-3 text-gray-900 font-medium">Acme Corp</td>
-              <td class="px-5 py-3 text-gray-700">99,00 €</td>
-              <td class="px-5 py-3 text-gray-900 font-medium">19,80 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-amber-50 text-amber-700">En attente</span></td>
-            </tr>
-            <tr class="border-b border-gray-50">
-              <td class="px-5 py-3 text-gray-700">02 juin 2026</td>
-              <td class="px-5 py-3 text-gray-900 font-medium">Studio Lumière</td>
-              <td class="px-5 py-3 text-gray-700">99,00 €</td>
-              <td class="px-5 py-3 text-gray-900 font-medium">19,80 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Payée</span></td>
-            </tr>
-            <tr>
-              <td class="px-5 py-3 text-gray-700">18 mai 2026</td>
-              <td class="px-5 py-3 text-gray-900 font-medium">Garage Martin</td>
-              <td class="px-5 py-3 text-gray-700">199,00 €</td>
-              <td class="px-5 py-3 text-gray-900 font-medium">39,80 €</td>
-              <td class="px-5 py-3"><span class="text-xs font-medium rounded-full px-2.5 py-1 bg-green-50 text-green-700">Payée</span></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="field">
+        <label>Port vente (€)</label>
+        <input type="number" id="shippingsSell" placeholder="0" min="0" step="0.01" oninput="calculate()">
       </div>
     </div>
 
-  </main>
+    <div class="field">
+      <label>Frais de remise en état (€) — optionnel</label>
+      <input type="number" id="repairCost" placeholder="0" min="0" step="0.01" oninput="calculate()">
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="history-card">
+    <div class="history-header">
+      <h2>Historique</h2>
+      <span class="total-gains" id="totalGains">Total : 0,00 €</span>
+    </div>
+
+    <button class="btn-save" onclick="saveEntry()">💾 Sauvegarder cette vente</button>
+
+    <div class="history-list" id="historyList">
+      <div class="empty-history">Aucune vente sauvegardée</div>
+    </div>
+
+    <button class="btn-clear" onclick="clearHistory()">🗑 Effacer l'historique</button>
+  </div>
+
 </div>
 
 <script>
-function showTab(name) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
-}
-</script>
+  function val(id) {
+    return parseFloat(document.getElementById(id).value) || 0;
+  }
 
+  function fmt(n) {
+    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+
+  function getPlatformFee(platform, sellPrice) {
+    if (platform === 'vinted') return sellPrice * 0.05 + 0.70;
+    if (platform === 'ebay') return sellPrice * 0.10;
+    return 0;
+  }
+
+  function calculate() {
+    const buyPrice = val('buyPrice');
+    const sellPrice = val('sellPrice');
+    const shippingBuy = val('shippingBuy');
+    const shippingsSell = val('shippingsSell');
+    const repairCost = val('repairCost');
+    const platform = document.getElementById('platform').value;
+
+    const platformFee = getPlatformFee(platform, sellPrice);
+    const totalCost = buyPrice + shippingBuy + shippingsSell + repairCost + platformFee;
+    const profit = sellPrice - totalCost;
+    const margin = sellPrice > 0 ? (profit / sellPrice) * 100 : 0;
+
+    // Affichage
+    const profitEl = document.getElementById('profitAmount');
+    const badgeEl = document.getElementById('profitBadge');
+
+    profitEl.textContent = fmt(profit);
+    document.getElementById('totalCost').textContent = fmt(totalCost);
+    document.getElementById('platformFees').textContent = fmt(platformFee);
+    document.getElementById('sellPriceDisplay').textContent = fmt(sellPrice);
+    document.getElementById('marginPct').textContent = sellPrice > 0 ? margin.toFixed(1) + ' %' : '— %';
+
+    profitEl.className = 'result-amount';
+    badgeEl.className = 'result-badge';
+
+    if (sellPrice === 0 && buyPrice === 0) {
+      badgeEl.textContent = '— Saisis tes données';
+      badgeEl.classList.add('badge-green');
+    } else if (margin >= 15) {
+      profitEl.classList.add('');
+      badgeEl.classList.add('badge-green');
+      badgeEl.textContent = '✅ Rentable';
+    } else if (margin >= 5) {
+      profitEl.classList.add('warning');
+      badgeEl.classList.add('badge-orange');
+      badgeEl.textContent = '⚠️ Limite';
+    } else {
+      profitEl.classList.add('loss');
+      badgeEl.classList.add('badge-red');
+      badgeEl.textContent = '❌ Perte';
+    }
+  }
+
+  function saveEntry() {
+    const profit = val('sellPrice') - (
+      val('buyPrice') + val('shippingBuy') + val('shippingsSell') + val('repairCost') +
+      getPlatformFee(document.getElementById('platform').value, val('sellPrice'))
+    );
+
+    const name = prompt('Nom de la vente (ex: Nike Air Max, iPhone 12...) :');
+    if (!name) return;
+
+    const history = JSON.parse(localStorage.getItem('flipcalc_history') || '[]');
+    history.unshift({
+      name,
+      profit,
+      date: new Date().toLocaleDateString('fr-FR')
+    });
+    localStorage.setItem('flipcalc_history', JSON.stringify(history));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const history = JSON.parse(localStorage.getItem('flipcalc_history') || '[]');
+    const list = document.getElementById('historyList');
+    const totalEl = document.getElementById('totalGains');
+
+    if (history.length === 0) {
+      list.innerHTML = '<div class="empty-history">Aucune vente sauvegardée</div>';
+      totalEl.textContent = 'Total : 0,00 €';
+      return;
+    }
+
+    const total = history.reduce((sum, e) => sum + e.profit, 0);
+    totalEl.textContent = 'Total : ' + fmt(total);
+
+    list.innerHTML = history.map(e => `
+      <div class="history-item">
+        <div>
+          <div class="hname">${e.name}</div>
+          <div class="hdate">${e.date}</div>
+        </div>
+        <div class="hprofit ${e.profit >= 0 ? 'pos' : 'neg'}">${fmt(e.profit)}</div>
+      </div>
+    `).join('');
+  }
+
+  function clearHistory() {
+    if (confirm('Effacer tout l\'historique ?')) {
+      localStorage.removeItem('flipcalc_history');
+      renderHistory();
+    }
+  }
+
+  renderHistory();
+</script>
 </body>
 </html>
-```
