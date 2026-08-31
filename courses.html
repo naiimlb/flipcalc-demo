@@ -858,7 +858,7 @@
     hygiene: [
       'hygiene', 'savon', 'gel douche', 'shampoing', 'shampooing', 'apres shampoing', 'dentifrice',
       'brosse a dents', 'bain de bouche', 'fil dentaire', 'deodorant', 'papier toilette', 'pq',
-      'mouchoir', 'essuie tout', 'sopalin', 'coton', 'coton tige', 'serviette hygienique', 'tampon',
+      'mouchoir', 'essuie tout', 'sopalin', 'bobine', 'coton', 'coton tige', 'serviette hygienique', 'tampon',
       'protege slip', 'couche', 'lingette', 'rasoir', 'mousse a raser', 'gel a raser', 'creme',
       'creme hydratante', 'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant',
       'huile pour cheveux', 'vernis', 'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle',
@@ -951,7 +951,7 @@
     // hygiène & entretien
     'savon', 'gel douche', 'shampoing', 'shampooing', 'apres shampoing', 'dentifrice',
     'brosse a dents', 'bain de bouche', 'fil dentaire', 'deodorant', 'papier toilette', 'pq',
-    'mouchoir', 'essuie tout', 'sopalin', 'coton', 'coton tige', 'serviette hygienique',
+    'mouchoir', 'essuie tout', 'sopalin', 'bobine', 'coton', 'coton tige', 'serviette hygienique',
     'tampon', 'protege slip', 'couche', 'lingette', 'rasoir', 'mousse a raser', 'gel a raser',
     'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant', 'vernis',
     'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle', 'javel',
@@ -1015,6 +1015,20 @@
       .trim();
   }
 
+  const CONDITIONNEMENTS = ['pack', 'lot', 'paquet', 'boite', 'barquette', 'sachet',
+                            'plaque', 'rouleau', 'bouteille', 'brique', 'pot'];
+
+  function singulier(mot) {
+    const m = mot.replace(/x$/, 'u').replace(/s$/, '');
+    return m === 'rouleau' || m === 'rouleaux' ? 'rouleau' : m;
+  }
+
+  // « 2 packs » plutôt que « 2 pack », mais « 2 kg » reste « 2 kg »
+  function uniteAffichee(q, u) {
+    if (!u) return '';
+    return (q > 1 && CONDITIONNEMENTS.indexOf(u) !== -1) ? u + 's' : u;
+  }
+
   // Combien d'unités l'article demande-t-il ?
   // « 8 yaourts », « yaourts x8 », « 3x coca », « lot de 6 », « 2 kg farine », « 1,5 l lait »
   function extraireQuantite(label) {
@@ -1027,9 +1041,14 @@
       .replace(/[^a-z0-9.]+/g, ' ')
       .trim();
 
-    // lot / pack / paquet de 6
-    let m = n.match(/(?:lot|pack|paquet|boite|barquette|sachet|plaque)\s+de\s+(\d+)/);
-    if (m) return { qte: parseInt(m[1], 10), unite: '' };
+    // « 2 packs de 6 » : deux packs à prendre
+    const CONDIT = '(packs?|lots?|paquets?|boites?|barquettes?|sachets?|plaques?|rouleaux?|bouteilles?|briques?|pots?)';
+    let m = n.match(new RegExp('(?:^|\\s)(\\d+)\\s*(?:x\\s*)?' + CONDIT + '(?:\\s|$)'));
+    if (m) return { qte: parseInt(m[1], 10), unite: singulier(m[2]) };
+
+    // « pack de 6 bobines » : un seul pack à prendre, pas six articles
+    m = n.match(new RegExp('(?:^|\\s)' + CONDIT + '\\s+d(?:e|es|u)?\\s'));
+    if (m) return { qte: 1, unite: singulier(m[1]) };
 
     // x8 ou 8x, n'importe où
     m = n.match(/(?:^|\s)x\s*(\d+)(?:\s|$)/) || n.match(/(?:^|\s)(\d+)\s*x(?:\s|$)/);
@@ -1388,7 +1407,7 @@
                   '<button type="button" onclick="majPris(\'' + it.id + '\', -1)">−</button>' +
                   '<input type="number" min="0" step="1" value="' + pris + '" ' +
                          'oninput="saisirPris(\'' + it.id + '\', this.value)">' +
-                  '<span class="bl-max">/ ' + nb(max) + (unite ? ' ' + unite : '') + '</span>' +
+                  '<span class="bl-max">/ ' + nb(max) + (unite ? ' ' + uniteAffichee(max, unite) : '') + '</span>' +
                   '<button type="button" onclick="majPris(\'' + it.id + '\', 1)">+</button>' +
                 '</div>' +
               '</div>';
@@ -1512,7 +1531,7 @@
                   '<div class="hist-sub">' + h.complets + ' / ' + h.total + ' articles pris</div>';
 
       for (const m of h.manquants) {
-        const u = m.unite ? ' ' + m.unite : '';
+        const u = m.unite ? ' ' + uniteAffichee(m.demande, m.unite) : '';
         html += '<div class="hist-line">' +
                   '<span class="hl-name">' + echapper(m.label) + '</span>' +
                   '<span class="hl-qty">' +
@@ -1540,10 +1559,12 @@
 
   // « Manque 3 sur 8 » / « Pas pris » — d'après la dernière fin de courses
   function texteManque(m) {
-    const u = m.unite ? ' ' + m.unite : '';
+    const reste = m.demande - m.pris;
+    const uReste = m.unite ? ' ' + uniteAffichee(reste, m.unite) : '';
+    const uTotal = m.unite ? ' ' + uniteAffichee(m.demande, m.unite) : '';
     return m.pris > 0
-      ? 'Manque ' + nb(m.demande - m.pris) + u + ' sur ' + nb(m.demande) + u
-      : 'Pas pris' + (m.demande > 1 ? ' (0 / ' + nb(m.demande) + u + ')' : '');
+      ? 'Manque ' + nb(reste) + uReste + ' sur ' + nb(m.demande) + uTotal
+      : 'Pas pris' + (m.demande > 1 ? ' (0 / ' + nb(m.demande) + uTotal + ')' : '');
   }
 
   function etiquetteManque(it) {
@@ -1590,7 +1611,7 @@
                     '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
                     '<div class="item-meta">' +
                       '<button class="qte-chip" id="q-' + it.id + '" onclick="editerQte(\'' + it.id + '\', event)" ' +
-                              'title="Modifier la quantité">' + (u ? nb(q) + ' ' + u : '× ' + nb(q)) + '</button>' +
+                              'title="Modifier la quantité">' + (u ? nb(q) + ' ' + uniteAffichee(q, u) : '× ' + nb(q)) + '</button>' +
                       etiquetteManque(it) +
                       (aRanger ? '<span class="tag-ranger">Choisis son rayon →</span>' : '') +
                     '</div>' +

@@ -34,8 +34,10 @@ Utilisation : coller une liste (un article par ligne ou séparés par des virgul
 puis « Trier ma liste ». Les doublons sont ignorés.
 
 **Quantités** — détectées à l'ajout et affichées en pastille sur chaque article :
-`8 yaourts` → ×8, `2 kg farine` → 2 kg, `coca x6` → ×6, `lot de 4 compotes` → ×4,
-`1,5 l lait` → 1,5 l ; 1 par défaut. Un appui sur la pastille permet de la corriger.
+`8 yaourts` → ×8, `2 kg farine` → 2 kg, `coca x6` → ×6, `1,5 l lait` → 1,5 l ;
+1 par défaut. Un conditionnement compte pour un article à prendre, pas pour son contenu :
+`pack de 6 bobines` → 1 pack, `lot de 4 compotes` → 1 lot, mais `2 packs de coca` → 2 packs
+et `6 bouteilles d'eau` → 6 bouteilles. Un appui sur la pastille permet de la corriger.
 C'est cette quantité que le bilan de fin de courses propose d'ajuster.
 
 **Rayon mémorisé** — un article non reconnu part dans « Autres », signalé en pointillé
