@@ -16,18 +16,22 @@
      PALETTE DE MARQUE — tout se change ici
      ========================================================= */
   :root {
-    --bg:        #0C0A0B;   /* fond général (noir) */
-    --surface:   #171314;   /* cartes */
-    --surface-2: #100D0E;   /* champs, lignes */
-    --line:      #2C2226;   /* bordures */
+    --bg:        #08070A;   /* noir encre */
+    --bg-2:      #0E0B10;   /* nuance pour les dégradés de fond */
+    --surface:   #161115;   /* cartes */
+    --surface-2: #0F0C11;   /* champs, lignes */
+    --line:      #2B1F27;   /* bordures */
+    --hairline:  rgba(255,255,255,0.05);
     --accent:    #EA1F79;   /* rose #HASHTAGBANGERS */
-    --accent-d:  #9C0F4C;   /* ombre / relief du rose */
-    --accent-2:  #FF7DB4;   /* rose clair (compteurs) */
-    --ink:       #FFFFFF;   /* texte principal */
-    --ink-soft:  #C9BCC1;   /* texte secondaire */
-    --muted:     #6E5F65;   /* texte discret */
-    --faint:     #3D3238;   /* très discret */
-    --radius:    14px;
+    --accent-h:  #FF4FA3;   /* rose clair, pour les dégradés */
+    --accent-d:  #8E0C46;   /* ombre / relief du rose */
+    --accent-2:  #FFB3D4;   /* rose pâle, compteurs */
+    --vert:      #4ADE80;   /* récupéré */
+    --ink:       #FFFFFF;
+    --ink-soft:  #CFC3C9;
+    --muted:     #7A6A73;
+    --faint:     #45383F;
+    --radius:    18px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,13 +49,29 @@
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--bg);
-    background-image: radial-gradient(rgba(234,31,121,0.10) 1px, transparent 1.2px);
-    background-size: 9px 9px;
+    background-image:
+      radial-gradient(120% 80% at 50% -10%, rgba(234,31,121,0.22), transparent 60%),
+      radial-gradient(rgba(234,31,121,0.09) 1px, transparent 1.2px),
+      linear-gradient(180deg, var(--bg-2), var(--bg) 40%);
+    background-size: 100% 620px, 9px 9px, 100% 100%;
+    background-repeat: no-repeat, repeat, no-repeat;
     color: var(--ink);
     min-height: 100vh;
     padding: 0 0 calc(40px + env(safe-area-inset-bottom));
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
+  }
+
+  /* Grain imprimé, très léger, façon riso — au-dessus de tout mais intouchable */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0.35;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
   }
 
   .container {
@@ -70,29 +90,51 @@
   }
 
   /* ===================== EN-TÊTE / MARQUE ===================== */
-  header { padding: 0 0 22px; }
+  header { padding: 0 0 26px; position: relative; }
 
   .brand-band {
-    padding-top: calc(20px + env(safe-area-inset-top));
-    background: var(--accent);
-    background-image: radial-gradient(rgba(0,0,0,0.13) 1.3px, transparent 1.4px);
-    background-size: 7px 7px;
-    border-radius: 0 0 22px 22px;
-    padding-bottom: 18px;
+    position: relative;
+    background:
+      radial-gradient(90% 120% at 20% 0%, var(--accent-h), var(--accent) 55%, #C4126A 100%);
+    background-image:
+      radial-gradient(rgba(0,0,0,0.14) 1.3px, transparent 1.4px),
+      radial-gradient(90% 120% at 20% 0%, var(--accent-h), var(--accent) 55%, #C4126A 100%);
+    background-size: 7px 7px, 100% 100%;
+    padding-top: calc(26px + env(safe-area-inset-top));
+    padding-bottom: 46px;
     padding-left: 18px;
     padding-right: 18px;
     text-align: center;
-    box-shadow: 0 5px 0 var(--accent-d);
-    margin-bottom: 26px;
+    /* bord inférieur en biseau : un ticket déchiré plutôt qu'un rectangle */
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 26px), 0 100%);
+    margin-bottom: -26px;
+  }
+
+  /* halo diffus derrière le bandeau */
+  .brand-band::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -40px;
+    width: 260px; height: 90px;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(234,31,121,0.45), transparent);
+    filter: blur(14px);
+    pointer-events: none;
   }
 
   .brand-logo {
-    width: 104px;
-    height: 104px;
-    border-radius: 22%;
+    width: 96px;
+    height: 96px;
+    border-radius: 26%;
     display: block;
     margin: 0 auto 12px;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,255,255,0.14);
+    animation: flotte 5s ease-in-out infinite;
+  }
+
+  @keyframes flotte {
+    0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+    50%      { transform: translateY(-5px) rotate(0.6deg); }
   }
 
   .wordmark {
@@ -118,47 +160,101 @@
 
   .tagline {
     display: inline-block;
-    margin-top: 9px;
+    margin-top: 10px;
     background: #0C0A0B;
     color: var(--ink);
     font-size: 0.6rem;
     font-weight: 800;
     letter-spacing: 1.6px;
     text-transform: uppercase;
-    padding: 5px 12px;
+    padding: 6px 13px;
     border-radius: 4px;
-    transform: rotate(-1.2deg);
+    transform: rotate(-1.6deg);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+  }
+
+  /* bandeau défilant : l'ambiance snack, en une ligne */
+  .ticker {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    background: rgba(255,255,255,0.02);
+    padding: 7px 0;
+    margin: 30px -14px 0;
+  }
+
+  .ticker-piste {
+    display: inline-flex;
+    gap: 22px;
+    white-space: nowrap;
+    animation: defile 22s linear infinite;
+    will-change: transform;
+  }
+
+  .ticker span {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ticker span b { color: var(--accent); font-weight: 400; }
+
+  @keyframes defile {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
   }
 
   .page-title {
+    position: relative;
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
-    font-size: 2.5rem;
-    line-height: 0.95;
+    font-size: clamp(2.6rem, 13vw, 3.4rem);
+    line-height: 0.88;
     text-transform: uppercase;
     text-align: center;
-    letter-spacing: -1px;
+    letter-spacing: -1.5px;
+    margin-top: 26px;
+    text-wrap: balance;
+    text-shadow: 0 6px 24px rgba(0,0,0,0.6);
   }
 
   .page-title em {
     font-style: normal;
     color: var(--accent);
-    -webkit-text-stroke: 0;
+    text-shadow: 0 0 26px rgba(234,31,121,0.55);
   }
 
   .page-sub {
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     text-align: center;
-    margin-top: 8px;
+    margin-top: 12px;
+    line-height: 1.5;
   }
 
   /* ===================== CARTES ===================== */
   .card {
-    background: var(--surface);
-    border: 2px solid var(--line);
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 120px),
+      var(--surface);
+    border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 20px 18px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 18px 40px -28px rgba(0,0,0,0.9);
+  }
+
+  /* filet clair sur l'arête haute, comme un objet éclairé par le dessus */
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 16px; right: 16px; top: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+    pointer-events: none;
   }
 
   /* L'avancement reste visible quand on descend dans les rayons */
@@ -172,7 +268,7 @@
   }
 
   .progression {
-    height: 4px;
+    height: 5px;
     border-radius: 999px;
     background: var(--surface-2);
     overflow: hidden;
@@ -183,7 +279,8 @@
     display: block;
     height: 100%;
     width: 0;
-    background: var(--accent);
+    background: linear-gradient(90deg, var(--accent), var(--accent-h));
+    box-shadow: 0 0 12px rgba(234,31,121,0.8);
     border-radius: 999px;
     transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
@@ -213,16 +310,21 @@
   .card-head h2::before {
     content: '';
     position: absolute;
-    left: 0; top: 12%;
-    width: 5px; height: 76%;
-    background: var(--accent);
+    left: 0; top: 10%;
+    width: 5px; height: 80%;
+    background: linear-gradient(180deg, var(--accent-h), var(--accent));
     border-radius: 2px;
+    box-shadow: 0 0 12px rgba(234,31,121,0.7);
   }
 
   .counter {
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     flex-shrink: 0;
+    background: rgba(234,31,121,0.16);
+    border: 1px solid rgba(234,31,121,0.35);
+    border-radius: 999px;
+    padding: 4px 11px;
     color: var(--accent-2);
     letter-spacing: 0.5px;
     font-variant-numeric: tabular-nums;
@@ -247,7 +349,10 @@
     transition: border-color 0.15s;
   }
 
-  textarea:focus { border-color: var(--accent); }
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(234,31,121,0.16);
+  }
   textarea::placeholder { color: var(--faint); }
 
   .hint {
@@ -258,11 +363,13 @@
   }
 
   .btn-main {
+    position: relative;
+    overflow: hidden;
     width: 100%;
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent-h), var(--accent) 60%, #C4126A);
     color: var(--ink);
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 15px;
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
     font-size: 1.1rem;
@@ -270,8 +377,24 @@
     letter-spacing: 1px;
     cursor: pointer;
     margin-top: 14px;
-    box-shadow: 0 4px 0 var(--accent-d);
+    box-shadow: 0 4px 0 var(--accent-d), 0 12px 28px -12px rgba(234,31,121,0.85);
     transition: transform 0.08s, box-shadow 0.08s;
+  }
+
+  /* reflet qui balaie le bouton principal */
+  .btn-main::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: -60%;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.28), transparent);
+    transform: skewX(-18deg);
+    animation: balayage 4.5s ease-in-out infinite;
+  }
+
+  @keyframes balayage {
+    0%, 62%  { left: -60%; }
+    88%, 100% { left: 130%; }
   }
 
   .btn-main:active {
@@ -288,8 +411,8 @@
 
   .btn-ghost {
     background: var(--surface-2);
-    border: 2px solid var(--line);
-    border-radius: 9px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
     padding: 11px 6px;
     color: var(--ink-soft);
     font-size: 0.72rem;
@@ -308,32 +431,32 @@
   .cat-block { margin-bottom: 16px; }
 
   .cat-title {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 9px;
-    background: var(--surface-2);
-    border: 2px solid var(--line);
-    border-left: 5px solid var(--accent);
-    border-radius: 9px;
-    padding: 8px 10px;
-    margin-bottom: 8px;
+    gap: 10px;
+    padding: 10px 12px 10px 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: linear-gradient(90deg, rgba(234,31,121,0.16), rgba(234,31,121,0.02) 60%, transparent);
+    border-left: 3px solid var(--accent);
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
-    font-size: 0.86rem;
+    font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     color: var(--ink);
   }
 
+  /* le numéro de rayon, en très grand et en creux : l'ordre du parcours en magasin */
   .cat-title .num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 21px; height: 21px;
-    border-radius: 5px;
-    background: var(--accent);
-    color: var(--ink);
-    font-size: 0.75rem;
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 2.2rem;
+    line-height: 0.8;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(234,31,121,0.55);
     flex-shrink: 0;
+    letter-spacing: -1px;
   }
 
   .cat-title .count {
@@ -341,20 +464,42 @@
     color: var(--accent-2);
     font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
+    background: rgba(234,31,121,0.16);
+    border-radius: 999px;
+    padding: 3px 10px;
+    flex-shrink: 0;
   }
 
   /* ===================== ARTICLES ===================== */
   .item {
+    position: relative;
+    overflow: hidden;
     background: var(--surface-2);
-    border: 2px solid var(--line);
-    border-radius: 10px;
-    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 11px;
     display: flex;
     flex-direction: column;
     gap: 7px;
-    margin-bottom: 6px;
-    transition: opacity 0.15s;
+    margin-bottom: 7px;
+    transition: opacity 0.2s, border-color 0.2s, transform 0.15s;
   }
+
+  /* jauge de fond : la part déjà prise de l'article */
+  .item::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--p, 0%);
+    background: linear-gradient(90deg, rgba(234,31,121,0.22), rgba(234,31,121,0.04));
+    border-right: 1px solid rgba(234,31,121,0.35);
+    transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .item.done::before { background: linear-gradient(90deg, rgba(74,222,128,0.16), rgba(74,222,128,0.03)); border-right-color: rgba(74,222,128,0.3); }
+
+  .item-haut, .item-meta { position: relative; z-index: 1; }
 
   .item-haut {
     display: flex;
@@ -365,7 +510,7 @@
 
   .item .check {
     width: 28px; height: 28px;
-    border-radius: 6px;
+    border-radius: 9px;
     border: 2px solid #3B3131;
     background: transparent;
     cursor: pointer;
@@ -379,13 +524,19 @@
     padding: 0;
   }
 
-  .item.done { opacity: 0.55; }
-  .item.done .check { background: var(--accent); border-color: var(--accent); }
+  .item.done { opacity: 0.62; border-color: rgba(74,222,128,0.35); }
+  .item.done .check {
+    background: linear-gradient(160deg, var(--vert), #22C55E);
+    border-color: transparent;
+    color: #05210F;
+    box-shadow: 0 0 14px rgba(74,222,128,0.4);
+  }
 
   .item .name {
     flex: 1;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.94rem;
+    font-weight: 650;
+    letter-spacing: -0.2px;
     color: var(--ink);
     line-height: 1.35;
     word-break: break-word;
@@ -481,7 +632,7 @@
   .pris-box .qte-chip { border: none; background: transparent; padding: 2px 2px; }
 
   /* Article pris en partie : repérable d'un coup d'œil */
-  .item.partiel { border-color: var(--accent-2); }
+  .item.partiel { border-color: rgba(234,31,121,0.55); }
   .item.partiel .pris-input { color: var(--accent-2); border-bottom-color: var(--accent-2); }
 
   .qte-input {
@@ -503,7 +654,7 @@
   .qte-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* Article que l'appli n'a pas su ranger : il attend un rayon */
-  .item.a-ranger { border-color: var(--accent); border-style: dashed; }
+  .item.a-ranger { border-color: var(--accent); border-style: dashed; background: rgba(234,31,121,0.05); }
   .item.a-ranger select { border-color: var(--accent); color: var(--ink); }
 
   .tag-ranger {
@@ -723,10 +874,14 @@
   .overlay[hidden] { display: none; }
 
   .modal {
-    background: var(--surface);
-    border: 2px solid var(--line);
-    border-top: 5px solid var(--accent);
-    border-radius: 16px;
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 140px),
+      var(--surface);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent);
+    border-radius: 20px;
+    box-shadow: 0 -20px 60px -20px rgba(234,31,121,0.45);
     width: 100%;
     max-width: 480px;
     max-height: 88vh;
@@ -735,7 +890,19 @@
     padding: 16px 16px 14px;
   }
 
+  /* petite poignée, comme une feuille iOS */
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    width: 42px; height: 4px;
+    transform: translateX(-50%);
+    background: var(--line);
+    border-radius: 999px;
+  }
+
   .modal-head {
+    margin-top: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -986,6 +1153,10 @@
            onerror="this.remove()">
       <div class="wordmark" id="wordmark">#HASHTAG<span class="bangers">Bangers.</span><sup>®</sup></div>
       <div class="tagline">Il n'y a que toi qui comptes !</div>
+    </div>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-piste" id="ticker"></div>
     </div>
 
     <div class="page-title">Ma liste <em>Métro</em></div>
@@ -1604,6 +1775,7 @@
     if (coche) coche.textContent = it.fait ? '✔' : '';
     const champ = ligne.querySelector('.pris-input');
     if (champ && document.activeElement !== champ) champ.value = String(pris);
+    ligne.style.setProperty('--p', (max > 0 ? Math.round(pris / max * 100) : 0) + '%');
     majCompteur();
   }
 
@@ -2313,7 +2485,7 @@
       lot.sort((a, b) => (a.fait === b.fait) ? 0 : (a.fait ? 1 : -1));
 
       html += '<div class="cat-block" style="--i:' + (index) + '">';
-      html += '<div class="cat-title"><span class="num">' + (index + 1) + '</span>' +
+      html += '<div class="cat-title"><span class="num">' + String(index + 1).padStart(2, '0') + '</span>' +
               echapper(cat.nom) + '<span class="count">' + lot.length + '</span></div>';
 
       for (const it of lot) {
@@ -2328,7 +2500,8 @@
         const partiel = pris > 0 && pris < q;
 
         html += '<div class="item' + (it.fait ? ' done' : '') + (partiel ? ' partiel' : '') +
-                  (aRanger ? ' a-ranger' : '') + '" id="it-' + it.id + '" style="--i:' + (rang++) + '">' +
+                  (aRanger ? ' a-ranger' : '') + '" id="it-' + it.id + '" style="--i:' + (rang++) + ';--p:' +
+                  (q > 0 ? Math.round(pris / q * 100) : 0) + '%">' +
                   '<div class="item-haut">' +
                     '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
                     '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
@@ -2393,6 +2566,16 @@
 
   rendre();
   rendreHistorique();
+  // Bandeau défilant : le contenu est dupliqué pour que la boucle soit invisible
+  (function remplirTicker() {
+    const piste = document.getElementById('ticker');
+    if (!piste) return;
+    const motifs = ['Courses Métro', '<b>★</b>', 'Roubaix', '<b>★</b>', 'Smash & Chicken',
+                    '<b>★</b>', 'Il n\'y a que toi qui comptes', '<b>★</b>'];
+    const bloc = motifs.map(m => '<span>' + m + '</span>').join('');
+    piste.innerHTML = bloc + bloc;
+  })();
+
   reprendreSauvegardeIntegree();
 
   // Le bouton « Fichier » n'apparaît que si la page hôte sait enregistrer un fichier

@@ -125,9 +125,12 @@ elles ne suivent pas quand la page est republiée à une nouvelle version. La ca
   moment de la publication : elle est reprise toute seule si le navigateur est vide.
 
 ### Personnalisation du design
-- Charte reprise du logo : rose de marque `#EA1F79` sur fond noir, typo condensée
+- Charte reprise du logo : rose de marque `#EA1F79` sur fond noir encre, typo condensée
   capitales (Anton) et lettrage marqueur (Permanent Marker), trame de points façon
-  halftone du logo.
+  halftone du logo, grain imprimé en surimpression.
+- Bandeau de marque en ticket biseauté avec halo, logo en lévitation, bandeau défilant,
+  titre géant, numéros de rayon en chiffres creux (l'ordre du parcours en magasin),
+  lignes d'article qui se remplissent à hauteur de ce qui est déjà pris.
 - Toutes les couleurs sont regroupées dans le bloc `:root` en haut du `<style>`
   (`--bg`, `--surface`, `--accent`, `--accent-2`, `--ink`…) : une seule modification
   suffit à recaler toute l'appli.
