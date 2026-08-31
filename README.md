@@ -6,7 +6,7 @@ données conservées dans le navigateur via `localStorage`).
 ## `index.html` — FlipCalc
 Calculateur de bénéfice pour l'achat-revente (Vinted, eBay, LeBonCoin, Facebook).
 
-## `courses.html` — Ma Liste Métro
+## `courses.html` — Ma Liste Métro (design #HASHTAGBANGERS)
 Liste de courses qui **trie automatiquement les articles dans l'ordre des rayons** :
 
 1. Fruits & légumes
@@ -27,3 +27,10 @@ les doublons ignorés.
 - Copier la liste triée, tout décocher, retirer les articles cochés, tout effacer
 
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
+
+### Personnalisation du design
+- Toutes les couleurs sont regroupées dans le bloc `:root` en haut du `<style>`
+  (`--bg`, `--surface`, `--accent`, `--accent-2`, `--ink`…) : changer ces valeurs suffit
+  à recaler l'appli sur la charte exacte de la marque.
+- Pour afficher le vrai logo : déposer un fichier `logo.png` à côté de `courses.html`.
+  S'il est absent, le logo texte `#HASHTAGBANGERS®` s'affiche automatiquement.

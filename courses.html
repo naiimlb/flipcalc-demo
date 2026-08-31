@@ -3,266 +3,384 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ma Liste Métro — Tri automatique par rayon</title>
+<meta name="theme-color" content="#0B0B0B">
+<title>#HASHTAGBANGERS — Ma Liste Métro</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  /* =========================================================
+     PALETTE DE MARQUE — tout se change ici
+     ========================================================= */
+  :root {
+    --bg:        #0B0B0B;   /* fond général */
+    --surface:   #151212;   /* cartes */
+    --surface-2: #0E0C0C;   /* champs, lignes */
+    --line:      #2A2222;   /* bordures */
+    --accent:    #E1121C;   /* rouge de marque */
+    --accent-d:  #8E0910;   /* ombre / relief du rouge */
+    --accent-2:  #FFC400;   /* jaune d'appoint (badges, ticket) */
+    --ink:       #FFFFFF;   /* texte principal */
+    --ink-soft:  #B9AFAF;   /* texte secondaire */
+    --muted:     #6A5E5E;   /* texte discret */
+    --faint:     #3A3232;   /* très discret */
+    --radius:    14px;
+  }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', sans-serif;
-    background: #0A0A0A;
-    color: #F0F0F0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.014) 0 2px, transparent 2px 9px);
+    color: var(--ink);
     min-height: 100vh;
-    padding: 20px 16px 40px;
-  }
-
-  header { text-align: center; padding: 32px 0 24px; }
-
-  header h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    color: #fff;
-  }
-
-  header h1 span { color: #00FF87; }
-
-  header p {
-    color: #666;
-    font-size: 0.85rem;
-    margin-top: 6px;
+    padding: 0 14px 40px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .container { max-width: 480px; margin: 0 auto; }
 
-  .card {
-    background: #141414;
-    border: 1px solid #222;
-    border-radius: 20px;
-    padding: 24px;
-    margin-bottom: 16px;
+  .title-font {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
-  .card h2 {
-    font-size: 0.8rem;
-    color: #444;
+  /* ===================== EN-TÊTE / MARQUE ===================== */
+  header {
+    text-align: center;
+    padding: 26px 0 22px;
+  }
+
+  .brand-logo {
+    max-width: 150px;
+    max-height: 90px;
+    margin: 0 auto 12px;
+    display: block;
+  }
+
+  .wordmark {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.85rem;
+    line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+  }
+
+  .wordmark .hash { color: var(--accent); }
+  .wordmark .bangers { color: var(--accent); }
+  .wordmark sup { font-size: 0.5rem; vertical-align: super; color: var(--muted); }
+
+  .tagline {
+    display: inline-block;
+    margin-top: 10px;
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 4px;
+    transform: rotate(-1.2deg);
+  }
+
+  .page-title {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 2.5rem;
+    line-height: 0.95;
+    text-transform: uppercase;
+    margin-top: 18px;
+    letter-spacing: -1px;
+  }
+
+  .page-title em {
+    font-style: normal;
+    color: var(--accent);
+    -webkit-text-stroke: 0;
+  }
+
+  .page-sub {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 8px;
+  }
+
+  /* ===================== CARTES ===================== */
+  .card {
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 18px;
     margin-bottom: 14px;
   }
 
-  textarea {
-    width: 100%;
-    min-height: 120px;
-    background: #0D0D0D;
-    border: 1px solid #1E1E1E;
-    border-radius: 12px;
-    padding: 13px 14px;
-    color: #F0F0F0;
-    font-size: 1rem;
-    font-family: 'Inter', sans-serif;
-    line-height: 1.5;
-    outline: none;
-    resize: vertical;
-    transition: border-color 0.2s;
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
   }
 
-  textarea:focus { border-color: #00FF87; }
-  textarea::placeholder { color: #3A3A3A; }
+  .card-head h2 {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    position: relative;
+    padding-left: 12px;
+  }
+
+  .card-head h2::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 12%;
+    width: 5px; height: 76%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .counter {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.95rem;
+    color: var(--accent-2);
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ===================== SAISIE ===================== */
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 13px;
+    color: var(--ink);
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.55;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--faint); }
 
   .hint {
-    font-size: 0.72rem;
-    color: #444;
-    margin-top: 8px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 9px;
+    line-height: 1.5;
   }
 
   .btn-main {
     width: 100%;
-    background: #00FF87;
-    color: #000;
+    background: var(--accent);
+    color: var(--ink);
     border: none;
-    border-radius: 12px;
-    padding: 14px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    font-family: 'Inter', sans-serif;
+    border-radius: 10px;
+    padding: 15px;
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     cursor: pointer;
-    transition: opacity 0.2s;
     margin-top: 14px;
+    box-shadow: 0 4px 0 var(--accent-d);
+    transition: transform 0.08s, box-shadow 0.08s;
   }
 
-  .btn-main:hover { opacity: 0.85; }
+  .btn-main:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--accent-d);
+  }
 
   .btn-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 14px;
   }
 
   .btn-ghost {
-    background: transparent;
-    border: 1px solid #222;
-    border-radius: 10px;
-    padding: 10px;
-    color: #666;
-    font-size: 0.78rem;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 9px;
+    padding: 11px 6px;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
     font-family: 'Inter', sans-serif;
     cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
 
-  .btn-ghost:hover { border-color: #00FF87; color: #00FF87; }
-  .btn-ghost.danger:hover { border-color: #FF4757; color: #FF4757; }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--ink); }
+  .btn-ghost.danger:hover { border-color: var(--accent); background: rgba(225,18,28,0.1); color: var(--accent); }
 
-  /* LISTE */
-  .list-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .list-header h2 { margin-bottom: 0; }
-
-  .counter {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #00FF87;
-  }
-
-  .cat-block { margin-bottom: 18px; }
+  /* ===================== RAYONS ===================== */
+  .cat-block { margin-bottom: 16px; }
 
   .cat-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.78rem;
-    font-weight: 700;
+    gap: 9px;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-left: 5px solid var(--accent);
+    border-radius: 9px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.86rem;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    color: #00FF87;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #1E1E1E;
-    margin-bottom: 10px;
+    color: var(--ink);
   }
 
   .cat-title .num {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    background: rgba(0,255,135,0.12);
-    font-size: 0.7rem;
+    width: 21px; height: 21px;
+    border-radius: 5px;
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.75rem;
     flex-shrink: 0;
   }
 
   .cat-title .count {
     margin-left: auto;
-    color: #444;
-    font-weight: 600;
+    color: var(--accent-2);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
   }
 
+  /* ===================== ARTICLES ===================== */
   .item {
-    background: #0D0D0D;
-    border: 1px solid #1E1E1E;
-    border-radius: 12px;
-    padding: 10px 12px;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 10px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     margin-bottom: 6px;
+    transition: opacity 0.15s;
   }
 
   .item .check {
-    width: 20px;
-    height: 20px;
+    width: 22px; height: 22px;
     border-radius: 6px;
-    border: 1px solid #2A2A2A;
+    border: 2px solid #3B3131;
     background: transparent;
     cursor: pointer;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
-    color: #000;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--ink);
     padding: 0;
   }
 
-  .item.done .check { background: #00FF87; border-color: #00FF87; }
+  .item.done { opacity: 0.55; }
+  .item.done .check { background: var(--accent); border-color: var(--accent); }
 
   .item .name {
     flex: 1;
-    font-size: 0.9rem;
-    color: #ddd;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
     cursor: pointer;
     word-break: break-word;
   }
 
-  .item.done .name { color: #3A3A3A; text-decoration: line-through; }
+  .item.done .name { color: var(--muted); text-decoration: line-through; }
 
   .item select {
-    background: #141414;
-    border: 1px solid #1E1E1E;
-    border-radius: 8px;
-    color: #555;
-    font-size: 0.68rem;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
     font-family: 'Inter', sans-serif;
-    padding: 4px 6px;
-    max-width: 92px;
+    padding: 4px 5px;
+    max-width: 94px;
     outline: none;
     cursor: pointer;
   }
 
-  .item select:focus { border-color: #00FF87; }
-  .item select option { background: #1A1A1A; color: #ddd; }
+  .item select:focus { border-color: var(--accent); color: var(--ink); }
+  .item select option { background: var(--surface); color: var(--ink); text-transform: none; }
 
   .item .del {
     background: transparent;
     border: none;
-    color: #333;
-    font-size: 1rem;
+    color: var(--faint);
+    font-size: 1.15rem;
     cursor: pointer;
     padding: 0 2px;
     line-height: 1;
   }
 
-  .item .del:hover { color: #FF4757; }
+  .item .del:hover { color: var(--accent); }
 
   .empty {
     text-align: center;
-    color: #333;
-    font-size: 0.85rem;
-    padding: 24px 0;
+    color: var(--faint);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 26px 0;
   }
 
+  /* ===================== DIVERS ===================== */
   .toast {
     position: fixed;
     left: 50%;
-    bottom: 24px;
+    bottom: 22px;
     transform: translateX(-50%) translateY(20px);
-    background: #00FF87;
-    color: #000;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 10px 18px;
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 11px 20px;
     border-radius: 999px;
+    box-shadow: 0 4px 0 var(--accent-d);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s, transform 0.25s;
+    transition: opacity 0.22s, transform 0.22s;
+    z-index: 50;
   }
 
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   footer {
     text-align: center;
-    color: #2E2E2E;
-    font-size: 0.72rem;
-    margin-top: 8px;
+    color: var(--faint);
+    font-size: 0.68rem;
+    line-height: 1.7;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
   }
 </style>
 </head>
@@ -270,38 +388,46 @@
 <div class="container">
 
   <header>
-    <h1>Ma Liste <span>Métro</span></h1>
-    <p>Colle ta liste, elle se trie toute seule dans l'ordre des rayons</p>
+    <!-- Pour afficher le vrai logo : déposer un fichier "logo.png" à côté de ce fichier.
+         S'il est absent, le logo texte ci-dessous s'affiche automatiquement. -->
+    <img class="brand-logo" src="logo.png" alt="Hashtag Bangers" onerror="this.remove()">
+    <div class="wordmark"><span class="hash">#</span>HASHTAG<span class="bangers">BANGERS</span><sup>®</sup></div>
+    <div class="tagline">Il n'y a que toi qui comptes !</div>
+
+    <div class="page-title">Ma liste <em>Métro</em></div>
+    <div class="page-sub">Balance ta liste, elle se range toute seule dans l'ordre des rayons</div>
   </header>
 
   <!-- SAISIE -->
   <div class="card">
-    <h2>Nouvelle liste</h2>
+    <div class="card-head"><h2>Nouvelle liste</h2></div>
     <textarea id="input" placeholder="tomates&#10;2 kg farine&#10;coca&#10;fromage rapé&#10;gel douche&#10;ketchup, citron, kinder"></textarea>
-    <div class="hint">Un article par ligne, ou séparés par des virgules. Les quantités (2 kg, x3…) sont conservées.</div>
-    <button class="btn-main" onclick="ajouterListe()">✨ Trier et ajouter</button>
+    <div class="hint">Un article par ligne, ou séparés par des virgules. Les quantités (2 kg, x3…) sont gardées.</div>
+    <button class="btn-main" onclick="ajouterListe()">🔥 Trier ma liste</button>
   </div>
 
   <!-- LISTE TRIÉE -->
   <div class="card">
-    <div class="list-header">
+    <div class="card-head">
       <h2>Liste de courses</h2>
       <span class="counter" id="counter">0 / 0</span>
     </div>
 
     <div id="liste">
-      <div class="empty">Ta liste est vide</div>
+      <div class="empty">Liste vide</div>
     </div>
 
     <div class="btn-row">
       <button class="btn-ghost" onclick="copierListe()">📋 Copier</button>
-      <button class="btn-ghost" onclick="decocherTout()">↺ Tout décocher</button>
-      <button class="btn-ghost" onclick="supprimerCoches()">🧹 Retirer les cochés</button>
+      <button class="btn-ghost" onclick="decocherTout()">↺ Décocher</button>
+      <button class="btn-ghost" onclick="supprimerCoches()">🧹 Retirer cochés</button>
       <button class="btn-ghost danger" onclick="toutEffacer()">🗑 Tout effacer</button>
     </div>
   </div>
 
-  <footer>Les corrections de rayon sont mémorisées pour les prochaines listes.</footer>
+  <footer>
+    Les corrections de rayon sont mémorisées<br>#HASHTAGBANGERS® — Roubaix
+  </footer>
 </div>
 
 <div class="toast" id="toast"></div>
