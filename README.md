@@ -29,6 +29,21 @@ les doublons ignorés.
   et appliquée automatiquement aux listes suivantes
 - Copier la liste triée, tout décocher, retirer les articles cochés, tout effacer
 
+### Fin des courses et historique
+Le bouton **« Fin des courses »** ouvre un bilan : chaque article y affiche la quantité
+demandée (déduite du texte : « 8 yaourts », « 2 kg farine », « coca x3 » — 1 par défaut)
+et la quantité réellement prise, ajustable avec `+` / `−` ou au clavier.
+
+À l'enregistrement :
+- ce qui a été pris en entier sort de la liste ;
+- ce qui manque **reste dans la liste** pour la prochaine fois ;
+- la course part dans l'**historique** avec le détail des manquants, sous la forme
+  `5 au lieu de 8`, `1 kg au lieu de 2 kg` ou `pas pris (0 / 1)`.
+
+L'historique garde les 30 dernières courses (date, heure, articles pris sur le total).
+Chaque course se déplie et propose de **remettre les manquants dans la liste** en un clic,
+ou de la supprimer.
+
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
 
 ### Personnalisation du design

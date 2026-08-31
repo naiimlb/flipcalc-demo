@@ -370,6 +370,258 @@
     padding: 26px 0;
   }
 
+  /* ===================== FIN DES COURSES / HISTORIQUE ===================== */
+  .btn-fin { margin-top: 16px; }
+
+  .lien-vider {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    padding: 2px 0;
+  }
+
+  .lien-vider:hover { color: var(--accent); }
+
+  .hist {
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .hist-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 12px;
+    cursor: pointer;
+  }
+
+  .hist-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .hist-date span { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+
+  .hist-badge {
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.63rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .hist-badge.ok { background: transparent; border: 2px solid var(--line); color: var(--muted); }
+
+  .hist-detail {
+    border-top: 2px solid var(--line);
+    padding: 10px 12px 12px;
+  }
+
+  .hist-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 8px;
+  }
+
+  .hist-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 0.82rem;
+  }
+
+  .hist-line:last-of-type { border-bottom: none; }
+  .hl-name { color: var(--ink); font-weight: 600; }
+  .hl-qty { color: var(--accent-2); font-weight: 700; white-space: nowrap; font-size: 0.76rem; }
+
+  .hist-btn { width: 100%; margin-top: 8px; }
+
+  /* ===================== MODALE BILAN ===================== */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+    padding: 12px;
+  }
+
+  .overlay[hidden] { display: none; }
+
+  .modal {
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-top: 5px solid var(--accent);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 16px 14px;
+  }
+
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .modal-head h3 {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  .modal-close:hover { color: var(--accent); }
+
+  .modal-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .bilan-resume {
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    text-align: center;
+    padding: 7px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .bilan-list {
+    overflow-y: auto;
+    flex: 1;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+
+  .bl-cat {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent-2);
+    margin: 12px 0 6px;
+  }
+
+  .bl-cat:first-child { margin-top: 2px; }
+
+  .bl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-left: 4px solid #2E7D32;
+    border-radius: 9px;
+    padding: 7px 9px;
+    margin-bottom: 5px;
+  }
+
+  .bl-row.manque { border-left-color: var(--accent-2); }
+  .bl-row.rien { border-left-color: var(--accent); }
+
+  .bl-name {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--ink);
+    word-break: break-word;
+    flex: 1;
+  }
+
+  .bl-qty {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .bl-qty button {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .bl-qty button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .bl-qty input {
+    width: 44px;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px 2px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .bl-qty input::-webkit-outer-spin-button,
+  .bl-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .bl-qty input:focus { border-color: var(--accent); }
+
+  .bl-max {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 34px;
+  }
+
+  .modal-actions { padding-top: 12px; }
+  .modal-actions .btn-ghost { width: 100%; margin-top: 8px; }
+
   /* ===================== DIVERS ===================== */
   .toast {
     position: fixed;
@@ -440,6 +692,8 @@
       <div class="empty">Liste vide</div>
     </div>
 
+    <button class="btn-main btn-fin" onclick="ouvrirBilan()">🏁 Fin des courses</button>
+
     <div class="btn-row">
       <button class="btn-ghost" onclick="copierListe()">📋 Copier</button>
       <button class="btn-ghost" onclick="decocherTout()">↺ Décocher</button>
@@ -448,9 +702,40 @@
     </div>
   </div>
 
+  <!-- HISTORIQUE -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Historique</h2>
+      <button class="lien-vider" onclick="viderHistorique()">Vider</button>
+    </div>
+    <div id="historique">
+      <div class="empty">Aucune course enregistrée</div>
+    </div>
+  </div>
+
   <footer>
     Les corrections de rayon sont mémorisées<br>#HASHTAGBANGERS® — Roubaix
   </footer>
+</div>
+
+<!-- BILAN DE FIN DE COURSES -->
+<div class="overlay" id="overlay" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Fin des courses</h3>
+      <button class="modal-close" onclick="fermerBilan()">×</button>
+    </div>
+    <div class="modal-sub">
+      Ajuste ce que tu as vraiment réussi à prendre. Le reste part dans l'historique
+      comme manquant (ex : 5 au lieu de 8).
+    </div>
+    <div class="bilan-resume" id="bilanResume">—</div>
+    <div class="bilan-list" id="bilanList"></div>
+    <div class="modal-actions">
+      <button class="btn-main" onclick="enregistrerCourses()">💾 Enregistrer les courses</button>
+      <button class="btn-ghost" onclick="fermerBilan()">Annuler</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -532,9 +817,13 @@
 
   const CLE_ITEMS = 'metro_liste';
   const CLE_CORRECTIONS = 'metro_corrections';
+  const CLE_HISTORIQUE = 'metro_historique';
+  const MAX_HISTORIQUE = 30;
 
   let items = charger(CLE_ITEMS, []);
   let corrections = charger(CLE_CORRECTIONS, {});
+  let historique = charger(CLE_HISTORIQUE, []);
+  let bilan = {};   // { idArticle: quantité réellement prise }
 
   function charger(cle, defaut) {
     try { return JSON.parse(localStorage.getItem(cle)) || defaut; }
@@ -544,6 +833,7 @@
   function sauver() {
     localStorage.setItem(CLE_ITEMS, JSON.stringify(items));
     localStorage.setItem(CLE_CORRECTIONS, JSON.stringify(corrections));
+    localStorage.setItem(CLE_HISTORIQUE, JSON.stringify(historique));
   }
 
   /* ===== NORMALISATION ===== */
@@ -562,6 +852,29 @@
       .replace(/^(\d+([.,]\d+)?\s*)?(kg|kilos?|g|grammes?|l|litres?|cl|ml|x|pcs?|pieces?|paquets?|boites?|bouteilles?|barquettes?|packs?|sachets?|pots?|tranches?|botte?s?)?\s*/, '')
       .replace(/\s*(x\s*)?\d+([.,]\d+)?\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)?$/, '')
       .trim();
+  }
+
+  // Combien d'unités l'article demande-t-il ? (« 8 yaourts », « 2 kg farine », « coca x3 »)
+  function extraireQuantite(label) {
+    const n = normaliser(label);
+    const m = n.match(/(?:^|\s)(?:x\s*)?(\d+(?:[.,]\d+)?)\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)?(?:\s|$)/);
+    if (!m) return { qte: 1, unite: '' };
+    const qte = parseFloat(m[1].replace(',', '.'));
+    return { qte: qte > 0 ? qte : 1, unite: m[2] || '' };
+  }
+
+  function qteDe(it) {
+    if (typeof it.qte === 'number' && it.qte > 0) return it.qte;
+    return extraireQuantite(it.label).qte;
+  }
+
+  function uniteDe(it) {
+    return (typeof it.unite === 'string') ? it.unite : extraireQuantite(it.label).unite;
+  }
+
+  // Affichage d'un nombre à la française (1,5 et pas 1.5)
+  function nb(n) {
+    return (Math.round(n * 100) / 100).toString().replace('.', ',');
   }
 
   function contientMot(texte, motCle) {
@@ -610,11 +923,14 @@
     for (const ligne of lignes) {
       const cle = normaliser(ligne);
       if (items.some(it => normaliser(it.label) === cle)) continue;
+      const q = extraireQuantite(ligne);
       items.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
         label: ligne,
         cat: classer(ligne),
-        fait: false
+        fait: false,
+        qte: q.qte,
+        unite: q.unite
       });
       ajoutes++;
     }
@@ -688,6 +1004,232 @@
       .catch(() => toast('Copie impossible'));
   }
 
+  /* ===== FIN DES COURSES (bilan) ===== */
+  // Les articles rangés dans l'ordre des rayons, comme à l'écran
+  function itemsTries() {
+    const ordre = {};
+    CATEGORIES.forEach((c, i) => ordre[c.id] = i);
+    return items.slice().sort((a, b) => (ordre[a.cat] ?? 99) - (ordre[b.cat] ?? 99));
+  }
+
+  function ouvrirBilan() {
+    if (!items.length) { toast('Liste vide'); return; }
+    // Par défaut : les articles cochés sont pris en entier, les autres pas pris
+    bilan = {};
+    items.forEach(it => bilan[it.id] = it.fait ? qteDe(it) : 0);
+    rendreBilan();
+    document.getElementById('overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fermerBilan() {
+    document.getElementById('overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function majPris(id, delta) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const max = qteDe(it);
+    let v = (bilan[id] ?? 0) + delta;
+    if (v < 0) v = 0;
+    if (v > max) v = max;
+    bilan[id] = v;
+    // On met à jour la seule ligne concernée : un rendu complet ferait
+    // remonter la liste en haut à chaque appui sur + ou −
+    const ligne = document.getElementById('bl-' + id);
+    const champ = ligne && ligne.querySelector('input');
+    if (champ) champ.value = String(v);
+    majEtatLigne(id);
+  }
+
+  function saisirPris(id, valeur) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const max = qteDe(it);
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > max) v = max;
+    bilan[id] = v;
+    majEtatLigne(id);
+  }
+
+  function majEtatLigne(id) {
+    const ligne = document.getElementById('bl-' + id);
+    if (!ligne) return;
+    const it = items.find(i => i.id === id);
+    const pris = bilan[id] ?? 0;
+    const max = qteDe(it);
+    ligne.classList.toggle('manque', pris < max);
+    ligne.classList.toggle('rien', pris === 0);
+    majResumeBilan();
+  }
+
+  function majResumeBilan() {
+    const manquants = items.filter(it => (bilan[it.id] ?? 0) < qteDe(it)).length;
+    const el = document.getElementById('bilanResume');
+    if (el) el.textContent = manquants === 0
+      ? 'Tout pris 💪'
+      : manquants + (manquants > 1 ? ' articles manquants' : ' article manquant');
+  }
+
+  function rendreBilan() {
+    const zone = document.getElementById('bilanList');
+    let html = '';
+    let catCourante = null;
+
+    for (const it of itemsTries()) {
+      if (it.cat !== catCourante) {
+        catCourante = it.cat;
+        const cat = CATEGORIES.find(c => c.id === it.cat);
+        html += '<div class="bl-cat">' + echapper(cat ? cat.nom : it.cat) + '</div>';
+      }
+      const max = qteDe(it);
+      const pris = bilan[it.id] ?? 0;
+      const unite = uniteDe(it);
+      html += '<div class="bl-row' + (pris < max ? ' manque' : '') + (pris === 0 ? ' rien' : '') + '" id="bl-' + it.id + '">' +
+                '<div class="bl-name">' + echapper(it.label) + '</div>' +
+                '<div class="bl-qty">' +
+                  '<button type="button" onclick="majPris(\'' + it.id + '\', -1)">−</button>' +
+                  '<input type="number" min="0" step="1" value="' + pris + '" ' +
+                         'oninput="saisirPris(\'' + it.id + '\', this.value)">' +
+                  '<span class="bl-max">/ ' + nb(max) + (unite ? ' ' + unite : '') + '</span>' +
+                  '<button type="button" onclick="majPris(\'' + it.id + '\', 1)">+</button>' +
+                '</div>' +
+              '</div>';
+    }
+
+    zone.innerHTML = html;
+    majResumeBilan();
+  }
+
+  function enregistrerCourses() {
+    const maintenant = new Date();
+    const manquants = [];
+    const gardes = [];
+
+    for (const it of items) {
+      const max = qteDe(it);
+      const pris = bilan[it.id] ?? 0;
+      if (pris < max) {
+        manquants.push({
+          label: it.label,
+          cat: it.cat,
+          demande: max,
+          pris: pris,
+          unite: uniteDe(it)
+        });
+        gardes.push(Object.assign({}, it, { fait: false }));   // reste à prendre
+      }
+    }
+
+    historique.unshift({
+      id: 'h' + Date.now(),
+      date: maintenant.toLocaleDateString('fr-FR'),
+      heure: maintenant.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      total: items.length,
+      complets: items.length - manquants.length,
+      manquants: manquants
+    });
+    if (historique.length > MAX_HISTORIQUE) historique = historique.slice(0, MAX_HISTORIQUE);
+
+    items = gardes;   // ce qui a été pris en entier sort de la liste
+    bilan = {};
+    sauver();
+    fermerBilan();
+    rendre();
+    rendreHistorique();
+    toast(manquants.length === 0
+      ? 'Courses enregistrées, tout pris'
+      : 'Enregistré — ' + manquants.length + ' manquant(s) gardé(s)');
+  }
+
+  /* ===== HISTORIQUE ===== */
+  function basculerDetail(id) {
+    const el = document.getElementById('det-' + id);
+    if (el) el.hidden = !el.hidden;
+  }
+
+  function remettreManquants(id) {
+    const entree = historique.find(h => h.id === id);
+    if (!entree) return;
+    let ajoutes = 0;
+    for (const m of entree.manquants) {
+      const cle = normaliser(m.label);
+      if (items.some(it => normaliser(it.label) === cle)) continue;
+      const q = extraireQuantite(m.label);
+      items.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        label: m.label,
+        cat: m.cat || classer(m.label),
+        fait: false,
+        qte: q.qte,
+        unite: q.unite
+      });
+      ajoutes++;
+    }
+    sauver();
+    rendre();
+    toast(ajoutes ? ajoutes + ' article(s) remis dans la liste' : 'Déjà dans la liste');
+  }
+
+  function supprimerCourse(id) {
+    historique = historique.filter(h => h.id !== id);
+    sauver();
+    rendreHistorique();
+  }
+
+  function viderHistorique() {
+    if (!historique.length) return;
+    if (!confirm('Effacer tout l\'historique des courses ?')) return;
+    historique = [];
+    sauver();
+    rendreHistorique();
+  }
+
+  function rendreHistorique() {
+    const zone = document.getElementById('historique');
+
+    if (!historique.length) {
+      zone.innerHTML = '<div class="empty">Aucune course enregistrée</div>';
+      return;
+    }
+
+    let html = '';
+    for (const h of historique) {
+      const nbManq = h.manquants.length;
+      html += '<div class="hist">' +
+                '<div class="hist-head" onclick="basculerDetail(\'' + h.id + '\')">' +
+                  '<div class="hist-date">' + echapper(h.date) + ' <span>· ' + echapper(h.heure) + '</span></div>' +
+                  '<div class="hist-badge' + (nbManq ? '' : ' ok') + '">' +
+                    (nbManq ? nbManq + ' manquant' + (nbManq > 1 ? 's' : '') : 'tout pris') +
+                  '</div>' +
+                '</div>' +
+                '<div class="hist-detail" id="det-' + h.id + '" hidden>' +
+                  '<div class="hist-sub">' + h.complets + ' / ' + h.total + ' articles pris</div>';
+
+      for (const m of h.manquants) {
+        const u = m.unite ? ' ' + m.unite : '';
+        html += '<div class="hist-line">' +
+                  '<span class="hl-name">' + echapper(m.label) + '</span>' +
+                  '<span class="hl-qty">' +
+                    (m.pris > 0
+                      ? nb(m.pris) + u + ' au lieu de ' + nb(m.demande) + u
+                      : 'pas pris (0 / ' + nb(m.demande) + u + ')') +
+                  '</span>' +
+                '</div>';
+      }
+
+      if (nbManq) {
+        html += '<button class="btn-ghost hist-btn" onclick="remettreManquants(\'' + h.id + '\')">↩ Remettre les manquants dans la liste</button>';
+      }
+      html += '<button class="btn-ghost hist-btn danger" onclick="supprimerCourse(\'' + h.id + '\')">🗑 Supprimer cette course</button>';
+      html += '</div></div>';
+    }
+
+    zone.innerHTML = html;
+  }
+
   /* ===== AFFICHAGE ===== */
   function echapper(s) {
     return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -747,6 +1289,7 @@
   });
 
   rendre();
+  rendreHistorique();
 </script>
 </body>
 </html>
