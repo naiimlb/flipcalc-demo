@@ -10,12 +10,15 @@ Calculateur de bénéfice pour l'achat-revente (Vinted, eBay, LeBonCoin, Faceboo
 Liste de courses qui **trie automatiquement les articles dans l'ordre des rayons** :
 
 1. Fruits & légumes
-2. Hygiène & entretien
-3. Boissons
-4. Farine, lait, citron, vinaigre, Kinder… (épicerie)
-5. Sauces
+2. Épicerie (farine, lait, citron, vinaigre, Kinder…)
+3. Sauces
+4. Boissons
+5. Hygiène & entretien
 6. Produits frais (fromage)
 7. Autres (articles non reconnus, à classer)
+
+L'ordre est défini par le tableau `CATEGORIES` en haut du `<script>` : le déplacer suffit
+à changer l'ordre d'affichage.
 
 Utilisation : coller une liste (un article par ligne ou séparés par des virgules),
 puis « Trier et ajouter ». Les quantités (`2 kg farine`, `x3 bananes`) sont conservées,
