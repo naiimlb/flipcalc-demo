@@ -338,6 +338,60 @@
 
   .item.done .name { color: var(--muted); text-decoration: line-through; }
 
+  .item-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  /* Quantité détectée, modifiable d'un appui */
+  .qte-chip {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    padding: 3px 9px;
+    cursor: pointer;
+  }
+
+  .qte-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .qte-input {
+    width: 52px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 2px 4px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .qte-input::-webkit-outer-spin-button,
+  .qte-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* Article que l'appli n'a pas su ranger : il attend un rayon */
+  .item.a-ranger { border-color: var(--accent); border-style: dashed; }
+  .item.a-ranger select { border-color: var(--accent); color: var(--ink); }
+
+  .tag-ranger {
+    font-size: 0.57rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--accent);
+  }
+
   /* Étiquette « ce qu'il manque », posée après une fin de courses */
   .tag-manque {
     background: var(--accent);
@@ -708,8 +762,10 @@
     <div class="card-head"><h2>Nouvelle liste</h2></div>
     <textarea id="input" placeholder="tomates&#10;2 kg farine&#10;coca&#10;fromage rapé&#10;gel douche&#10;ketchup, citron, kinder"></textarea>
     <div class="hint">
-      Un article par ligne, ou séparés par des virgules. Les quantités (2 kg, x3…) sont gardées.
-      <button class="lien-vider" onclick="oublierCorrections()">Réinitialiser les rayons mémorisés</button>
+      Un article par ligne, ou séparés par des virgules. Les quantités sont détectées
+      (« 8 yaourts », « 2 kg farine », « coca x6 », « lot de 4 ») — appuie sur la pastille
+      pour les corriger.
+      <button class="lien-vider" onclick="oublierCorrections(this)">Réinitialiser les rayons mémorisés</button>
     </div>
     <button class="btn-main" onclick="ajouterListe()">🔥 Trier ma liste</button>
   </div>
@@ -731,7 +787,7 @@
       <button class="btn-ghost" onclick="copierListe()">📋 Copier</button>
       <button class="btn-ghost" onclick="decocherTout()">↺ Décocher</button>
       <button class="btn-ghost" onclick="supprimerCoches()">🧹 Retirer cochés</button>
-      <button class="btn-ghost danger" onclick="toutEffacer()">🗑 Tout effacer</button>
+      <button class="btn-ghost danger" onclick="toutEffacer(this)">🗑 Tout effacer</button>
     </div>
   </div>
 
@@ -739,7 +795,7 @@
   <div class="card">
     <div class="card-head">
       <h2>Historique</h2>
-      <button class="lien-vider" onclick="viderHistorique()">Vider</button>
+      <button class="lien-vider" onclick="viderHistorique(this)">Vider</button>
     </div>
     <div id="historique">
       <div class="empty">Aucune course enregistrée</div>
@@ -959,13 +1015,38 @@
       .trim();
   }
 
-  // Combien d'unités l'article demande-t-il ? (« 8 yaourts », « 2 kg farine », « coca x3 »)
+  // Combien d'unités l'article demande-t-il ?
+  // « 8 yaourts », « yaourts x8 », « 3x coca », « lot de 6 », « 2 kg farine », « 1,5 l lait »
   function extraireQuantite(label) {
-    const n = normaliser(label);
-    const m = n.match(/(?:^|\s)(?:x\s*)?(\d+(?:[.,]\d+)?)\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)?(?:\s|$)/);
-    if (!m) return { qte: 1, unite: '' };
-    const qte = parseFloat(m[1].replace(',', '.'));
-    return { qte: qte > 0 ? qte : 1, unite: m[2] || '' };
+    // normalisation qui préserve les décimales : « 1,5 l » ne doit pas devenir « 1 5 l »
+    const n = label
+      .toLowerCase()
+      .replace(/\u0153/g, 'oe').replace(/\u00e6/g, 'ae')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/(\d)[.,](\d)/g, '$1.$2')
+      .replace(/[^a-z0-9.]+/g, ' ')
+      .trim();
+
+    // lot / pack / paquet de 6
+    let m = n.match(/(?:lot|pack|paquet|boite|barquette|sachet|plaque)\s+de\s+(\d+)/);
+    if (m) return { qte: parseInt(m[1], 10), unite: '' };
+
+    // x8 ou 8x, n'importe où
+    m = n.match(/(?:^|\s)x\s*(\d+)(?:\s|$)/) || n.match(/(?:^|\s)(\d+)\s*x(?:\s|$)/);
+    if (m) return { qte: parseInt(m[1], 10), unite: '' };
+
+    // nombre suivi d'une unité de poids ou de volume : 2 kg, 1,5 l, 500 g
+    m = n.match(/(?:^|\s)(\d+(?:\.\d+)?)\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)(?:\s|$)/);
+    if (m) return { qte: parseFloat(m[1]), unite: m[2] };
+
+    // simple nombre en tête ou en fin : « 8 yaourts », « yaourts 8 »
+    m = n.match(/^(\d+(?:\.\d+)?)(?:\s|$)/) || n.match(/(?:\s)(\d+(?:\.\d+)?)$/);
+    if (m) {
+      const q = parseFloat(m[1]);
+      if (q > 0 && q < 1000) return { qte: q, unite: '' };
+    }
+
+    return { qte: 1, unite: '' };
   }
 
   function qteDe(it) {
@@ -1012,11 +1093,29 @@
     return categorie;
   }
 
+  // Un rayon corrigé à la main sert aussi pour les libellés qui contiennent le produit :
+  // ranger « pommes paille » en épicerie range aussi « chips pommes paille »
+  function chercherCorrection(produit, complet) {
+    if (corrections[produit]) return corrections[produit];
+    if (corrections[complet]) return corrections[complet];
+
+    let trouve = null, longueur = 0;
+    for (const cle in corrections) {
+      if (cle.length < 4 || cle.length <= longueur) continue;
+      if (contientMot(produit, cle) || contientMot(complet, cle)) {
+        trouve = corrections[cle];
+        longueur = cle.length;
+      }
+    }
+    return trouve;
+  }
+
   function classer(label) {
     const complet = normaliser(label);
     const produit = sansQuantite(complet) || complet;
 
-    if (corrections[produit]) return corrections[produit];
+    const memorise = chercherCorrection(produit, complet);
+    if (memorise) return memorise;
 
     const base = couperParfum(produit);
     const baseComplete = couperParfum(complet);
@@ -1076,9 +1175,44 @@
     const it = items.find(i => i.id === id);
     if (!it) return;
     it.cat = cat;
-    // On mémorise la correction pour les prochaines listes
+
+    // On mémorise pour toutes les prochaines listes
     const produit = sansQuantite(normaliser(it.label)) || normaliser(it.label);
     if (produit) corrections[produit] = cat;
+
+    // Les articles déjà dans la liste qui parlent du même produit suivent
+    items.forEach(autre => {
+      if (autre.id === it.id) return;
+      const p = sansQuantite(normaliser(autre.label)) || normaliser(autre.label);
+      if (p === produit || contientMot(p, produit)) autre.cat = cat;
+    });
+
+    sauver();
+    rendre();
+    const nomCat = CATEGORIES.find(c => c.id === cat);
+    toast('Mémorisé : ' + it.label + ' → ' + (nomCat ? nomCat.court : cat));
+  }
+
+  /* ===== QUANTITÉ MODIFIABLE DANS LA LISTE ===== */
+  function editerQte(id, ev) {
+    if (ev) ev.stopPropagation();
+    const it = items.find(i => i.id === id);
+    const pastille = document.getElementById('q-' + id);
+    if (!it || !pastille) return;
+    pastille.outerHTML =
+      '<input class="qte-input" id="qi-' + id + '" type="number" min="1" step="1" value="' + qteDe(it) + '" ' +
+      'onclick="event.stopPropagation()" onblur="validerQte(\'' + id + '\', this.value)" ' +
+      'onkeydown="if (event.key === \'Enter\') this.blur()">';
+    const champ = document.getElementById('qi-' + id);
+    if (champ) { champ.focus(); champ.select(); }
+  }
+
+  function validerQte(id, valeur) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v <= 0) v = 1;
+    it.qte = v;
     sauver();
     rendre();
   }
@@ -1090,15 +1224,36 @@
   }
 
   // Efface les rayons corrigés à la main et reclasse la liste avec le dictionnaire
-  function oublierCorrections() {
+  function oublierCorrections(btn) {
     const n = Object.keys(corrections).length;
     if (!n) { toast('Aucun rayon mémorisé'); return; }
-    if (!confirm('Oublier les ' + n + ' rayon(s) corrigé(s) à la main et reclasser la liste ?')) return;
-    corrections = {};
-    items.forEach(it => it.cat = classer(it.label));
-    sauver();
-    rendre();
-    toast('Rayons reclassés');
+    confirmerBouton(btn, 'Confirmer l\'oubli des ' + n + ' rayon(s) ?', () => {
+      corrections = {};
+      items.forEach(it => it.cat = classer(it.label));
+      sauver();
+      rendre();
+      toast('Rayons reclassés');
+    });
+  }
+
+  // Double appui pour confirmer : les fenêtres système sont parfois bloquées
+  const attentes = {};
+  function confirmerBouton(btn, texte, action) {
+    if (!btn) { action(); return; }
+    const cle = btn.dataset.k || (btn.dataset.k = 'b' + Math.random().toString(36).slice(2, 7));
+    if (attentes[cle]) {
+      clearTimeout(attentes[cle].minuteur);
+      btn.textContent = attentes[cle].libelle;
+      delete attentes[cle];
+      action();
+      return;
+    }
+    const libelle = btn.textContent;
+    btn.textContent = texte;
+    attentes[cle] = {
+      libelle: libelle,
+      minuteur: setTimeout(() => { btn.textContent = libelle; delete attentes[cle]; }, 4000)
+    };
   }
 
   function decocherTout() {
@@ -1115,12 +1270,14 @@
     toast((avant - items.length) + ' article(s) retiré(s)');
   }
 
-  function toutEffacer() {
+  function toutEffacer(btn) {
     if (!items.length) return;
-    if (!confirm('Effacer toute la liste ?')) return;
-    items = [];
-    sauver();
-    rendre();
+    confirmerBouton(btn, '⚠ Confirmer ?', () => {
+      items = [];
+      sauver();
+      rendre();
+      toast('Liste effacée');
+    });
   }
 
   function copierListe() {
@@ -1323,12 +1480,14 @@
     rendreHistorique();
   }
 
-  function viderHistorique() {
-    if (!historique.length) return;
-    if (!confirm('Effacer tout l\'historique des courses ?')) return;
-    historique = [];
-    sauver();
-    rendreHistorique();
+  function viderHistorique(btn) {
+    if (!historique.length) { toast('Historique déjà vide'); return; }
+    confirmerBouton(btn, 'Confirmer ?', () => {
+      historique = [];
+      sauver();
+      rendreHistorique();
+      toast('Historique effacé');
+    });
   }
 
   function rendreHistorique() {
@@ -1421,11 +1580,20 @@
           '<option value="' + c.id + '"' + (c.id === it.cat ? ' selected' : '') + '>' + echapper(c.court) + '</option>'
         ).join('');
 
-        html += '<div class="item' + (it.fait ? ' done' : '') + '">' +
+        const q = qteDe(it);
+        const u = uniteDe(it);
+        const aRanger = it.cat === 'autres';
+
+        html += '<div class="item' + (it.fait ? ' done' : '') + (aRanger ? ' a-ranger' : '') + '">' +
                   '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
-                  '<div class="item-txt" onclick="basculer(\'' + it.id + '\')">' +
-                    '<span class="name">' + echapper(it.label) + '</span>' +
-                    etiquetteManque(it) +
+                  '<div class="item-txt">' +
+                    '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
+                    '<div class="item-meta">' +
+                      '<button class="qte-chip" id="q-' + it.id + '" onclick="editerQte(\'' + it.id + '\', event)" ' +
+                              'title="Modifier la quantité">' + (u ? nb(q) + ' ' + u : '× ' + nb(q)) + '</button>' +
+                      etiquetteManque(it) +
+                      (aRanger ? '<span class="tag-ranger">Choisis son rayon →</span>' : '') +
+                    '</div>' +
                   '</div>' +
                   '<select onchange="changerCat(\'' + it.id + '\', this.value)">' + options + '</select>' +
                   '<button class="del" onclick="supprimer(\'' + it.id + '\')">×</button>' +

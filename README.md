@@ -31,13 +31,22 @@ Ainsi `oasis pomme poire` part en boissons, `chips pomme paille` en épicerie et
 pour le classement (`chips saveur poulet` reste en épicerie).
 
 Utilisation : coller une liste (un article par ligne ou séparés par des virgules),
-puis « Trier et ajouter ». Les quantités (`2 kg farine`, `x3 bananes`) sont conservées,
-les doublons ignorés.
+puis « Trier ma liste ». Les doublons sont ignorés.
+
+**Quantités** — détectées à l'ajout et affichées en pastille sur chaque article :
+`8 yaourts` → ×8, `2 kg farine` → 2 kg, `coca x6` → ×6, `lot de 4 compotes` → ×4,
+`1,5 l lait` → 1,5 l ; 1 par défaut. Un appui sur la pastille permet de la corriger.
+C'est cette quantité que le bilan de fin de courses propose d'ajuster.
+
+**Rayon mémorisé** — un article non reconnu part dans « Autres », signalé en pointillé
+avec « Choisis son rayon → ». Le rayon choisi (là ou sur un article mal classé) est
+mémorisé : il s'applique aux prochaines listes, aux libellés qui contiennent ce produit
+(ranger `pommes paille` range aussi `chips pommes paille`) et aux articles déjà présents
+dans la liste.
 
 - Cocher un article pendant les courses (il descend en bas de son rayon)
 - Corriger le rayon d'un article via le menu déroulant : **la correction est mémorisée**
-  et appliquée automatiquement aux listes suivantes (le lien « Réinitialiser les rayons
-  mémorisés » les efface et reclasse la liste)
+  (le lien « Réinitialiser les rayons mémorisés » les efface et reclasse la liste)
 - Copier la liste triée, tout décocher, retirer les articles cochés, tout effacer
 
 ### Fin des courses et historique
