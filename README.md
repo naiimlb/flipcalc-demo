@@ -86,6 +86,23 @@ propose aussi de **remettre ce qui manque encore dans la liste**, ou d'être sup
 
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
 
+### Envoyer la liste à quelqu'un d'autre
+Le bouton **« Envoyer ce qu'il reste à prendre »** compose un message à partir de tout ce qui
+n'est pas encore pris, rangé par rayon avec les quantités restantes :
+
+```
+COURSES MÉTRO — 31/08/2026
+5 articles à prendre
+
+ÉPICERIE
+- 2 kg farine  (2 kg)
+...
+```
+
+Le texte s'affiche avant l'envoi (et reste modifiable), avec **Partager** (feuille de partage
+du téléphone : WhatsApp, SMS, mail…), **Copier**, **WhatsApp** et **SMS**. Chaque course de
+l'historique a le même bouton pour n'envoyer que ce qui lui manque encore.
+
 ### Sauvegarde
 Les données (liste, rayons mémorisés, historique) vivent dans le `localStorage` du navigateur :
 elles ne suivent pas quand la page est republiée à une nouvelle version. La carte

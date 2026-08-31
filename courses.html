@@ -809,6 +809,18 @@
     min-width: 34px;
   }
 
+  .btn-envoi { margin-top: 8px; background: var(--surface-2); color: var(--ink); box-shadow: 0 4px 0 var(--line); }
+  .btn-envoi:active { box-shadow: 0 0 0 var(--line); }
+
+  .texte-envoi {
+    min-height: 220px;
+    font-family: 'Inter', monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
   .modal-actions { padding-top: 12px; }
   .modal-actions .btn-ghost { width: 100%; margin-top: 8px; }
 
@@ -888,6 +900,7 @@
     </div>
 
     <button class="btn-main btn-fin" onclick="ouvrirBilan()">🏁 Fin des courses</button>
+    <button class="btn-main btn-envoi" onclick="partagerListe()">📤 Envoyer ce qu'il reste à prendre</button>
 
     <div class="btn-row">
       <button class="btn-ghost" onclick="copierListe()">📋 Copier</button>
@@ -956,6 +969,29 @@
     <div class="modal-actions">
       <button class="btn-main" onclick="enregistrerCourses()">💾 Enregistrer les courses</button>
       <button class="btn-ghost" onclick="fermerBilan()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ENVOI DE LA LISTE -->
+<div class="overlay" id="overlayPartage" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Envoyer la liste</h3>
+      <button class="modal-close" onclick="fermerPartage()">×</button>
+    </div>
+    <div class="modal-sub">
+      Liste prête à envoyer à un collègue qui y va à ta place. Tu peux la retoucher avant.
+    </div>
+    <textarea id="texteEnvoi" class="texte-envoi"></textarea>
+    <div class="modal-actions">
+      <button class="btn-main" id="btnPartageNatif" onclick="envoyerNatif()" hidden>📤 Partager</button>
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="copierEnvoi()">📋 Copier</button>
+        <button class="btn-ghost" onclick="ouvrirAvec('https://wa.me/?text=')">WhatsApp</button>
+        <button class="btn-ghost" onclick="ouvrirAvec('sms:?&body=')">SMS</button>
+        <button class="btn-ghost" onclick="fermerPartage()">Fermer</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1878,12 +1914,122 @@
 
       if (reste) {
         html += '<button class="btn-ghost hist-btn" onclick="remettreManquants(\'' + h.id + '\')">↩ Remettre ce qui manque dans la liste</button>';
+        html += '<button class="btn-ghost hist-btn" onclick="partagerCourse(\'' + h.id + '\', event)">📤 Envoyer ce qui manque</button>';
       }
       html += '<button class="btn-ghost hist-btn danger" onclick="supprimerCourse(\'' + h.id + '\')">🗑 Supprimer cette course</button>';
       html += '</div></div>';
     }
 
     zone.innerHTML = html;
+  }
+
+  /* ===== LISTE À ENVOYER À UN COLLÈGUE ===== */
+  // Dans un message, « Épicerie » suffit : on enlève les exemples entre parenthèses
+  function nomRayonCourt(cat) {
+    return cat.nom.replace(/\s*\([^)]*\)\s*$/, '').toUpperCase();
+  }
+
+  function ligneAEnvoyer(label, reste, unite) {
+    const q = unite ? nb(reste) + ' ' + uniteAffichee(reste, unite) : nb(reste);
+    return '- ' + label + '  (' + q + ')';
+  }
+
+  // Ce qu'il reste à prendre dans la liste en cours, rangé par rayon
+  function texteManquantsListe() {
+    const restants = items.filter(it => qteDe(it) - prisDe(it) > 0);
+    if (!restants.length) return null;
+
+    let txt = 'COURSES MÉTRO — ' + new Date().toLocaleDateString('fr-FR') + '\n';
+    txt += restants.length + (restants.length > 1 ? ' articles à prendre' : ' article à prendre') + '\n';
+
+    for (const cat of CATEGORIES) {
+      const lot = restants.filter(it => it.cat === cat.id);
+      if (!lot.length) continue;
+      txt += '\n' + nomRayonCourt(cat) + '\n';
+      for (const it of lot) {
+        txt += ligneAEnvoyer(it.label, qteDe(it) - prisDe(it), uniteDe(it)) + '\n';
+      }
+    }
+    return txt.trim();
+  }
+
+  // Ce qui manque encore sur une course passée
+  function texteManquantsCourse(hId) {
+    const h = historique.find(x => x.id === hId);
+    if (!h) return null;
+    const restants = h.manquants.filter(m => m.pris < m.demande);
+    if (!restants.length) return null;
+
+    let txt = 'COURSES MÉTRO — reste de la course du ' + h.date + '\n';
+    txt += restants.length + (restants.length > 1 ? ' articles à prendre' : ' article à prendre') + '\n';
+
+    for (const cat of CATEGORIES) {
+      const lot = restants.filter(m => (m.cat || 'autres') === cat.id);
+      if (!lot.length) continue;
+      txt += '\n' + nomRayonCourt(cat) + '\n';
+      for (const m of lot) {
+        txt += ligneAEnvoyer(m.label, m.demande - m.pris, m.unite) + '\n';
+      }
+    }
+    return txt.trim();
+  }
+
+  function partagerListe() {
+    const txt = texteManquantsListe();
+    if (!txt) { toast('Rien à envoyer, tout est pris'); return; }
+    ouvrirPartage(txt);
+  }
+
+  function partagerCourse(hId, ev) {
+    if (ev) ev.stopPropagation();
+    const txt = texteManquantsCourse(hId);
+    if (!txt) { toast('Plus rien à prendre sur cette course'); return; }
+    ouvrirPartage(txt);
+  }
+
+  function ouvrirPartage(txt) {
+    document.getElementById('texteEnvoi').value = txt;
+    document.getElementById('overlayPartage').hidden = false;
+    document.body.style.overflow = 'hidden';
+    // Le bouton « Partager » n'a de sens que si le téléphone sait le faire
+    document.getElementById('btnPartageNatif').hidden = !navigator.share;
+  }
+
+  function fermerPartage() {
+    document.getElementById('overlayPartage').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function texteEnvoi() {
+    return document.getElementById('texteEnvoi').value;
+  }
+
+  async function envoyerNatif() {
+    try {
+      await navigator.share({ title: 'Courses Métro', text: texteEnvoi() });
+      fermerPartage();
+    } catch (e) {
+      if (e && e.name !== 'AbortError') copierEnvoi();
+    }
+  }
+
+  function copierEnvoi() {
+    const txt = texteEnvoi();
+    const zone = document.getElementById('texteEnvoi');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt)
+        .then(() => toast('Liste copiée, colle-la dans ton message'))
+        .catch(() => { zone.focus(); zone.select(); toast('Copie manuelle : texte sélectionné'); });
+    } else {
+      zone.focus(); zone.select();
+      toast('Copie manuelle : texte sélectionné');
+    }
+  }
+
+  function ouvrirAvec(prefixe) {
+    const url = prefixe + encodeURIComponent(texteEnvoi());
+    const f = window.open(url, '_blank');
+    if (!f) copierEnvoi();   // bloqué : au moins la liste est dans le presse-papiers
   }
 
   /* ===== SAUVEGARDE ET RESTAURATION ===== */
