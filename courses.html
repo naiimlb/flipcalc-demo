@@ -416,6 +416,7 @@
   }
 
   .lien-vider:hover { color: var(--accent); }
+  .hint .lien-vider { display: block; margin-top: 6px; text-decoration: underline; }
 
   .hist {
     background: var(--surface-2);
@@ -706,7 +707,10 @@
   <div class="card">
     <div class="card-head"><h2>Nouvelle liste</h2></div>
     <textarea id="input" placeholder="tomates&#10;2 kg farine&#10;coca&#10;fromage rapé&#10;gel douche&#10;ketchup, citron, kinder"></textarea>
-    <div class="hint">Un article par ligne, ou séparés par des virgules. Les quantités (2 kg, x3…) sont gardées.</div>
+    <div class="hint">
+      Un article par ligne, ou séparés par des virgules. Les quantités (2 kg, x3…) sont gardées.
+      <button class="lien-vider" onclick="oublierCorrections()">Réinitialiser les rayons mémorisés</button>
+    </div>
     <button class="btn-main" onclick="ajouterListe()">🔥 Trier ma liste</button>
   </div>
 
@@ -804,14 +808,14 @@
       'huile pour cheveux', 'vernis', 'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle',
       'javel', 'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
       'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire', 'allumette',
-      'piles', 'ampoule'
+      'piles', 'ampoule', 'sac congelation'
     ],
     boissons: [
       'boisson', 'eau', 'eau gazeuse', 'eau plate', 'evian', 'cristaline', 'volvic', 'perrier', 'badoit',
       'san pellegrino', 'coca', 'coca cola', 'pepsi', 'fanta', 'sprite', 'oasis', 'ice tea', 'lipton',
       'orangina', 'schweppes', 'tropico', 'limonade', 'soda', 'jus', 'jus d orange', 'jus de fruits',
       'nectar', 'sirop', 'red bull', 'monster', 'energy drink', 'biere', 'vin', 'champagne', 'cidre',
-      'mojito', 'canette', 'pack d eau'
+      'mojito', 'canette', 'pack d eau', 'capri sun'
     ],
     epicerie: [
       'farine', 'lait', 'lait de coco', 'lait concentre', 'citron', 'citron vert', 'jus de citron',
@@ -823,7 +827,9 @@
       'nutella', 'pate a tartiner', 'confiture', 'miel', 'cereales', 'biscuit', 'gateau', 'bonbon',
       'chips', 'gaufrette', 'madeleine', 'pain de mie', 'pain', 'biscotte', 'brioche', 'conserve',
       'thon', 'sardine', 'maquereau', 'pate a pizza', 'bouillon', 'cube maggi', 'compote', 'miel liquide',
-      'sachet', 'papier cuisson'
+      'sachet', 'papier cuisson', 'pringles', 'doritos', 'tuc', 'cacahuete', 'cornichon',
+      'pain burger', 'buns', 'tortilla', 'wrap', 'pomme paille', 'pommes paille',
+      'pomme allumette', 'pommes allumettes', 'tarte', 'tartelette'
     ],
     sauce: [
       'sauce', 'sauce tomate', 'sauce blanche', 'sauce samurai', 'sauce algerienne', 'sauce andalouse',
@@ -840,9 +846,79 @@
       'saucisson', 'chorizo', 'lardon', 'poulet', 'escalope', 'blanc de poulet', 'dinde', 'viande',
       'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez', 'saucisse', 'kefta',
       'poisson', 'saumon', 'cabillaud', 'crevette', 'surimi', 'pate feuilletee', 'pate brisee', 'pizza',
-      'traiteur', 'surgele', 'glace'
+      'traiteur', 'surgele', 'glace', 'nuggets', 'cordon bleu', 'poisson pane', 'frites',
+      'danone', 'activia', 'yop', 'babybel'
     ]
   };
+
+  /* ===== PRIORITÉS DE CLASSEMENT =====
+     Un article porte souvent un parfum : « oasis pomme poire », « chips pomme paille »,
+     « yaourt fraise ». C'est le PRODUIT qui décide du rayon, jamais le parfum.
+     FORTS  : produits et marques — ils l'emportent sur tout le reste.
+     AROMES : parfums et variétés — ils ne décident que si rien d'autre n'est reconnu. */
+  const FORTS = new Set([
+    // boissons
+    'oasis', 'coca', 'coca cola', 'pepsi', 'fanta', 'sprite', 'orangina', 'schweppes',
+    'tropico', 'ice tea', 'lipton', 'limonade', 'soda', 'jus', 'jus de fruits', 'nectar',
+    'sirop', 'red bull', 'monster', 'energy drink', 'capri sun', 'biere', 'vin', 'champagne',
+    'cidre', 'eau', 'eau gazeuse', 'eau plate', 'perrier', 'badoit', 'evian', 'cristaline',
+    'volvic', 'san pellegrino', 'canette', 'pack d eau', 'boisson',
+    // épicerie
+    'chips', 'pringles', 'doritos', 'tuc', 'biscuit', 'gaufrette', 'madeleine', 'gateau',
+    'bonbon', 'cereales', 'compote', 'confiture', 'nutella', 'pate a tartiner', 'kinder',
+    'conserve', 'thon', 'sardine', 'maquereau', 'bouillon', 'cube maggi', 'farine', 'semoule',
+    'couscous', 'riz', 'pates', 'spaghetti', 'macaroni', 'penne', 'tagliatelle', 'nouilles',
+    'vermicelle', 'boulgour', 'quinoa', 'lentille', 'pois chiche', 'haricot rouge',
+    'haricot blanc', 'sucre', 'sel', 'poivre', 'levure', 'maizena', 'huile', 'huile d olive',
+    'huile de tournesol', 'vinaigre', 'vinaigre balsamique', 'the', 'infusion', 'cafe',
+    'chicoree', 'lait', 'lait de coco', 'lait concentre', 'pain', 'pain de mie', 'pain burger',
+    'buns', 'biscotte', 'brioche', 'tortilla', 'wrap', 'jus de citron', 'pate a pizza',
+    'cacahuete', 'cornichon', 'pomme paille', 'pommes paille', 'pomme allumette',
+    'pommes allumettes', 'tarte', 'tartelette',
+    // sauces
+    'sauce', 'ketchup', 'mayonnaise', 'mayo', 'moutarde', 'harissa', 'pesto', 'sriracha',
+    'tabasco', 'aioli', 'tartare', 'coulis', 'concentre de tomate', 'passata', 'marinade',
+    'vinaigrette',
+    // samurai / algérienne / barbecue… servent aussi de parfums (chips, wraps) :
+    // ils restent au niveau normal pour ne pas voler un produit identifié
+    // produits frais
+    'yaourt', 'yahourt', 'skyr', 'petit suisse', 'actimel', 'danette', 'danone', 'activia',
+    'yop', 'fromage', 'fromage blanc', 'fromage rape', 'rape', 'emmental', 'gruyere',
+    'mozzarella', 'cheddar', 'comte', 'camembert', 'chevre', 'feta', 'raclette', 'parmesan',
+    'ricotta', 'mascarpone', 'kiri', 'babybel', 'vache qui rit', 'boursin', 'beurre',
+    'margarine', 'creme fraiche', 'creme liquide', 'oeuf', 'oeufs', 'jambon', 'charcuterie',
+    'saucisson', 'chorizo', 'lardon', 'poulet', 'escalope', 'blanc de poulet', 'dinde',
+    'viande', 'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez',
+    'saucisse', 'kefta', 'nuggets', 'cordon bleu', 'poisson', 'poisson pane', 'saumon',
+    'cabillaud', 'crevette', 'surimi', 'pate feuilletee', 'pate brisee', 'pizza', 'frites',
+    'traiteur', 'surgele', 'glace',
+    // hygiène & entretien
+    'savon', 'gel douche', 'shampoing', 'shampooing', 'apres shampoing', 'dentifrice',
+    'brosse a dents', 'bain de bouche', 'fil dentaire', 'deodorant', 'papier toilette', 'pq',
+    'mouchoir', 'essuie tout', 'sopalin', 'coton', 'coton tige', 'serviette hygienique',
+    'tampon', 'protege slip', 'couche', 'lingette', 'rasoir', 'mousse a raser', 'gel a raser',
+    'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant', 'vernis',
+    'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle', 'javel',
+    'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
+    'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire',
+    'sac congelation', 'allumette', 'piles', 'ampoule',
+    // fruits & légumes : les légumes ne sont jamais des parfums
+    'salade', 'laitue', 'roquette', 'mache', 'epinard', 'chou', 'chou fleur', 'brocoli',
+    'carotte', 'courgette', 'aubergine', 'poivron', 'concombre', 'radis', 'navet', 'poireau',
+    'celeri', 'fenouil', 'oignon', 'echalote', 'ail', 'gingembre', 'pomme de terre', 'patate',
+    'patate douce', 'champignon', 'haricot vert', 'haricots verts', 'petit pois', 'mais doux',
+    'betterave', 'courge', 'potiron', 'butternut', 'artichaut', 'asperge', 'avocat',
+    'germe de soja', 'fruit', 'legume'
+  ]);
+
+  const AROMES = new Set([
+    'pomme', 'poire', 'fraise', 'framboise', 'myrtille', 'mure', 'cassis', 'cerise', 'raisin',
+    'peche', 'nectarine', 'abricot', 'prune', 'pruneau', 'kiwi', 'ananas', 'mangue', 'papaye',
+    'melon', 'pasteque', 'figue', 'grenade', 'datte', 'noix de coco', 'banane', 'plantain',
+    'orange', 'clementine', 'mandarine', 'pamplemousse', 'citron', 'citron vert', 'tomate',
+    'olive', 'menthe', 'basilic', 'thym', 'romarin', 'laurier', 'coriandre', 'persil',
+    'herbes', 'chocolat', 'chocolat en poudre', 'miel', 'miel liquide', 'cannelle'
+  ]);
 
   const CLE_ITEMS = 'metro_liste';
   const CLE_CORRECTIONS = 'metro_corrections';
@@ -906,33 +982,50 @@
     return (Math.round(n * 100) / 100).toString().replace('.', ',');
   }
 
+  // « chips saveur poulet », « eau goût citron » : ce qui suit le mot saveur/goût/parfum
+  // décrit l'arôme, pas le produit — on l'écarte pour identifier le rayon
+  function couperParfum(texte) {
+    const coupe = texte.replace(/\b(saveur|saveurs|gout|gouts|parfum|parfums|arome|aromes)\b.*$/, '').trim();
+    return coupe || texte;
+  }
+
   function contientMot(texte, motCle) {
     const m = motCle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp('(^|\\s)' + m + '(s|x|es)?(\\s|$)').test(texte);
   }
 
   /* ===== CLASSEMENT ===== */
+  // Meilleur mot-clé d'un niveau donné : le plus long l'emporte
+  function meilleurMot(produit, complet, retenir) {
+    let categorie = null, longueur = 0;
+    for (const cat of CATEGORIES) {
+      const mots = MOTS[cat.id];
+      if (!mots) continue;
+      for (const mot of mots) {
+        if (!retenir(mot)) continue;
+        if (mot.length > longueur && (contientMot(produit, mot) || contientMot(complet, mot))) {
+          categorie = cat.id;
+          longueur = mot.length;
+        }
+      }
+    }
+    return categorie;
+  }
+
   function classer(label) {
     const complet = normaliser(label);
     const produit = sansQuantite(complet) || complet;
 
     if (corrections[produit]) return corrections[produit];
 
-    let meilleur = null;
-    let longueur = 0;
+    const base = couperParfum(produit);
+    const baseComplete = couperParfum(complet);
 
-    for (const cat of CATEGORIES) {
-      const mots = MOTS[cat.id];
-      if (!mots) continue;
-      for (const mot of mots) {
-        if (mot.length > longueur && (contientMot(produit, mot) || contientMot(complet, mot))) {
-          meilleur = cat.id;
-          longueur = mot.length;
-        }
-      }
-    }
-
-    return meilleur || 'autres';
+    // 1. le produit ou la marque   2. les autres mots   3. le parfum, en dernier recours
+    return meilleurMot(base, baseComplete, m => FORTS.has(m))
+        || meilleurMot(base, baseComplete, m => !FORTS.has(m) && !AROMES.has(m))
+        || meilleurMot(produit, complet, m => AROMES.has(m))
+        || 'autres';
   }
 
   /* ===== AJOUT ===== */
@@ -994,6 +1087,18 @@
     items = items.filter(i => i.id !== id);
     sauver();
     rendre();
+  }
+
+  // Efface les rayons corrigés à la main et reclasse la liste avec le dictionnaire
+  function oublierCorrections() {
+    const n = Object.keys(corrections).length;
+    if (!n) { toast('Aucun rayon mémorisé'); return; }
+    if (!confirm('Oublier les ' + n + ' rayon(s) corrigé(s) à la main et reclasser la liste ?')) return;
+    corrections = {};
+    items.forEach(it => it.cat = classer(it.label));
+    sauver();
+    rendre();
+    toast('Rayons reclassés');
   }
 
   function decocherTout() {

@@ -20,13 +20,24 @@ Liste de courses qui **trie automatiquement les articles dans l'ordre des rayons
 L'ordre est défini par le tableau `CATEGORIES` en haut du `<script>` : le déplacer suffit
 à changer l'ordre d'affichage.
 
+Le classement se fait en trois niveaux de priorité, pour que le parfum d'un produit
+ne décide jamais du rayon :
+1. **produit ou marque** (`oasis`, `chips`, `yaourt`, `sauce`, `lessive`…) ;
+2. les autres mots reconnus ;
+3. **parfums et variétés** (`pomme`, `fraise`, `citron`, `chocolat`…), en dernier recours.
+
+Ainsi `oasis pomme poire` part en boissons, `chips pomme paille` en épicerie et
+`pommes` en fruits & légumes. Ce qui suit « saveur », « goût » ou « parfum » est ignoré
+pour le classement (`chips saveur poulet` reste en épicerie).
+
 Utilisation : coller une liste (un article par ligne ou séparés par des virgules),
 puis « Trier et ajouter ». Les quantités (`2 kg farine`, `x3 bananes`) sont conservées,
 les doublons ignorés.
 
 - Cocher un article pendant les courses (il descend en bas de son rayon)
 - Corriger le rayon d'un article via le menu déroulant : **la correction est mémorisée**
-  et appliquée automatiquement aux listes suivantes
+  et appliquée automatiquement aux listes suivantes (le lien « Réinitialiser les rayons
+  mémorisés » les efface et reclasse la liste)
 - Copier la liste triée, tout décocher, retirer les articles cochés, tout effacer
 
 ### Fin des courses et historique
