@@ -613,8 +613,36 @@
   }
 
   .hist-line:last-of-type { border-bottom: none; }
-  .hl-name { color: var(--ink); font-weight: 600; }
-  .hl-qty { color: var(--accent-2); font-weight: 700; white-space: nowrap; font-size: 0.76rem; }
+
+  .hist-line {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .hl-name { color: var(--ink); font-weight: 600; flex: 1; min-width: 45%; }
+
+  .hl-etat {
+    color: var(--accent-2);
+    font-weight: 800;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+  }
+
+  .hl-total {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .hist-line .pris-box { margin-left: auto; }
+  .hist-line .pb.tout { background: transparent; border: 1px solid var(--line); font-size: 0.65rem; }
+  .hist-line .pb.tout:hover { background: var(--accent); border-color: var(--accent); }
+
+  .hist-line.ok .hl-name { color: var(--muted); text-decoration: line-through; }
+  .hist-line.ok .hl-etat { color: #4CAF50; }
 
   .hist-btn { width: 100%; margin-top: 8px; }
 
@@ -1696,9 +1724,69 @@
   }
 
   /* ===== HISTORIQUE ===== */
+  const detailsOuverts = {};   // les courses dépliées restent dépliées après une modification
+
   function basculerDetail(id) {
-    const el = document.getElementById('det-' + id);
-    if (el) el.hidden = !el.hidden;
+    detailsOuverts[id] = !detailsOuverts[id];
+    rendreHistorique();
+  }
+
+  // Nombre d'articles encore à prendre dans une course passée
+  function manquantsRestants(h) {
+    return h.manquants.filter(m => m.pris < m.demande).length;
+  }
+
+  function trouverManquant(hId, index) {
+    const h = historique.find(x => x.id === hId);
+    if (!h || !h.manquants[index]) return null;
+    return { h: h, m: h.manquants[index] };
+  }
+
+  // « Depuis, j'en ai pris 2 de plus » : on met à jour la course passée
+  function majManquant(hId, index, delta, ev) {
+    if (ev) ev.stopPropagation();
+    const t = trouverManquant(hId, index);
+    if (!t) return;
+    saisirManquant(hId, index, t.m.pris + delta);
+  }
+
+  function saisirManquant(hId, index, valeur) {
+    const t = trouverManquant(hId, index);
+    if (!t) return;
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > t.m.demande) v = t.m.demande;
+    t.m.pris = v;
+    t.h.complets = t.h.total - manquantsRestants(t.h);
+    detailsOuverts[hId] = true;
+    repercuterSurListe(t.m);
+    sauver();
+    rendre();
+    rendreHistorique();
+  }
+
+  // Ce qui est déclaré récupéré dans l'historique sort de la liste en cours,
+  // et un rattrapage partiel y met à jour le reste à prendre
+  function repercuterSurListe(m) {
+    const cle = normaliser(m.label);
+    const it = items.find(i => normaliser(i.label) === cle);
+    if (!it) return;
+    const reste = m.demande - m.pris;
+    if (reste <= 0) {
+      items = items.filter(i => i !== it);
+      return;
+    }
+    it.qte = reste;
+    it.pris = 0;
+    it.fait = false;
+    it.manque = { pris: m.pris, demande: m.demande, unite: m.unite || '', date: m.date || '' };
+  }
+
+  function toutPrisManquant(hId, index, ev) {
+    if (ev) ev.stopPropagation();
+    const t = trouverManquant(hId, index);
+    if (!t) return;
+    saisirManquant(hId, index, t.m.pris >= t.m.demande ? 0 : t.m.demande);
   }
 
   function remettreManquants(id) {
@@ -1706,6 +1794,7 @@
     if (!entree) return;
     let ajoutes = 0;
     for (const m of entree.manquants) {
+      if (m.pris >= m.demande) continue;          // celui-là a été récupéré depuis
       const cle = normaliser(m.label);
       if (items.some(it => normaliser(it.label) === cle)) continue;
       items.push({
@@ -1750,31 +1839,45 @@
 
     let html = '';
     for (const h of historique) {
-      const nbManq = h.manquants.length;
+      const reste = manquantsRestants(h);
+      const ouvert = !!detailsOuverts[h.id];
+
       html += '<div class="hist">' +
                 '<div class="hist-head" onclick="basculerDetail(\'' + h.id + '\')">' +
                   '<div class="hist-date">' + echapper(h.date) + ' <span>· ' + echapper(h.heure) + '</span></div>' +
-                  '<div class="hist-badge' + (nbManq ? '' : ' ok') + '">' +
-                    (nbManq ? nbManq + ' manquant' + (nbManq > 1 ? 's' : '') : 'tout pris') +
+                  '<div class="hist-badge' + (reste ? '' : ' ok') + '">' +
+                    (reste ? reste + ' à prendre' : 'tout pris') +
                   '</div>' +
                 '</div>' +
-                '<div class="hist-detail" id="det-' + h.id + '" hidden>' +
-                  '<div class="hist-sub">' + h.complets + ' / ' + h.total + ' articles pris</div>';
+                '<div class="hist-detail" id="det-' + h.id + '"' + (ouvert ? '' : ' hidden') + '>' +
+                  '<div class="hist-sub">' + (h.total - reste) + ' / ' + h.total + ' articles pris · ' +
+                    'ajuste ce que tu as récupéré depuis, la liste suit</div>';
 
-      for (const m of h.manquants) {
+      h.manquants.forEach((m, i) => {
+        const fini = m.pris >= m.demande;
         const u = m.unite ? ' ' + uniteAffichee(m.demande, m.unite) : '';
-        html += '<div class="hist-line">' +
+        html += '<div class="hist-line' + (fini ? ' ok' : '') + '">' +
                   '<span class="hl-name">' + echapper(m.label) + '</span>' +
-                  '<span class="hl-qty">' +
-                    (m.pris > 0
-                      ? nb(m.pris) + u + ' au lieu de ' + nb(m.demande) + u
-                      : 'pas pris (0 / ' + nb(m.demande) + u + ')') +
+                  '<span class="hl-etat">' +
+                    (fini ? 'récupéré' : 'manque ' + nb(m.demande - m.pris) +
+                      (m.unite ? ' ' + uniteAffichee(m.demande - m.pris, m.unite) : '')) +
+                  '</span>' +
+                  '<span class="pris-box">' +
+                    '<button class="pb" onclick="majManquant(\'' + h.id + '\', ' + i + ', -1, event)">−</button>' +
+                    '<input class="pris-input" type="number" min="0" step="1" value="' + nb(m.pris) + '" ' +
+                           'onchange="saisirManquant(\'' + h.id + '\', ' + i + ', this.value)" ' +
+                           'onkeydown="if (event.key === \'Enter\') this.blur()">' +
+                    '<span class="pris-sur">sur</span>' +
+                    '<span class="hl-total">' + nb(m.demande) + u + '</span>' +
+                    '<button class="pb" onclick="majManquant(\'' + h.id + '\', ' + i + ', 1, event)">+</button>' +
+                    '<button class="pb tout" onclick="toutPrisManquant(\'' + h.id + '\', ' + i + ', event)" ' +
+                            'title="Tout pris / rien pris">✔</button>' +
                   '</span>' +
                 '</div>';
-      }
+      });
 
-      if (nbManq) {
-        html += '<button class="btn-ghost hist-btn" onclick="remettreManquants(\'' + h.id + '\')">↩ Remettre les manquants dans la liste</button>';
+      if (reste) {
+        html += '<button class="btn-ghost hist-btn" onclick="remettreManquants(\'' + h.id + '\')">↩ Remettre ce qui manque dans la liste</button>';
       }
       html += '<button class="btn-ghost hist-btn danger" onclick="supprimerCourse(\'' + h.id + '\')">🗑 Supprimer cette course</button>';
       html += '</div></div>';

@@ -75,8 +75,14 @@ dans la liste, ajustable une dernière fois avec `+` / `−` ou au clavier.
   `5 au lieu de 8`, `1 kg au lieu de 2 kg` ou `pas pris (0 / 1)`.
 
 L'historique garde les 30 dernières courses (date, heure, articles pris sur le total).
-Chaque course se déplie et propose de **remettre les manquants dans la liste** en un clic,
-ou de la supprimer.
+Chaque course se déplie sur ses manquants, **modifiables après coup** : le compteur
+`− n sur N +` (et le bouton ✔ pour tout/rien) sert à déclarer ce qui a été récupéré depuis.
+Une ligne soldée passe en « récupéré » et le badge de la course suit (`3 à prendre` →
+`tout pris`).
+
+Ces corrections se répercutent sur la liste en cours : un article entièrement récupéré en
+sort, un rattrapage partiel y met à jour le reste à prendre et son étiquette. Chaque course
+propose aussi de **remettre ce qui manque encore dans la liste**, ou d'être supprimée.
 
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
 
