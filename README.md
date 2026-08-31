@@ -6,7 +6,7 @@ données conservées dans le navigateur via `localStorage`).
 ## `index.html` — FlipCalc
 Calculateur de bénéfice pour l'achat-revente (Vinted, eBay, LeBonCoin, Facebook).
 
-## `courses.html` — Ma Liste Métro (design #HASHTAGBANGERS)
+## `courses.html` — Ma Liste Métro (charte #HASHTAGBANGERS)
 Liste de courses qui **trie automatiquement les articles dans l'ordre des rayons** :
 
 1. Fruits & légumes
@@ -29,8 +29,11 @@ les doublons ignorés.
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
 
 ### Personnalisation du design
+- Charte reprise du logo : rose de marque `#EA1F79` sur fond noir, typo condensée
+  capitales (Anton) et lettrage marqueur (Permanent Marker), trame de points façon
+  halftone du logo.
 - Toutes les couleurs sont regroupées dans le bloc `:root` en haut du `<style>`
-  (`--bg`, `--surface`, `--accent`, `--accent-2`, `--ink`…) : changer ces valeurs suffit
-  à recaler l'appli sur la charte exacte de la marque.
-- Pour afficher le vrai logo : déposer un fichier `logo.png` à côté de `courses.html`.
-  S'il est absent, le logo texte `#HASHTAGBANGERS®` s'affiche automatiquement.
+  (`--bg`, `--surface`, `--accent`, `--accent-2`, `--ink`…) : une seule modification
+  suffit à recaler toute l'appli.
+- Le logo est le fichier `logo.jpg` placé à côté de `courses.html` ; s'il est absent
+  ou remplacé, le lettrage texte `#HASHTAGBANGERS®` prend le relais automatiquement.

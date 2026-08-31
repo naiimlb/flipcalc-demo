@@ -3,26 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0B0B0B">
+<meta name="theme-color" content="#EA1F79">
 <title>#HASHTAGBANGERS — Ma Liste Métro</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Inter:wght@400;500;600;700;800&display=swap');
 
   /* =========================================================
      PALETTE DE MARQUE — tout se change ici
      ========================================================= */
   :root {
-    --bg:        #0B0B0B;   /* fond général */
-    --surface:   #151212;   /* cartes */
-    --surface-2: #0E0C0C;   /* champs, lignes */
-    --line:      #2A2222;   /* bordures */
-    --accent:    #E1121C;   /* rouge de marque */
-    --accent-d:  #8E0910;   /* ombre / relief du rouge */
-    --accent-2:  #FFC400;   /* jaune d'appoint (badges, ticket) */
+    --bg:        #0C0A0B;   /* fond général (noir) */
+    --surface:   #171314;   /* cartes */
+    --surface-2: #100D0E;   /* champs, lignes */
+    --line:      #2C2226;   /* bordures */
+    --accent:    #EA1F79;   /* rose #HASHTAGBANGERS */
+    --accent-d:  #9C0F4C;   /* ombre / relief du rose */
+    --accent-2:  #FF7DB4;   /* rose clair (compteurs) */
     --ink:       #FFFFFF;   /* texte principal */
-    --ink-soft:  #B9AFAF;   /* texte secondaire */
-    --muted:     #6A5E5E;   /* texte discret */
-    --faint:     #3A3232;   /* très discret */
+    --ink-soft:  #C9BCC1;   /* texte secondaire */
+    --muted:     #6E5F65;   /* texte discret */
+    --faint:     #3D3238;   /* très discret */
     --radius:    14px;
   }
 
@@ -31,15 +31,16 @@
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--bg);
-    background-image:
-      repeating-linear-gradient(135deg, rgba(255,255,255,0.014) 0 2px, transparent 2px 9px);
+    background-image: radial-gradient(rgba(234,31,121,0.10) 1px, transparent 1.2px);
+    background-size: 9px 9px;
     color: var(--ink);
     min-height: 100vh;
-    padding: 0 14px 40px;
+    padding: 0 0 40px;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .container { max-width: 480px; margin: 0 auto; }
+  .container { max-width: 480px; margin: 0 auto; padding: 0 14px; }
+  .full-bleed { margin: 0 -14px; }
 
   .title-font {
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
@@ -49,37 +50,55 @@
   }
 
   /* ===================== EN-TÊTE / MARQUE ===================== */
-  header {
+  header { padding: 0 0 22px; }
+
+  .brand-band {
+    background: var(--accent);
+    background-image: radial-gradient(rgba(0,0,0,0.13) 1.3px, transparent 1.4px);
+    background-size: 7px 7px;
+    border-radius: 0 0 22px 22px;
+    padding: 20px 18px 18px;
     text-align: center;
-    padding: 26px 0 22px;
+    box-shadow: 0 5px 0 var(--accent-d);
+    margin-bottom: 26px;
   }
 
   .brand-logo {
-    max-width: 150px;
-    max-height: 90px;
-    margin: 0 auto 12px;
+    width: 104px;
+    height: 104px;
+    border-radius: 22%;
     display: block;
+    margin: 0 auto 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.35);
   }
 
   .wordmark {
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
-    font-size: 1.85rem;
+    font-size: 1.5rem;
     line-height: 1;
     text-transform: uppercase;
     letter-spacing: -0.5px;
     color: var(--ink);
   }
 
-  .wordmark .hash { color: var(--accent); }
-  .wordmark .bangers { color: var(--accent); }
-  .wordmark sup { font-size: 0.5rem; vertical-align: super; color: var(--muted); }
+  .wordmark .bangers {
+    font-family: 'Permanent Marker', 'Comic Sans MS', cursive;
+    font-size: 1.05rem;
+    color: #0C0A0B;
+    letter-spacing: 0;
+    margin-left: 3px;
+    display: inline-block;
+    transform: rotate(-3deg);
+  }
+
+  .wordmark sup { font-size: 0.45rem; vertical-align: super; }
 
   .tagline {
     display: inline-block;
-    margin-top: 10px;
-    background: var(--accent);
+    margin-top: 9px;
+    background: #0C0A0B;
     color: var(--ink);
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 800;
     letter-spacing: 1.6px;
     text-transform: uppercase;
@@ -93,7 +112,7 @@
     font-size: 2.5rem;
     line-height: 0.95;
     text-transform: uppercase;
-    margin-top: 18px;
+    text-align: center;
     letter-spacing: -1px;
   }
 
@@ -106,6 +125,7 @@
   .page-sub {
     color: var(--muted);
     font-size: 0.78rem;
+    text-align: center;
     margin-top: 8px;
   }
 
@@ -388,11 +408,14 @@
 <div class="container">
 
   <header>
-    <!-- Pour afficher le vrai logo : déposer un fichier "logo.png" à côté de ce fichier.
-         S'il est absent, le logo texte ci-dessous s'affiche automatiquement. -->
-    <img class="brand-logo" src="logo.png" alt="Hashtag Bangers" onerror="this.remove()">
-    <div class="wordmark"><span class="hash">#</span>HASHTAG<span class="bangers">BANGERS</span><sup>®</sup></div>
-    <div class="tagline">Il n'y a que toi qui comptes !</div>
+    <div class="brand-band full-bleed">
+      <!-- Le logo remplace le lettrage texte dès qu'il est chargé ; s'il manque, le texte prend le relais. -->
+      <img class="brand-logo" src="logo.jpg" alt="#HASHTAGBANGERS"
+           onload="document.getElementById('wordmark').hidden = true"
+           onerror="this.remove()">
+      <div class="wordmark" id="wordmark">#HASHTAG<span class="bangers">Bangers.</span><sup>®</sup></div>
+      <div class="tagline">Il n'y a que toi qui comptes !</div>
+    </div>
 
     <div class="page-title">Ma liste <em>Métro</em></div>
     <div class="page-sub">Balance ta liste, elle se range toute seule dans l'ordre des rayons</div>
