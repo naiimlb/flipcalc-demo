@@ -535,6 +535,21 @@
   .lien-vider:hover { color: var(--accent); }
   .hint .lien-vider { display: block; margin-top: 6px; text-decoration: underline; }
 
+  .alerte {
+    background: rgba(234,31,121,0.12);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
+  .alerte[hidden] { display: none; }
+
+  #zoneRestauration { min-height: 80px; font-size: 0.8rem; margin-top: 12px; }
+
   .hist {
     background: var(--surface-2);
     border: 2px solid var(--line);
@@ -854,6 +869,33 @@
     </div>
   </div>
 
+  <!-- SAUVEGARDE -->
+  <div class="card" id="carteSauvegarde">
+    <div class="card-head">
+      <h2>Sauvegarde</h2>
+      <span class="counter" id="sauvResume">—</span>
+    </div>
+
+    <div class="alerte" id="alerteVide" hidden>
+      Liste et historique vides. Si tu viens d'ouvrir une nouvelle version de l'appli,
+      colle ta sauvegarde ci-dessous pour tout récupérer.
+    </div>
+
+    <div class="hint">
+      Le téléphone garde tes données, mais elles ne suivent pas quand l'appli est mise à jour.
+      Copie ta sauvegarde avant une mise à jour, colle-la après : liste, rayons mémorisés et
+      historique reviennent.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="copierSauvegarde()">📋 Copier ma sauvegarde</button>
+      <button class="btn-ghost" id="btnFichier" onclick="telechargerSauvegarde()" hidden>⬇ Fichier</button>
+    </div>
+
+    <textarea id="zoneRestauration" placeholder="Colle ici la sauvegarde copiée…"></textarea>
+    <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="restaurerSauvegarde(this)">↩ Restaurer cette sauvegarde</button>
+  </div>
+
   <!-- HISTORIQUE -->
   <div class="card">
     <div class="card-head">
@@ -889,6 +931,9 @@
     </div>
   </div>
 </div>
+
+<!-- Sauvegarde déposée à la publication : reprise automatiquement si le téléphone est vide -->
+<script id="sauvegardeIntegree" type="application/json">null</script>
 
 <div class="toast" id="toast"></div>
 
@@ -1099,7 +1144,9 @@
   // Retire les quantités en début de ligne pour ne garder que le produit
   function sansQuantite(txtNormalise) {
     return txtNormalise
-      .replace(/^(\d+([.,]\d+)?\s*)?(kg|kilos?|g|grammes?|l|litres?|cl|ml|x|pcs?|pieces?|paquets?|boites?|bouteilles?|barquettes?|packs?|sachets?|pots?|tranches?|botte?s?)?\s*/, '')
+      // une unité n'est retirée que si un nombre la précède : « 2 bouteilles d eau » → « eau »,
+      // mais « bouteille de gaz » reste entier
+      .replace(/^\d+([.,]\d+)?\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml|x|pcs?|pieces?|paquets?|boites?|bouteilles?|barquettes?|packs?|sachets?|pots?|tranches?|bottes?)?\s*(?:d(?:e|es|u)?\s+)?/, '')
       .replace(/\s*(x\s*)?\d+([.,]\d+)?\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)?$/, '')
       .trim();
   }
@@ -1736,6 +1783,109 @@
     zone.innerHTML = html;
   }
 
+  /* ===== SAUVEGARDE ET RESTAURATION ===== */
+  function paquetSauvegarde() {
+    return {
+      appli: 'liste-metro-bangers',
+      version: 1,
+      maj: new Date().toISOString(),
+      items: items,
+      corrections: corrections,
+      historique: historique
+    };
+  }
+
+  function nomFichierSauvegarde() {
+    const d = new Date();
+    const deux = n => String(n).padStart(2, '0');
+    return 'liste-metro-' + d.getFullYear() + deux(d.getMonth() + 1) + deux(d.getDate()) + '.json';
+  }
+
+  function copierSauvegarde() {
+    const texte = JSON.stringify(paquetSauvegarde());
+    const fini = () => toast('Sauvegarde copiée');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texte).then(fini).catch(() => secoursCopie(texte));
+    } else {
+      secoursCopie(texte);
+    }
+  }
+
+  // Si le presse-papiers est refusé, on affiche le texte pour un copier manuel
+  function secoursCopie(texte) {
+    const zone = document.getElementById('zoneRestauration');
+    zone.value = texte;
+    zone.focus();
+    zone.select();
+    toast('Copie manuelle : le texte est sélectionné');
+  }
+
+  async function telechargerSauvegarde() {
+    const dl = window.claude && claude.use ? await claude.use('downloads') : null;
+    if (!dl) { copierSauvegarde(); return; }
+    try {
+      await dl.save({
+        filename: nomFichierSauvegarde(),
+        data: JSON.stringify(paquetSauvegarde(), null, 1)
+      });
+      toast('Fichier enregistré');
+    } catch (e) {
+      toast('Enregistrement annulé');
+    }
+  }
+
+  function lireSauvegarde(texte) {
+    let d;
+    try { d = JSON.parse(texte); } catch (e) { return null; }
+    if (!d || typeof d !== 'object') return null;
+    if (!Array.isArray(d.items) || !Array.isArray(d.historique)) return null;
+    if (!d.corrections || typeof d.corrections !== 'object') d.corrections = {};
+    return d;
+  }
+
+  function appliquerSauvegarde(d) {
+    items = d.items;
+    corrections = d.corrections;
+    historique = d.historique;
+    sauver();
+    rendre();
+    rendreHistorique();
+    majResumeSauvegarde();
+  }
+
+  function restaurerSauvegarde(btn) {
+    const zone = document.getElementById('zoneRestauration');
+    const d = lireSauvegarde(zone.value.trim());
+    if (!d) { toast('Sauvegarde illisible'); return; }
+    const quoi = d.items.length + ' article(s) et ' + d.historique.length + ' course(s)';
+    confirmerBouton(btn, 'Remplacer par ' + quoi + ' ?', () => {
+      appliquerSauvegarde(d);
+      zone.value = '';
+      toast('Sauvegarde restaurée');
+    });
+  }
+
+  function majResumeSauvegarde() {
+    const el = document.getElementById('sauvResume');
+    if (el) {
+      el.textContent = items.length + ' art. · ' + Object.keys(corrections).length + ' rayons · ' +
+                       historique.length + ' courses';
+    }
+    const alerte = document.getElementById('alerteVide');
+    if (alerte) alerte.hidden = !(items.length === 0 && historique.length === 0);
+  }
+
+  // Sauvegarde déposée dans la page à la publication : servie si le téléphone est vide
+  function reprendreSauvegardeIntegree() {
+    if (items.length || historique.length || Object.keys(corrections).length) return;
+    const bloc = document.getElementById('sauvegardeIntegree');
+    if (!bloc) return;
+    const d = lireSauvegarde(bloc.textContent.trim());
+    if (!d) return;
+    appliquerSauvegarde(d);
+    toast('Données reprises de la sauvegarde intégrée');
+  }
+
   /* ===== AFFICHAGE ===== */
   function echapper(s) {
     return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1761,6 +1911,7 @@
   function rendre() {
     const zone = document.getElementById('liste');
     majCompteur();
+    majResumeSauvegarde();
 
     if (!items.length) {
       zone.innerHTML = '<div class="empty">Ta liste est vide</div>';
@@ -1853,6 +2004,14 @@
 
   rendre();
   rendreHistorique();
+  reprendreSauvegardeIntegree();
+
+  // Le bouton « Fichier » n'apparaît que si la page hôte sait enregistrer un fichier
+  (async function activerTelechargement() {
+    if (!(window.claude && claude.use)) return;
+    const dl = await claude.use('downloads');
+    if (dl) document.getElementById('btnFichier').hidden = false;
+  })();
 </script>
 </body>
 </html>

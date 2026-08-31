@@ -80,6 +80,17 @@ ou de la supprimer.
 
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
 
+### Sauvegarde
+Les données (liste, rayons mémorisés, historique) vivent dans le `localStorage` du navigateur :
+elles ne suivent pas quand la page est republiée à une nouvelle version. La carte
+**Sauvegarde** répond à ça :
+- « Copier ma sauvegarde » met tout dans le presse-papiers (et « Fichier » enregistre un
+  `.json` quand la page hôte le permet) ;
+- coller ce texte puis « Restaurer » remet liste, rayons et historique en place ;
+- un bandeau apparaît automatiquement quand l'appli s'ouvre vide, pour rappeler la marche à suivre ;
+- le bloc `<script id="sauvegardeIntegree">` en bas de la page peut recevoir une sauvegarde au
+  moment de la publication : elle est reprise toute seule si le navigateur est vide.
+
 ### Personnalisation du design
 - Charte reprise du logo : rose de marque `#EA1F79` sur fond noir, typo condensée
   capitales (Anton) et lettrage marqueur (Permanent Marker), trame de points façon
