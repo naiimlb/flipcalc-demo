@@ -2,8 +2,12 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#EA1F79">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Liste Métro">
+<link rel="apple-touch-icon" href="logo.jpg">
 <title>#HASHTAGBANGERS — Ma Liste Métro</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -28,6 +32,16 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* Confort iPhone : pas de surlignage bleu, pas de zoom au double appui,
+     pas de menu contextuel sur les boutons, et rien sous l'encoche */
+  button, select, input, textarea, .item .name, .check {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button, .cat-title, .hist-head, .check { -webkit-user-select: none; user-select: none; }
+  button, select { -webkit-touch-callout: none; }
+
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--bg);
@@ -35,11 +49,17 @@
     background-size: 9px 9px;
     color: var(--ink);
     min-height: 100vh;
-    padding: 0 0 40px;
+    padding: 0 0 calc(40px + env(safe-area-inset-bottom));
     -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
   }
 
-  .container { max-width: 480px; margin: 0 auto; padding: 0 14px; }
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 max(14px, env(safe-area-inset-left)) 0 max(14px, env(safe-area-inset-right));
+  }
+
   .full-bleed { margin: 0 -14px; }
 
   .title-font {
@@ -53,11 +73,14 @@
   header { padding: 0 0 22px; }
 
   .brand-band {
+    padding-top: calc(20px + env(safe-area-inset-top));
     background: var(--accent);
     background-image: radial-gradient(rgba(0,0,0,0.13) 1.3px, transparent 1.4px);
     background-size: 7px 7px;
     border-radius: 0 0 22px 22px;
-    padding: 20px 18px 18px;
+    padding-bottom: 18px;
+    padding-left: 18px;
+    padding-right: 18px;
     text-align: center;
     box-shadow: 0 5px 0 var(--accent-d);
     margin-bottom: 26px;
@@ -138,6 +161,33 @@
     margin-bottom: 14px;
   }
 
+  /* L'avancement reste visible quand on descend dans les rayons */
+  .card-head.collant {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--surface);
+    padding-top: 4px;
+    margin-bottom: 8px;
+  }
+
+  .progression {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .progression span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
   .card-head {
     display: flex;
     align-items: center;
@@ -149,6 +199,10 @@
   .card-head h2 {
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
     font-size: 1.05rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--ink);
@@ -167,7 +221,8 @@
 
   .counter {
     font-family: 'Anton', 'Arial Black', Impact, sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
+    flex-shrink: 0;
     color: var(--accent-2);
     letter-spacing: 0.5px;
     font-variant-numeric: tabular-nums;
@@ -178,12 +233,13 @@
   textarea {
     width: 100%;
     min-height: 130px;
+    -webkit-overflow-scrolling: touch;
     background: var(--surface-2);
     border: 2px solid var(--line);
     border-radius: 10px;
     padding: 12px 13px;
     color: var(--ink);
-    font-size: 1rem;
+    font-size: 16px;
     font-family: 'Inter', sans-serif;
     line-height: 1.55;
     outline: none;
@@ -308,7 +364,7 @@
   }
 
   .item .check {
-    width: 22px; height: 22px;
+    width: 28px; height: 28px;
     border-radius: 6px;
     border: 2px solid #3B3131;
     background: transparent;
@@ -354,13 +410,15 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 999px;
+    min-width: 40px;
+    min-height: 30px;
     color: var(--ink-soft);
     font-family: 'Inter', sans-serif;
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.5px;
     font-variant-numeric: tabular-nums;
-    padding: 3px 9px;
+    padding: 6px 10px;
     cursor: pointer;
   }
 
@@ -378,7 +436,7 @@
   }
 
   .pris-box .pb {
-    width: 22px; height: 22px;
+    width: 30px; height: 30px;
     border: none;
     border-radius: 50%;
     background: var(--surface-2);
@@ -393,17 +451,18 @@
   .pris-box .pb:hover { background: var(--accent); }
 
   .pris-input {
-    width: 30px;
+    width: 44px;
+    min-height: 30px;
     background: transparent;
     border: none;
     border-bottom: 1px solid var(--line);
     color: var(--ink);
     font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
+    font-size: 16px;   /* en dessous, l'iPhone zoome sur le champ */
     font-weight: 800;
     text-align: center;
     font-variant-numeric: tabular-nums;
-    padding: 1px 0;
+    padding: 4px 0;
     outline: none;
     -moz-appearance: textfield;
   }
@@ -426,16 +485,16 @@
   .item.partiel .pris-input { color: var(--accent-2); border-bottom-color: var(--accent-2); }
 
   .qte-input {
-    width: 52px;
+    width: 58px;
     background: var(--surface);
     border: 1px solid var(--accent);
     border-radius: 999px;
     color: var(--ink);
     font-family: 'Inter', sans-serif;
-    font-size: 0.68rem;
+    font-size: 16px;
     font-weight: 700;
     text-align: center;
-    padding: 2px 4px;
+    padding: 3px 4px;
     outline: none;
     -moz-appearance: textfield;
   }
@@ -480,6 +539,7 @@
     background: var(--surface);
     border: 2px solid var(--line);
     border-radius: 7px;
+    min-height: 32px;
     color: var(--muted);
     font-size: 0.66rem;
     font-weight: 700;
@@ -498,9 +558,10 @@
     background: transparent;
     border: none;
     color: var(--faint);
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    padding: 0 2px;
+    padding: 4px 8px;      /* zone d'appui confortable */
+    margin: -4px -4px -4px 0;
     line-height: 1;
   }
 
@@ -529,7 +590,8 @@
     text-transform: uppercase;
     letter-spacing: 0.8px;
     cursor: pointer;
-    padding: 2px 0;
+    padding: 8px 2px;   /* zone d'appui confortable */
+    margin: -8px -2px;
   }
 
   .lien-vider:hover { color: var(--accent); }
@@ -655,7 +717,7 @@
     align-items: flex-end;
     justify-content: center;
     z-index: 100;
-    padding: 12px;
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom));
   }
 
   .overlay[hidden] { display: none; }
@@ -721,6 +783,8 @@
 
   .bilan-list {
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     flex: 1;
     margin: 0 -4px;
     padding: 0 4px;
@@ -769,7 +833,7 @@
   }
 
   .bl-qty button {
-    width: 26px; height: 26px;
+    width: 34px; height: 34px;
     border-radius: 7px;
     border: 2px solid var(--line);
     background: var(--surface);
@@ -784,16 +848,16 @@
   .bl-qty button:hover { border-color: var(--accent); color: var(--accent); }
 
   .bl-qty input {
-    width: 44px;
+    width: 52px;
     background: var(--surface);
     border: 2px solid var(--line);
     border-radius: 7px;
     color: var(--ink);
     font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
+    font-size: 16px;
     font-weight: 700;
     text-align: center;
-    padding: 4px 2px;
+    padding: 5px 2px;
     outline: none;
     -moz-appearance: textfield;
   }
@@ -823,6 +887,59 @@
 
   .modal-actions { padding-top: 12px; }
   .modal-actions .btn-ghost { width: 100%; margin-top: 8px; }
+
+  /* ===================== RETOURS AU TOUCHER ===================== */
+  .btn-ghost, .btn-main, .qte-chip, .pris-box .pb, .item .check, .item .del,
+  .lien-vider, .modal-close, .bl-qty button {
+    transition: transform 0.12s ease, background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .btn-ghost:active, .qte-chip:active { transform: scale(0.96); }
+  .pris-box .pb:active, .bl-qty button:active { transform: scale(0.86); background: var(--accent); }
+  .item .check:active { transform: scale(0.88); }
+  .item .del:active { transform: scale(0.85); color: var(--accent); }
+  .hist-head:active { background: rgba(255,255,255,0.03); }
+
+  /* ===================== ANIMATIONS ===================== */
+  @keyframes entreeItem {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @keyframes popCoche {
+    0%   { transform: scale(0.5); }
+    60%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes monteeSheet {
+    from { transform: translateY(18px); opacity: 0.6; }
+    to   { transform: none; opacity: 1; }
+  }
+
+  @keyframes fonduFond {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Seuls les rendus qui suivent une action sont animés, pas chaque redessin */
+  .anim .item, .anim .cat-block {
+    animation: entreeItem 0.3s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 25ms);
+  }
+
+  .check.pop { animation: popCoche 0.32s cubic-bezier(0.22, 0.9, 0.3, 1); }
+
+  .overlay:not([hidden]) { animation: fonduFond 0.18s ease both; }
+  .overlay:not([hidden]) .modal { animation: monteeSheet 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 
   /* ===================== DIVERS ===================== */
   .toast {
@@ -890,10 +1007,11 @@
 
   <!-- LISTE TRIÉE -->
   <div class="card">
-    <div class="card-head">
+    <div class="card-head collant">
       <h2>Liste de courses</h2>
       <span class="counter" id="counter">0 / 0</span>
     </div>
+    <div class="progression"><span id="barreProgression"></span></div>
 
     <div id="liste">
       <div class="empty">Liste vide</div>
@@ -1392,6 +1510,7 @@
 
   /* ===== AJOUT ===== */
   function ajouterListe() {
+    animerProchainRendu();
     const zone = document.getElementById('input');
     const lignes = zone.value
       .split(/[\n,;]+|\s+\+\s+/)
@@ -1434,6 +1553,15 @@
     it.pris = it.fait ? qteDe(it) : 0;   // coché = tout pris, décoché = rien pris
     sauver();
     rendre();
+    if (it.fait) animerCoche(id);
+  }
+
+  function animerCoche(id) {
+    const ligne = document.getElementById('it-' + id);
+    const coche = ligne && ligne.querySelector('.check');
+    if (!coche) return;
+    coche.classList.add('pop');
+    setTimeout(() => coche.classList.remove('pop'), 340);
   }
 
   /* ===== COMBIEN J'AI PRIS, ARTICLE PAR ARTICLE ===== */
@@ -1480,9 +1608,16 @@
   }
 
   function majCompteur() {
+    const faits = items.filter(i => i.fait).length;
     const el = document.getElementById('counter');
-    if (el) el.textContent = items.filter(i => i.fait).length + ' / ' + items.length;
+    if (el) el.textContent = faits + ' / ' + items.length;
+    const barre = document.getElementById('barreProgression');
+    if (barre) barre.style.width = items.length ? Math.round(faits / items.length * 100) + '%' : '0';
   }
+
+  // Le prochain rendu s'anime : réservé aux actions (ajout, coche…), pas aux redessins
+  let animerRendu = false;
+  function animerProchainRendu() { animerRendu = true; }
 
   function changerCat(id, cat) {
     const it = items.find(i => i.id === id);
@@ -1570,12 +1705,14 @@
   }
 
   function decocherTout() {
+    animerProchainRendu();
     items.forEach(i => { i.fait = false; i.pris = 0; });
     sauver();
     rendre();
   }
 
   function supprimerCoches() {
+    animerProchainRendu();
     const avant = items.length;
     items = items.filter(i => !i.fait);
     sauver();
@@ -2168,13 +2305,14 @@
     }
 
     let html = '';
+    let rang = 0;
     CATEGORIES.forEach((cat, index) => {
       const lot = items.filter(i => i.cat === cat.id);
       if (!lot.length) return;
       // Les articles cochés descendent en bas de leur rayon
       lot.sort((a, b) => (a.fait === b.fait) ? 0 : (a.fait ? 1 : -1));
 
-      html += '<div class="cat-block">';
+      html += '<div class="cat-block" style="--i:' + (index) + '">';
       html += '<div class="cat-title"><span class="num">' + (index + 1) + '</span>' +
               echapper(cat.nom) + '<span class="count">' + lot.length + '</span></div>';
 
@@ -2190,7 +2328,7 @@
         const partiel = pris > 0 && pris < q;
 
         html += '<div class="item' + (it.fait ? ' done' : '') + (partiel ? ' partiel' : '') +
-                  (aRanger ? ' a-ranger' : '') + '" id="it-' + it.id + '">' +
+                  (aRanger ? ' a-ranger' : '') + '" id="it-' + it.id + '" style="--i:' + (rang++) + '">' +
                   '<div class="item-haut">' +
                     '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
                     '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
@@ -2219,6 +2357,8 @@
     });
 
     zone.innerHTML = html;
+    zone.classList.toggle('anim', animerRendu);
+    animerRendu = false;
   }
 
   let minuteurToast;

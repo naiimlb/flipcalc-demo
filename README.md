@@ -86,6 +86,16 @@ propose aussi de **remettre ce qui manque encore dans la liste**, ou d'être sup
 
 Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
 
+### Confort sur iPhone
+- Zones sûres respectées (encoche, barre d'accueil), page en plein écran une fois ajoutée à
+  l'écran d'accueil (`apple-mobile-web-app-capable`, icône `logo.jpg`)
+- Toutes les cibles tactiles font au moins 28 px, les champs de saisie sont à 16 px pour que
+  Safari ne zoome pas au focus, et le double appui ne zoome plus
+- Retour visuel au toucher sur chaque bouton (iOS n'a pas de survol)
+- Entrée en fondu des rayons et des articles après une action, pop de la coche, feuilles
+  modales qui montent du bas, barre d'avancement animée sous un en-tête de liste collant
+- Toutes les animations se coupent si le téléphone est réglé sur « Réduire les animations »
+
 ### Envoyer la liste à quelqu'un d'autre
 Le bouton **« Envoyer ce qu'il reste à prendre »** compose un message à partir de tout ce qui
 n'est pas encore pris, rangé par rayon avec les quantités restantes :
