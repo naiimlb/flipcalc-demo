@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma Liste Métro — Tri automatique par rayon</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0A0A0A;
+    color: #F0F0F0;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  header { text-align: center; padding: 32px 0 24px; }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  header h1 span { color: #00FF87; }
+
+  header p {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+
+  .container { max-width: 480px; margin: 0 auto; }
+
+  .card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card h2 {
+    font-size: 0.8rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    background: #0D0D0D;
+    border: 1px solid #1E1E1E;
+    border-radius: 12px;
+    padding: 13px 14px;
+    color: #F0F0F0;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: #00FF87; }
+  textarea::placeholder { color: #3A3A3A; }
+
+  .hint {
+    font-size: 0.72rem;
+    color: #444;
+    margin-top: 8px;
+  }
+
+  .btn-main {
+    width: 100%;
+    background: #00FF87;
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 14px;
+  }
+
+  .btn-main:hover { opacity: 0.85; }
+
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 10px;
+    color: #666;
+    font-size: 0.78rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-ghost:hover { border-color: #00FF87; color: #00FF87; }
+  .btn-ghost.danger:hover { border-color: #FF4757; color: #FF4757; }
+
+  /* LISTE */
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .list-header h2 { margin-bottom: 0; }
+
+  .counter {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #00FF87;
+  }
+
+  .cat-block { margin-bottom: 18px; }
+
+  .cat-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #00FF87;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #1E1E1E;
+    margin-bottom: 10px;
+  }
+
+  .cat-title .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(0,255,135,0.12);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+  }
+
+  .cat-title .count {
+    margin-left: auto;
+    color: #444;
+    font-weight: 600;
+  }
+
+  .item {
+    background: #0D0D0D;
+    border: 1px solid #1E1E1E;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .item .check {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1px solid #2A2A2A;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: #000;
+    padding: 0;
+  }
+
+  .item.done .check { background: #00FF87; border-color: #00FF87; }
+
+  .item .name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #ddd;
+    cursor: pointer;
+    word-break: break-word;
+  }
+
+  .item.done .name { color: #3A3A3A; text-decoration: line-through; }
+
+  .item select {
+    background: #141414;
+    border: 1px solid #1E1E1E;
+    border-radius: 8px;
+    color: #555;
+    font-size: 0.68rem;
+    font-family: 'Inter', sans-serif;
+    padding: 4px 6px;
+    max-width: 92px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .item select:focus { border-color: #00FF87; }
+  .item select option { background: #1A1A1A; color: #ddd; }
+
+  .item .del {
+    background: transparent;
+    border: none;
+    color: #333;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+  }
+
+  .item .del:hover { color: #FF4757; }
+
+  .empty {
+    text-align: center;
+    color: #333;
+    font-size: 0.85rem;
+    padding: 24px 0;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(20px);
+    background: #00FF87;
+    color: #000;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 10px 18px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer {
+    text-align: center;
+    color: #2E2E2E;
+    font-size: 0.72rem;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Ma Liste <span>Métro</span></h1>
+    <p>Colle ta liste, elle se trie toute seule dans l'ordre des rayons</p>
+  </header>
+
+  <!-- SAISIE -->
+  <div class="card">
+    <h2>Nouvelle liste</h2>
+    <textarea id="input" placeholder="tomates&#10;2 kg farine&#10;coca&#10;fromage rapé&#10;gel douche&#10;ketchup, citron, kinder"></textarea>
+    <div class="hint">Un article par ligne, ou séparés par des virgules. Les quantités (2 kg, x3…) sont conservées.</div>
+    <button class="btn-main" onclick="ajouterListe()">✨ Trier et ajouter</button>
+  </div>
+
+  <!-- LISTE TRIÉE -->
+  <div class="card">
+    <div class="list-header">
+      <h2>Liste de courses</h2>
+      <span class="counter" id="counter">0 / 0</span>
+    </div>
+
+    <div id="liste">
+      <div class="empty">Ta liste est vide</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="copierListe()">📋 Copier</button>
+      <button class="btn-ghost" onclick="decocherTout()">↺ Tout décocher</button>
+      <button class="btn-ghost" onclick="supprimerCoches()">🧹 Retirer les cochés</button>
+      <button class="btn-ghost danger" onclick="toutEffacer()">🗑 Tout effacer</button>
+    </div>
+  </div>
+
+  <footer>Les corrections de rayon sont mémorisées pour les prochaines listes.</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ===== ORDRE DES RAYONS (ordre de passage en magasin) ===== */
+  const CATEGORIES = [
+    { id: 'fruits',   nom: 'Fruits & légumes',    court: 'Fruits/lég.' },
+    { id: 'hygiene',  nom: 'Hygiène & entretien', court: 'Hygiène' },
+    { id: 'boissons', nom: 'Boissons',            court: 'Boissons' },
+    { id: 'epicerie', nom: 'Farine, lait, citron, vinaigre, Kinder…', court: 'Épicerie' },
+    { id: 'sauce',    nom: 'Sauces',              court: 'Sauce' },
+    { id: 'frais',    nom: 'Produits frais (fromage)', court: 'Frais' },
+    { id: 'autres',   nom: 'Autres (à classer)',  court: 'Autres' }
+  ];
+
+  /* ===== DICTIONNAIRE DE MOTS-CLÉS (sans accents, en minuscules) ===== */
+  const MOTS = {
+    fruits: [
+      'fruit', 'legume', 'pomme', 'poire', 'banane', 'plantain', 'orange', 'clementine', 'mandarine',
+      'pamplemousse', 'fraise', 'framboise', 'myrtille', 'mure', 'cassis', 'raisin', 'peche', 'nectarine',
+      'abricot', 'prune', 'pruneau', 'kiwi', 'ananas', 'mangue', 'papaye', 'melon', 'pasteque', 'figue',
+      'grenade', 'datte', 'noix de coco', 'avocat', 'cerise', 'tomate', 'tomates cerises', 'salade',
+      'laitue', 'roquette', 'mache', 'epinard', 'chou', 'chou fleur', 'brocoli', 'carotte', 'courgette',
+      'aubergine', 'poivron', 'piment', 'concombre', 'radis', 'navet', 'poireau', 'celeri', 'fenouil',
+      'oignon', 'echalote', 'ail', 'gingembre', 'pomme de terre', 'patate', 'patate douce', 'champignon',
+      'haricot vert', 'haricots verts', 'petit pois', 'mais doux', 'betterave', 'courge', 'potiron',
+      'butternut', 'artichaut', 'asperge', 'persil', 'coriandre', 'menthe', 'basilic', 'thym', 'romarin',
+      'laurier', 'herbes', 'germe de soja', 'olive'
+    ],
+    hygiene: [
+      'hygiene', 'savon', 'gel douche', 'shampoing', 'shampooing', 'apres shampoing', 'dentifrice',
+      'brosse a dents', 'bain de bouche', 'fil dentaire', 'deodorant', 'papier toilette', 'pq',
+      'mouchoir', 'essuie tout', 'sopalin', 'coton', 'coton tige', 'serviette hygienique', 'tampon',
+      'protege slip', 'couche', 'lingette', 'rasoir', 'mousse a raser', 'gel a raser', 'creme',
+      'creme hydratante', 'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant',
+      'huile pour cheveux', 'vernis', 'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle',
+      'javel', 'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
+      'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire', 'allumette',
+      'piles', 'ampoule'
+    ],
+    boissons: [
+      'boisson', 'eau', 'eau gazeuse', 'eau plate', 'evian', 'cristaline', 'volvic', 'perrier', 'badoit',
+      'san pellegrino', 'coca', 'coca cola', 'pepsi', 'fanta', 'sprite', 'oasis', 'ice tea', 'lipton',
+      'orangina', 'schweppes', 'tropico', 'limonade', 'soda', 'jus', 'jus d orange', 'jus de fruits',
+      'nectar', 'sirop', 'red bull', 'monster', 'energy drink', 'biere', 'vin', 'champagne', 'cidre',
+      'mojito', 'canette', 'pack d eau'
+    ],
+    epicerie: [
+      'farine', 'lait', 'lait de coco', 'lait concentre', 'citron', 'citron vert', 'jus de citron',
+      'vinaigre', 'vinaigre balsamique', 'kinder', 'semoule', 'couscous', 'riz', 'pates', 'spaghetti',
+      'macaroni', 'penne', 'tagliatelle', 'nouilles', 'vermicelle', 'boulgour', 'quinoa', 'lentille',
+      'pois chiche', 'haricot rouge', 'haricot blanc', 'sucre', 'sucre vanille', 'sel', 'poivre', 'epice',
+      'epices', 'paprika', 'cumin', 'curcuma', 'cannelle', 'levure', 'maizena', 'huile', 'huile d olive',
+      'huile de tournesol', 'the', 'infusion', 'cafe', 'chicoree', 'chocolat', 'chocolat en poudre',
+      'nutella', 'pate a tartiner', 'confiture', 'miel', 'cereales', 'biscuit', 'gateau', 'bonbon',
+      'chips', 'gaufrette', 'madeleine', 'pain de mie', 'pain', 'biscotte', 'brioche', 'conserve',
+      'thon', 'sardine', 'maquereau', 'pate a pizza', 'bouillon', 'cube maggi', 'compote', 'miel liquide',
+      'sachet', 'papier cuisson'
+    ],
+    sauce: [
+      'sauce', 'sauce tomate', 'sauce blanche', 'sauce samurai', 'sauce algerienne', 'sauce andalouse',
+      'sauce barbecue', 'sauce soja', 'sauce curry', 'sauce piquante', 'ketchup', 'mayonnaise', 'mayo',
+      'moutarde', 'harissa', 'samurai', 'algerienne', 'andalouse', 'biggy', 'barbecue', 'bbq', 'pesto',
+      'sriracha', 'tabasco', 'aioli', 'tartare', 'coulis', 'concentre de tomate', 'passata', 'marinade',
+      'vinaigrette'
+    ],
+    frais: [
+      'fromage', 'fromage rape', 'rape', 'emmental', 'gruyere', 'mozzarella', 'cheddar', 'comte',
+      'camembert', 'chevre', 'feta', 'raclette', 'parmesan', 'ricotta', 'mascarpone', 'kiri', 'vache qui rit',
+      'boursin', 'fromage blanc', 'beurre', 'margarine', 'creme fraiche', 'creme liquide', 'yaourt',
+      'yahourt', 'skyr', 'petit suisse', 'actimel', 'danette', 'oeuf', 'oeufs', 'jambon', 'charcuterie',
+      'saucisson', 'chorizo', 'lardon', 'poulet', 'escalope', 'blanc de poulet', 'dinde', 'viande',
+      'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez', 'saucisse', 'kefta',
+      'poisson', 'saumon', 'cabillaud', 'crevette', 'surimi', 'pate feuilletee', 'pate brisee', 'pizza',
+      'traiteur', 'surgele', 'glace'
+    ]
+  };
+
+  const CLE_ITEMS = 'metro_liste';
+  const CLE_CORRECTIONS = 'metro_corrections';
+
+  let items = charger(CLE_ITEMS, []);
+  let corrections = charger(CLE_CORRECTIONS, {});
+
+  function charger(cle, defaut) {
+    try { return JSON.parse(localStorage.getItem(cle)) || defaut; }
+    catch (e) { return defaut; }
+  }
+
+  function sauver() {
+    localStorage.setItem(CLE_ITEMS, JSON.stringify(items));
+    localStorage.setItem(CLE_CORRECTIONS, JSON.stringify(corrections));
+  }
+
+  /* ===== NORMALISATION ===== */
+  function normaliser(txt) {
+    return txt
+      .toLowerCase()
+      .replace(/\u0153/g, 'oe').replace(/\u00e6/g, 'ae')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  // Retire les quantités en début de ligne pour ne garder que le produit
+  function sansQuantite(txtNormalise) {
+    return txtNormalise
+      .replace(/^(\d+([.,]\d+)?\s*)?(kg|kilos?|g|grammes?|l|litres?|cl|ml|x|pcs?|pieces?|paquets?|boites?|bouteilles?|barquettes?|packs?|sachets?|pots?|tranches?|botte?s?)?\s*/, '')
+      .replace(/\s*(x\s*)?\d+([.,]\d+)?\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)?$/, '')
+      .trim();
+  }
+
+  function contientMot(texte, motCle) {
+    const m = motCle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|\\s)' + m + '(s|x|es)?(\\s|$)').test(texte);
+  }
+
+  /* ===== CLASSEMENT ===== */
+  function classer(label) {
+    const complet = normaliser(label);
+    const produit = sansQuantite(complet) || complet;
+
+    if (corrections[produit]) return corrections[produit];
+
+    let meilleur = null;
+    let longueur = 0;
+
+    for (const cat of CATEGORIES) {
+      const mots = MOTS[cat.id];
+      if (!mots) continue;
+      for (const mot of mots) {
+        if (mot.length > longueur && (contientMot(produit, mot) || contientMot(complet, mot))) {
+          meilleur = cat.id;
+          longueur = mot.length;
+        }
+      }
+    }
+
+    return meilleur || 'autres';
+  }
+
+  /* ===== AJOUT ===== */
+  function ajouterListe() {
+    const zone = document.getElementById('input');
+    const lignes = zone.value
+      .split(/[\n,;]+|\s+\+\s+/)
+      .map(l => l.replace(/^[\s\-•*–—]+/, '').trim())
+      .filter(l => l.length > 0);
+
+    if (lignes.length === 0) {
+      toast('Rien à ajouter');
+      return;
+    }
+
+    let ajoutes = 0;
+    for (const ligne of lignes) {
+      const cle = normaliser(ligne);
+      if (items.some(it => normaliser(it.label) === cle)) continue;
+      items.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        label: ligne,
+        cat: classer(ligne),
+        fait: false
+      });
+      ajoutes++;
+    }
+
+    zone.value = '';
+    sauver();
+    rendre();
+    toast(ajoutes + (ajoutes > 1 ? ' articles triés' : ' article trié'));
+  }
+
+  /* ===== ACTIONS ===== */
+  function basculer(id) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    it.fait = !it.fait;
+    sauver();
+    rendre();
+  }
+
+  function changerCat(id, cat) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    it.cat = cat;
+    // On mémorise la correction pour les prochaines listes
+    const produit = sansQuantite(normaliser(it.label)) || normaliser(it.label);
+    if (produit) corrections[produit] = cat;
+    sauver();
+    rendre();
+  }
+
+  function supprimer(id) {
+    items = items.filter(i => i.id !== id);
+    sauver();
+    rendre();
+  }
+
+  function decocherTout() {
+    items.forEach(i => i.fait = false);
+    sauver();
+    rendre();
+  }
+
+  function supprimerCoches() {
+    const avant = items.length;
+    items = items.filter(i => !i.fait);
+    sauver();
+    rendre();
+    toast((avant - items.length) + ' article(s) retiré(s)');
+  }
+
+  function toutEffacer() {
+    if (!items.length) return;
+    if (!confirm('Effacer toute la liste ?')) return;
+    items = [];
+    sauver();
+    rendre();
+  }
+
+  function copierListe() {
+    if (!items.length) { toast('Liste vide'); return; }
+    let txt = '';
+    for (const cat of CATEGORIES) {
+      const lot = items.filter(i => i.cat === cat.id);
+      if (!lot.length) continue;
+      txt += cat.nom.toUpperCase() + '\n';
+      lot.forEach(i => { txt += '- ' + i.label + (i.fait ? ' (ok)' : '') + '\n'; });
+      txt += '\n';
+    }
+    navigator.clipboard.writeText(txt.trim())
+      .then(() => toast('Liste copiée'))
+      .catch(() => toast('Copie impossible'));
+  }
+
+  /* ===== AFFICHAGE ===== */
+  function echapper(s) {
+    return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function rendre() {
+    const zone = document.getElementById('liste');
+    const compteur = document.getElementById('counter');
+    const faits = items.filter(i => i.fait).length;
+    compteur.textContent = faits + ' / ' + items.length;
+
+    if (!items.length) {
+      zone.innerHTML = '<div class="empty">Ta liste est vide</div>';
+      return;
+    }
+
+    let html = '';
+    CATEGORIES.forEach((cat, index) => {
+      const lot = items.filter(i => i.cat === cat.id);
+      if (!lot.length) return;
+      // Les articles cochés descendent en bas de leur rayon
+      lot.sort((a, b) => (a.fait === b.fait) ? 0 : (a.fait ? 1 : -1));
+
+      html += '<div class="cat-block">';
+      html += '<div class="cat-title"><span class="num">' + (index + 1) + '</span>' +
+              echapper(cat.nom) + '<span class="count">' + lot.length + '</span></div>';
+
+      for (const it of lot) {
+        const options = CATEGORIES.map(c =>
+          '<option value="' + c.id + '"' + (c.id === it.cat ? ' selected' : '') + '>' + echapper(c.court) + '</option>'
+        ).join('');
+
+        html += '<div class="item' + (it.fait ? ' done' : '') + '">' +
+                  '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
+                  '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
+                  '<select onchange="changerCat(\'' + it.id + '\', this.value)">' + options + '</select>' +
+                  '<button class="del" onclick="supprimer(\'' + it.id + '\')">×</button>' +
+                '</div>';
+      }
+      html += '</div>';
+    });
+
+    zone.innerHTML = html;
+  }
+
+  let minuteurToast;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(minuteurToast);
+    minuteurToast = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  document.getElementById('input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ajouterListe();
+  });
+
+  rendre();
+</script>
+</body>
+</html>
