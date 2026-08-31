@@ -57,10 +57,14 @@ dans la liste.
   (le lien « Réinitialiser les rayons mémorisés » les efface et reclasse la liste)
 - Copier la liste triée, tout décocher, retirer les articles cochés, tout effacer
 
+### Combien j'ai pris, article par article
+Chaque ligne de la liste porte un compteur **`− n sur N +`** : `n` est ce que tu as réussi
+à prendre, `N` la quantité demandée (modifiable en touchant le nombre de droite). Cocher la
+case met tout, décocher remet à zéro, et un article pris en partie s'entoure de jaune.
+
 ### Fin des courses et historique
-Le bouton **« Fin des courses »** ouvre un bilan : chaque article y affiche la quantité
-demandée (déduite du texte : « 8 yaourts », « 2 kg farine », « coca x3 » — 1 par défaut)
-et la quantité réellement prise, ajustable avec `+` / `−` ou au clavier.
+Le bouton **« Fin des courses »** ouvre le récapitulatif, pré-rempli avec ce que tu as saisi
+dans la liste, ajustable une dernière fois avec `+` / `−` ou au clavier.
 
 À l'enregistrement :
 - ce qui a été pris en entier sort de la liste ;

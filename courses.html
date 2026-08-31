@@ -294,10 +294,17 @@
     border-radius: 10px;
     padding: 9px 10px;
     display: flex;
-    align-items: center;
-    gap: 9px;
+    flex-direction: column;
+    gap: 7px;
     margin-bottom: 6px;
     transition: opacity 0.15s;
+  }
+
+  .item-haut {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
   }
 
   .item .check {
@@ -319,21 +326,15 @@
   .item.done { opacity: 0.55; }
   .item.done .check { background: var(--accent); border-color: var(--accent); }
 
-  .item-txt {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    cursor: pointer;
-    min-width: 0;
-  }
-
   .item .name {
-    font-size: 0.92rem;
+    flex: 1;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--ink);
+    line-height: 1.35;
     word-break: break-word;
+    cursor: pointer;
+    min-width: 0;
   }
 
   .item.done .name { color: var(--muted); text-decoration: line-through; }
@@ -342,8 +343,11 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
+    padding-left: 31px;   /* aligné sous le nom, après la case à cocher */
   }
+
+  .item-meta select { margin-left: auto; }
 
   /* Quantité détectée, modifiable d'un appui */
   .qte-chip {
@@ -361,6 +365,65 @@
   }
 
   .qte-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* « J'ai pris 3 sur 5 » : saisie directe dans la liste */
+  .pris-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 4px;
+  }
+
+  .pris-box .pb {
+    width: 22px; height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .pris-box .pb:hover { background: var(--accent); }
+
+  .pris-input {
+    width: 30px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    padding: 1px 0;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .pris-input::-webkit-outer-spin-button,
+  .pris-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pris-input:focus { border-bottom-color: var(--accent); }
+
+  .pris-sur {
+    font-size: 0.55rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .pris-box .qte-chip { border: none; background: transparent; padding: 2px 2px; }
+
+  /* Article pris en partie : repérable d'un coup d'œil */
+  .item.partiel { border-color: var(--accent-2); }
+  .item.partiel .pris-input { color: var(--accent-2); border-bottom-color: var(--accent-2); }
 
   .qte-input {
     width: 52px;
@@ -815,8 +878,8 @@
       <button class="modal-close" onclick="fermerBilan()">×</button>
     </div>
     <div class="modal-sub">
-      Ajuste ce que tu as vraiment réussi à prendre. Le reste part dans l'historique
-      comme manquant (ex : 5 au lieu de 8).
+      Récapitulatif de ce que tu as pris, repris de ta liste. Ajuste si besoin :
+      le reste part dans l'historique comme manquant (ex : 5 au lieu de 8).
     </div>
     <div class="bilan-resume" id="bilanResume">—</div>
     <div class="bilan-list" id="bilanList"></div>
@@ -1136,6 +1199,13 @@
     return extraireQuantite(it.label).qte;
   }
 
+  // Ce qui a déjà été mis dans le caddie pour cet article
+  function prisDe(it) {
+    const max = qteDe(it);
+    if (typeof it.pris === 'number') return Math.max(0, Math.min(it.pris, max));
+    return it.fait ? max : 0;
+  }
+
   function uniteDe(it) {
     return (typeof it.unite === 'string') ? it.unite : extraireQuantite(it.label).unite;
   }
@@ -1250,8 +1320,57 @@
     const it = items.find(i => i.id === id);
     if (!it) return;
     it.fait = !it.fait;
+    it.pris = it.fait ? qteDe(it) : 0;   // coché = tout pris, décoché = rien pris
     sauver();
     rendre();
+  }
+
+  /* ===== COMBIEN J'AI PRIS, ARTICLE PAR ARTICLE ===== */
+  function appliquerPris(it, valeur) {
+    const max = qteDe(it);
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > max) v = max;
+    const etaitFait = it.fait;
+    it.pris = v;
+    it.fait = (max > 0 && v >= max);
+    sauver();
+    return etaitFait !== it.fait;   // le statut a-t-il basculé ?
+  }
+
+  function majPrisListe(id, delta, ev) {
+    if (ev) ev.stopPropagation();
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const bascule = appliquerPris(it, prisDe(it) + delta);
+    bascule ? rendre() : rafraichirLigne(id);
+  }
+
+  function saisirPrisListe(id, valeur) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const bascule = appliquerPris(it, valeur);
+    bascule ? rendre() : rafraichirLigne(id);
+  }
+
+  // Mise à jour d'une seule ligne : évite de reconstruire la liste à chaque appui
+  function rafraichirLigne(id) {
+    const it = items.find(i => i.id === id);
+    const ligne = document.getElementById('it-' + id);
+    if (!it || !ligne) return;
+    const max = qteDe(it), pris = prisDe(it);
+    ligne.classList.toggle('done', !!it.fait);
+    ligne.classList.toggle('partiel', pris > 0 && pris < max);
+    const coche = ligne.querySelector('.check');
+    if (coche) coche.textContent = it.fait ? '✔' : '';
+    const champ = ligne.querySelector('.pris-input');
+    if (champ && document.activeElement !== champ) champ.value = String(pris);
+    majCompteur();
+  }
+
+  function majCompteur() {
+    const el = document.getElementById('counter');
+    if (el) el.textContent = items.filter(i => i.fait).length + ' / ' + items.length;
   }
 
   function changerCat(id, cat) {
@@ -1340,7 +1459,7 @@
   }
 
   function decocherTout() {
-    items.forEach(i => i.fait = false);
+    items.forEach(i => { i.fait = false; i.pris = 0; });
     sauver();
     rendre();
   }
@@ -1392,9 +1511,9 @@
 
   function ouvrirBilan() {
     if (!items.length) { toast('Liste vide'); return; }
-    // Par défaut : les articles cochés sont pris en entier, les autres pas pris
+    // On repart de ce qui a été saisi article par article pendant les courses
     bilan = {};
-    items.forEach(it => bilan[it.id] = it.fait ? qteDe(it) : 0);
+    items.forEach(it => bilan[it.id] = prisDe(it));
     rendreBilan();
     document.getElementById('overlay').hidden = false;
     document.body.style.overflow = 'hidden';
@@ -1500,6 +1619,7 @@
         // L'article reste dans la liste, marqué, avec la quantité qu'il reste à prendre
         gardes.push(Object.assign({}, it, {
           fait: false,
+          pris: 0,
           qte: max - pris,
           unite: uniteDe(it),
           manque: { pris: pris, demande: max, unite: uniteDe(it), date: maintenant.toLocaleDateString('fr-FR') }
@@ -1640,9 +1760,7 @@
 
   function rendre() {
     const zone = document.getElementById('liste');
-    const compteur = document.getElementById('counter');
-    const faits = items.filter(i => i.fait).length;
-    compteur.textContent = faits + ' / ' + items.length;
+    majCompteur();
 
     if (!items.length) {
       zone.innerHTML = '<div class="empty">Ta liste est vide</div>';
@@ -1667,21 +1785,34 @@
 
         const q = qteDe(it);
         const u = uniteDe(it);
+        const pris = prisDe(it);
         const aRanger = it.cat === 'autres';
+        const partiel = pris > 0 && pris < q;
 
-        html += '<div class="item' + (it.fait ? ' done' : '') + (aRanger ? ' a-ranger' : '') + '">' +
-                  '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
-                  '<div class="item-txt">' +
+        html += '<div class="item' + (it.fait ? ' done' : '') + (partiel ? ' partiel' : '') +
+                  (aRanger ? ' a-ranger' : '') + '" id="it-' + it.id + '">' +
+                  '<div class="item-haut">' +
+                    '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
                     '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
-                    '<div class="item-meta">' +
-                      '<button class="qte-chip" id="q-' + it.id + '" onclick="editerQte(\'' + it.id + '\', event)" ' +
-                              'title="Modifier la quantité">' + (u ? nb(q) + ' ' + uniteAffichee(q, u) : '× ' + nb(q)) + '</button>' +
+                    '<button class="del" onclick="supprimer(\'' + it.id + '\')">×</button>' +
+                  '</div>' +
+                  '<div class="item-meta">' +
+                      '<span class="pris-box" title="Combien tu as pris">' +
+                        '<button class="pb" onclick="majPrisListe(\'' + it.id + '\', -1, event)">−</button>' +
+                        '<input class="pris-input" type="number" min="0" step="1" value="' + nb(pris) + '" ' +
+                               'onclick="event.stopPropagation()" ' +
+                               'onchange="saisirPrisListe(\'' + it.id + '\', this.value)" ' +
+                               'onkeydown="if (event.key === \'Enter\') this.blur()">' +
+                        '<span class="pris-sur">sur</span>' +
+                        '<button class="qte-chip" id="q-' + it.id + '" onclick="editerQte(\'' + it.id + '\', event)" ' +
+                                'title="Modifier la quantité à prendre">' +
+                                nb(q) + (u ? ' ' + uniteAffichee(q, u) : '') + '</button>' +
+                        '<button class="pb" onclick="majPrisListe(\'' + it.id + '\', 1, event)">+</button>' +
+                      '</span>' +
                       etiquetteManque(it) +
                       (aRanger ? '<span class="tag-ranger">Choisis son rayon →</span>' : '') +
-                    '</div>' +
+                      '<select onchange="changerCat(\'' + it.id + '\', this.value)">' + options + '</select>' +
                   '</div>' +
-                  '<select onchange="changerCat(\'' + it.id + '\', this.value)">' + options + '</select>' +
-                  '<button class="del" onclick="supprimer(\'' + it.id + '\')">×</button>' +
                 '</div>';
       }
       html += '</div>';
