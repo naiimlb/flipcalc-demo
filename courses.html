@@ -319,16 +319,45 @@
   .item.done { opacity: 0.55; }
   .item.done .check { background: var(--accent); border-color: var(--accent); }
 
-  .item .name {
+  .item-txt {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .item .name {
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--ink);
-    cursor: pointer;
     word-break: break-word;
   }
 
   .item.done .name { color: var(--muted); text-decoration: line-through; }
+
+  /* Étiquette « ce qu'il manque », posée après une fin de courses */
+  .tag-manque {
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.57rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .tag-manque.rien {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .item.done .tag-manque { opacity: 0.45; }
 
   .item select {
     background: var(--surface);
@@ -996,7 +1025,11 @@
       const lot = items.filter(i => i.cat === cat.id);
       if (!lot.length) continue;
       txt += cat.nom.toUpperCase() + '\n';
-      lot.forEach(i => { txt += '- ' + i.label + (i.fait ? ' (ok)' : '') + '\n'; });
+      lot.forEach(i => {
+        txt += '- ' + i.label +
+               (i.manque ? ' (' + texteManque(i.manque).toLowerCase() + ')' : '') +
+               (i.fait ? ' (ok)' : '') + '\n';
+      });
       txt += '\n';
     }
     navigator.clipboard.writeText(txt.trim())
@@ -1119,7 +1152,13 @@
           pris: pris,
           unite: uniteDe(it)
         });
-        gardes.push(Object.assign({}, it, { fait: false }));   // reste à prendre
+        // L'article reste dans la liste, marqué, avec la quantité qu'il reste à prendre
+        gardes.push(Object.assign({}, it, {
+          fait: false,
+          qte: max - pris,
+          unite: uniteDe(it),
+          manque: { pris: pris, demande: max, unite: uniteDe(it), date: maintenant.toLocaleDateString('fr-FR') }
+        }));
       }
     }
 
@@ -1157,14 +1196,14 @@
     for (const m of entree.manquants) {
       const cle = normaliser(m.label);
       if (items.some(it => normaliser(it.label) === cle)) continue;
-      const q = extraireQuantite(m.label);
       items.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
         label: m.label,
         cat: m.cat || classer(m.label),
         fait: false,
-        qte: q.qte,
-        unite: q.unite
+        qte: m.demande - m.pris,
+        unite: m.unite || '',
+        manque: { pris: m.pris, demande: m.demande, unite: m.unite || '', date: entree.date }
       });
       ajoutes++;
     }
@@ -1235,6 +1274,21 @@
     return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // « Manque 3 sur 8 » / « Pas pris » — d'après la dernière fin de courses
+  function texteManque(m) {
+    const u = m.unite ? ' ' + m.unite : '';
+    return m.pris > 0
+      ? 'Manque ' + nb(m.demande - m.pris) + u + ' sur ' + nb(m.demande) + u
+      : 'Pas pris' + (m.demande > 1 ? ' (0 / ' + nb(m.demande) + u + ')' : '');
+  }
+
+  function etiquetteManque(it) {
+    if (!it.manque) return '';
+    return '<span class="tag-manque' + (it.manque.pris > 0 ? '' : ' rien') + '">' +
+             echapper(texteManque(it.manque)) +
+           '</span>';
+  }
+
   function rendre() {
     const zone = document.getElementById('liste');
     const compteur = document.getElementById('counter');
@@ -1264,7 +1318,10 @@
 
         html += '<div class="item' + (it.fait ? ' done' : '') + '">' +
                   '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
-                  '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
+                  '<div class="item-txt" onclick="basculer(\'' + it.id + '\')">' +
+                    '<span class="name">' + echapper(it.label) + '</span>' +
+                    etiquetteManque(it) +
+                  '</div>' +
                   '<select onchange="changerCat(\'' + it.id + '\', this.value)">' + options + '</select>' +
                   '<button class="del" onclick="supprimer(\'' + it.id + '\')">×</button>' +
                 '</div>';

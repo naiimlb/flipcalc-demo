@@ -36,7 +36,9 @@ et la quantité réellement prise, ajustable avec `+` / `−` ou au clavier.
 
 À l'enregistrement :
 - ce qui a été pris en entier sort de la liste ;
-- ce qui manque **reste dans la liste** pour la prochaine fois ;
+- ce qui manque **reste dans la liste**, marqué d'une étiquette rose
+  (« MANQUE 3 SUR 8 », « MANQUE 1 KG SUR 2 KG », « PAS PRIS »), et sa quantité
+  devient ce qu'il reste à prendre ;
 - la course part dans l'**historique** avec le détail des manquants, sous la forme
   `5 au lieu de 8`, `1 kg au lieu de 2 kg` ou `pas pris (0 / 1)`.
 
