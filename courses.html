@@ -863,8 +863,18 @@
       'creme hydratante', 'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant',
       'huile pour cheveux', 'vernis', 'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle',
       'javel', 'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
-      'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire', 'allumette',
-      'piles', 'ampoule', 'sac congelation'
+      'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire',
+    'degraissant', 'detergent', 'detartrant', 'anticalcaire', 'anti calcaire', 'gel wc',
+    'nettoyant sol', 'nettoyant four', 'multi usages', 'spray nettoyant', 'essuie mains',
+    'papier essuie mains', 'torchon', 'chiffon', 'microfibre', 'gants jetables', 'gobelet',
+    'serviette papier', 'nappe', 'couvert jetable', 'barquette jetable', 'film etirable', 'allumette',
+      'piles', 'ampoule', 'sac congelation',
+      // entretien professionnel
+      'degraissant', 'detergent', 'detartrant', 'anticalcaire', 'anti calcaire', 'gel wc',
+      'wc', 'nettoyant sol', 'nettoyant four', 'multi usages', 'spray nettoyant',
+      'essuie mains', 'papier essuie mains', 'torchon', 'chiffon', 'microfibre', 'gants',
+      'gants jetables', 'gobelet', 'serviette papier', 'nappe', 'couvert jetable',
+      'barquette jetable', 'film etirable', 'papier kraft'
     ],
     boissons: [
       'boisson', 'eau', 'eau gazeuse', 'eau plate', 'evian', 'cristaline', 'volvic', 'perrier', 'badoit',
@@ -903,7 +913,14 @@
       'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez', 'saucisse', 'kefta',
       'poisson', 'saumon', 'cabillaud', 'crevette', 'surimi', 'pate feuilletee', 'pate brisee', 'pizza',
       'traiteur', 'surgele', 'glace', 'nuggets', 'cordon bleu', 'poisson pane', 'frites',
-      'danone', 'activia', 'yop', 'babybel'
+      'danone', 'activia', 'yop', 'babybel',
+      // fromages et charcuteries des listes pro
+      'mozza', 'reblochon', 'burrata', 'brie', 'munster', 'maroilles', 'morbier', 'tomme',
+      'cantal', 'gouda', 'edam', 'bleu', 'roquefort', 'gorgonzola', 'saint nectaire',
+      'coulommiers', 'chaource', 'manchego', 'pecorino', 'provolone', 'halloumi',
+      'philadelphia', 'cream cheese', 'faisselle', 'fromage frais', 'cancoillotte',
+      'saint moret', 'bacon', 'coppa', 'pastrami', 'poitrine', 'magret', 'confit',
+      'foie gras', 'rillettes', 'pate', 'terrine'
     ]
   };
 
@@ -942,6 +959,11 @@
     'yop', 'fromage', 'fromage blanc', 'fromage rape', 'rape', 'emmental', 'gruyere',
     'mozzarella', 'cheddar', 'comte', 'camembert', 'chevre', 'feta', 'raclette', 'parmesan',
     'ricotta', 'mascarpone', 'kiri', 'babybel', 'vache qui rit', 'boursin', 'beurre',
+    'mozza', 'reblochon', 'burrata', 'brie', 'munster', 'maroilles', 'morbier', 'tomme',
+    'cantal', 'gouda', 'edam', 'roquefort', 'gorgonzola', 'saint nectaire', 'coulommiers',
+    'chaource', 'manchego', 'pecorino', 'provolone', 'halloumi', 'philadelphia',
+    'cream cheese', 'faisselle', 'fromage frais', 'cancoillotte', 'saint moret', 'bacon',
+    'coppa', 'pastrami', 'magret', 'foie gras', 'rillettes', 'terrine',
     'margarine', 'creme fraiche', 'creme liquide', 'oeuf', 'oeufs', 'jambon', 'charcuterie',
     'saucisson', 'chorizo', 'lardon', 'poulet', 'escalope', 'blanc de poulet', 'dinde',
     'viande', 'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez',
@@ -957,6 +979,10 @@
     'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle', 'javel',
     'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
     'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire',
+    'degraissant', 'detergent', 'detartrant', 'anticalcaire', 'anti calcaire', 'gel wc',
+    'nettoyant sol', 'nettoyant four', 'multi usages', 'spray nettoyant', 'essuie mains',
+    'papier essuie mains', 'torchon', 'chiffon', 'microfibre', 'gants jetables', 'gobelet',
+    'serviette papier', 'nappe', 'couvert jetable', 'barquette jetable', 'film etirable',
     'sac congelation', 'allumette', 'piles', 'ampoule',
     // fruits & légumes : les légumes ne sont jamais des parfums
     'salade', 'laitue', 'roquette', 'mache', 'epinard', 'chou', 'chou fleur', 'brocoli',
@@ -1029,9 +1055,46 @@
     return (q > 1 && CONDITIONNEMENTS.indexOf(u) !== -1) ? u + 's' : u;
   }
 
+  // Format des listes Métro : « … 450G — 5 Piece », « … 200 feuilles x 6 — 1 Pack ».
+  // Ce qui suit le tiret final est LA quantité à prendre ; les contenances citées
+  // dans le nom du produit (750 ml, 450G, x 6) ne sont que sa description.
+  const FIN_QUANTITE = /\s*[—–-]\s*(\d+(?:[.,]\d+)?)\s*([A-Za-zÀ-ÿ]*)\.?\s*$/;
+  const UNITES_FIN = {
+    piece: '', pieces: '', pce: '', pces: '', pc: '', pcs: '', unite: '', unites: '', u: '',
+    kg: 'kg', kilo: 'kg', kilos: 'kg', g: 'g', gr: 'g', gramme: 'g', grammes: 'g',
+    l: 'l', litre: 'l', litres: 'l', cl: 'cl', ml: 'ml',
+    pack: 'pack', packs: 'pack', colis: 'colis', carton: 'carton', cartons: 'carton',
+    lot: 'lot', lots: 'lot', sachet: 'sachet', sachets: 'sachet', boite: 'boite',
+    boites: 'boite', barquette: 'barquette', barquettes: 'barquette',
+    bouteille: 'bouteille', bouteilles: 'bouteille', pot: 'pot', pots: 'pot',
+    brique: 'brique', briques: 'brique', plaque: 'plaque', plaques: 'plaque',
+    rouleau: 'rouleau', rouleaux: 'rouleau', bidon: 'bidon', bidons: 'bidon'
+  };
+
+  function quantiteFinale(label) {
+    const m = label.match(FIN_QUANTITE);
+    if (!m) return null;
+    const q = parseFloat(m[1].replace(',', '.'));
+    if (!(q > 0) || q >= 10000) return null;
+    const mot = (m[2] || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (mot === '') return { qte: q, unite: '' };
+    if (!(mot in UNITES_FIN)) return null;   // mot inconnu : ce n'est pas une quantité
+    return { qte: q, unite: UNITES_FIN[mot] };
+  }
+
+  // Nom de l'article sans la quantité finale, pour une liste lisible
+  function sansQuantiteFinale(label) {
+    if (!quantiteFinale(label)) return label;
+    return label.replace(FIN_QUANTITE, '').trim() || label;
+  }
+
   // Combien d'unités l'article demande-t-il ?
   // « 8 yaourts », « yaourts x8 », « 3x coca », « lot de 6 », « 2 kg farine », « 1,5 l lait »
   function extraireQuantite(label) {
+    const fin = quantiteFinale(label);
+    if (fin) return fin;
+
     // normalisation qui préserve les décimales : « 1,5 l » ne doit pas devenir « 1 5 l »
     const n = label
       .toLowerCase()
@@ -1160,10 +1223,11 @@
     }
 
     let ajoutes = 0;
-    for (const ligne of lignes) {
+    for (const brut of lignes) {
+      const q = extraireQuantite(brut);
+      const ligne = sansQuantiteFinale(brut);   // « … 450G — 5 Piece » → « … 450G »
       const cle = normaliser(ligne);
       if (items.some(it => normaliser(it.label) === cle)) continue;
-      const q = extraireQuantite(ligne);
       items.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
         label: ligne,
@@ -1638,6 +1702,23 @@
   document.getElementById('input').addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ajouterListe();
   });
+
+  // Les listes collées avant cette version gardaient « — 5 Piece » dans le nom
+  // et lisaient la contenance (450 g) comme quantité : on les remet d'aplomb.
+  (function reprendreQuantitesMetro() {
+    if (localStorage.getItem('metro_maj_quantites') === 'fin') return;
+    let change = false;
+    items.forEach(it => {
+      const fin = quantiteFinale(it.label);
+      if (!fin) return;
+      it.label = sansQuantiteFinale(it.label);
+      it.qte = fin.qte;
+      it.unite = fin.unite;
+      change = true;
+    });
+    localStorage.setItem('metro_maj_quantites', 'fin');
+    if (change) { sauver(); toast('Quantités relues sur la liste'); }
+  })();
 
   rendre();
   rendreHistorique();

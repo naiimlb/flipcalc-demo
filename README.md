@@ -33,6 +33,12 @@ pour le classement (`chips saveur poulet` reste en épicerie).
 Utilisation : coller une liste (un article par ligne ou séparés par des virgules),
 puis « Trier ma liste ». Les doublons sont ignorés.
 
+**Listes copiées depuis Métro** — dans `METRO PROFESSIONAL Mini bobine 2 plis 200 feuilles
+x 6 — 1 Pack` ou `REBLOCHON DE SAVOIE 450G — 5 Piece`, c'est **ce qui suit le tiret final**
+qui donne la quantité (1 pack, 5 pièces) ; les contenances citées dans le nom (750 ml, 450 g,
+x 6) ne sont que la description du produit. Cette fin de ligne est retirée du nom affiché,
+la quantité passe dans la pastille.
+
 **Quantités** — détectées à l'ajout et affichées en pastille sur chaque article :
 `8 yaourts` → ×8, `2 kg farine` → 2 kg, `coca x6` → ×6, `1,5 l lait` → 1,5 l ;
 1 par défaut. Un conditionnement compte pour un article à prendre, pas pour son contenu :
