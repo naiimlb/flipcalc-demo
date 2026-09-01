@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maze Run">
+<meta name="theme-color" content="#0b1020">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Maze Run — Labyrinthe 3D</title>
+<style>
+  :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px); }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1020; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; position: fixed; }
+  body { height: 100dvh; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #touch { position: fixed; inset: 0; touch-action: none; z-index: 2; }
+  .hidden { display: none !important; }
+
+  /* Joystick */
+  #joy { position: fixed; width: 132px; height: 132px; border-radius: 50%; z-index: 3; pointer-events: none; transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.10); border: 2px solid rgba(255,255,255,0.35); opacity: 0; transition: opacity .12s; backdrop-filter: blur(4px); }
+  #joy.on { opacity: 1; }
+  #joyKnob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; border-radius: 50%; transform: translate(-50%,-50%);
+    background: radial-gradient(circle at 35% 30%, #fff, #b9c6ff); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+
+  /* Vignette temps faible */
+  #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 4; opacity: 0; transition: opacity .3s;
+    box-shadow: inset 0 0 120px rgba(255,40,40,.65); }
+  #vignette.on { opacity: 1; animation: pulse .8s infinite alternate; }
+  @keyframes pulse { from { opacity: .35; } to { opacity: 1; } }
+
+  /* HUD */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #hud button { pointer-events: auto; }
+  .topbar { position: absolute; left: calc(12px + var(--sal)); right: calc(12px + var(--sar)); top: calc(10px + var(--sat));
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .chip { background: rgba(10,12,28,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.15);
+    padding: 8px 12px; border-radius: 14px; font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .timer { font-size: 34px; font-weight: 900; letter-spacing: -1px; font-variant-numeric: tabular-nums; text-shadow: 0 2px 12px rgba(0,0,0,.6);
+    background: rgba(10,12,28,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.15);
+    padding: 4px 18px; border-radius: 18px; min-width: 110px; text-align: center; transition: color .2s; }
+  .timer.low { color: #ff5252; animation: shake .5s infinite; }
+  @keyframes shake { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  .sidebtns { position: absolute; right: calc(12px + var(--sar)); top: calc(70px + var(--sat)); display: flex; flex-direction: column; gap: 10px; }
+  .round { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(10,12,28,.6);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff; font-size: 22px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,.3); transition: transform .1s, opacity .2s; }
+  .round:active { transform: scale(.92); }
+  .round.cool { opacity: .4; }
+  #minimap { position: absolute; left: calc(12px + var(--sal)); top: calc(70px + var(--sat)); border-radius: 10px; pointer-events: none; }
+  .tip { position: absolute; left: 50%; bottom: calc(28px + var(--sab)); transform: translateX(-50%); max-width: min(92vw, 420px);
+    background: rgba(255,255,255,.95); color: #15182b; padding: 14px 18px; border-radius: 18px; font-weight: 700; font-size: 16px; line-height: 1.35; text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: popin .35s cubic-bezier(.2,1.4,.4,1); }
+  .toast { position: absolute; left: 50%; top: calc(140px + var(--sat)); transform: translateX(-50%); background: rgba(10,12,28,.75); backdrop-filter: blur(10px);
+    color: #fff; padding: 10px 18px; border-radius: 14px; font-weight: 800; font-size: 17px; white-space: nowrap; animation: popin .3s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes popin { from { transform: translateX(-50%) scale(.6); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+
+  /* Bannière d'intro */
+  .banner { position: fixed; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    pointer-events: auto; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,.45)); animation: fadein .4s; }
+  .b-emoji { font-size: 74px; animation: bounce 1.2s infinite alternate ease-in-out; }
+  .b-title { font-size: clamp(28px, 8vw, 44px); font-weight: 900; letter-spacing: -1px; text-shadow: 0 4px 24px rgba(0,0,0,.6); margin-top: 6px; }
+  .b-sub { font-size: 18px; font-weight: 600; opacity: .95; margin-top: 8px; text-shadow: 0 2px 10px rgba(0,0,0,.6); padding: 0 24px; }
+  .b-skip { position: absolute; bottom: calc(30px + var(--sab)); font-size: 14px; opacity: .7; }
+  @keyframes bounce { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Overlays */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: calc(20px + var(--sat)) 18px calc(20px + var(--sab)); background: linear-gradient(180deg, rgba(8,10,30,.55), rgba(8,10,30,.85)); animation: fadein .3s; }
+  .panel { background: rgba(16,18,40,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 26px; padding: 26px 22px; width: min(92vw, 420px); text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: popup .4s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes popup { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .logo { font-size: clamp(52px, 15vw, 84px); font-weight: 900; letter-spacing: -3px; line-height: .95; text-align: center;
+    background: linear-gradient(120deg, #fff 0%, #ffe066 35%, #ff7f50 60%, #22e6ff 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: shine 4s linear infinite; filter: drop-shadow(0 6px 24px rgba(0,0,0,.5)); }
+  .logo span { display: block; font-size: .6em; letter-spacing: 8px; padding-left: 8px; }
+  @keyframes shine { to { background-position: 200% 0; } }
+  .tagline { margin: 10px 0 18px; font-weight: 600; font-size: 16px; opacity: .92; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+  .big { font-size: 22px; font-weight: 900; padding: 16px 34px; border-radius: 22px; border: 0; color: #15182b; cursor: pointer;
+    background: linear-gradient(120deg, #ffe066, #ff9f43); box-shadow: 0 10px 30px rgba(255,159,67,.45), inset 0 -3px 0 rgba(0,0,0,.15);
+    transition: transform .1s; min-width: 220px; }
+  .big:active { transform: scale(.95); }
+  .btn { font-size: 17px; font-weight: 800; padding: 14px 20px; border-radius: 18px; border: 1px solid rgba(255,255,255,.2); color: #fff; cursor: pointer;
+    background: rgba(255,255,255,.12); transition: transform .1s; width: 100%; }
+  .btn.primary { background: linear-gradient(120deg, #ffe066, #ff9f43); color: #15182b; border: 0; }
+  .btn:active { transform: scale(.96); }
+  .ghost { background: transparent; border: 1px solid rgba(255,255,255,.25); color: #fff; padding: 10px 14px; border-radius: 14px; font-weight: 700; font-size: 14px; }
+  .btnrow { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+
+  /* Menu / sélection de niveaux */
+  #menu { justify-content: flex-start; }
+  .levels { width: min(94vw, 460px); margin-top: 18px; display: grid; grid-template-columns: 1fr; gap: 9px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    flex: 1; min-height: 0; padding: 4px 2px 12px; touch-action: pan-y; mask-image: linear-gradient(180deg, #000 92%, transparent); }
+  @media (min-width: 560px) { .levels { grid-template-columns: 1fr 1fr; } }
+  .card { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; padding: 10px 12px; border-radius: 18px; color: #fff;
+    background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; transition: transform .1s; }
+  .card:active { transform: scale(.97); }
+  .card.locked { opacity: .5; }
+  .card.done { border-color: rgba(255,224,102,.45); }
+  .c-emoji { font-size: 32px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.1); border-radius: 14px; flex-shrink: 0; }
+  .c-body { flex: 1; min-width: 0; }
+  .c-name { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .c-meta { font-size: 12px; opacity: .75; margin-top: 2px; }
+  .c-stars { margin-top: 3px; font-size: 14px; color: rgba(255,255,255,.25); display: flex; align-items: center; gap: 1px; }
+  .c-stars .on { color: #ffd54f; text-shadow: 0 0 8px rgba(255,213,79,.7); }
+  .c-best { margin-left: 8px; font-size: 11px; color: #9be7ff; }
+  .c-lock { font-size: 22px; opacity: .8; width: 28px; text-align: center; }
+  .menufoot { display: flex; gap: 10px; margin-top: 10px; }
+
+  /* Résultat */
+  .r-title { font-size: 34px; font-weight: 900; letter-spacing: -1px; }
+  .r-stars { font-size: 52px; letter-spacing: 6px; margin: 8px 0 6px; color: rgba(255,255,255,.2); line-height: 1; }
+  .r-stars .on { color: #ffd54f; text-shadow: 0 0 20px rgba(255,213,79,.8); display: inline-block; animation: starpop .5s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes starpop { from { transform: scale(0) rotate(-40deg); } to { transform: scale(1) rotate(0); } }
+  .r-lines { font-size: 16px; line-height: 1.7; opacity: .95; }
+  .r-lines b { color: #ffe066; }
+  .p-title { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+  .help { font-size: 13px; opacity: .7; margin-top: 12px; line-height: 1.5; }
+  #nogl .panel { color: #fff; }
+  .err { font-family: monospace; font-size: 12px; opacity: .7; margin-top: 8px; word-break: break-all; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="touch"></div>
+<div id="joy"><div id="joyKnob"></div></div>
+<div id="vignette"></div>
+
+<div id="hud" class="hidden">
+  <div class="topbar">
+    <div class="chip" id="hudLevel">🌼 Démo</div>
+    <div class="timer" id="hudTimer">∞</div>
+    <div class="chip" id="hudStars">⭐ 0/3</div>
+  </div>
+  <div class="sidebtns">
+    <button id="btnPause" class="round" aria-label="Pause">❚❚</button>
+    <button id="btnHint" class="round" aria-label="Indice">💡</button>
+  </div>
+  <canvas id="minimap"></canvas>
+  <div id="tip" class="tip hidden"></div>
+  <div id="toast" class="toast hidden"></div>
+</div>
+
+<div id="banner" class="banner hidden">
+  <div class="b-emoji">🌼</div>
+  <div class="b-title">Prairie</div>
+  <div class="b-sub"></div>
+  <div class="b-skip">Touche l’écran pour passer</div>
+</div>
+
+<div id="menu" class="overlay">
+  <div class="logo">MAZE<span>RUN</span></div>
+  <p class="tagline">Trouve la sortie du labyrinthe 3D avant la fin du temps !</p>
+  <button id="btnPlay" class="big">▶ Jouer</button>
+  <div class="levels scroll" id="levels"></div>
+  <div class="menufoot">
+    <button id="btnMute" class="ghost">🔊 Son</button>
+    <button id="btnReset" class="ghost">↺ Progression</button>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden">
+  <div class="panel">
+    <div class="p-title">Pause ⏸</div>
+    <div class="btnrow">
+      <button id="btnResume" class="btn primary">▶ Reprendre</button>
+      <button id="btnRestart" class="btn">↺ Recommencer</button>
+      <button id="btnMenu" class="btn">🏠 Menu</button>
+      <button id="btnMute2" class="btn">🔊 Son</button>
+    </div>
+    <div class="help">Glisse ton pouce pour bouger · 💡 montre le chemin 4 s (−5 s)</div>
+  </div>
+</div>
+
+<div id="result" class="overlay hidden">
+  <div class="panel">
+    <div class="r-title">Bravo !</div>
+    <div class="r-stars"></div>
+    <div class="r-lines"></div>
+    <div class="btnrow">
+      <button id="btnNext" class="btn primary">➡ Niveau suivant</button>
+      <button id="btnRetry" class="btn">↺ Rejouer</button>
+      <button id="btnResultMenu" class="btn">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<div id="nogl" class="overlay hidden">
+  <div class="panel"><div class="p-title">Oups 😢</div><div>Ton navigateur ne peut pas afficher la 3D (WebGL).</div><div class="err"></div></div>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/character.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
