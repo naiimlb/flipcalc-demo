@@ -1,0 +1,16 @@
+{
+  "name": "Liste Métro Bangers",
+  "short_name": "Liste Métro",
+  "description": "Liste de courses Métro triée par rayon, avec suivi de ce qui a été pris et historique des manquants.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08070A",
+  "theme_color": "#EA1F79",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icone-512.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+  ]
+}

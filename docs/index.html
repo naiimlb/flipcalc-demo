@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#EA1F79">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Liste Métro">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="icon" href="icone-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="Liste de courses Métro triée par rayon, avec suivi de ce qui a été pris et historique des manquants.">
+<title>#HASHTAGBANGERS — Ma Liste Métro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  /* =========================================================
+     PALETTE DE MARQUE — tout se change ici
+     ========================================================= */
+  :root {
+    --bg:        #08070A;   /* noir encre */
+    --bg-2:      #0E0B10;   /* nuance pour les dégradés de fond */
+    --surface:   #161115;   /* cartes */
+    --surface-2: #0F0C11;   /* champs, lignes */
+    --line:      #2B1F27;   /* bordures */
+    --hairline:  rgba(255,255,255,0.05);
+    --accent:    #EA1F79;   /* rose #HASHTAGBANGERS */
+    --accent-h:  #FF4FA3;   /* rose clair, pour les dégradés */
+    --accent-d:  #8E0C46;   /* ombre / relief du rose */
+    --accent-2:  #FFB3D4;   /* rose pâle, compteurs */
+    --vert:      #4ADE80;   /* récupéré */
+    --ink:       #FFFFFF;
+    --ink-soft:  #CFC3C9;
+    --muted:     #7A6A73;
+    --faint:     #45383F;
+    --radius:    18px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Confort iPhone : pas de surlignage bleu, pas de zoom au double appui,
+     pas de menu contextuel sur les boutons, et rien sous l'encoche */
+  button, select, input, textarea, .item .name, .check {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button, .cat-title, .hist-head, .check { -webkit-user-select: none; user-select: none; }
+  button, select { -webkit-touch-callout: none; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(120% 80% at 50% -10%, rgba(234,31,121,0.22), transparent 60%),
+      radial-gradient(rgba(234,31,121,0.09) 1px, transparent 1.2px),
+      linear-gradient(180deg, var(--bg-2), var(--bg) 40%);
+    background-size: 100% 620px, 9px 9px, 100% 100%;
+    background-repeat: no-repeat, repeat, no-repeat;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 calc(40px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  /* Grain imprimé, très léger, façon riso — au-dessus de tout mais intouchable */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0.35;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 max(14px, env(safe-area-inset-left)) 0 max(14px, env(safe-area-inset-right));
+  }
+
+  .full-bleed { margin: 0 -14px; }
+
+  .title-font {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===================== EN-TÊTE / MARQUE ===================== */
+  header { padding: 0 0 26px; position: relative; }
+
+  .brand-band {
+    position: relative;
+    background:
+      radial-gradient(90% 120% at 20% 0%, var(--accent-h), var(--accent) 55%, #C4126A 100%);
+    background-image:
+      radial-gradient(rgba(0,0,0,0.14) 1.3px, transparent 1.4px),
+      radial-gradient(90% 120% at 20% 0%, var(--accent-h), var(--accent) 55%, #C4126A 100%);
+    background-size: 7px 7px, 100% 100%;
+    padding-top: calc(26px + env(safe-area-inset-top));
+    padding-bottom: 46px;
+    padding-left: 18px;
+    padding-right: 18px;
+    text-align: center;
+    /* bord inférieur en biseau : un ticket déchiré plutôt qu'un rectangle */
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 26px), 0 100%);
+    margin-bottom: -26px;
+  }
+
+  /* halo diffus derrière le bandeau */
+  .brand-band::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -40px;
+    width: 260px; height: 90px;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(234,31,121,0.45), transparent);
+    filter: blur(14px);
+    pointer-events: none;
+  }
+
+  .brand-logo {
+    width: 96px;
+    height: 96px;
+    border-radius: 26%;
+    display: block;
+    margin: 0 auto 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,255,255,0.14);
+    animation: flotte 5s ease-in-out infinite;
+  }
+
+  @keyframes flotte {
+    0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+    50%      { transform: translateY(-5px) rotate(0.6deg); }
+  }
+
+  .wordmark {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.5rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+  }
+
+  .wordmark .bangers {
+    font-family: 'Permanent Marker', 'Comic Sans MS', cursive;
+    font-size: 1.05rem;
+    color: #0C0A0B;
+    letter-spacing: 0;
+    margin-left: 3px;
+    display: inline-block;
+    transform: rotate(-3deg);
+  }
+
+  .wordmark sup { font-size: 0.45rem; vertical-align: super; }
+
+  .tagline {
+    display: inline-block;
+    margin-top: 10px;
+    background: #0C0A0B;
+    color: var(--ink);
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    padding: 6px 13px;
+    border-radius: 4px;
+    transform: rotate(-1.6deg);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+  }
+
+  /* bandeau défilant : l'ambiance snack, en une ligne */
+  .ticker {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    background: rgba(255,255,255,0.02);
+    padding: 7px 0;
+    margin: 30px -14px 0;
+  }
+
+  .ticker-piste {
+    display: inline-flex;
+    gap: 22px;
+    white-space: nowrap;
+    animation: defile 22s linear infinite;
+    will-change: transform;
+  }
+
+  .ticker span {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ticker span b { color: var(--accent); font-weight: 400; }
+
+  @keyframes defile {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  .page-title {
+    position: relative;
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: clamp(2.6rem, 13vw, 3.4rem);
+    line-height: 0.88;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: -1.5px;
+    margin-top: 26px;
+    text-wrap: balance;
+    text-shadow: 0 6px 24px rgba(0,0,0,0.6);
+  }
+
+  .page-title em {
+    font-style: normal;
+    color: var(--accent);
+    text-shadow: 0 0 26px rgba(234,31,121,0.55);
+  }
+
+  .page-sub {
+    color: var(--muted);
+    font-size: 0.76rem;
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  /* ===================== CARTES ===================== */
+  .card {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 120px),
+      var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 18px 40px -28px rgba(0,0,0,0.9);
+  }
+
+  /* filet clair sur l'arête haute, comme un objet éclairé par le dessus */
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 16px; right: 16px; top: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+    pointer-events: none;
+  }
+
+  /* L'avancement reste visible quand on descend dans les rayons */
+  .card-head.collant {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--surface);
+    padding-top: 4px;
+    margin-bottom: 8px;
+  }
+
+  .progression {
+    height: 5px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .progression span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-h));
+    box-shadow: 0 0 12px rgba(234,31,121,0.8);
+    border-radius: 999px;
+    transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .card-head h2 {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.05rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    position: relative;
+    padding-left: 12px;
+  }
+
+  .card-head h2::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 10%;
+    width: 5px; height: 80%;
+    background: linear-gradient(180deg, var(--accent-h), var(--accent));
+    border-radius: 2px;
+    box-shadow: 0 0 12px rgba(234,31,121,0.7);
+  }
+
+  .counter {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    background: rgba(234,31,121,0.16);
+    border: 1px solid rgba(234,31,121,0.35);
+    border-radius: 999px;
+    padding: 4px 11px;
+    color: var(--accent-2);
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ===================== SAISIE ===================== */
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    -webkit-overflow-scrolling: touch;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 13px;
+    color: var(--ink);
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.55;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+  }
+
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(234,31,121,0.16);
+  }
+  textarea::placeholder { color: var(--faint); }
+
+  .hint {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 9px;
+    line-height: 1.5;
+  }
+
+  .btn-main {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent-h), var(--accent) 60%, #C4126A);
+    color: var(--ink);
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 14px;
+    box-shadow: 0 4px 0 var(--accent-d), 0 12px 28px -12px rgba(234,31,121,0.85);
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+
+  /* reflet qui balaie le bouton principal */
+  .btn-main::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: -60%;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.28), transparent);
+    transform: skewX(-18deg);
+    animation: balayage 4.5s ease-in-out infinite;
+  }
+
+  @keyframes balayage {
+    0%, 62%  { left: -60%; }
+    88%, 100% { left: 130%; }
+  }
+
+  .btn-main:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--accent-d);
+  }
+
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .btn-ghost {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 6px;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--ink); }
+  .btn-ghost.danger:hover { border-color: var(--accent); background: rgba(225,18,28,0.1); color: var(--accent); }
+
+  /* ===================== RAYONS ===================== */
+  .cat-block { margin-bottom: 16px; }
+
+  .cat-title {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 10px 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: linear-gradient(90deg, rgba(234,31,121,0.16), rgba(234,31,121,0.02) 60%, transparent);
+    border-left: 3px solid var(--accent);
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--ink);
+  }
+
+  /* le numéro de rayon, en très grand et en creux : l'ordre du parcours en magasin */
+  .cat-title .num {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 2.2rem;
+    line-height: 0.8;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(234,31,121,0.55);
+    flex-shrink: 0;
+    letter-spacing: -1px;
+  }
+
+  .cat-title .count {
+    margin-left: auto;
+    color: var(--accent-2);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    background: rgba(234,31,121,0.16);
+    border-radius: 999px;
+    padding: 3px 10px;
+    flex-shrink: 0;
+  }
+
+  /* ===================== ARTICLES ===================== */
+  .item {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 7px;
+    transition: opacity 0.2s, border-color 0.2s, transform 0.15s;
+  }
+
+  /* jauge de fond : la part déjà prise de l'article */
+  .item::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--p, 0%);
+    background: linear-gradient(90deg, rgba(234,31,121,0.22), rgba(234,31,121,0.04));
+    border-right: 1px solid rgba(234,31,121,0.35);
+    transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .item.done::before { background: linear-gradient(90deg, rgba(74,222,128,0.16), rgba(74,222,128,0.03)); border-right-color: rgba(74,222,128,0.3); }
+
+  .item-haut, .item-meta { position: relative; z-index: 1; }
+
+  .item-haut {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .item .check {
+    width: 28px; height: 28px;
+    border-radius: 9px;
+    border: 2px solid #3B3131;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--ink);
+    padding: 0;
+  }
+
+  .item.done { opacity: 0.62; border-color: rgba(74,222,128,0.35); }
+  .item.done .check {
+    background: linear-gradient(160deg, var(--vert), #22C55E);
+    border-color: transparent;
+    color: #05210F;
+    box-shadow: 0 0 14px rgba(74,222,128,0.4);
+  }
+
+  .item .name {
+    flex: 1;
+    font-size: 0.94rem;
+    font-weight: 650;
+    letter-spacing: -0.2px;
+    color: var(--ink);
+    line-height: 1.35;
+    word-break: break-word;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .item.done .name { color: var(--muted); text-decoration: line-through; }
+
+  .item-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 31px;   /* aligné sous le nom, après la case à cocher */
+  }
+
+  .item-meta select { margin-left: auto; }
+
+  /* Quantité détectée, modifiable d'un appui */
+  .qte-chip {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    min-width: 40px;
+    min-height: 30px;
+    color: var(--ink-soft);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+
+  .qte-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* « J'ai pris 3 sur 5 » : saisie directe dans la liste */
+  .pris-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 4px;
+  }
+
+  .pris-box .pb {
+    width: 30px; height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .pris-box .pb:hover { background: var(--accent); }
+
+  .pris-input {
+    width: 44px;
+    min-height: 30px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;   /* en dessous, l'iPhone zoome sur le champ */
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    padding: 4px 0;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .pris-input::-webkit-outer-spin-button,
+  .pris-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pris-input:focus { border-bottom-color: var(--accent); }
+
+  .pris-sur {
+    font-size: 0.55rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .pris-box .qte-chip { border: none; background: transparent; padding: 2px 2px; }
+
+  /* Article pris en partie : repérable d'un coup d'œil */
+  .item.partiel { border-color: rgba(234,31,121,0.55); }
+  .item.partiel .pris-input { color: var(--accent-2); border-bottom-color: var(--accent-2); }
+
+  .qte-input {
+    width: 58px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    padding: 3px 4px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .qte-input::-webkit-outer-spin-button,
+  .qte-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* Article que l'appli n'a pas su ranger : il attend un rayon */
+  .item.a-ranger { border-color: var(--accent); border-style: dashed; background: rgba(234,31,121,0.05); }
+  .item.a-ranger select { border-color: var(--accent); color: var(--ink); }
+
+  .tag-ranger {
+    font-size: 0.57rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--accent);
+  }
+
+  /* Étiquette « ce qu'il manque », posée après une fin de courses */
+  .tag-manque {
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.57rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .tag-manque.rien {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .item.done .tag-manque { opacity: 0.45; }
+
+  .item select {
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 7px;
+    min-height: 32px;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+    padding: 4px 5px;
+    max-width: 94px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .item select:focus { border-color: var(--accent); color: var(--ink); }
+  .item select option { background: var(--surface); color: var(--ink); text-transform: none; }
+
+  .item .del {
+    background: transparent;
+    border: none;
+    color: var(--faint);
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 4px 8px;      /* zone d'appui confortable */
+    margin: -4px -4px -4px 0;
+    line-height: 1;
+  }
+
+  .item .del:hover { color: var(--accent); }
+
+  .empty {
+    text-align: center;
+    color: var(--faint);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 26px 0;
+  }
+
+  /* ===================== FIN DES COURSES / HISTORIQUE ===================== */
+  .btn-fin { margin-top: 16px; }
+
+  .lien-vider {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    padding: 8px 2px;   /* zone d'appui confortable */
+    margin: -8px -2px;
+  }
+
+  .lien-vider:hover { color: var(--accent); }
+  .hint .lien-vider { display: block; margin-top: 6px; text-decoration: underline; }
+
+  .alerte {
+    background: rgba(234,31,121,0.12);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
+  .alerte[hidden] { display: none; }
+
+  #zoneRestauration { min-height: 80px; font-size: 0.8rem; margin-top: 12px; }
+
+  .hist {
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .hist-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 12px;
+    cursor: pointer;
+  }
+
+  .hist-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .hist-date span { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+
+  .hist-badge {
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.63rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .hist-badge.ok { background: transparent; border: 2px solid var(--line); color: var(--muted); }
+
+  .hist-detail {
+    border-top: 2px solid var(--line);
+    padding: 10px 12px 12px;
+  }
+
+  .hist-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 8px;
+  }
+
+  .hist-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 0.82rem;
+  }
+
+  .hist-line:last-of-type { border-bottom: none; }
+
+  .hist-line {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .hl-name { color: var(--ink); font-weight: 600; flex: 1; min-width: 45%; }
+
+  .hl-etat {
+    color: var(--accent-2);
+    font-weight: 800;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+  }
+
+  .hl-total {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .hist-line .pris-box { margin-left: auto; }
+  .hist-line .pb.tout { background: transparent; border: 1px solid var(--line); font-size: 0.65rem; }
+  .hist-line .pb.tout:hover { background: var(--accent); border-color: var(--accent); }
+
+  .hist-line.ok .hl-name { color: var(--muted); text-decoration: line-through; }
+  .hist-line.ok .hl-etat { color: #4CAF50; }
+
+  .hist-btn { width: 100%; margin-top: 8px; }
+
+  /* ===================== MODALE BILAN ===================== */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .overlay[hidden] { display: none; }
+
+  .modal {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 140px),
+      var(--surface);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent);
+    border-radius: 20px;
+    box-shadow: 0 -20px 60px -20px rgba(234,31,121,0.45);
+    width: 100%;
+    max-width: 480px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 16px 14px;
+  }
+
+  /* petite poignée, comme une feuille iOS */
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    width: 42px; height: 4px;
+    transform: translateX(-50%);
+    background: var(--line);
+    border-radius: 999px;
+  }
+
+  .modal-head {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .modal-head h3 {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  .modal-close:hover { color: var(--accent); }
+
+  .modal-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .bilan-resume {
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    text-align: center;
+    padding: 7px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .bilan-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    flex: 1;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+
+  .bl-cat {
+    font-family: 'Anton', 'Arial Black', Impact, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent-2);
+    margin: 12px 0 6px;
+  }
+
+  .bl-cat:first-child { margin-top: 2px; }
+
+  .bl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-left: 4px solid #2E7D32;
+    border-radius: 9px;
+    padding: 7px 9px;
+    margin-bottom: 5px;
+  }
+
+  .bl-row.manque { border-left-color: var(--accent-2); }
+  .bl-row.rien { border-left-color: var(--accent); }
+
+  .bl-name {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--ink);
+    word-break: break-word;
+    flex: 1;
+  }
+
+  .bl-qty {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .bl-qty button {
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .bl-qty button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .bl-qty input {
+    width: 52px;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    padding: 5px 2px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .bl-qty input::-webkit-outer-spin-button,
+  .bl-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .bl-qty input:focus { border-color: var(--accent); }
+
+  .bl-max {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 34px;
+  }
+
+  .btn-envoi { margin-top: 8px; background: var(--surface-2); color: var(--ink); box-shadow: 0 4px 0 var(--line); }
+  .btn-envoi:active { box-shadow: 0 0 0 var(--line); }
+
+  .texte-envoi {
+    min-height: 220px;
+    font-family: 'Inter', monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .modal-actions { padding-top: 12px; }
+  .modal-actions .btn-ghost { width: 100%; margin-top: 8px; }
+
+  /* ===================== RETOURS AU TOUCHER ===================== */
+  .btn-ghost, .btn-main, .qte-chip, .pris-box .pb, .item .check, .item .del,
+  .lien-vider, .modal-close, .bl-qty button {
+    transition: transform 0.12s ease, background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .btn-ghost:active, .qte-chip:active { transform: scale(0.96); }
+  .pris-box .pb:active, .bl-qty button:active { transform: scale(0.86); background: var(--accent); }
+  .item .check:active { transform: scale(0.88); }
+  .item .del:active { transform: scale(0.85); color: var(--accent); }
+  .hist-head:active { background: rgba(255,255,255,0.03); }
+
+  /* ===================== ANIMATIONS ===================== */
+  @keyframes entreeItem {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @keyframes popCoche {
+    0%   { transform: scale(0.5); }
+    60%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes monteeSheet {
+    from { transform: translateY(18px); opacity: 0.6; }
+    to   { transform: none; opacity: 1; }
+  }
+
+  @keyframes fonduFond {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Seuls les rendus qui suivent une action sont animés, pas chaque redessin */
+  .anim .item, .anim .cat-block {
+    animation: entreeItem 0.3s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 25ms);
+  }
+
+  .check.pop { animation: popCoche 0.32s cubic-bezier(0.22, 0.9, 0.3, 1); }
+
+  .overlay:not([hidden]) { animation: fonduFond 0.18s ease both; }
+  .overlay:not([hidden]) .modal { animation: monteeSheet 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ===================== DIVERS ===================== */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: var(--ink);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 11px 20px;
+    border-radius: 999px;
+    box-shadow: 0 4px 0 var(--accent-d);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s, transform 0.22s;
+    z-index: 50;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer {
+    text-align: center;
+    color: var(--faint);
+    font-size: 0.68rem;
+    line-height: 1.7;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="brand-band full-bleed">
+      <!-- Le logo remplace le lettrage texte dès qu'il est chargé ; s'il manque, le texte prend le relais. -->
+      <img class="brand-logo" src="logo.jpg" alt="#HASHTAGBANGERS"
+           onload="document.getElementById('wordmark').hidden = true"
+           onerror="this.remove()">
+      <div class="wordmark" id="wordmark">#HASHTAG<span class="bangers">Bangers.</span><sup>®</sup></div>
+      <div class="tagline">Il n'y a que toi qui comptes !</div>
+    </div>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-piste" id="ticker"></div>
+    </div>
+
+    <div class="page-title">Ma liste <em>Métro</em></div>
+    <div class="page-sub">Balance ta liste, elle se range toute seule dans l'ordre des rayons</div>
+  </header>
+
+  <!-- SAISIE -->
+  <div class="card">
+    <div class="card-head"><h2>Nouvelle liste</h2></div>
+    <textarea id="input" placeholder="tomates&#10;2 kg farine&#10;coca&#10;fromage rapé&#10;gel douche&#10;ketchup, citron, kinder"></textarea>
+    <div class="hint">
+      Un article par ligne, ou séparés par des virgules. Les quantités sont détectées
+      (« 8 yaourts », « 2 kg farine », « coca x6 », « lot de 4 ») — appuie sur la pastille
+      pour les corriger.
+      <button class="lien-vider" onclick="oublierCorrections(this)">Réinitialiser les rayons mémorisés</button>
+    </div>
+    <button class="btn-main" onclick="ajouterListe()">🔥 Trier ma liste</button>
+  </div>
+
+  <!-- LISTE TRIÉE -->
+  <div class="card">
+    <div class="card-head collant">
+      <h2>Liste de courses</h2>
+      <span class="counter" id="counter">0 / 0</span>
+    </div>
+    <div class="progression"><span id="barreProgression"></span></div>
+
+    <div id="liste">
+      <div class="empty">Liste vide</div>
+    </div>
+
+    <button class="btn-main btn-fin" onclick="ouvrirBilan()">🏁 Fin des courses</button>
+    <button class="btn-main btn-envoi" onclick="partagerListe()">📤 Envoyer ce qu'il reste à prendre</button>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="copierListe()">📋 Copier</button>
+      <button class="btn-ghost" onclick="decocherTout()">↺ Décocher</button>
+      <button class="btn-ghost" onclick="supprimerCoches()">🧹 Retirer cochés</button>
+      <button class="btn-ghost danger" onclick="toutEffacer(this)">🗑 Tout effacer</button>
+    </div>
+  </div>
+
+  <!-- SAUVEGARDE -->
+  <div class="card" id="carteSauvegarde">
+    <div class="card-head">
+      <h2>Sauvegarde</h2>
+      <span class="counter" id="sauvResume">—</span>
+    </div>
+
+    <div class="alerte" id="alerteVide" hidden>
+      Liste et historique vides. Si tu viens d'ouvrir une nouvelle version de l'appli,
+      colle ta sauvegarde ci-dessous pour tout récupérer.
+    </div>
+
+    <div class="hint">
+      Le téléphone garde tes données, mais elles ne suivent pas quand l'appli est mise à jour.
+      Copie ta sauvegarde avant une mise à jour, colle-la après : liste, rayons mémorisés et
+      historique reviennent.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="copierSauvegarde()">📋 Copier ma sauvegarde</button>
+      <button class="btn-ghost" id="btnFichier" onclick="telechargerSauvegarde()" hidden>⬇ Fichier</button>
+    </div>
+
+    <textarea id="zoneRestauration" placeholder="Colle ici la sauvegarde copiée…"></textarea>
+    <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="restaurerSauvegarde(this)">↩ Restaurer cette sauvegarde</button>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Historique</h2>
+      <button class="lien-vider" onclick="viderHistorique(this)">Vider</button>
+    </div>
+    <div id="historique">
+      <div class="empty">Aucune course enregistrée</div>
+    </div>
+  </div>
+
+  <footer>
+    Les corrections de rayon sont mémorisées<br>#HASHTAGBANGERS® — Roubaix
+  </footer>
+</div>
+
+<!-- BILAN DE FIN DE COURSES -->
+<div class="overlay" id="overlay" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Fin des courses</h3>
+      <button class="modal-close" onclick="fermerBilan()">×</button>
+    </div>
+    <div class="modal-sub">
+      Récapitulatif de ce que tu as pris, repris de ta liste. Ajuste si besoin :
+      le reste part dans l'historique comme manquant (ex : 5 au lieu de 8).
+    </div>
+    <div class="bilan-resume" id="bilanResume">—</div>
+    <div class="bilan-list" id="bilanList"></div>
+    <div class="modal-actions">
+      <button class="btn-main" onclick="enregistrerCourses()">💾 Enregistrer les courses</button>
+      <button class="btn-ghost" onclick="fermerBilan()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ENVOI DE LA LISTE -->
+<div class="overlay" id="overlayPartage" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Envoyer la liste</h3>
+      <button class="modal-close" onclick="fermerPartage()">×</button>
+    </div>
+    <div class="modal-sub">
+      Liste prête à envoyer à un collègue qui y va à ta place. Tu peux la retoucher avant.
+    </div>
+    <textarea id="texteEnvoi" class="texte-envoi"></textarea>
+    <div class="modal-actions">
+      <button class="btn-main" id="btnPartageNatif" onclick="envoyerNatif()" hidden>📤 Partager</button>
+      <div class="btn-row">
+        <button class="btn-ghost" onclick="copierEnvoi()">📋 Copier</button>
+        <button class="btn-ghost" onclick="ouvrirAvec('https://wa.me/?text=')">WhatsApp</button>
+        <button class="btn-ghost" onclick="ouvrirAvec('sms:?&body=')">SMS</button>
+        <button class="btn-ghost" onclick="fermerPartage()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sauvegarde déposée à la publication : reprise automatiquement si le téléphone est vide -->
+<script id="sauvegardeIntegree" type="application/json">null</script>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ===== ORDRE DES RAYONS (ordre de passage en magasin) ===== */
+  const CATEGORIES = [
+    { id: 'fruits',   nom: 'Fruits & légumes',    court: 'Fruits/lég.' },
+    { id: 'epicerie', nom: 'Épicerie (farine, lait, citron, vinaigre, Kinder…)', court: 'Épicerie' },
+    { id: 'sauce',    nom: 'Sauces',              court: 'Sauce' },
+    { id: 'boissons', nom: 'Boissons',            court: 'Boissons' },
+    { id: 'hygiene',  nom: 'Hygiène & entretien', court: 'Entretien' },
+    { id: 'frais',    nom: 'Produits frais (fromage)', court: 'Frais' },
+    { id: 'autres',   nom: 'Autres (à classer)',  court: 'Autres' }
+  ];
+
+  /* ===== DICTIONNAIRE DE MOTS-CLÉS (sans accents, en minuscules) ===== */
+  const MOTS = {
+    fruits: [
+      'fruit', 'legume', 'pomme', 'poire', 'banane', 'plantain', 'orange', 'clementine', 'mandarine',
+      'pamplemousse', 'fraise', 'framboise', 'myrtille', 'mure', 'cassis', 'raisin', 'peche', 'nectarine',
+      'abricot', 'prune', 'pruneau', 'kiwi', 'ananas', 'mangue', 'papaye', 'melon', 'pasteque', 'figue',
+      'grenade', 'datte', 'noix de coco', 'avocat', 'cerise', 'tomate', 'tomates cerises', 'salade',
+      'laitue', 'roquette', 'mache', 'epinard', 'chou', 'chou fleur', 'brocoli', 'carotte', 'courgette',
+      'aubergine', 'poivron', 'piment', 'concombre', 'radis', 'navet', 'poireau', 'celeri', 'fenouil',
+      'oignon', 'echalote', 'ail', 'gingembre', 'pomme de terre', 'patate', 'patate douce', 'champignon',
+      'haricot vert', 'haricots verts', 'petit pois', 'mais doux', 'betterave', 'courge', 'potiron',
+      'butternut', 'artichaut', 'asperge', 'persil', 'coriandre', 'menthe', 'basilic', 'thym', 'romarin',
+      'laurier', 'herbes', 'germe de soja', 'olive'
+    ],
+    hygiene: [
+      'hygiene', 'savon', 'gel douche', 'shampoing', 'shampooing', 'apres shampoing', 'dentifrice',
+      'brosse a dents', 'bain de bouche', 'fil dentaire', 'deodorant', 'papier toilette', 'pq',
+      'mouchoir', 'essuie tout', 'sopalin', 'bobine', 'coton', 'coton tige', 'serviette hygienique', 'tampon',
+      'protege slip', 'couche', 'lingette', 'rasoir', 'mousse a raser', 'gel a raser', 'creme',
+      'creme hydratante', 'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant',
+      'huile pour cheveux', 'vernis', 'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle',
+      'javel', 'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
+      'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire',
+    'degraissant', 'detergent', 'detartrant', 'anticalcaire', 'anti calcaire', 'gel wc',
+    'nettoyant sol', 'nettoyant four', 'multi usages', 'spray nettoyant', 'essuie mains',
+    'papier essuie mains', 'torchon', 'chiffon', 'microfibre', 'gants jetables', 'gobelet',
+    'serviette papier', 'nappe', 'couvert jetable', 'barquette jetable', 'film etirable', 'allumette',
+      'piles', 'ampoule', 'sac congelation',
+      // entretien professionnel
+      'degraissant', 'detergent', 'detartrant', 'anticalcaire', 'anti calcaire', 'gel wc',
+      'wc', 'nettoyant sol', 'nettoyant four', 'multi usages', 'spray nettoyant',
+      'essuie mains', 'papier essuie mains', 'torchon', 'chiffon', 'microfibre', 'gants',
+      'gants jetables', 'gobelet', 'serviette papier', 'nappe', 'couvert jetable',
+      'barquette jetable', 'film etirable', 'papier kraft'
+    ],
+    boissons: [
+      'boisson', 'eau', 'eau gazeuse', 'eau plate', 'evian', 'cristaline', 'volvic', 'perrier', 'badoit',
+      'san pellegrino', 'coca', 'coca cola', 'pepsi', 'fanta', 'sprite', 'oasis', 'ice tea', 'lipton',
+      'orangina', 'schweppes', 'tropico', 'limonade', 'soda', 'jus', 'jus d orange', 'jus de fruits',
+      'nectar', 'sirop', 'red bull', 'monster', 'energy drink', 'biere', 'vin', 'champagne', 'cidre',
+      'mojito', 'canette', 'pack d eau', 'capri sun'
+    ],
+    epicerie: [
+      'farine', 'lait', 'lait de coco', 'lait concentre', 'citron', 'citron vert', 'jus de citron',
+      'vinaigre', 'vinaigre balsamique', 'kinder', 'semoule', 'couscous', 'riz', 'pates', 'spaghetti',
+      'macaroni', 'penne', 'tagliatelle', 'nouilles', 'vermicelle', 'boulgour', 'quinoa', 'lentille',
+      'pois chiche', 'haricot rouge', 'haricot blanc', 'sucre', 'sucre vanille', 'sel', 'poivre', 'epice',
+      'epices', 'paprika', 'cumin', 'curcuma', 'cannelle', 'levure', 'maizena', 'huile', 'huile d olive',
+      'huile de tournesol', 'the', 'infusion', 'cafe', 'chicoree', 'chocolat', 'chocolat en poudre',
+      'nutella', 'pate a tartiner', 'confiture', 'miel', 'cereales', 'biscuit', 'gateau', 'bonbon',
+      'chips', 'gaufrette', 'madeleine', 'pain de mie', 'pain', 'biscotte', 'brioche', 'conserve',
+      'thon', 'sardine', 'maquereau', 'pate a pizza', 'bouillon', 'cube maggi', 'compote', 'miel liquide',
+      'sachet', 'papier cuisson', 'pringles', 'doritos', 'tuc', 'cacahuete', 'cornichon',
+      'pain burger', 'buns', 'tortilla', 'wrap', 'pomme paille', 'pommes paille',
+      'pomme allumette', 'pommes allumettes', 'tarte', 'tartelette'
+    ],
+    sauce: [
+      'sauce', 'sauce tomate', 'sauce blanche', 'sauce samurai', 'sauce algerienne', 'sauce andalouse',
+      'sauce barbecue', 'sauce soja', 'sauce curry', 'sauce piquante', 'ketchup', 'mayonnaise', 'mayo',
+      'moutarde', 'harissa', 'samurai', 'algerienne', 'andalouse', 'biggy', 'barbecue', 'bbq', 'pesto',
+      'sriracha', 'tabasco', 'aioli', 'tartare', 'coulis', 'concentre de tomate', 'passata', 'marinade',
+      'vinaigrette'
+    ],
+    frais: [
+      'fromage', 'fromage rape', 'rape', 'emmental', 'gruyere', 'mozzarella', 'cheddar', 'comte',
+      'camembert', 'chevre', 'feta', 'raclette', 'parmesan', 'ricotta', 'mascarpone', 'kiri', 'vache qui rit',
+      'boursin', 'fromage blanc', 'beurre', 'margarine', 'creme fraiche', 'creme liquide', 'yaourt',
+      'yahourt', 'skyr', 'petit suisse', 'actimel', 'danette', 'oeuf', 'oeufs', 'jambon', 'charcuterie',
+      'saucisson', 'chorizo', 'lardon', 'poulet', 'escalope', 'blanc de poulet', 'dinde', 'viande',
+      'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez', 'saucisse', 'kefta',
+      'poisson', 'saumon', 'cabillaud', 'crevette', 'surimi', 'pate feuilletee', 'pate brisee', 'pizza',
+      'traiteur', 'surgele', 'glace', 'nuggets', 'cordon bleu', 'poisson pane', 'frites',
+      'danone', 'activia', 'yop', 'babybel',
+      // fromages et charcuteries des listes pro
+      'mozza', 'reblochon', 'burrata', 'brie', 'munster', 'maroilles', 'morbier', 'tomme',
+      'cantal', 'gouda', 'edam', 'bleu', 'roquefort', 'gorgonzola', 'saint nectaire',
+      'coulommiers', 'chaource', 'manchego', 'pecorino', 'provolone', 'halloumi',
+      'philadelphia', 'cream cheese', 'faisselle', 'fromage frais', 'cancoillotte',
+      'saint moret', 'bacon', 'coppa', 'pastrami', 'poitrine', 'magret', 'confit',
+      'foie gras', 'rillettes', 'pate', 'terrine'
+    ]
+  };
+
+  /* ===== PRIORITÉS DE CLASSEMENT =====
+     Un article porte souvent un parfum : « oasis pomme poire », « chips pomme paille »,
+     « yaourt fraise ». C'est le PRODUIT qui décide du rayon, jamais le parfum.
+     FORTS  : produits et marques — ils l'emportent sur tout le reste.
+     AROMES : parfums et variétés — ils ne décident que si rien d'autre n'est reconnu. */
+  const FORTS = new Set([
+    // boissons
+    'oasis', 'coca', 'coca cola', 'pepsi', 'fanta', 'sprite', 'orangina', 'schweppes',
+    'tropico', 'ice tea', 'lipton', 'limonade', 'soda', 'jus', 'jus de fruits', 'nectar',
+    'sirop', 'red bull', 'monster', 'energy drink', 'capri sun', 'biere', 'vin', 'champagne',
+    'cidre', 'eau', 'eau gazeuse', 'eau plate', 'perrier', 'badoit', 'evian', 'cristaline',
+    'volvic', 'san pellegrino', 'canette', 'pack d eau', 'boisson',
+    // épicerie
+    'chips', 'pringles', 'doritos', 'tuc', 'biscuit', 'gaufrette', 'madeleine', 'gateau',
+    'bonbon', 'cereales', 'compote', 'confiture', 'nutella', 'pate a tartiner', 'kinder',
+    'conserve', 'thon', 'sardine', 'maquereau', 'bouillon', 'cube maggi', 'farine', 'semoule',
+    'couscous', 'riz', 'pates', 'spaghetti', 'macaroni', 'penne', 'tagliatelle', 'nouilles',
+    'vermicelle', 'boulgour', 'quinoa', 'lentille', 'pois chiche', 'haricot rouge',
+    'haricot blanc', 'sucre', 'sel', 'poivre', 'levure', 'maizena', 'huile', 'huile d olive',
+    'huile de tournesol', 'vinaigre', 'vinaigre balsamique', 'the', 'infusion', 'cafe',
+    'chicoree', 'lait', 'lait de coco', 'lait concentre', 'pain', 'pain de mie', 'pain burger',
+    'buns', 'biscotte', 'brioche', 'tortilla', 'wrap', 'jus de citron', 'pate a pizza',
+    'cacahuete', 'cornichon', 'pomme paille', 'pommes paille', 'pomme allumette',
+    'pommes allumettes', 'tarte', 'tartelette',
+    // sauces
+    'sauce', 'ketchup', 'mayonnaise', 'mayo', 'moutarde', 'harissa', 'pesto', 'sriracha',
+    'tabasco', 'aioli', 'tartare', 'coulis', 'concentre de tomate', 'passata', 'marinade',
+    'vinaigrette',
+    // samurai / algérienne / barbecue… servent aussi de parfums (chips, wraps) :
+    // ils restent au niveau normal pour ne pas voler un produit identifié
+    // produits frais
+    'yaourt', 'yahourt', 'skyr', 'petit suisse', 'actimel', 'danette', 'danone', 'activia',
+    'yop', 'fromage', 'fromage blanc', 'fromage rape', 'rape', 'emmental', 'gruyere',
+    'mozzarella', 'cheddar', 'comte', 'camembert', 'chevre', 'feta', 'raclette', 'parmesan',
+    'ricotta', 'mascarpone', 'kiri', 'babybel', 'vache qui rit', 'boursin', 'beurre',
+    'mozza', 'reblochon', 'burrata', 'brie', 'munster', 'maroilles', 'morbier', 'tomme',
+    'cantal', 'gouda', 'edam', 'roquefort', 'gorgonzola', 'saint nectaire', 'coulommiers',
+    'chaource', 'manchego', 'pecorino', 'provolone', 'halloumi', 'philadelphia',
+    'cream cheese', 'faisselle', 'fromage frais', 'cancoillotte', 'saint moret', 'bacon',
+    'coppa', 'pastrami', 'magret', 'foie gras', 'rillettes', 'terrine',
+    'margarine', 'creme fraiche', 'creme liquide', 'oeuf', 'oeufs', 'jambon', 'charcuterie',
+    'saucisson', 'chorizo', 'lardon', 'poulet', 'escalope', 'blanc de poulet', 'dinde',
+    'viande', 'viande hachee', 'steak', 'steak hache', 'boeuf', 'agneau', 'veau', 'merguez',
+    'saucisse', 'kefta', 'nuggets', 'cordon bleu', 'poisson', 'poisson pane', 'saumon',
+    'cabillaud', 'crevette', 'surimi', 'pate feuilletee', 'pate brisee', 'pizza', 'frites',
+    'traiteur', 'surgele', 'glace',
+    // hygiène & entretien
+    'savon', 'gel douche', 'shampoing', 'shampooing', 'apres shampoing', 'dentifrice',
+    'brosse a dents', 'bain de bouche', 'fil dentaire', 'deodorant', 'papier toilette', 'pq',
+    'mouchoir', 'essuie tout', 'sopalin', 'bobine', 'coton', 'coton tige', 'serviette hygienique',
+    'tampon', 'protege slip', 'couche', 'lingette', 'rasoir', 'mousse a raser', 'gel a raser',
+    'gel hydroalcoolique', 'gant de toilette', 'parfum', 'laque', 'gel coiffant', 'vernis',
+    'lessive', 'adoucissant', 'liquide vaisselle', 'tablette lave vaisselle', 'javel',
+    'nettoyant', 'desinfectant', 'eponge', 'balai', 'serpilliere', 'sac poubelle', 'poubelle',
+    'desodorisant', 'produit sol', 'produit vitre', 'papier aluminium', 'film alimentaire',
+    'degraissant', 'detergent', 'detartrant', 'anticalcaire', 'anti calcaire', 'gel wc',
+    'nettoyant sol', 'nettoyant four', 'multi usages', 'spray nettoyant', 'essuie mains',
+    'papier essuie mains', 'torchon', 'chiffon', 'microfibre', 'gants jetables', 'gobelet',
+    'serviette papier', 'nappe', 'couvert jetable', 'barquette jetable', 'film etirable',
+    'sac congelation', 'allumette', 'piles', 'ampoule',
+    // fruits & légumes : les légumes ne sont jamais des parfums
+    'salade', 'laitue', 'roquette', 'mache', 'epinard', 'chou', 'chou fleur', 'brocoli',
+    'carotte', 'courgette', 'aubergine', 'poivron', 'concombre', 'radis', 'navet', 'poireau',
+    'celeri', 'fenouil', 'oignon', 'echalote', 'ail', 'gingembre', 'pomme de terre', 'patate',
+    'patate douce', 'champignon', 'haricot vert', 'haricots verts', 'petit pois', 'mais doux',
+    'betterave', 'courge', 'potiron', 'butternut', 'artichaut', 'asperge', 'avocat',
+    'germe de soja', 'fruit', 'legume'
+  ]);
+
+  const AROMES = new Set([
+    'pomme', 'poire', 'fraise', 'framboise', 'myrtille', 'mure', 'cassis', 'cerise', 'raisin',
+    'peche', 'nectarine', 'abricot', 'prune', 'pruneau', 'kiwi', 'ananas', 'mangue', 'papaye',
+    'melon', 'pasteque', 'figue', 'grenade', 'datte', 'noix de coco', 'banane', 'plantain',
+    'orange', 'clementine', 'mandarine', 'pamplemousse', 'citron', 'citron vert', 'tomate',
+    'olive', 'menthe', 'basilic', 'thym', 'romarin', 'laurier', 'coriandre', 'persil',
+    'herbes', 'chocolat', 'chocolat en poudre', 'miel', 'miel liquide', 'cannelle'
+  ]);
+
+  const CLE_ITEMS = 'metro_liste';
+  const CLE_CORRECTIONS = 'metro_corrections';
+  const CLE_HISTORIQUE = 'metro_historique';
+  const MAX_HISTORIQUE = 30;
+
+  let items = charger(CLE_ITEMS, []);
+  let corrections = charger(CLE_CORRECTIONS, {});
+  let historique = charger(CLE_HISTORIQUE, []);
+  let bilan = {};   // { idArticle: quantité réellement prise }
+
+  function charger(cle, defaut) {
+    try { return JSON.parse(localStorage.getItem(cle)) || defaut; }
+    catch (e) { return defaut; }
+  }
+
+  function sauver() {
+    localStorage.setItem(CLE_ITEMS, JSON.stringify(items));
+    localStorage.setItem(CLE_CORRECTIONS, JSON.stringify(corrections));
+    localStorage.setItem(CLE_HISTORIQUE, JSON.stringify(historique));
+  }
+
+  /* ===== NORMALISATION ===== */
+  function normaliser(txt) {
+    return txt
+      .toLowerCase()
+      .replace(/\u0153/g, 'oe').replace(/\u00e6/g, 'ae')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  // Retire les quantités en début de ligne pour ne garder que le produit
+  function sansQuantite(txtNormalise) {
+    return txtNormalise
+      // une unité n'est retirée que si un nombre la précède : « 2 bouteilles d eau » → « eau »,
+      // mais « bouteille de gaz » reste entier
+      .replace(/^\d+([.,]\d+)?\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml|x|pcs?|pieces?|paquets?|boites?|bouteilles?|barquettes?|packs?|sachets?|pots?|tranches?|bottes?)?\s*(?:d(?:e|es|u)?\s+)?/, '')
+      .replace(/\s*(x\s*)?\d+([.,]\d+)?\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)?$/, '')
+      .trim();
+  }
+
+  const CONDITIONNEMENTS = ['pack', 'lot', 'paquet', 'boite', 'barquette', 'sachet',
+                            'plaque', 'rouleau', 'bouteille', 'brique', 'pot'];
+
+  function singulier(mot) {
+    const m = mot.replace(/x$/, 'u').replace(/s$/, '');
+    return m === 'rouleau' || m === 'rouleaux' ? 'rouleau' : m;
+  }
+
+  // « 2 packs » plutôt que « 2 pack », mais « 2 kg » reste « 2 kg »
+  function uniteAffichee(q, u) {
+    if (!u) return '';
+    return (q > 1 && CONDITIONNEMENTS.indexOf(u) !== -1) ? u + 's' : u;
+  }
+
+  // Format des listes Métro : « … 450G — 5 Piece », « … 200 feuilles x 6 — 1 Pack ».
+  // Ce qui suit le tiret final est LA quantité à prendre ; les contenances citées
+  // dans le nom du produit (750 ml, 450G, x 6) ne sont que sa description.
+  const FIN_QUANTITE = /\s*[—–-]\s*(\d+(?:[.,]\d+)?)\s*([A-Za-zÀ-ÿ]*)\.?\s*$/;
+  const UNITES_FIN = {
+    piece: '', pieces: '', pce: '', pces: '', pc: '', pcs: '', unite: '', unites: '', u: '',
+    kg: 'kg', kilo: 'kg', kilos: 'kg', g: 'g', gr: 'g', gramme: 'g', grammes: 'g',
+    l: 'l', litre: 'l', litres: 'l', cl: 'cl', ml: 'ml',
+    pack: 'pack', packs: 'pack', colis: 'colis', carton: 'carton', cartons: 'carton',
+    lot: 'lot', lots: 'lot', sachet: 'sachet', sachets: 'sachet', boite: 'boite',
+    boites: 'boite', barquette: 'barquette', barquettes: 'barquette',
+    bouteille: 'bouteille', bouteilles: 'bouteille', pot: 'pot', pots: 'pot',
+    brique: 'brique', briques: 'brique', plaque: 'plaque', plaques: 'plaque',
+    rouleau: 'rouleau', rouleaux: 'rouleau', bidon: 'bidon', bidons: 'bidon'
+  };
+
+  function quantiteFinale(label) {
+    const m = label.match(FIN_QUANTITE);
+    if (!m) return null;
+    const q = parseFloat(m[1].replace(',', '.'));
+    if (!(q > 0) || q >= 10000) return null;
+    const mot = (m[2] || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (mot === '') return { qte: q, unite: '' };
+    if (!(mot in UNITES_FIN)) return null;   // mot inconnu : ce n'est pas une quantité
+    return { qte: q, unite: UNITES_FIN[mot] };
+  }
+
+  // Nom de l'article sans la quantité finale, pour une liste lisible
+  function sansQuantiteFinale(label) {
+    if (!quantiteFinale(label)) return label;
+    return label.replace(FIN_QUANTITE, '').trim() || label;
+  }
+
+  // Combien d'unités l'article demande-t-il ?
+  // « 8 yaourts », « yaourts x8 », « 3x coca », « lot de 6 », « 2 kg farine », « 1,5 l lait »
+  function extraireQuantite(label) {
+    const fin = quantiteFinale(label);
+    if (fin) return fin;
+
+    // normalisation qui préserve les décimales : « 1,5 l » ne doit pas devenir « 1 5 l »
+    const n = label
+      .toLowerCase()
+      .replace(/\u0153/g, 'oe').replace(/\u00e6/g, 'ae')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/(\d)[.,](\d)/g, '$1.$2')
+      .replace(/[^a-z0-9.]+/g, ' ')
+      .trim();
+
+    // « 2 packs de 6 » : deux packs à prendre
+    const CONDIT = '(packs?|lots?|paquets?|boites?|barquettes?|sachets?|plaques?|rouleaux?|bouteilles?|briques?|pots?)';
+    let m = n.match(new RegExp('(?:^|\\s)(\\d+)\\s*(?:x\\s*)?' + CONDIT + '(?:\\s|$)'));
+    if (m) return { qte: parseInt(m[1], 10), unite: singulier(m[2]) };
+
+    // « pack de 6 bobines » : un seul pack à prendre, pas six articles
+    m = n.match(new RegExp('(?:^|\\s)' + CONDIT + '\\s+d(?:e|es|u)?\\s'));
+    if (m) return { qte: 1, unite: singulier(m[1]) };
+
+    // x8 ou 8x, n'importe où
+    m = n.match(/(?:^|\s)x\s*(\d+)(?:\s|$)/) || n.match(/(?:^|\s)(\d+)\s*x(?:\s|$)/);
+    if (m) return { qte: parseInt(m[1], 10), unite: '' };
+
+    // nombre suivi d'une unité de poids ou de volume : 2 kg, 1,5 l, 500 g
+    m = n.match(/(?:^|\s)(\d+(?:\.\d+)?)\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml)(?:\s|$)/);
+    if (m) return { qte: parseFloat(m[1]), unite: m[2] };
+
+    // simple nombre en tête ou en fin : « 8 yaourts », « yaourts 8 »
+    m = n.match(/^(\d+(?:\.\d+)?)(?:\s|$)/) || n.match(/(?:\s)(\d+(?:\.\d+)?)$/);
+    if (m) {
+      const q = parseFloat(m[1]);
+      if (q > 0 && q < 1000) return { qte: q, unite: '' };
+    }
+
+    return { qte: 1, unite: '' };
+  }
+
+  function qteDe(it) {
+    if (typeof it.qte === 'number' && it.qte > 0) return it.qte;
+    return extraireQuantite(it.label).qte;
+  }
+
+  // Ce qui a déjà été mis dans le caddie pour cet article
+  function prisDe(it) {
+    const max = qteDe(it);
+    if (typeof it.pris === 'number') return Math.max(0, Math.min(it.pris, max));
+    return it.fait ? max : 0;
+  }
+
+  function uniteDe(it) {
+    return (typeof it.unite === 'string') ? it.unite : extraireQuantite(it.label).unite;
+  }
+
+  // Affichage d'un nombre à la française (1,5 et pas 1.5)
+  function nb(n) {
+    return (Math.round(n * 100) / 100).toString().replace('.', ',');
+  }
+
+  // « chips saveur poulet », « eau goût citron » : ce qui suit le mot saveur/goût/parfum
+  // décrit l'arôme, pas le produit — on l'écarte pour identifier le rayon
+  function couperParfum(texte) {
+    const coupe = texte.replace(/\b(saveur|saveurs|gout|gouts|parfum|parfums|arome|aromes)\b.*$/, '').trim();
+    return coupe || texte;
+  }
+
+  function contientMot(texte, motCle) {
+    const m = motCle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|\\s)' + m + '(s|x|es)?(\\s|$)').test(texte);
+  }
+
+  /* ===== CLASSEMENT ===== */
+  // Meilleur mot-clé d'un niveau donné : le plus long l'emporte
+  function meilleurMot(produit, complet, retenir) {
+    let categorie = null, longueur = 0;
+    for (const cat of CATEGORIES) {
+      const mots = MOTS[cat.id];
+      if (!mots) continue;
+      for (const mot of mots) {
+        if (!retenir(mot)) continue;
+        if (mot.length > longueur && (contientMot(produit, mot) || contientMot(complet, mot))) {
+          categorie = cat.id;
+          longueur = mot.length;
+        }
+      }
+    }
+    return categorie;
+  }
+
+  // Un rayon corrigé à la main sert aussi pour les libellés qui contiennent le produit :
+  // ranger « pommes paille » en épicerie range aussi « chips pommes paille »
+  function chercherCorrection(produit, complet) {
+    if (corrections[produit]) return corrections[produit];
+    if (corrections[complet]) return corrections[complet];
+
+    let trouve = null, longueur = 0;
+    for (const cle in corrections) {
+      if (cle.length < 4 || cle.length <= longueur) continue;
+      if (contientMot(produit, cle) || contientMot(complet, cle)) {
+        trouve = corrections[cle];
+        longueur = cle.length;
+      }
+    }
+    return trouve;
+  }
+
+  function classer(label) {
+    const complet = normaliser(label);
+    const produit = sansQuantite(complet) || complet;
+
+    const memorise = chercherCorrection(produit, complet);
+    if (memorise) return memorise;
+
+    const base = couperParfum(produit);
+    const baseComplete = couperParfum(complet);
+
+    // 1. le produit ou la marque   2. les autres mots   3. le parfum, en dernier recours
+    return meilleurMot(base, baseComplete, m => FORTS.has(m))
+        || meilleurMot(base, baseComplete, m => !FORTS.has(m) && !AROMES.has(m))
+        || meilleurMot(produit, complet, m => AROMES.has(m))
+        || 'autres';
+  }
+
+  /* ===== AJOUT ===== */
+  function ajouterListe() {
+    animerProchainRendu();
+    const zone = document.getElementById('input');
+    const lignes = zone.value
+      .split(/[\n,;]+|\s+\+\s+/)
+      .map(l => l.replace(/^[\s\-•*–—]+/, '').trim())
+      .filter(l => l.length > 0);
+
+    if (lignes.length === 0) {
+      toast('Rien à ajouter');
+      return;
+    }
+
+    let ajoutes = 0;
+    for (const brut of lignes) {
+      const q = extraireQuantite(brut);
+      const ligne = sansQuantiteFinale(brut);   // « … 450G — 5 Piece » → « … 450G »
+      const cle = normaliser(ligne);
+      if (items.some(it => normaliser(it.label) === cle)) continue;
+      items.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        label: ligne,
+        cat: classer(ligne),
+        fait: false,
+        qte: q.qte,
+        unite: q.unite
+      });
+      ajoutes++;
+    }
+
+    zone.value = '';
+    sauver();
+    rendre();
+    toast(ajoutes + (ajoutes > 1 ? ' articles triés' : ' article trié'));
+  }
+
+  /* ===== ACTIONS ===== */
+  function basculer(id) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    it.fait = !it.fait;
+    it.pris = it.fait ? qteDe(it) : 0;   // coché = tout pris, décoché = rien pris
+    sauver();
+    rendre();
+    if (it.fait) animerCoche(id);
+  }
+
+  function animerCoche(id) {
+    const ligne = document.getElementById('it-' + id);
+    const coche = ligne && ligne.querySelector('.check');
+    if (!coche) return;
+    coche.classList.add('pop');
+    setTimeout(() => coche.classList.remove('pop'), 340);
+  }
+
+  /* ===== COMBIEN J'AI PRIS, ARTICLE PAR ARTICLE ===== */
+  function appliquerPris(it, valeur) {
+    const max = qteDe(it);
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > max) v = max;
+    const etaitFait = it.fait;
+    it.pris = v;
+    it.fait = (max > 0 && v >= max);
+    sauver();
+    return etaitFait !== it.fait;   // le statut a-t-il basculé ?
+  }
+
+  function majPrisListe(id, delta, ev) {
+    if (ev) ev.stopPropagation();
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const bascule = appliquerPris(it, prisDe(it) + delta);
+    bascule ? rendre() : rafraichirLigne(id);
+  }
+
+  function saisirPrisListe(id, valeur) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const bascule = appliquerPris(it, valeur);
+    bascule ? rendre() : rafraichirLigne(id);
+  }
+
+  // Mise à jour d'une seule ligne : évite de reconstruire la liste à chaque appui
+  function rafraichirLigne(id) {
+    const it = items.find(i => i.id === id);
+    const ligne = document.getElementById('it-' + id);
+    if (!it || !ligne) return;
+    const max = qteDe(it), pris = prisDe(it);
+    ligne.classList.toggle('done', !!it.fait);
+    ligne.classList.toggle('partiel', pris > 0 && pris < max);
+    const coche = ligne.querySelector('.check');
+    if (coche) coche.textContent = it.fait ? '✔' : '';
+    const champ = ligne.querySelector('.pris-input');
+    if (champ && document.activeElement !== champ) champ.value = String(pris);
+    ligne.style.setProperty('--p', (max > 0 ? Math.round(pris / max * 100) : 0) + '%');
+    majCompteur();
+  }
+
+  function majCompteur() {
+    const faits = items.filter(i => i.fait).length;
+    const el = document.getElementById('counter');
+    if (el) el.textContent = faits + ' / ' + items.length;
+    const barre = document.getElementById('barreProgression');
+    if (barre) barre.style.width = items.length ? Math.round(faits / items.length * 100) + '%' : '0';
+  }
+
+  // Le prochain rendu s'anime : réservé aux actions (ajout, coche…), pas aux redessins
+  let animerRendu = false;
+  function animerProchainRendu() { animerRendu = true; }
+
+  function changerCat(id, cat) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    it.cat = cat;
+
+    // On mémorise pour toutes les prochaines listes
+    const produit = sansQuantite(normaliser(it.label)) || normaliser(it.label);
+    if (produit) corrections[produit] = cat;
+
+    // Les articles déjà dans la liste qui parlent du même produit suivent
+    items.forEach(autre => {
+      if (autre.id === it.id) return;
+      const p = sansQuantite(normaliser(autre.label)) || normaliser(autre.label);
+      if (p === produit || contientMot(p, produit)) autre.cat = cat;
+    });
+
+    sauver();
+    rendre();
+    const nomCat = CATEGORIES.find(c => c.id === cat);
+    toast('Mémorisé : ' + it.label + ' → ' + (nomCat ? nomCat.court : cat));
+  }
+
+  /* ===== QUANTITÉ MODIFIABLE DANS LA LISTE ===== */
+  function editerQte(id, ev) {
+    if (ev) ev.stopPropagation();
+    const it = items.find(i => i.id === id);
+    const pastille = document.getElementById('q-' + id);
+    if (!it || !pastille) return;
+    pastille.outerHTML =
+      '<input class="qte-input" id="qi-' + id + '" type="number" min="1" step="1" value="' + qteDe(it) + '" ' +
+      'onclick="event.stopPropagation()" onblur="validerQte(\'' + id + '\', this.value)" ' +
+      'onkeydown="if (event.key === \'Enter\') this.blur()">';
+    const champ = document.getElementById('qi-' + id);
+    if (champ) { champ.focus(); champ.select(); }
+  }
+
+  function validerQte(id, valeur) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v <= 0) v = 1;
+    it.qte = v;
+    sauver();
+    rendre();
+  }
+
+  function supprimer(id) {
+    items = items.filter(i => i.id !== id);
+    sauver();
+    rendre();
+  }
+
+  // Efface les rayons corrigés à la main et reclasse la liste avec le dictionnaire
+  function oublierCorrections(btn) {
+    const n = Object.keys(corrections).length;
+    if (!n) { toast('Aucun rayon mémorisé'); return; }
+    confirmerBouton(btn, 'Confirmer l\'oubli des ' + n + ' rayon(s) ?', () => {
+      corrections = {};
+      items.forEach(it => it.cat = classer(it.label));
+      sauver();
+      rendre();
+      toast('Rayons reclassés');
+    });
+  }
+
+  // Double appui pour confirmer : les fenêtres système sont parfois bloquées
+  const attentes = {};
+  function confirmerBouton(btn, texte, action) {
+    if (!btn) { action(); return; }
+    const cle = btn.dataset.k || (btn.dataset.k = 'b' + Math.random().toString(36).slice(2, 7));
+    if (attentes[cle]) {
+      clearTimeout(attentes[cle].minuteur);
+      btn.textContent = attentes[cle].libelle;
+      delete attentes[cle];
+      action();
+      return;
+    }
+    const libelle = btn.textContent;
+    btn.textContent = texte;
+    attentes[cle] = {
+      libelle: libelle,
+      minuteur: setTimeout(() => { btn.textContent = libelle; delete attentes[cle]; }, 4000)
+    };
+  }
+
+  function decocherTout() {
+    animerProchainRendu();
+    items.forEach(i => { i.fait = false; i.pris = 0; });
+    sauver();
+    rendre();
+  }
+
+  function supprimerCoches() {
+    animerProchainRendu();
+    const avant = items.length;
+    items = items.filter(i => !i.fait);
+    sauver();
+    rendre();
+    toast((avant - items.length) + ' article(s) retiré(s)');
+  }
+
+  function toutEffacer(btn) {
+    if (!items.length) return;
+    confirmerBouton(btn, '⚠ Confirmer ?', () => {
+      items = [];
+      sauver();
+      rendre();
+      toast('Liste effacée');
+    });
+  }
+
+  function copierListe() {
+    if (!items.length) { toast('Liste vide'); return; }
+    let txt = '';
+    for (const cat of CATEGORIES) {
+      const lot = items.filter(i => i.cat === cat.id);
+      if (!lot.length) continue;
+      txt += cat.nom.toUpperCase() + '\n';
+      lot.forEach(i => {
+        txt += '- ' + i.label +
+               (i.manque ? ' (' + texteManque(i.manque).toLowerCase() + ')' : '') +
+               (i.fait ? ' (ok)' : '') + '\n';
+      });
+      txt += '\n';
+    }
+    navigator.clipboard.writeText(txt.trim())
+      .then(() => toast('Liste copiée'))
+      .catch(() => toast('Copie impossible'));
+  }
+
+  /* ===== FIN DES COURSES (bilan) ===== */
+  // Les articles rangés dans l'ordre des rayons, comme à l'écran
+  function itemsTries() {
+    const ordre = {};
+    CATEGORIES.forEach((c, i) => ordre[c.id] = i);
+    return items.slice().sort((a, b) => (ordre[a.cat] ?? 99) - (ordre[b.cat] ?? 99));
+  }
+
+  function ouvrirBilan() {
+    if (!items.length) { toast('Liste vide'); return; }
+    // On repart de ce qui a été saisi article par article pendant les courses
+    bilan = {};
+    items.forEach(it => bilan[it.id] = prisDe(it));
+    rendreBilan();
+    document.getElementById('overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fermerBilan() {
+    document.getElementById('overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function majPris(id, delta) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const max = qteDe(it);
+    let v = (bilan[id] ?? 0) + delta;
+    if (v < 0) v = 0;
+    if (v > max) v = max;
+    bilan[id] = v;
+    // On met à jour la seule ligne concernée : un rendu complet ferait
+    // remonter la liste en haut à chaque appui sur + ou −
+    const ligne = document.getElementById('bl-' + id);
+    const champ = ligne && ligne.querySelector('input');
+    if (champ) champ.value = String(v);
+    majEtatLigne(id);
+  }
+
+  function saisirPris(id, valeur) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const max = qteDe(it);
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > max) v = max;
+    bilan[id] = v;
+    majEtatLigne(id);
+  }
+
+  function majEtatLigne(id) {
+    const ligne = document.getElementById('bl-' + id);
+    if (!ligne) return;
+    const it = items.find(i => i.id === id);
+    const pris = bilan[id] ?? 0;
+    const max = qteDe(it);
+    ligne.classList.toggle('manque', pris < max);
+    ligne.classList.toggle('rien', pris === 0);
+    majResumeBilan();
+  }
+
+  function majResumeBilan() {
+    const manquants = items.filter(it => (bilan[it.id] ?? 0) < qteDe(it)).length;
+    const el = document.getElementById('bilanResume');
+    if (el) el.textContent = manquants === 0
+      ? 'Tout pris 💪'
+      : manquants + (manquants > 1 ? ' articles manquants' : ' article manquant');
+  }
+
+  function rendreBilan() {
+    const zone = document.getElementById('bilanList');
+    let html = '';
+    let catCourante = null;
+
+    for (const it of itemsTries()) {
+      if (it.cat !== catCourante) {
+        catCourante = it.cat;
+        const cat = CATEGORIES.find(c => c.id === it.cat);
+        html += '<div class="bl-cat">' + echapper(cat ? cat.nom : it.cat) + '</div>';
+      }
+      const max = qteDe(it);
+      const pris = bilan[it.id] ?? 0;
+      const unite = uniteDe(it);
+      html += '<div class="bl-row' + (pris < max ? ' manque' : '') + (pris === 0 ? ' rien' : '') + '" id="bl-' + it.id + '">' +
+                '<div class="bl-name">' + echapper(it.label) + '</div>' +
+                '<div class="bl-qty">' +
+                  '<button type="button" onclick="majPris(\'' + it.id + '\', -1)">−</button>' +
+                  '<input type="number" min="0" step="1" value="' + pris + '" ' +
+                         'oninput="saisirPris(\'' + it.id + '\', this.value)">' +
+                  '<span class="bl-max">/ ' + nb(max) + (unite ? ' ' + uniteAffichee(max, unite) : '') + '</span>' +
+                  '<button type="button" onclick="majPris(\'' + it.id + '\', 1)">+</button>' +
+                '</div>' +
+              '</div>';
+    }
+
+    zone.innerHTML = html;
+    majResumeBilan();
+  }
+
+  function enregistrerCourses() {
+    const maintenant = new Date();
+    const manquants = [];
+    const gardes = [];
+
+    for (const it of items) {
+      const max = qteDe(it);
+      const pris = bilan[it.id] ?? 0;
+      if (pris < max) {
+        manquants.push({
+          label: it.label,
+          cat: it.cat,
+          demande: max,
+          pris: pris,
+          unite: uniteDe(it)
+        });
+        // L'article reste dans la liste, marqué, avec la quantité qu'il reste à prendre
+        gardes.push(Object.assign({}, it, {
+          fait: false,
+          pris: 0,
+          qte: max - pris,
+          unite: uniteDe(it),
+          manque: { pris: pris, demande: max, unite: uniteDe(it), date: maintenant.toLocaleDateString('fr-FR') }
+        }));
+      }
+    }
+
+    historique.unshift({
+      id: 'h' + Date.now(),
+      date: maintenant.toLocaleDateString('fr-FR'),
+      heure: maintenant.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      total: items.length,
+      complets: items.length - manquants.length,
+      manquants: manquants
+    });
+    if (historique.length > MAX_HISTORIQUE) historique = historique.slice(0, MAX_HISTORIQUE);
+
+    items = gardes;   // ce qui a été pris en entier sort de la liste
+    bilan = {};
+    sauver();
+    fermerBilan();
+    rendre();
+    rendreHistorique();
+    toast(manquants.length === 0
+      ? 'Courses enregistrées, tout pris'
+      : 'Enregistré — ' + manquants.length + ' manquant(s) gardé(s)');
+  }
+
+  /* ===== HISTORIQUE ===== */
+  const detailsOuverts = {};   // les courses dépliées restent dépliées après une modification
+
+  function basculerDetail(id) {
+    detailsOuverts[id] = !detailsOuverts[id];
+    rendreHistorique();
+  }
+
+  // Nombre d'articles encore à prendre dans une course passée
+  function manquantsRestants(h) {
+    return h.manquants.filter(m => m.pris < m.demande).length;
+  }
+
+  function trouverManquant(hId, index) {
+    const h = historique.find(x => x.id === hId);
+    if (!h || !h.manquants[index]) return null;
+    return { h: h, m: h.manquants[index] };
+  }
+
+  // « Depuis, j'en ai pris 2 de plus » : on met à jour la course passée
+  function majManquant(hId, index, delta, ev) {
+    if (ev) ev.stopPropagation();
+    const t = trouverManquant(hId, index);
+    if (!t) return;
+    saisirManquant(hId, index, t.m.pris + delta);
+  }
+
+  function saisirManquant(hId, index, valeur) {
+    const t = trouverManquant(hId, index);
+    if (!t) return;
+    let v = parseFloat(String(valeur).replace(',', '.'));
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > t.m.demande) v = t.m.demande;
+    t.m.pris = v;
+    t.h.complets = t.h.total - manquantsRestants(t.h);
+    detailsOuverts[hId] = true;
+    repercuterSurListe(t.m);
+    sauver();
+    rendre();
+    rendreHistorique();
+  }
+
+  // Ce qui est déclaré récupéré dans l'historique sort de la liste en cours,
+  // et un rattrapage partiel y met à jour le reste à prendre
+  function repercuterSurListe(m) {
+    const cle = normaliser(m.label);
+    const it = items.find(i => normaliser(i.label) === cle);
+    if (!it) return;
+    const reste = m.demande - m.pris;
+    if (reste <= 0) {
+      items = items.filter(i => i !== it);
+      return;
+    }
+    it.qte = reste;
+    it.pris = 0;
+    it.fait = false;
+    it.manque = { pris: m.pris, demande: m.demande, unite: m.unite || '', date: m.date || '' };
+  }
+
+  function toutPrisManquant(hId, index, ev) {
+    if (ev) ev.stopPropagation();
+    const t = trouverManquant(hId, index);
+    if (!t) return;
+    saisirManquant(hId, index, t.m.pris >= t.m.demande ? 0 : t.m.demande);
+  }
+
+  function remettreManquants(id) {
+    const entree = historique.find(h => h.id === id);
+    if (!entree) return;
+    let ajoutes = 0;
+    for (const m of entree.manquants) {
+      if (m.pris >= m.demande) continue;          // celui-là a été récupéré depuis
+      const cle = normaliser(m.label);
+      if (items.some(it => normaliser(it.label) === cle)) continue;
+      items.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        label: m.label,
+        cat: m.cat || classer(m.label),
+        fait: false,
+        qte: m.demande - m.pris,
+        unite: m.unite || '',
+        manque: { pris: m.pris, demande: m.demande, unite: m.unite || '', date: entree.date }
+      });
+      ajoutes++;
+    }
+    sauver();
+    rendre();
+    toast(ajoutes ? ajoutes + ' article(s) remis dans la liste' : 'Déjà dans la liste');
+  }
+
+  function supprimerCourse(id) {
+    historique = historique.filter(h => h.id !== id);
+    sauver();
+    rendreHistorique();
+  }
+
+  function viderHistorique(btn) {
+    if (!historique.length) { toast('Historique déjà vide'); return; }
+    confirmerBouton(btn, 'Confirmer ?', () => {
+      historique = [];
+      sauver();
+      rendreHistorique();
+      toast('Historique effacé');
+    });
+  }
+
+  function rendreHistorique() {
+    const zone = document.getElementById('historique');
+
+    if (!historique.length) {
+      zone.innerHTML = '<div class="empty">Aucune course enregistrée</div>';
+      return;
+    }
+
+    let html = '';
+    for (const h of historique) {
+      const reste = manquantsRestants(h);
+      const ouvert = !!detailsOuverts[h.id];
+
+      html += '<div class="hist">' +
+                '<div class="hist-head" onclick="basculerDetail(\'' + h.id + '\')">' +
+                  '<div class="hist-date">' + echapper(h.date) + ' <span>· ' + echapper(h.heure) + '</span></div>' +
+                  '<div class="hist-badge' + (reste ? '' : ' ok') + '">' +
+                    (reste ? reste + ' à prendre' : 'tout pris') +
+                  '</div>' +
+                '</div>' +
+                '<div class="hist-detail" id="det-' + h.id + '"' + (ouvert ? '' : ' hidden') + '>' +
+                  '<div class="hist-sub">' + (h.total - reste) + ' / ' + h.total + ' articles pris · ' +
+                    'ajuste ce que tu as récupéré depuis, la liste suit</div>';
+
+      h.manquants.forEach((m, i) => {
+        const fini = m.pris >= m.demande;
+        const u = m.unite ? ' ' + uniteAffichee(m.demande, m.unite) : '';
+        html += '<div class="hist-line' + (fini ? ' ok' : '') + '">' +
+                  '<span class="hl-name">' + echapper(m.label) + '</span>' +
+                  '<span class="hl-etat">' +
+                    (fini ? 'récupéré' : 'manque ' + nb(m.demande - m.pris) +
+                      (m.unite ? ' ' + uniteAffichee(m.demande - m.pris, m.unite) : '')) +
+                  '</span>' +
+                  '<span class="pris-box">' +
+                    '<button class="pb" onclick="majManquant(\'' + h.id + '\', ' + i + ', -1, event)">−</button>' +
+                    '<input class="pris-input" type="number" min="0" step="1" value="' + nb(m.pris) + '" ' +
+                           'onchange="saisirManquant(\'' + h.id + '\', ' + i + ', this.value)" ' +
+                           'onkeydown="if (event.key === \'Enter\') this.blur()">' +
+                    '<span class="pris-sur">sur</span>' +
+                    '<span class="hl-total">' + nb(m.demande) + u + '</span>' +
+                    '<button class="pb" onclick="majManquant(\'' + h.id + '\', ' + i + ', 1, event)">+</button>' +
+                    '<button class="pb tout" onclick="toutPrisManquant(\'' + h.id + '\', ' + i + ', event)" ' +
+                            'title="Tout pris / rien pris">✔</button>' +
+                  '</span>' +
+                '</div>';
+      });
+
+      if (reste) {
+        html += '<button class="btn-ghost hist-btn" onclick="remettreManquants(\'' + h.id + '\')">↩ Remettre ce qui manque dans la liste</button>';
+        html += '<button class="btn-ghost hist-btn" onclick="partagerCourse(\'' + h.id + '\', event)">📤 Envoyer ce qui manque</button>';
+      }
+      html += '<button class="btn-ghost hist-btn danger" onclick="supprimerCourse(\'' + h.id + '\')">🗑 Supprimer cette course</button>';
+      html += '</div></div>';
+    }
+
+    zone.innerHTML = html;
+  }
+
+  /* ===== LISTE À ENVOYER À UN COLLÈGUE ===== */
+  // Dans un message, « Épicerie » suffit : on enlève les exemples entre parenthèses
+  function nomRayonCourt(cat) {
+    return cat.nom.replace(/\s*\([^)]*\)\s*$/, '').toUpperCase();
+  }
+
+  function ligneAEnvoyer(label, reste, unite) {
+    const q = unite ? nb(reste) + ' ' + uniteAffichee(reste, unite) : nb(reste);
+    return '- ' + label + '  (' + q + ')';
+  }
+
+  // Ce qu'il reste à prendre dans la liste en cours, rangé par rayon
+  function texteManquantsListe() {
+    const restants = items.filter(it => qteDe(it) - prisDe(it) > 0);
+    if (!restants.length) return null;
+
+    let txt = 'COURSES MÉTRO — ' + new Date().toLocaleDateString('fr-FR') + '\n';
+    txt += restants.length + (restants.length > 1 ? ' articles à prendre' : ' article à prendre') + '\n';
+
+    for (const cat of CATEGORIES) {
+      const lot = restants.filter(it => it.cat === cat.id);
+      if (!lot.length) continue;
+      txt += '\n' + nomRayonCourt(cat) + '\n';
+      for (const it of lot) {
+        txt += ligneAEnvoyer(it.label, qteDe(it) - prisDe(it), uniteDe(it)) + '\n';
+      }
+    }
+    return txt.trim();
+  }
+
+  // Ce qui manque encore sur une course passée
+  function texteManquantsCourse(hId) {
+    const h = historique.find(x => x.id === hId);
+    if (!h) return null;
+    const restants = h.manquants.filter(m => m.pris < m.demande);
+    if (!restants.length) return null;
+
+    let txt = 'COURSES MÉTRO — reste de la course du ' + h.date + '\n';
+    txt += restants.length + (restants.length > 1 ? ' articles à prendre' : ' article à prendre') + '\n';
+
+    for (const cat of CATEGORIES) {
+      const lot = restants.filter(m => (m.cat || 'autres') === cat.id);
+      if (!lot.length) continue;
+      txt += '\n' + nomRayonCourt(cat) + '\n';
+      for (const m of lot) {
+        txt += ligneAEnvoyer(m.label, m.demande - m.pris, m.unite) + '\n';
+      }
+    }
+    return txt.trim();
+  }
+
+  function partagerListe() {
+    const txt = texteManquantsListe();
+    if (!txt) { toast('Rien à envoyer, tout est pris'); return; }
+    ouvrirPartage(txt);
+  }
+
+  function partagerCourse(hId, ev) {
+    if (ev) ev.stopPropagation();
+    const txt = texteManquantsCourse(hId);
+    if (!txt) { toast('Plus rien à prendre sur cette course'); return; }
+    ouvrirPartage(txt);
+  }
+
+  function ouvrirPartage(txt) {
+    document.getElementById('texteEnvoi').value = txt;
+    document.getElementById('overlayPartage').hidden = false;
+    document.body.style.overflow = 'hidden';
+    // Le bouton « Partager » n'a de sens que si le téléphone sait le faire
+    document.getElementById('btnPartageNatif').hidden = !navigator.share;
+  }
+
+  function fermerPartage() {
+    document.getElementById('overlayPartage').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function texteEnvoi() {
+    return document.getElementById('texteEnvoi').value;
+  }
+
+  async function envoyerNatif() {
+    try {
+      await navigator.share({ title: 'Courses Métro', text: texteEnvoi() });
+      fermerPartage();
+    } catch (e) {
+      if (e && e.name !== 'AbortError') copierEnvoi();
+    }
+  }
+
+  function copierEnvoi() {
+    const txt = texteEnvoi();
+    const zone = document.getElementById('texteEnvoi');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt)
+        .then(() => toast('Liste copiée, colle-la dans ton message'))
+        .catch(() => { zone.focus(); zone.select(); toast('Copie manuelle : texte sélectionné'); });
+    } else {
+      zone.focus(); zone.select();
+      toast('Copie manuelle : texte sélectionné');
+    }
+  }
+
+  function ouvrirAvec(prefixe) {
+    const url = prefixe + encodeURIComponent(texteEnvoi());
+    const f = window.open(url, '_blank');
+    if (!f) copierEnvoi();   // bloqué : au moins la liste est dans le presse-papiers
+  }
+
+  /* ===== SAUVEGARDE ET RESTAURATION ===== */
+  function paquetSauvegarde() {
+    return {
+      appli: 'liste-metro-bangers',
+      version: 1,
+      maj: new Date().toISOString(),
+      items: items,
+      corrections: corrections,
+      historique: historique
+    };
+  }
+
+  function nomFichierSauvegarde() {
+    const d = new Date();
+    const deux = n => String(n).padStart(2, '0');
+    return 'liste-metro-' + d.getFullYear() + deux(d.getMonth() + 1) + deux(d.getDate()) + '.json';
+  }
+
+  function copierSauvegarde() {
+    const texte = JSON.stringify(paquetSauvegarde());
+    const fini = () => toast('Sauvegarde copiée');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texte).then(fini).catch(() => secoursCopie(texte));
+    } else {
+      secoursCopie(texte);
+    }
+  }
+
+  // Si le presse-papiers est refusé, on affiche le texte pour un copier manuel
+  function secoursCopie(texte) {
+    const zone = document.getElementById('zoneRestauration');
+    zone.value = texte;
+    zone.focus();
+    zone.select();
+    toast('Copie manuelle : le texte est sélectionné');
+  }
+
+  async function telechargerSauvegarde() {
+    const dl = window.claude && claude.use ? await claude.use('downloads') : null;
+    if (!dl) { copierSauvegarde(); return; }
+    try {
+      await dl.save({
+        filename: nomFichierSauvegarde(),
+        data: JSON.stringify(paquetSauvegarde(), null, 1)
+      });
+      toast('Fichier enregistré');
+    } catch (e) {
+      toast('Enregistrement annulé');
+    }
+  }
+
+  function lireSauvegarde(texte) {
+    let d;
+    try { d = JSON.parse(texte); } catch (e) { return null; }
+    if (!d || typeof d !== 'object') return null;
+    if (!Array.isArray(d.items) || !Array.isArray(d.historique)) return null;
+    if (!d.corrections || typeof d.corrections !== 'object') d.corrections = {};
+    return d;
+  }
+
+  function appliquerSauvegarde(d) {
+    items = d.items;
+    corrections = d.corrections;
+    historique = d.historique;
+    sauver();
+    rendre();
+    rendreHistorique();
+    majResumeSauvegarde();
+  }
+
+  function restaurerSauvegarde(btn) {
+    const zone = document.getElementById('zoneRestauration');
+    const d = lireSauvegarde(zone.value.trim());
+    if (!d) { toast('Sauvegarde illisible'); return; }
+    const quoi = d.items.length + ' article(s) et ' + d.historique.length + ' course(s)';
+    confirmerBouton(btn, 'Remplacer par ' + quoi + ' ?', () => {
+      appliquerSauvegarde(d);
+      zone.value = '';
+      toast('Sauvegarde restaurée');
+    });
+  }
+
+  function majResumeSauvegarde() {
+    const el = document.getElementById('sauvResume');
+    if (el) {
+      el.textContent = items.length + ' art. · ' + Object.keys(corrections).length + ' rayons · ' +
+                       historique.length + ' courses';
+    }
+    const alerte = document.getElementById('alerteVide');
+    if (alerte) alerte.hidden = !(items.length === 0 && historique.length === 0);
+  }
+
+  // Sauvegarde déposée dans la page à la publication : servie si le téléphone est vide
+  function reprendreSauvegardeIntegree() {
+    if (items.length || historique.length || Object.keys(corrections).length) return;
+    const bloc = document.getElementById('sauvegardeIntegree');
+    if (!bloc) return;
+    const d = lireSauvegarde(bloc.textContent.trim());
+    if (!d) return;
+    appliquerSauvegarde(d);
+    toast('Données reprises de la sauvegarde intégrée');
+  }
+
+  /* ===== AFFICHAGE ===== */
+  function echapper(s) {
+    return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // « Manque 3 sur 8 » / « Pas pris » — d'après la dernière fin de courses
+  function texteManque(m) {
+    const reste = m.demande - m.pris;
+    const uReste = m.unite ? ' ' + uniteAffichee(reste, m.unite) : '';
+    const uTotal = m.unite ? ' ' + uniteAffichee(m.demande, m.unite) : '';
+    return m.pris > 0
+      ? 'Manque ' + nb(reste) + uReste + ' sur ' + nb(m.demande) + uTotal
+      : 'Pas pris' + (m.demande > 1 ? ' (0 / ' + nb(m.demande) + uTotal + ')' : '');
+  }
+
+  function etiquetteManque(it) {
+    if (!it.manque) return '';
+    return '<span class="tag-manque' + (it.manque.pris > 0 ? '' : ' rien') + '">' +
+             echapper(texteManque(it.manque)) +
+           '</span>';
+  }
+
+  function rendre() {
+    const zone = document.getElementById('liste');
+    majCompteur();
+    majResumeSauvegarde();
+
+    if (!items.length) {
+      zone.innerHTML = '<div class="empty">Ta liste est vide</div>';
+      return;
+    }
+
+    let html = '';
+    let rang = 0;
+    CATEGORIES.forEach((cat, index) => {
+      const lot = items.filter(i => i.cat === cat.id);
+      if (!lot.length) return;
+      // Les articles cochés descendent en bas de leur rayon
+      lot.sort((a, b) => (a.fait === b.fait) ? 0 : (a.fait ? 1 : -1));
+
+      html += '<div class="cat-block" style="--i:' + (index) + '">';
+      html += '<div class="cat-title"><span class="num">' + String(index + 1).padStart(2, '0') + '</span>' +
+              echapper(cat.nom) + '<span class="count">' + lot.length + '</span></div>';
+
+      for (const it of lot) {
+        const options = CATEGORIES.map(c =>
+          '<option value="' + c.id + '"' + (c.id === it.cat ? ' selected' : '') + '>' + echapper(c.court) + '</option>'
+        ).join('');
+
+        const q = qteDe(it);
+        const u = uniteDe(it);
+        const pris = prisDe(it);
+        const aRanger = it.cat === 'autres';
+        const partiel = pris > 0 && pris < q;
+
+        html += '<div class="item' + (it.fait ? ' done' : '') + (partiel ? ' partiel' : '') +
+                  (aRanger ? ' a-ranger' : '') + '" id="it-' + it.id + '" style="--i:' + (rang++) + ';--p:' +
+                  (q > 0 ? Math.round(pris / q * 100) : 0) + '%">' +
+                  '<div class="item-haut">' +
+                    '<button class="check" onclick="basculer(\'' + it.id + '\')">' + (it.fait ? '✔' : '') + '</button>' +
+                    '<span class="name" onclick="basculer(\'' + it.id + '\')">' + echapper(it.label) + '</span>' +
+                    '<button class="del" onclick="supprimer(\'' + it.id + '\')">×</button>' +
+                  '</div>' +
+                  '<div class="item-meta">' +
+                      '<span class="pris-box" title="Combien tu as pris">' +
+                        '<button class="pb" onclick="majPrisListe(\'' + it.id + '\', -1, event)">−</button>' +
+                        '<input class="pris-input" type="number" min="0" step="1" value="' + nb(pris) + '" ' +
+                               'onclick="event.stopPropagation()" ' +
+                               'onchange="saisirPrisListe(\'' + it.id + '\', this.value)" ' +
+                               'onkeydown="if (event.key === \'Enter\') this.blur()">' +
+                        '<span class="pris-sur">sur</span>' +
+                        '<button class="qte-chip" id="q-' + it.id + '" onclick="editerQte(\'' + it.id + '\', event)" ' +
+                                'title="Modifier la quantité à prendre">' +
+                                nb(q) + (u ? ' ' + uniteAffichee(q, u) : '') + '</button>' +
+                        '<button class="pb" onclick="majPrisListe(\'' + it.id + '\', 1, event)">+</button>' +
+                      '</span>' +
+                      etiquetteManque(it) +
+                      (aRanger ? '<span class="tag-ranger">Choisis son rayon →</span>' : '') +
+                      '<select onchange="changerCat(\'' + it.id + '\', this.value)">' + options + '</select>' +
+                  '</div>' +
+                '</div>';
+      }
+      html += '</div>';
+    });
+
+    zone.innerHTML = html;
+    zone.classList.toggle('anim', animerRendu);
+    animerRendu = false;
+  }
+
+  let minuteurToast;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(minuteurToast);
+    minuteurToast = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  document.getElementById('input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ajouterListe();
+  });
+
+  // Les listes collées avant cette version gardaient « — 5 Piece » dans le nom
+  // et lisaient la contenance (450 g) comme quantité : on les remet d'aplomb.
+  (function reprendreQuantitesMetro() {
+    if (localStorage.getItem('metro_maj_quantites') === 'fin') return;
+    let change = false;
+    items.forEach(it => {
+      const fin = quantiteFinale(it.label);
+      if (!fin) return;
+      it.label = sansQuantiteFinale(it.label);
+      it.qte = fin.qte;
+      it.unite = fin.unite;
+      change = true;
+    });
+    localStorage.setItem('metro_maj_quantites', 'fin');
+    if (change) { sauver(); toast('Quantités relues sur la liste'); }
+  })();
+
+  rendre();
+  rendreHistorique();
+  // Bandeau défilant : le contenu est dupliqué pour que la boucle soit invisible
+  (function remplirTicker() {
+    const piste = document.getElementById('ticker');
+    if (!piste) return;
+    const motifs = ['Courses Métro', '<b>★</b>', 'Roubaix', '<b>★</b>', 'Smash & Chicken',
+                    '<b>★</b>', 'Il n\'y a que toi qui comptes', '<b>★</b>'];
+    const bloc = motifs.map(m => '<span>' + m + '</span>').join('');
+    piste.innerHTML = bloc + bloc;
+  })();
+
+  // Service worker : mise en cache pour ouvrir l'appli sans réseau.
+  // Ignoré quand la page est ouverte directement en fichier (file://).
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+    let recharge = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recharge) return;
+      recharge = true;
+      toast('Nouvelle version installée');
+    });
+  }
+
+  reprendreSauvegardeIntegree();
+
+  // Le bouton « Fichier » n'apparaît que si la page hôte sait enregistrer un fichier
+  (async function activerTelechargement() {
+    if (!(window.claude && claude.use)) return;
+    const dl = await claude.use('downloads');
+    if (dl) document.getElementById('btnFichier').hidden = false;
+  })();
+</script>
+</body>
+</html>

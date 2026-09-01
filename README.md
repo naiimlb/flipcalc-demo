@@ -1,1 +1,159 @@
 # flipcalc-demo
+
+Deux mini-applis web autonomes (un seul fichier HTML chacune, aucune dépendance,
+données conservées dans le navigateur via `localStorage`).
+
+## `index.html` — FlipCalc
+Calculateur de bénéfice pour l'achat-revente (Vinted, eBay, LeBonCoin, Facebook).
+
+## `docs/` — Ma Liste Métro (charte #HASHTAGBANGERS)
+Liste de courses qui **trie automatiquement les articles dans l'ordre des rayons** :
+
+1. Fruits & légumes
+2. Épicerie (farine, lait, citron, vinaigre, Kinder…)
+3. Sauces
+4. Boissons
+5. Hygiène & entretien
+6. Produits frais (fromage)
+7. Autres (articles non reconnus, à classer)
+
+L'ordre est défini par le tableau `CATEGORIES` en haut du `<script>` : le déplacer suffit
+à changer l'ordre d'affichage.
+
+Le classement se fait en trois niveaux de priorité, pour que le parfum d'un produit
+ne décide jamais du rayon :
+1. **produit ou marque** (`oasis`, `chips`, `yaourt`, `sauce`, `lessive`…) ;
+2. les autres mots reconnus ;
+3. **parfums et variétés** (`pomme`, `fraise`, `citron`, `chocolat`…), en dernier recours.
+
+Ainsi `oasis pomme poire` part en boissons, `chips pomme paille` en épicerie et
+`pommes` en fruits & légumes. Ce qui suit « saveur », « goût » ou « parfum » est ignoré
+pour le classement (`chips saveur poulet` reste en épicerie).
+
+Utilisation : coller une liste (un article par ligne ou séparés par des virgules),
+puis « Trier ma liste ». Les doublons sont ignorés.
+
+**Listes copiées depuis Métro** — dans `METRO PROFESSIONAL Mini bobine 2 plis 200 feuilles
+x 6 — 1 Pack` ou `REBLOCHON DE SAVOIE 450G — 5 Piece`, c'est **ce qui suit le tiret final**
+qui donne la quantité (1 pack, 5 pièces) ; les contenances citées dans le nom (750 ml, 450 g,
+x 6) ne sont que la description du produit. Cette fin de ligne est retirée du nom affiché,
+la quantité passe dans la pastille.
+
+**Quantités** — détectées à l'ajout et affichées en pastille sur chaque article :
+`8 yaourts` → ×8, `2 kg farine` → 2 kg, `coca x6` → ×6, `1,5 l lait` → 1,5 l ;
+1 par défaut. Un conditionnement compte pour un article à prendre, pas pour son contenu :
+`pack de 6 bobines` → 1 pack, `lot de 4 compotes` → 1 lot, mais `2 packs de coca` → 2 packs
+et `6 bouteilles d'eau` → 6 bouteilles. Un appui sur la pastille permet de la corriger.
+C'est cette quantité que le bilan de fin de courses propose d'ajuster.
+
+**Rayon mémorisé** — un article non reconnu part dans « Autres », signalé en pointillé
+avec « Choisis son rayon → ». Le rayon choisi (là ou sur un article mal classé) est
+mémorisé : il s'applique aux prochaines listes, aux libellés qui contiennent ce produit
+(ranger `pommes paille` range aussi `chips pommes paille`) et aux articles déjà présents
+dans la liste.
+
+- Cocher un article pendant les courses (il descend en bas de son rayon)
+- Corriger le rayon d'un article via le menu déroulant : **la correction est mémorisée**
+  (le lien « Réinitialiser les rayons mémorisés » les efface et reclasse la liste)
+- Copier la liste triée, tout décocher, retirer les articles cochés, tout effacer
+
+### Combien j'ai pris, article par article
+Chaque ligne de la liste porte un compteur **`− n sur N +`** : `n` est ce que tu as réussi
+à prendre, `N` la quantité demandée (modifiable en touchant le nombre de droite). Cocher la
+case met tout, décocher remet à zéro, et un article pris en partie s'entoure de jaune.
+
+### Fin des courses et historique
+Le bouton **« Fin des courses »** ouvre le récapitulatif, pré-rempli avec ce que tu as saisi
+dans la liste, ajustable une dernière fois avec `+` / `−` ou au clavier.
+
+À l'enregistrement :
+- ce qui a été pris en entier sort de la liste ;
+- ce qui manque **reste dans la liste**, marqué d'une étiquette rose
+  (« MANQUE 3 SUR 8 », « MANQUE 1 KG SUR 2 KG », « PAS PRIS »), et sa quantité
+  devient ce qu'il reste à prendre ;
+- la course part dans l'**historique** avec le détail des manquants, sous la forme
+  `5 au lieu de 8`, `1 kg au lieu de 2 kg` ou `pas pris (0 / 1)`.
+
+L'historique garde les 30 dernières courses (date, heure, articles pris sur le total).
+Chaque course se déplie sur ses manquants, **modifiables après coup** : le compteur
+`− n sur N +` (et le bouton ✔ pour tout/rien) sert à déclarer ce qui a été récupéré depuis.
+Une ligne soldée passe en « récupéré » et le badge de la course suit (`3 à prendre` →
+`tout pris`).
+
+Ces corrections se répercutent sur la liste en cours : un article entièrement récupéré en
+sort, un rattrapage partiel y met à jour le reste à prendre et son étiquette. Chaque course
+propose aussi de **remettre ce qui manque encore dans la liste**, ou d'être supprimée.
+
+### Ouvrir le site dans Safari, sans compte
+Le dossier `docs/` est un site statique complet, prêt pour **GitHub Pages** :
+
+| fichier | rôle |
+| --- | --- |
+| `index.html` | l'appli, autonome |
+| `logo.jpg`, `icone-180.png`, `icone-192.png`, `icone-512.jpg` | logo et icônes d'installation |
+| `manifest.webmanifest` | nom, couleurs et icônes une fois ajoutée à l'écran d'accueil |
+| `sw.js` | service worker : l'appli s'ouvre **même sans réseau** |
+| `.nojekyll` | sert les fichiers tels quels |
+
+**Activer la publication** (une seule fois) : dépôt GitHub → *Settings* → *Pages* →
+*Source : Deploy from a branch* → branche voulue, dossier **`/docs`** → *Save*.
+L'adresse est alors `https://<compte>.github.io/flipcalc-demo/`, ouvrable dans Safari
+sans aucun compte, et « Partager → Sur l'écran d'accueil » l'installe comme une appli.
+
+Avantage important : le site garde une adresse stable, donc **la liste, les rayons mémorisés
+et l'historique ne repartent plus à zéro** à chaque mise à jour, contrairement à une page
+republiée ailleurs.
+
+Le fichier `docs/index.html` s'ouvre aussi directement depuis le disque (double-clic) : le
+service worker est alors simplement ignoré.
+
+### Confort sur iPhone
+- Zones sûres respectées (encoche, barre d'accueil), page en plein écran une fois ajoutée à
+  l'écran d'accueil (`apple-mobile-web-app-capable`, icône `logo.jpg`)
+- Toutes les cibles tactiles font au moins 28 px, les champs de saisie sont à 16 px pour que
+  Safari ne zoome pas au focus, et le double appui ne zoome plus
+- Retour visuel au toucher sur chaque bouton (iOS n'a pas de survol)
+- Entrée en fondu des rayons et des articles après une action, pop de la coche, feuilles
+  modales qui montent du bas, barre d'avancement animée sous un en-tête de liste collant
+- Toutes les animations se coupent si le téléphone est réglé sur « Réduire les animations »
+
+### Envoyer la liste à quelqu'un d'autre
+Le bouton **« Envoyer ce qu'il reste à prendre »** compose un message à partir de tout ce qui
+n'est pas encore pris, rangé par rayon avec les quantités restantes :
+
+```
+COURSES MÉTRO — 31/08/2026
+5 articles à prendre
+
+ÉPICERIE
+- 2 kg farine  (2 kg)
+...
+```
+
+Le texte s'affiche avant l'envoi (et reste modifiable), avec **Partager** (feuille de partage
+du téléphone : WhatsApp, SMS, mail…), **Copier**, **WhatsApp** et **SMS**. Chaque course de
+l'historique a le même bouton pour n'envoyer que ce qui lui manque encore.
+
+### Sauvegarde
+Les données (liste, rayons mémorisés, historique) vivent dans le `localStorage` du navigateur :
+elles ne suivent pas quand la page est republiée à une nouvelle version. La carte
+**Sauvegarde** répond à ça :
+- « Copier ma sauvegarde » met tout dans le presse-papiers (et « Fichier » enregistre un
+  `.json` quand la page hôte le permet) ;
+- coller ce texte puis « Restaurer » remet liste, rayons et historique en place ;
+- un bandeau apparaît automatiquement quand l'appli s'ouvre vide, pour rappeler la marche à suivre ;
+- le bloc `<script id="sauvegardeIntegree">` en bas de la page peut recevoir une sauvegarde au
+  moment de la publication : elle est reprise toute seule si le navigateur est vide.
+
+### Personnalisation du design
+- Charte reprise du logo : rose de marque `#EA1F79` sur fond noir encre, typo condensée
+  capitales (Anton) et lettrage marqueur (Permanent Marker), trame de points façon
+  halftone du logo, grain imprimé en surimpression.
+- Bandeau de marque en ticket biseauté avec halo, logo en lévitation, bandeau défilant,
+  titre géant, numéros de rayon en chiffres creux (l'ordre du parcours en magasin),
+  lignes d'article qui se remplissent à hauteur de ce qui est déjà pris.
+- Toutes les couleurs sont regroupées dans le bloc `:root` en haut du `<style>`
+  (`--bg`, `--surface`, `--accent`, `--accent-2`, `--ink`…) : une seule modification
+  suffit à recaler toute l'appli.
+- Le logo est le fichier `logo.jpg` placé à côté de `courses.html` ; s'il est absent
+  ou remplacé, le lettrage texte `#HASHTAGBANGERS®` prend le relais automatiquement.
