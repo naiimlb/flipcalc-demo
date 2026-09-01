@@ -43,6 +43,18 @@ marge qui se resserre au fil des niveaux, plus un budget d'exploration des impas
 la grille. Mode Expert : 40 % de temps en moins et pas d'indice. L'étoile du chrono demande 30 % du
 temps restant.
 
+## Espace joueur et sauvegarde automatique
+
+Au premier lancement, le jeu propose de créer un compte (pseudo + mot de passe) ou de jouer sans
+compte. Chaque compte a sa **propre sauvegarde** — niveaux, étoiles, meilleurs temps, mode, tenue,
+photo du visage — enregistrée automatiquement à chaque changement (une pastille « 💾 Sauvegardé »
+le confirme). Plusieurs joueurs peuvent donc se partager le même téléphone sans se marcher dessus ;
+le bouton 👤 du menu permet de changer de joueur ou de supprimer un compte.
+
+Les comptes restent sur l'appareil (localStorage) : le mot de passe n'est jamais stocké en clair
+(SHA-256 salé, 3000 itérations), et rien n'est envoyé sur un serveur. Une synchronisation entre
+appareils demanderait un service en ligne, qui n'existe pas dans ce projet.
+
 ## Ton visage sur le héros
 
 Au premier lancement, le jeu propose de se prendre en photo (caméra frontale, ou appareil photo natif
@@ -86,6 +98,7 @@ orbite de victoire avec feu d'artifice, éclairs sous l'orage.
 - `js/critters.js` — créatures animées d'ambiance (une espèce par décor).
 - `js/audio.js` — effets sonores synthétisés (WebAudio).
 - `js/creator.js` — atelier du héros : photo du visage, recadrage, teinte de peau.
+- `js/accounts.js` — comptes locaux (hachage du mot de passe, registre, écran de connexion).
 - `js/game.js` — boucle de jeu, caméra, entrées tactiles, HUD, mini-carte.
 - `build-standalone.js` — assemble une version en un seul fichier.
 
