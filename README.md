@@ -6,7 +6,7 @@ données conservées dans le navigateur via `localStorage`).
 ## `index.html` — FlipCalc
 Calculateur de bénéfice pour l'achat-revente (Vinted, eBay, LeBonCoin, Facebook).
 
-## `courses.html` — Ma Liste Métro (charte #HASHTAGBANGERS)
+## `docs/` — Ma Liste Métro (charte #HASHTAGBANGERS)
 Liste de courses qui **trie automatiquement les articles dans l'ordre des rayons** :
 
 1. Fruits & légumes
@@ -84,7 +84,28 @@ Ces corrections se répercutent sur la liste en cours : un article entièrement 
 sort, un rattrapage partiel y met à jour le reste à prendre et son étiquette. Chaque course
 propose aussi de **remettre ce qui manque encore dans la liste**, ou d'être supprimée.
 
-Ouvrir le fichier directement dans un navigateur, ou l'ajouter à l'écran d'accueil du téléphone.
+### Ouvrir le site dans Safari, sans compte
+Le dossier `docs/` est un site statique complet, prêt pour **GitHub Pages** :
+
+| fichier | rôle |
+| --- | --- |
+| `index.html` | l'appli, autonome |
+| `logo.jpg`, `icone-180.png`, `icone-192.png`, `icone-512.jpg` | logo et icônes d'installation |
+| `manifest.webmanifest` | nom, couleurs et icônes une fois ajoutée à l'écran d'accueil |
+| `sw.js` | service worker : l'appli s'ouvre **même sans réseau** |
+| `.nojekyll` | sert les fichiers tels quels |
+
+**Activer la publication** (une seule fois) : dépôt GitHub → *Settings* → *Pages* →
+*Source : Deploy from a branch* → branche voulue, dossier **`/docs`** → *Save*.
+L'adresse est alors `https://<compte>.github.io/flipcalc-demo/`, ouvrable dans Safari
+sans aucun compte, et « Partager → Sur l'écran d'accueil » l'installe comme une appli.
+
+Avantage important : le site garde une adresse stable, donc **la liste, les rayons mémorisés
+et l'historique ne repartent plus à zéro** à chaque mise à jour, contrairement à une page
+republiée ailleurs.
+
+Le fichier `docs/index.html` s'ouvre aussi directement depuis le disque (double-clic) : le
+service worker est alors simplement ignoré.
 
 ### Confort sur iPhone
 - Zones sûres respectées (encoche, barre d'accueil), page en plein écran une fois ajoutée à

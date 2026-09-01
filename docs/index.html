@@ -7,7 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Liste Métro">
-<link rel="apple-touch-icon" href="logo.jpg">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="icon" href="icone-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="Liste de courses Métro triée par rayon, avec suivi de ce qui a été pris et historique des manquants.">
 <title>#HASHTAGBANGERS — Ma Liste Métro</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -2575,6 +2578,20 @@
     const bloc = motifs.map(m => '<span>' + m + '</span>').join('');
     piste.innerHTML = bloc + bloc;
   })();
+
+  // Service worker : mise en cache pour ouvrir l'appli sans réseau.
+  // Ignoré quand la page est ouverte directement en fichier (file://).
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+    let recharge = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recharge) return;
+      recharge = true;
+      toast('Nouvelle version installée');
+    });
+  }
 
   reprendreSauvegardeIntegree();
 
