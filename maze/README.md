@@ -31,6 +31,33 @@ Le temps imparti est calculé à partir de la longueur du chemin de sortie, avec
 qui se réduit de niveau en niveau. Chaque niveau se débloque en terminant le précédent.
 Notation : 1 étoile pour sortir, +1 s'il reste 40 % du temps, +1 pour les 3 étoiles ramassées.
 
+## 50 niveaux en 10 mondes
+
+Chaque monde (Prairie, Jungle, Plage, Désert, Montagne, Forêt d'automne, Volcan, Grotte de glace,
+Ville néon, Espace) compte 5 niveaux : même décor, mais une **ambiance différente à chaque niveau**
+(aube, jour, crépuscule, nuit, orage avec éclairs et tonnerre, brume) et une grille qui grandit d'un
+cran (de 4×4 pour la démo à 24×24). Terminer un monde ouvre le suivant.
+
+Le chrono est calculé à partir du trajet réel (≈ 0,72 s par case, hésitations comprises) avec une
+marge qui se resserre au fil des niveaux, plus un budget d'exploration des impasses proportionnel à
+la grille. Mode Expert : 40 % de temps en moins et pas d'indice. L'étoile du chrono demande 30 % du
+temps restant.
+
+## Ton visage sur le héros
+
+Au premier lancement, le jeu propose de se prendre en photo (caméra frontale, ou appareil photo natif
+si la caméra n'est pas accessible — par exemple dans une iframe). La photo est recadrée au doigt, la
+tête du personnage l'affiche en direct (disque fondu dans la peau, teinte de peau déduite de la photo)
+et tout reste dans le navigateur : rien n'est envoyé. Le bouton « 📸 Mettre mon visage » du menu
+permet de changer ou retirer la photo à tout moment.
+
+## Animations en jeu
+
+Créatures propres à chaque décor (papillons, perroquets, mouettes, vautours, aigles, corbeaux,
+chauves-souris, chouettes, drones, ovnis), étincelles qui montent du portail, halos pulsants sous les
+étoiles, onde de choc à la collecte, néons et lave qui palpitent, caméra qui penche dans les virages,
+orbite de victoire avec feu d'artifice, éclairs sous l'orage.
+
 ## Pour tous les publics
 
 - **3 modes** choisis depuis le menu : 🐣 Détente (sans chrono, indices gratuits, idéal pour les petits),
@@ -56,7 +83,9 @@ Notation : 1 étoile pour sortir, +1 s'il reste 40 % du temps, +1 pour les 3 ét
 - `js/engine.js` — mini moteur WebGL (matrices, géométrie, scène, particules).
 - `js/character.js` — modèle 3D du personnage et animations.
 - `js/levels.js` — niveaux, thèmes, génération de labyrinthe, décors.
+- `js/critters.js` — créatures animées d'ambiance (une espèce par décor).
 - `js/audio.js` — effets sonores synthétisés (WebAudio).
+- `js/creator.js` — atelier du héros : photo du visage, recadrage, teinte de peau.
 - `js/game.js` — boucle de jeu, caméra, entrées tactiles, HUD, mini-carte.
 - `build-standalone.js` — assemble une version en un seul fichier.
 

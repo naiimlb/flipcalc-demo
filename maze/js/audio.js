@@ -68,6 +68,10 @@ class AudioFX {
     [523, 659, 784].forEach(f => this.tone(f, 1.4, 'sine', 0.08, 0.85));
   }
   lose() { this.tone(300, 0.5, 'sawtooth', 0.12, 0, 120); this.tone(200, 0.7, 'square', 0.06, 0.2, 80); }
+  thunder(when = 0) { this.noise(1.6, 0.35, 140, when); this.noise(0.5, 0.25, 320, when + 0.05); this.tone(48, 1.4, 'sine', 0.12, when, 30); }
+  swoosh() { this.noise(0.28, 0.12, 2200); this.tone(320, 0.22, 'sine', 0.05, 0, 640); }
+  unlock() { [660, 880, 1320].forEach((f, i) => this.tone(f, 0.22, 'triangle', 0.14, i * 0.09)); }
+  shutter() { this.noise(0.05, 0.25, 3500); this.tone(1800, 0.05, 'square', 0.05, 0.05); }
   startAmbient(theme) {
     this.stopAmbient();
     if (!this.ctx) return;

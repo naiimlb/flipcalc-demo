@@ -1,12 +1,14 @@
 /* ============================================================
-   MazeRun — Logique du jeu, caméra, entrées tactiles, HUD
+   MazeRun — Logique du jeu, caméra, entrées tactiles, HUD, menu des mondes
    ============================================================ */
 'use strict';
 
 const $ = (s) => document.querySelector(s);
-const STORE_KEY = 'mazerun.progress.v1';
-const CAM_H = 9.4, CAM_D = 4.3, INTRO_DUR = 2.8;
+const STORE_KEY = 'mazerun.progress.v2';
+const CAM_H = 9.4, CAM_D = 4.3, INTRO_DUR = 3.0;
 const PLAYER_R = 0.30, PLAYER_SPEED = 3.6;
+const TIME_STAR = 0.3;          // part du chrono restante pour l'étoile du temps
+const PREVIEW_SIZE = 6;         // labyrinthe d'arrière-plan du menu
 
 const PARTICLE_CFG = {
   pollen: { count: 120, colors: [[1, 0.95, 0.6]], size: [2, 4], mode: 'float', alpha: 0.75, additive: true, twinkle: true },
@@ -24,25 +26,27 @@ const PARTICLE_CFG = {
 const MODES = {
   detente: { label: '🐣 Détente', hint: 'Sans chrono, indices gratuits. Idéal pour les petits.', timeMul: Infinity, hintFree: true },
   normal: { label: '🙂 Normal', hint: 'Le chrono tourne, 3 étoiles à décrocher.', timeMul: 1 },
-  expert: { label: '🔥 Expert', hint: 'Moins de temps et pas d’indice. Pour les champions !', timeMul: 0.7, noHint: true },
+  expert: { label: '🔥 Expert', hint: '40 % de temps en moins et pas d’indice. Pour les champions !', timeMul: 0.6, noHint: true },
 };
 const OUTFITS = [
   { id: 'blanc', name: 'Blanc', tee: '#f0f0f5', need: 0 },
-  { id: 'rouge', name: 'Rouge', tee: '#e53935', need: 3 },
-  { id: 'bleu', name: 'Bleu', tee: '#1e88e5', need: 6 },
-  { id: 'vert', name: 'Vert', tee: '#43a047', need: 9 },
-  { id: 'jaune', name: 'Jaune', tee: '#fdd835', need: 12 },
-  { id: 'violet', name: 'Violet', tee: '#8e24aa', need: 16 },
-  { id: 'noir', name: 'Noir', tee: '#1c1c22', need: 20 },
-  { id: 'or', name: 'Or', tee: '#ffb300', need: 25 },
-  { id: 'rose', name: 'Rose', tee: '#ff4fa3', need: 30 },
+  { id: 'rouge', name: 'Rouge', tee: '#e53935', need: 5 },
+  { id: 'bleu', name: 'Bleu', tee: '#1e88e5', need: 10 },
+  { id: 'vert', name: 'Vert', tee: '#43a047', need: 18 },
+  { id: 'jaune', name: 'Jaune', tee: '#fdd835', need: 27 },
+  { id: 'violet', name: 'Violet', tee: '#8e24aa', need: 40 },
+  { id: 'noir', name: 'Noir', tee: '#1c1c22', need: 55 },
+  { id: 'or', name: 'Or', tee: '#ffb300', need: 75 },
+  { id: 'rose', name: 'Rose', tee: '#ff4fa3', need: 100 },
 ];
 const POPS = ['Super !', 'Génial !', 'Bravo !', 'Top !', 'Waouh !', 'Yes !'];
-const MAX_STARS = 3 * (LEVELS.length);
+const MAX_STARS = 3 * LEVELS.length;
+const FIREWORK_COLORS = [[1, 0.3, 0.4], [0.3, 0.9, 1], [1, 0.9, 0.2], [0.5, 1, 0.4], [1, 1, 1], [0.8, 0.5, 1]];
 
 function loadProgress() {
   let p = null; try { p = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { }
-  p = p || {}; p.levels = p.levels || {}; p.settings = Object.assign({ mode: 'normal', outfit: 'blanc' }, p.settings || {});
+  p = p || {}; p.levels = p.levels || {};
+  p.settings = Object.assign({ mode: 'normal', outfit: 'blanc', faceAsked: false, world: 0 }, p.settings || {});
   p.random = p.random || { played: 0 };
   return p;
 }
@@ -64,50 +68,61 @@ class Game {
     this.progress = loadProgress();
     this.state = 'menu';
     this.scene = new Node();
+    this.face = null; this.faceCanvas = null; this.skin = null;
     this.character = buildCharacter(this.gl, { tee: this.outfit().tee });
     this.starMesh = buildStarMesh(this.gl);
+    this.haloMesh = buildHaloMesh(this.gl);
+    this.ringMesh = buildRingMesh(this.gl);
+    this.rings = []; this.ringI = 0;
+    for (let i = 0; i < 4; i++) { const r = new Node(this.ringMesh); r.visible = false; r.additive = true; r.alpha = 0; r.t = 0; this.rings.push(r); }
     this.arrow = new Node(buildArrowMesh(this.gl)); this.arrow.visible = false;
     this.particles = new ParticleSystem(this.gl, 500);
-    this.fx = new ParticleSystem(this.gl, 400);
-    this.fxVel = new Float32Array(400 * 3); this.fxLife = new Float32Array(400); this.fxMax = new Float32Array(400);
+    this.fx = new ParticleSystem(this.gl, 600);
+    this.fxVel = new Float32Array(600 * 3); this.fxLife = new Float32Array(600); this.fxMax = new Float32Array(600); this.fxGrav = new Float32Array(600);
     this.pPhase = new Float32Array(500); this.pVel = new Float32Array(500 * 3); this.pBase = new Float32Array(500);
     this.input = { joy: [0, 0], keys: {}, joyId: null, origin: [0, 0] };
     this.cam = { pos: [0, 8, 8], target: [0, 0, 0] };
-    this.time = 0; this.last = 0; this.level = null; this.levelIndex = 0;
+    this.time = 0; this.last = 0; this.level = null; this.levelIndex = -2;
+    this.menuWorld = clamp(this.progress.settings.world | 0, 0, WORLDS.length - 1);
+    this.creatorOpen = false;
     this.ui = {
       hud: $('#hud'), timer: $('#hudTimer'), lvl: $('#hudLevel'), stars: $('#hudStars'), tip: $('#tip'), toast: $('#toast'),
-      menu: $('#menu'), levels: $('#levels'), pause: $('#pause'), result: $('#result'), banner: $('#banner'),
+      tbar: $('#tbar'), tfill: $('#tfill'),
+      menu: $('#menu'), worlds: $('#worlds'), levels: $('#levels'), levelInfo: $('#levelInfo'),
+      pause: $('#pause'), result: $('#result'), banner: $('#banner'), fade: $('#fade'),
       joy: $('#joy'), knob: $('#joyKnob'), vignette: $('#vignette'), minimap: $('#minimap'), hint: $('#btnHint'),
-      hero: $('#hero'), bubble: $('#heroBubble'), pop: $('#pop'), modes: $('#modes'), outfits: $('#outfits'), starsTotal: $('#starsTotal'),
+      hero: $('#hero'), crHero: $('#creatorHero'), bubble: $('#heroBubble'), pop: $('#pop'), modes: $('#modes'), outfits: $('#outfits'), starsTotal: $('#starsTotal'),
     };
-    this.randomLevel = null;
     this.mm = { ctx: this.ui.minimap.getContext('2d'), layer: document.createElement('canvas'), dirty: true, cell: 8 };
+    this.creator = new FaceCreator(this);
     this.bindUI(); this.bindInput();
     this.resize();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'playing') this.pause(); });
-    this.loadLevel(0, true);
+    this.loadSavedFace();
     this.showMenu();
     requestAnimationFrame((t) => this.loop(t));
   }
 
   /* ---------- UI ---------- */
   bindUI() {
-    $('#btnPlay').addEventListener('click', () => { this.audio.init(); this.audio.tap(); this.startLevel(this.firstUnfinished()); });
-    $('#btnPause').addEventListener('click', () => { this.audio.tap(); this.pause(); });
-    $('#btnResume').addEventListener('click', () => { this.audio.tap(); this.resume(); });
-    $('#btnRestart').addEventListener('click', () => { this.audio.tap(); this.startLevel(this.levelIndex); });
-    $('#btnMenu').addEventListener('click', () => { this.audio.tap(); this.showMenu(); });
+    const tap = (fn) => () => { this.audio.init(); this.audio.tap(); fn(); };
+    $('#btnPlay').addEventListener('click', tap(() => this.startLevel(this.firstUnfinished())));
+    $('#btnPause').addEventListener('click', tap(() => this.pause()));
+    $('#btnResume').addEventListener('click', tap(() => this.resume()));
+    $('#btnRestart').addEventListener('click', tap(() => this.replay()));
+    $('#btnMenu').addEventListener('click', tap(() => this.showMenu()));
     $('#btnHint').addEventListener('click', () => this.useHint());
-    $('#btnRetry').addEventListener('click', () => { this.audio.tap(); this.startLevel(this.levelIndex); });
-    $('#btnNext').addEventListener('click', () => { this.audio.tap(); if (this.levelIndex < 0) this.startRandom(); else this.startLevel(Math.min(LEVELS.length - 1, this.levelIndex + 1)); });
-    $('#btnResultMenu').addEventListener('click', () => { this.audio.tap(); this.showMenu(); });
-    $('#btnRandom').addEventListener('click', () => { this.audio.init(); this.audio.tap(); this.startRandom(); });
-    $('#btnDetente').addEventListener('click', () => { this.audio.tap(); this.setMode('detente'); this.startLevel(this.levelIndex); });
-    this.ui.modes.innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="seg" data-mode="${k}">${m.label}</button>`).join('') ;
-    const hint = document.createElement('div'); hint.className = 'mode-hint'; this.ui.modes.after(hint); this.ui.modeHint = hint;
-    this.ui.modes.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => { this.audio.init(); this.audio.tap(); this.setMode(b.dataset.mode); }));
+    $('#btnRetry').addEventListener('click', tap(() => this.replay()));
+    $('#btnNext').addEventListener('click', tap(() => { if (this.levelIndex < 0) this.startRandom(); else this.startLevel(Math.min(LEVELS.length - 1, this.levelIndex + 1)); }));
+    $('#btnResultMenu').addEventListener('click', tap(() => this.showMenu()));
+    $('#btnRandom').addEventListener('click', tap(() => this.startRandom()));
+    $('#btnDetente').addEventListener('click', tap(() => { this.setMode('detente'); this.replay(); }));
+    $('#btnFace').addEventListener('click', tap(() => this.creator.open(false)));
+    this.ui.modes.innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="seg" data-mode="${k}">${m.label}</button>`).join('');
+    this.ui.modes.querySelectorAll('.seg').forEach(b => b.addEventListener('click', tap(() => this.setMode(b.dataset.mode))));
+    this.ui.modeHint = $('#modeHint');
     const muteBtns = [$('#btnMute'), $('#btnMute2')];
     const refreshMute = () => muteBtns.forEach(b => b.textContent = this.audio.muted ? '🔇 Son coupé' : '🔊 Son');
     muteBtns.forEach(b => b.addEventListener('click', () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); refreshMute(); if (!this.audio.muted) this.audio.tap(); }));
@@ -126,8 +141,8 @@ class Game {
       clearTimeout(this._resetT); this._resetArmed = false;
       reset.textContent = '↺ Progression'; reset.classList.remove('warn');
       const st = this.progress.settings;
-      this.progress = { levels: {}, settings: Object.assign(st, { outfit: 'blanc' }), random: { played: 0 } };
-      saveProgress(this.progress); this.setOutfit('blanc'); this.renderLevels();
+      this.progress = { levels: {}, settings: Object.assign(st, { outfit: 'blanc', world: 0 }), random: { played: 0 } };
+      saveProgress(this.progress); this.menuWorld = 0; this.rebuildCharacter(); this.renderMenu(); this.ensurePreview(0, true);
       this.toast('Progression remise à zéro');
     });
     this.ui.banner.addEventListener('pointerdown', () => this.skipIntro());
@@ -136,7 +151,7 @@ class Game {
   mode() { return MODES[this.progress.settings.mode] || MODES.normal; }
   setMode(k) {
     if (!MODES[k]) return;
-    this.progress.settings.mode = k; saveProgress(this.progress); this.renderModes();
+    this.progress.settings.mode = k; saveProgress(this.progress); this.renderModes(); this.renderLevels();
   }
   renderModes() {
     const k = this.progress.settings.mode;
@@ -148,15 +163,47 @@ class Game {
   setOutfit(id) {
     const o = OUTFITS.find(x => x.id === id); if (!o) return;
     this.progress.settings.outfit = id; saveProgress(this.progress);
-    // reconstruit le personnage avec la nouvelle couleur
+    this.rebuildCharacter(); this.renderOutfits();
+  }
+  /* Reconstruit le personnage (tenue, visage, peau) en conservant sa pose */
+  rebuildCharacter() {
     const old = this.character;
-    const pos = old.root.position.slice(), rot = old.root.rotation.slice(), mode = old.mode;
+    const pos = old.root.position.slice(), rot = old.root.rotation.slice(), mode = old.mode, t = old.t;
     const kill = (n) => { if (n.mesh) n.mesh.dispose(); n.children.forEach(kill); };
     this.scene.remove(old.root); kill(old.root);
-    this.character = buildCharacter(this.gl, { tee: o.tee });
-    this.character.root.position = pos; this.character.root.rotation = rot; this.character.mode = mode;
+    this.character = buildCharacter(this.gl, { tee: this.outfit().tee, face: this.face, skin: this.skin });
+    this.character.root.position = pos; this.character.root.rotation = rot; this.character.mode = mode; this.character.t = t;
     this.scene.add(this.character.root);
-    this.renderOutfits();
+  }
+  /* Photo du visage : texture + teinte de peau ; save = mémoriser sur l'appareil */
+  setFace(canvas, save) {
+    const had = !!this.face, oldSkin = this.skin;
+    if (canvas) {
+      if (!this.faceCanvas) { this.faceCanvas = document.createElement('canvas'); this.faceCanvas.width = this.faceCanvas.height = FACE_SIZE; }
+      const x = this.faceCanvas.getContext('2d'); x.clearRect(0, 0, FACE_SIZE, FACE_SIZE); x.drawImage(canvas, 0, 0, FACE_SIZE, FACE_SIZE);
+      this.face = makeTexture(this.gl, this.faceCanvas, this.face);
+      this.skin = skinFromCanvas(this.faceCanvas);
+    } else {
+      if (this.face) this.gl.deleteTexture(this.face);
+      this.face = null; this.faceCanvas = null; this.skin = null;
+    }
+    // la texture est mise à jour en place : ne reconstruit que si la présence ou la peau change
+    const skinMoved = !oldSkin !== !this.skin || (oldSkin && this.skin && oldSkin.some((c, i) => Math.abs(c - this.skin[i]) > 0.035));
+    if (had !== !!this.face || skinMoved) this.rebuildCharacter();
+    if (save) { try { canvas ? localStorage.setItem(FACE_KEY, this.faceCanvas.toDataURL('image/jpeg', 0.85)) : localStorage.removeItem(FACE_KEY); } catch (e) { } }
+  }
+  loadSavedFace() {
+    let d = null; try { d = localStorage.getItem(FACE_KEY); } catch (e) { }
+    if (!d) return;
+    this._faceLoading = true;
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = FACE_SIZE;
+      c.getContext('2d').drawImage(img, 0, 0, FACE_SIZE, FACE_SIZE);
+      this.setFace(c, false); this._faceLoading = false;
+    };
+    img.onerror = () => { this._faceLoading = false; };
+    img.src = d;
   }
   renderOutfits() {
     const el = this.ui.outfits; el.innerHTML = '';
@@ -177,61 +224,155 @@ class Game {
   }
   bubbleSay(txt) { const b = this.ui.bubble; b.textContent = txt; b.style.animation = 'none'; void b.offsetWidth; b.style.animation = ''; }
   isUnlocked(i) { return i === 0 || !!this.progress.levels[i - 1] || !!this.progress.levels[i]; }
-  renderLevels() {
-    const el = this.ui.levels; el.innerHTML = '';
-    LEVELS.forEach((L, i) => {
-      const done = this.progress.levels[i];
-      const unlocked = this.isUnlocked(i);
-      const card = document.createElement('button');
-      card.className = 'card' + (unlocked ? '' : ' locked') + (done ? ' done' : '');
-      const maze = generateMaze(L.size, L.size, L.seed);
-      const limit = timeLimit(L, maze);
-      const rating = done ? done.rating : 0;
-      const th = THEMES[L.theme];
-      card.style.setProperty('--c1', th.sky[0]); card.style.setProperty('--c2', th.sky[1]);
-      card.innerHTML = `<div class="c-emoji">${L.emoji}</div>
-        <div class="c-body"><div class="c-name">${i === 0 ? 'Démo' : 'Niveau ' + i} · ${L.name}</div>
-        <div class="c-meta">${L.sub} · ${L.size}×${L.size} · ⏱ ${fmtTime(limit)}</div>
-        <div class="c-stars">${[1, 2, 3].map(k => `<span class="${k <= rating ? 'on' : ''}">★</span>`).join('')}${done && isFinite(done.best) ? `<span class="c-best">meilleur ${fmtTime(done.best)}</span>` : ''}</div></div>
-        <div class="c-lock">${unlocked ? '›' : '🔒'}</div>`;
-      if (unlocked) card.addEventListener('click', () => { this.audio.init(); this.audio.tap(); this.startLevel(i); });
-      else card.addEventListener('click', () => this.toast('Termine le niveau précédent pour débloquer 🔒'));
-      el.appendChild(card);
-    });
-    const fu = this.firstUnfinished();
-    $('#btnPlay').textContent = fu === 0 && !this.progress.levels[0] ? '▶ Commencer la démo' : (Object.keys(this.progress.levels).length >= LEVELS.length ? '▶ Rejouer' : `▶ Jouer · niveau ${fu}`);
+  worldStats(wi) {
+    let done = 0, stars = 0;
+    for (let k = 0; k < 5; k++) { const p = this.progress.levels[wi * 5 + k]; if (p) { done++; stars += p.rating || 0; } }
+    return { done, stars, unlocked: this.isUnlocked(wi * 5) };
+  }
+
+  renderMenu() {
+    const fu = this.firstUnfinished(), all = Object.keys(this.progress.levels).length >= LEVELS.length;
+    $('#btnPlay').textContent = fu === 0 && !this.progress.levels[0] ? '▶ Commencer la démo' : (all ? '▶ Rejouer' : `▶ Jouer · niveau ${fu}`);
     const total = this.totalStars();
     this.ui.starsTotal.textContent = `⭐ ${total} / ${MAX_STARS}`;
-    this.renderModes(); this.renderOutfits();
+    this.renderModes(); this.renderOutfits(); this.renderWorlds(); this.renderLevels();
+    $('#btnFace').textContent = this.faceCanvas ? '📸 Changer mon visage' : '📸 Mettre mon visage';
     const done = Object.keys(this.progress.levels).length;
     if (done === 0) this.bubbleSay('Salut ! Prêt à sortir du labyrinthe ?');
-    else if (done >= LEVELS.length) this.bubbleSay(total >= MAX_STARS ? 'Tu as TOUT réussi ! Légende 👑' : 'Tous les niveaux finis ! Vise les 3 étoiles ⭐');
+    else if (all) this.bubbleSay(total >= MAX_STARS ? 'Tu as TOUT réussi ! Légende 👑' : 'Tous les niveaux finis ! Vise les 3 étoiles ⭐');
     else this.bubbleSay(['On continue l’aventure ?', 'Encore un labyrinthe ?', 'Prêt pour la suite ?', 'Allez, on y va !'][done % 4]);
   }
-  /* Labyrinthe surprise : thème et taille aléatoires */
+  renderWorlds() {
+    const el = this.ui.worlds; el.innerHTML = '';
+    WORLDS.forEach((W, wi) => {
+      const st = this.worldStats(wi), th = THEMES[W.theme];
+      const b = document.createElement('button');
+      b.className = 'wcard' + (wi === this.menuWorld ? ' active' : '') + (st.unlocked ? '' : ' locked') + (st.done === 5 ? ' done' : '');
+      b.style.setProperty('--c1', th.sky[0]); b.style.setProperty('--c2', th.sky[1]);
+      b.innerHTML = `<div class="w-emoji">${W.emoji}</div>
+        <div class="w-name">${W.name}</div>
+        <div class="w-meta">Monde ${wi + 1}${st.unlocked ? ` · ${st.done}/5` : ''}</div>
+        <div class="w-bar">${[0, 1, 2, 3, 4].map(k => `<i class="${this.progress.levels[wi * 5 + k] ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="w-stars">${st.unlocked ? `⭐ ${st.stars}/15` : '🔒'}</div>`;
+      b.addEventListener('click', () => {
+        this.audio.init();
+        if (!st.unlocked) { this.toast(`Termine le monde ${wi} pour débloquer ${W.name} 🔒`); return; }
+        this.selectWorld(wi);
+      });
+      el.appendChild(b);
+    });
+    requestAnimationFrame(() => this.centerWorldCard(false));
+  }
+  /* Centre la carte du monde actif dans le carrousel sans faire défiler le menu */
+  centerWorldCard(smooth) {
+    const el = this.ui.worlds, c = el.children[this.menuWorld]; if (!c) return;
+    el.scrollTo({ left: c.offsetLeft - (el.clientWidth - c.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  selectWorld(wi) {
+    if (wi === this.menuWorld) return;
+    this.menuWorld = wi; this.progress.settings.world = wi; saveProgress(this.progress);
+    this.ui.worlds.querySelectorAll('.wcard').forEach((c, i) => c.classList.toggle('active', i === wi));
+    this.centerWorldCard(true);
+    this.renderLevels();
+    this.audio.swoosh();
+    this.ensurePreview(wi, true);
+    const lines = ['Direction la prairie !', 'Bienvenue dans la jungle !', 'Sable chaud et cocotiers !', 'Attention à la chaleur…', 'Ça grimpe, ici !', 'Les feuilles tombent…', 'Ça chauffe, ça chauffe !', 'Brrr, on se couvre !', 'Lumières de la ville !', 'Cap sur les étoiles ! 🚀'];
+    this.bubbleSay(lines[wi] || 'C’est parti !');
+  }
+  renderLevels() {
+    const el = this.ui.levels; el.innerHTML = '';
+    const wi = this.menuWorld, W = WORLDS[wi];
+    let focus = -1;
+    for (let k = 0; k < 5; k++) {
+      const i = wi * 5 + k, L = LEVELS[i], done = this.progress.levels[i], unlocked = this.isUnlocked(i);
+      if (focus < 0 && unlocked && !done) focus = i;
+      const b = document.createElement('button');
+      b.className = 'lv' + (unlocked ? '' : ' locked') + (done ? ' done' : '') + (done && done.rating === 3 ? ' perfect' : '');
+      b.innerHTML = `<div class="lv-num">${i === 0 ? 'Démo' : i}</div><div class="lv-var">${unlocked ? L.vEmoji : '🔒'}</div>
+        <div class="lv-stars">${[1, 2, 3].map(s => `<span class="${done && s <= done.rating ? 'on' : ''}">★</span>`).join('')}</div>`;
+      b.addEventListener('click', () => {
+        this.audio.init();
+        if (!unlocked) { this.toast('Termine le niveau précédent pour débloquer 🔒'); return; }
+        this.audio.tap(); this.startLevel(i);
+      });
+      el.appendChild(b);
+    }
+    if (focus < 0) focus = this.isUnlocked(wi * 5) ? wi * 5 : -1;
+    // fiche du prochain niveau du monde
+    const info = this.ui.levelInfo;
+    if (focus < 0) { info.classList.add('hidden'); return; }
+    const L = LEVELS[focus], done = this.progress.levels[focus];
+    const maze = generateMaze(L.size, L.size, L.seed);
+    const limit = L.demo ? Infinity : timeLimit(L, maze) * this.mode().timeMul;
+    const th = THEMES[L.theme];
+    info.style.setProperty('--c1', th.sky[0]); info.style.setProperty('--c2', th.sky[1]);
+    info.innerHTML = `<div class="li-emoji">${L.emoji}<span>${L.vEmoji}</span></div>
+      <div class="li-body">
+        <div class="li-name">${L.demo ? 'Démo' : 'Niveau ' + focus} · ${L.name}</div>
+        <div class="li-meta">${levelTier(L)} · ${L.size}×${L.size} · ⏱ ${fmtTime(limit)}${done && isFinite(done.best) ? ` · meilleur <b>${fmtTime(done.best)}</b>` : ''}</div>
+      </div><div class="li-go">›</div>`;
+    info.classList.remove('hidden');
+    info.onclick = () => { this.audio.init(); this.audio.tap(); this.startLevel(focus); };
+  }
+
+  /* Labyrinthe surprise : décor, ambiance et taille aléatoires */
   startRandom() {
     const themes = Object.keys(THEMES).filter(t => t !== 'prairie');
     const theme = themes[Math.floor(Math.random() * themes.length)];
+    const vk = Object.keys(VARIANTS), variant = vk[Math.floor(Math.random() * vk.length)];
     const size = 7 + Math.floor(Math.random() * 10);
-    const base = LEVELS.find(L => L.theme === theme) || LEVELS[1];
-    this.randomLevel = { name: base.name + ' surprise', sub: 'Surprise', emoji: '🎲', size, perCell: lerp(2.6, 1.4, (size - 7) / 9), theme, seed: Math.floor(Math.random() * 1e9), random: true };
-    this.startLevel(-1);
+    const W = WORLDS.find(w => w.theme === theme) || WORLDS[1];
+    this.play({
+      index: -1, random: true, world: WORLDS.indexOf(W), name: W.name + ' surprise', emoji: '🎲', vEmoji: VARIANTS[variant].emoji,
+      theme, variant, size, seed: Math.floor(Math.random() * 1e9), tight: lerp(0.15, 0.9, (size - 7) / 9), demo: false,
+    });
   }
-  showMenu() {
-    this.state = 'menu';
-    this.audio.stopAmbient();
-    this.ui.hud.classList.add('hidden'); this.ui.pause.classList.add('hidden'); this.ui.result.classList.add('hidden'); this.ui.banner.classList.add('hidden');
-    this.ui.menu.classList.remove('hidden');
-    this.renderLevels();
-    if (this.levelIndex !== 0) this.loadLevel(0, true);
-    // le personnage vient saluer sur la "scène" devant le labyrinthe
+  startLevel(i) { this.play(LEVELS[clamp(i, 0, LEVELS.length - 1)]); }
+  replay() { if (this.levelIndex === -1) this.play(this.level); else this.startLevel(this.levelIndex); }
+
+  /* ---------- Menu ---------- */
+  previewSpec(wi) {
+    const W = WORLDS[wi];
+    let k = 0; for (; k < 5; k++) if (!this.progress.levels[wi * 5 + k]) break;
+    if (k >= 5) k = 0;
+    const variant = W.variants[k];
+    return { index: -2, preview: true, key: `p/${wi}/${variant}`, name: W.name, emoji: W.emoji, theme: W.theme, variant, size: PREVIEW_SIZE, seed: 7000 + wi * 13 + k, demo: false, tight: 0 };
+  }
+  ensurePreview(wi, fade) {
+    const spec = this.previewSpec(wi);
+    if (this.level && this.level.key === spec.key) return;
+    const load = () => { this.loadLevel(spec); this.placeOnStage(); };
+    if (fade) this.fadeTo(load); else load();
+  }
+  fadeTo(fn) {
+    const f = this.ui.fade; f.classList.add('on');
+    setTimeout(() => { fn(); requestAnimationFrame(() => f.classList.remove('on')); }, 190);
+  }
+  /* Le personnage vient saluer sur la "scène" devant le labyrinthe */
+  placeOnStage() {
     const P = this.player; P.x = this.maze.w * CS / 2; P.z = this.maze.h * CS + 2.8;
     this.character.root.position = [P.x, 0, P.z];
     this.menuAngle = 0.35;
     this.character.mode = 'wave'; this.character.t = 0;
     this.character.root.rotation[1] = 0.35;
     this.cam.pos = [P.x + 1, 1.5, P.z + 3]; this.cam.target = [P.x, 0.6, P.z];
+  }
+  showMenu() {
+    this.state = 'menu';
+    this.audio.stopAmbient();
+    this.ui.hud.classList.add('hidden'); this.ui.pause.classList.add('hidden'); this.ui.result.classList.add('hidden'); this.ui.banner.classList.add('hidden');
+    this.ui.menu.classList.remove('hidden');
+    // revient sur le monde du dernier niveau joué (ou le suivant s'il vient d'être débloqué)
+    if (this.level && this.levelIndex >= 0) {
+      const L = this.level, next = L.world + 1;
+      this.menuWorld = (L.step === 4 && next < WORLDS.length && this.isUnlocked(next * 5)) ? next : L.world;
+      this.progress.settings.world = this.menuWorld; saveProgress(this.progress);
+    }
+    this.renderMenu();
+    this.ensurePreview(this.menuWorld, false);
+    this.placeOnStage();
     this.hideJoy();
+    if (!this.faceCanvas && !this.progress.settings.faceAsked && !this._faceLoading && !this.creatorOpen) setTimeout(() => { if (this.state === 'menu') this.creator.open(true); }, 700);
   }
   toast(msg, ms = 1800) {
     const t = this.ui.toast; t.textContent = msg; t.classList.remove('hidden');
@@ -244,16 +385,16 @@ class Game {
   disposeWorld() {
     const kill = (n) => { if (!n) return; if (n.mesh) n.mesh.dispose(); n.children.forEach(kill); };
     if (this.worldNodes) this.worldNodes.forEach(kill);
+    if (this.flock) { this.flock.dispose(); this.flock = null; }
     this.worldNodes = [];
     this.scene.children.length = 0;
   }
-  loadLevel(i, forMenu = false) {
+  loadLevel(spec) {
     this.disposeWorld();
-    const L = i < 0 ? this.randomLevel : LEVELS[i];
-    this.levelIndex = i; this.level = L;
-    this.maze = generateMaze(L.size, L.size, L.seed);
-    this.limit = i === 0 ? Infinity : timeLimit(L, this.maze) * this.mode().timeMul;
-    const built = buildWorld(this.gl, L, this.maze);
+    this.level = spec; this.levelIndex = spec.index;
+    this.maze = generateMaze(spec.size, spec.size, spec.seed);
+    this.limit = (spec.demo || spec.preview) ? Infinity : timeLimit(spec, this.maze) * this.mode().timeMul;
+    const built = buildWorld(this.gl, spec, this.maze);
     this.theme = built.theme;
     this.worldNodes = [built.world, built.sky, built.clouds].filter(Boolean);
     this.sky = built.sky; this.clouds = built.clouds;
@@ -261,17 +402,25 @@ class Game {
     // lumière
     const th = this.theme, R = this.renderer.light, sd = th.sun, l = Math.hypot(sd[0], sd[1], sd[2]);
     R.sunDir = [sd[0] / l, sd[1] / l, sd[2] / l]; R.sunCol = th.sunCol; R.sky = hex(th.hemiSky); R.ground = hex(th.hemiGround);
-    R.fog = hex(th.fog); R.fogDensity = th.fogDensity; this.baseFog = th.fogDensity;
+    R.fog = hex(th.fog); R.fogDensity = th.fogDensity; this.baseFog = th.fogDensity; R.flash = 0;
+    this.lightningT = th.lightning ? 1.5 + Math.random() * 3 : 0; this.flashPow = 0; this.flashN = 0;
     // portail
     this.portal = buildPortal(this.gl, th.accent);
     this.portal.node.position = [this.maze.exit[0] * CS + CS / 2, 0, this.maze.exit[1] * CS + CS / 2];
     this.scene.add(this.portal.node); this.worldNodes.push(this.portal.node);
-    // étoiles
+    this.portalT = 0; this.portalCol = hex(th.accent);
+    // étoiles + halos au sol
     this.stars = this.maze.stars.map(([cx, cz]) => {
       const n = new Node(this.starMesh); n.position = [cx * CS + CS / 2, 0.8, cz * CS + CS / 2]; n.cell = cz * this.maze.w + cx; n.collected = false;
-      this.scene.add(n); return n;
+      const h = new Node(this.haloMesh); h.position = [n.position[0], 0.02, n.position[2]]; h.alpha = 0.25; h.additive = true; n.halo = h;
+      this.scene.add(h); this.scene.add(n); return n;
     });
     this.collected = 0;
+    for (const r of this.rings) { r.visible = false; this.scene.add(r); }
+    // créatures
+    const W = this.maze.w * CS, H = this.maze.h * CS;
+    this.flock = new Flock(this.gl, spec.theme, W, H, mulberry32(spec.seed + 99));
+    this.scene.add(this.flock.root);
     // joueur
     const s = this.maze.start;
     this.player = { x: s[0] * CS + CS / 2, z: s[1] * CS + CS / 2, vx: 0, vz: 0, facing: 0, cell: s[1] * this.maze.w + s[0], moved: 0 };
@@ -281,25 +430,23 @@ class Game {
     this.scene.add(this.arrow); this.scene.add(this.character.root);
     this.arrow.visible = false; this.hintUntil = 0;
     this.visited = new Uint8Array(this.maze.w * this.maze.h); this.reveal(this.player.cell);
-    if (i === 0) this.visited.fill(1);
+    if (spec.demo) this.visited.fill(1);
     this.elapsed = 0; this.lastTick = -1;
     this.initParticles(th.particles);
     this.fx.count = 0;
     this.setupMinimap();
-    // caméra
-    if (forMenu) {
-      this.cam.pos = [this.player.x + 3, 2.2, this.player.z + 3.5];
-      this.cam.target = [this.player.x, 0.7, this.player.z];
-    }
   }
-  startLevel(i) {
-    this.loadLevel(i);
+  play(spec) {
+    if (this.creatorOpen) this.creator.close();
+    this.loadLevel(spec);
+    const i = spec.index;
     this.audio.init();
-    this.audio.startAmbient(this.level.theme);
+    this.audio.startAmbient(spec.theme);
     this.ui.menu.classList.add('hidden'); this.ui.pause.classList.add('hidden'); this.ui.result.classList.add('hidden');
     this.ui.hud.classList.remove('hidden');
-    this.ui.lvl.textContent = `${this.level.emoji} ${i === 0 ? 'Démo' : i < 0 ? 'Surprise' : 'Niv. ' + i}`;
-    this.ui.hint.style.display = (i === 0 || this.mode().noHint) ? 'none' : '';
+    this.ui.lvl.textContent = `${spec.emoji} ${i === 0 ? 'Démo' : i < 0 ? 'Surprise' : 'Niv. ' + i}`;
+    this.ui.hint.style.display = (spec.demo || this.mode().noHint) ? 'none' : '';
+    this.ui.tbar.classList.toggle('hidden', !isFinite(this.limit));
     this.dustT = 0;
     this.updateHud();
     // intro (survol du labyrinthe)
@@ -310,12 +457,19 @@ class Game {
     this.introFrom = [W / 2, dist * 0.92, H / 2 + dist * 0.42];
     this.introLook = [W / 2, 0, H / 2];
     this.cam.pos = this.introFrom.slice(); this.cam.target = this.introLook.slice();
-    const b = this.ui.banner;
-    b.querySelector('.b-emoji').textContent = this.level.emoji;
-    b.querySelector('.b-title').textContent = (i === 0 ? 'Démo — ' : i < 0 ? '' : `Niveau ${i} — `) + this.level.name;
-    b.querySelector('.b-sub').textContent = i === 0 ? 'Apprends à jouer, sans limite de temps.' : isFinite(this.limit) ? `Sors du labyrinthe en moins de ${fmtTime(this.limit)} !` : 'Mode Détente : prends ton temps, trouve la sortie !';
+    const b = this.ui.banner, mode = this.mode();
+    b.querySelector('.b-eyebrow').textContent = spec.demo ? 'Démo · apprentissage' : i < 0 ? 'Labyrinthe surprise' : `Monde ${spec.world + 1} · ${WORLDS[spec.world].name}`;
+    b.querySelector('.b-emoji').textContent = spec.emoji;
+    b.querySelector('.b-title').textContent = spec.demo ? spec.name : i < 0 ? spec.name : `Niveau ${i}`;
+    b.querySelector('.b-sub').textContent = spec.demo ? 'Apprends à jouer, sans limite de temps.' : (i < 0 ? '' : spec.name + ' · ') + (spec.demo ? '' : levelTier(spec));
+    b.querySelector('.b-chips').innerHTML = [
+      `<span>${isFinite(this.limit) ? '⏱ ' + fmtTime(this.limit) : '⏱ sans chrono'}</span>`,
+      `<span>🧩 ${spec.size}×${spec.size}</span>`,
+      `<span>⭐ ×3</span>`,
+      spec.demo ? '' : `<span>${mode.label}</span>`,
+    ].join('');
     b.classList.remove('hidden');
-    this.tutorialStep = i === 0 ? 0 : -1;
+    this.tutorialStep = spec.demo ? 0 : -1;
     this.ui.tip.classList.add('hidden');
     this.audio.portal();
   }
@@ -337,7 +491,7 @@ class Game {
     else this.ui.tip.classList.add('hidden');
   }
   useHint() {
-    if (this.state !== 'playing' || this.levelIndex === 0 || this.mode().noHint) return;
+    if (this.state !== 'playing' || this.level.demo || this.mode().noHint) return;
     if (this.time < this.hintUntil) return;
     this.audio.init(); this.audio.hint();
     this.hintUntil = this.time + 4.5;
@@ -442,19 +596,30 @@ class Game {
     this.portal.ring2.position[1] = 0.3 + Math.sin(t * 2) * 0.08;
     this.portal.star.rotation[1] += dt * 1.5; this.portal.star.position[1] = 1.6 + Math.sin(t * 2.5) * 0.15;
     this.portal.beam.alpha = 0.18 + Math.sin(t * 3) * 0.06;
-    for (const s of this.stars) { if (s.collected) continue; s.rotation[1] += dt * 2.5; s.position[1] = 0.8 + Math.sin(t * 3 + s.cell) * 0.1; }
-    if (this.clouds) { this.clouds.position[0] += dt * 0.35; if (this.clouds.position[0] > 40) this.clouds.position[0] = -40; }
+    for (const s of this.stars) {
+      if (s.collected) continue;
+      s.rotation[1] += dt * 2.5; s.position[1] = 0.8 + Math.sin(t * 3 + s.cell) * 0.1;
+      const k = 1 + Math.sin(t * 3 + s.cell) * 0.18; s.halo.scale = [k, 1, k]; s.halo.alpha = 0.2 + Math.sin(t * 3 + s.cell) * 0.08;
+    }
+    if (this.clouds) { this.clouds.position[0] += dt * (this.theme.lightning ? 1.2 : 0.35); if (this.clouds.position[0] > 40) this.clouds.position[0] = -40; }
+    this.renderer.glow = 1 + Math.sin(t * 2.6) * 0.08 + Math.sin(t * 7.3) * 0.03;
+    if (this.theme.lightning) this.updateLightning(dt); else this.renderer.light.flash = 0;
+    if (this.flock) this.flock.update(dt, t);
+    this.updateRings(dt);
+    this.emitPortal(dt);
     this.updateParticles(dt); this.updateFx(dt);
 
     if (this.state === 'menu') {
-      this.menuAngle = 0.35 + Math.sin(t * 0.35) * 0.35;
-      const r = 4.4;
-      this.cam.pos = [P.x + Math.sin(this.menuAngle) * r, 1.3 + Math.sin(t * 0.5) * 0.08, P.z + Math.cos(this.menuAngle) * r];
-      // décale la visée pour que le personnage apparaisse dans la zone "hero" du menu
-      const rect = this.ui.hero.getBoundingClientRect();
-      const cy = (rect.top + rect.height * 0.58) / window.innerHeight;
+      // menu : la caméra tourne doucement ; atelier : elle reste face au visage, plus près
+      const cr = this.creatorOpen;
+      this.menuAngle = cr ? Math.sin(t * 0.5) * 0.12 : 0.35 + Math.sin(t * 0.35) * 0.35;
+      const r = cr ? 3.2 : 4.4;
+      this.cam.pos = [P.x + Math.sin(this.menuAngle) * r, (cr ? 1.15 : 1.3) + Math.sin(t * 0.5) * 0.08, P.z + Math.cos(this.menuAngle) * r];
+      // décale la visée pour que le personnage apparaisse dans la zone "hero" du menu (ou de l'atelier)
+      const rect = (cr ? this.ui.crHero : this.ui.hero).getBoundingClientRect();
+      const cy = (rect.top + rect.height * (cr ? 0.5 : 0.58)) / window.innerHeight;
       const ndc = (0.5 - cy) * 2;
-      const ty = 0.62 - ndc * r * Math.tan(this.renderer.fov / 2) * 0.95;
+      const ty = (cr ? 0.95 : 0.62) - ndc * r * Math.tan(this.renderer.fov / 2) * 0.95;
       this.cam.target = [P.x, ty, P.z];
       ch.root.rotation[1] = this.menuAngle;
       ch.update(dt, 0);
@@ -482,19 +647,25 @@ class Game {
     } else if (this.state === 'won') {
       ch.update(dt, 0);
       ch.root.position[1] = ch.jump;
-      this.updateCamera(dt);
       this.winT += dt;
-      if (this.winT > 1.5 && this.ui.result.classList.contains('hidden')) this.showResult(true);
+      this.updateWinCamera(dt);
+      // feu d'artifice
+      this.fwT -= dt;
+      if (this.fwT <= 0 && this.winT < 3.2) {
+        this.fwT = 0.3;
+        const p = this.portal.node.position;
+        const c = FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)];
+        this.burst([p[0] + (Math.random() - 0.5) * 6, 2.5 + Math.random() * 2.5, p[2] + (Math.random() - 0.5) * 6], [c, [1, 1, 1]], 46, 3.8, 1.3, -2.2);
+      }
+      if (this.winT > 1.9 && this.ui.result.classList.contains('hidden')) this.showResult(true);
     } else if (this.state === 'lost') {
       ch.update(dt, 0);
       this.updateCamera(dt);
       this.winT += dt;
       if (this.winT > 1.0 && this.ui.result.classList.contains('hidden')) this.showResult(false);
-    } else if (this.state === 'paused') {
-      // rien
     }
     // flèche d'aide
-    const showArrow = this.state === 'playing' && (this.levelIndex === 0 || t < this.hintUntil);
+    const showArrow = this.state === 'playing' && (this.level.demo || t < this.hintUntil);
     this.arrow.visible = showArrow;
     if (showArrow) {
       const nx = this.maze.next[P.cell];
@@ -507,11 +678,57 @@ class Game {
     this.sky.position = this.cam.pos.slice();
     this.updateHud();
   }
-  followPos() { return [this.player.x, CAM_H, this.player.z + CAM_D]; }
-  followTarget() { return [this.player.x, 0.4, this.player.z - 0.9]; }
+  /* Éclairs d'orage : flash principal puis 1 à 2 répliques, tonnerre différé */
+  updateLightning(dt) {
+    const L = this.renderer.light;
+    this.lightningT -= dt;
+    if (this.lightningT <= 0) {
+      this.lightningT = 3.5 + Math.random() * 6;
+      this.flashPow = 0.9; this.flashN = 1 + Math.floor(Math.random() * 2);
+      if (this.state !== 'menu') this.audio.thunder(0.3 + Math.random() * 0.7);
+    }
+    if (this.flashPow > 0) {
+      L.flash = this.flashPow * (0.55 + 0.45 * Math.random());
+      this.flashPow -= dt * 4.5;
+      if (this.flashPow <= 0 && this.flashN > 0) { this.flashN--; this.flashPow = 0.35 + Math.random() * 0.4; }
+    } else L.flash = 0;
+  }
+  spawnRing(x, z) {
+    const r = this.rings[this.ringI++ % this.rings.length];
+    r.visible = true; r.t = 0; r.position = [x, 0.06, z]; r.scale = [0.3, 1, 0.3]; r.alpha = 0.9;
+  }
+  updateRings(dt) {
+    for (const r of this.rings) {
+      if (!r.visible) continue;
+      r.t += dt; const p = r.t / 0.55;
+      if (p >= 1) { r.visible = false; continue; }
+      const s = 0.3 + p * 2.4; r.scale = [s, 1, s]; r.alpha = (1 - p) * 0.9;
+    }
+  }
+  /* Le portail souffle des étincelles qui montent en spirale */
+  emitPortal(dt) {
+    this.portalT -= dt;
+    if (this.portalT > 0) return;
+    this.portalT = 0.055;
+    const p = this.portal.node.position, c = this.portalCol;
+    for (let k = 0; k < 2; k++) {
+      const a = Math.random() * Math.PI * 2, r = 0.72;
+      this.spawn(p[0] + Math.cos(a) * r, 0.1 + Math.random() * 0.2, p[2] + Math.sin(a) * r,
+        k ? c : [1, 1, 1], -Math.sin(a) * 0.9, 1.4 + Math.random() * 0.8, Math.cos(a) * 0.9, 1.3, 2 + Math.random() * 2, 0.6);
+    }
+  }
+  followPos() { const P = this.player; return [P.x + P.vx * 0.10, CAM_H, P.z + CAM_D + P.vz * 0.06]; }
+  followTarget() { const P = this.player; return [P.x + P.vx * 0.22, 0.4, P.z - 0.9 + P.vz * 0.14]; }
   updateCamera(dt) {
     const k = 1 - Math.exp(-dt * 7);
     const fp = this.followPos(), ft = this.followTarget();
+    for (let i = 0; i < 3; i++) { this.cam.pos[i] = lerp(this.cam.pos[i], fp[i], k); this.cam.target[i] = lerp(this.cam.target[i], ft[i], k); }
+  }
+  /* Victoire : la caméra descend et tourne autour du héros */
+  updateWinCamera(dt) {
+    const P = this.player, a = this.winT * 0.75 + 0.5, r = 4.0;
+    const fp = [P.x + Math.sin(a) * r, 2.6, P.z + Math.cos(a) * r], ft = [P.x, 0.9, P.z];
+    const k = 1 - Math.exp(-dt * 3.2);
     for (let i = 0; i < 3; i++) { this.cam.pos[i] = lerp(this.cam.pos[i], fp[i], k); this.cam.target[i] = lerp(this.cam.target[i], ft[i], k); }
   }
   updatePlayer(dt) {
@@ -554,8 +771,9 @@ class Game {
       if (s.collected) continue;
       const d = Math.hypot(s.position[0] - P.x, s.position[2] - P.z);
       if (d < 0.6) {
-        s.collected = true; s.visible = false; this.collected++; this.audio.star();
+        s.collected = true; s.visible = false; s.halo.visible = false; this.collected++; this.audio.star();
         this.burst(s.position, [[1, 0.85, 0.2], [1, 1, 0.6]], 40, 3.5);
+        this.spawnRing(s.position[0], s.position[2]);
         this.pop(this.collected === 3 ? 'Toutes les étoiles !' : POPS[Math.floor(Math.random() * POPS.length)]);
         if (this.tutorialStep === 2) { this.tutorialStep = 3; this.showTutorial(); }
       }
@@ -569,26 +787,28 @@ class Game {
     if (Math.hypot(ex[0] - P.x, ex[2] - P.z) < 0.6) this.win();
   }
   win() {
-    this.state = 'won'; this.winT = 0;
+    this.state = 'won'; this.winT = 0; this.fwT = 0.15;
     this.character.mode = 'win'; this.character.t = 0;
     this.audio.win(); this.hideJoy();
     this.arrow.visible = false; this.ui.tip.classList.add('hidden');
     const p = this.portal.node.position;
-    this.burst([p[0], 1.2, p[2]], [[1, 0.3, 0.4], [0.3, 0.9, 1], [1, 0.9, 0.2], [0.5, 1, 0.4], [1, 1, 1]], 220, 6);
+    this.burst([p[0], 1.2, p[2]], FIREWORK_COLORS, 220, 6);
+    this.spawnRing(p[0], p[2]);
     const rem = this.limit - this.elapsed;
     let rating = 1;
-    const timeStar = this.levelIndex === 0 ? true : (isFinite(this.limit) && rem / this.limit >= 0.4);
+    const timeStar = this.level.demo ? true : (isFinite(this.limit) && rem / this.limit >= TIME_STAR);
     if (timeStar) rating++;
     if (this.collected === 3) rating++;
-    this.lastRating = rating; this.lastTimeStar = timeStar; this.newRecord = false;
+    this.lastRating = rating; this.lastTimeStar = timeStar; this.newRecord = false; this.newWorld = null;
     if (this.levelIndex >= 0) {
-      const prev = this.progress.levels[this.levelIndex];
+      const i = this.levelIndex, prev = this.progress.levels[i];
       const best = prev && isFinite(prev.best) ? Math.min(prev.best, this.elapsed) : this.elapsed;
       if (prev && isFinite(prev.best) && this.elapsed < prev.best - 0.05) this.newRecord = true;
       const beforeStars = this.totalStars();
-      this.progress.levels[this.levelIndex] = { rating: Math.max(rating, prev ? prev.rating : 0), best, stars: Math.max(this.collected, prev ? prev.stars : 0) };
+      this.progress.levels[i] = { rating: Math.max(rating, prev ? prev.rating : 0), best, stars: Math.max(this.collected, prev ? prev.stars : 0) };
       const after = this.totalStars();
       this.unlockedOutfits = OUTFITS.filter(o => o.need > beforeStars && o.need <= after);
+      if (!prev && this.level.step === 4 && this.level.world < WORLDS.length - 1) this.newWorld = WORLDS[this.level.world + 1];
     } else {
       this.progress.random.played++;
       this.progress.random.best = Math.min(this.progress.random.best || Infinity, this.elapsed);
@@ -609,10 +829,11 @@ class Game {
       lines.push(`⏱ Temps : <b>${fmtTime(this.elapsed)}</b>${isFinite(this.limit) ? ` / ${fmtTime(this.limit)}` : ''}${this.newRecord ? ' 🏅 <b>Nouveau record !</b>' : ''}`);
       lines.push(`⭐ Étoiles : <b>${this.collected} / 3</b>`);
       if (!this.lastTimeStar && !isFinite(this.limit)) lines.push('Joue en mode 🙂 Normal pour gagner l’étoile du chrono.');
-      else if (!this.lastTimeStar) lines.push('Finis avec 40 % du temps restant pour l’étoile du chrono.');
-      if (this.unlockedOutfits && this.unlockedOutfits.length) lines.push(`👕 Nouvelle tenue débloquée : <b>${this.unlockedOutfits.map(o => o.name).join(', ')}</b> !`);
-      if (this.levelIndex === 0) lines.push('Tu es prêt pour le niveau 1 ! 💪');
-      else if (this.levelIndex === LEVELS.length - 1) lines.push('Tu as terminé tous les niveaux ! 👑');
+      else if (!this.lastTimeStar) lines.push(`Finis avec ${Math.round(TIME_STAR * 100)} % du temps restant pour l’étoile du chrono.`);
+      if (this.unlockedOutfits && this.unlockedOutfits.length) { lines.push(`👕 Nouvelle tenue débloquée : <b>${this.unlockedOutfits.map(o => o.name).join(', ')}</b> !`); this.audio.unlock(); }
+      if (this.newWorld) lines.push(`🌍 Nouveau monde débloqué : <b>${this.newWorld.emoji} ${this.newWorld.name}</b> !`);
+      if (this.level.demo) lines.push('Tu es prêt pour le niveau 1 ! 💪');
+      else if (this.levelIndex === LEVELS.length - 1) lines.push('Tu as terminé les 50 niveaux ! 👑');
     } else {
       const left = this.maze.distExit[this.player.cell];
       lines.push(left <= 3 ? `Argh, tu étais à <b>${left} case${left > 1 ? 's' : ''}</b> de la sortie !` : `Il te restait <b>${left} cases</b> à parcourir. Pas grave, on réessaie !`);
@@ -634,13 +855,19 @@ class Game {
     const low = isFinite(this.limit) && rem <= 10 && this.state === 'playing';
     tm.classList.toggle('low', low);
     this.ui.vignette.classList.toggle('on', low);
+    if (isFinite(this.limit)) {
+      const p = clamp(rem / this.limit, 0, 1);
+      this.ui.tfill.style.width = (p * 100).toFixed(1) + '%';
+      this.ui.tbar.classList.toggle('low', p < 0.25);
+      this.ui.tbar.classList.toggle('star', p >= TIME_STAR);
+    }
     this.ui.stars.textContent = `⭐ ${this.collected}/3`;
     this.ui.hint.classList.toggle('cool', this.time < this.hintUntil);
   }
 
   /* ---------- Particules d'ambiance ---------- */
   initParticles(type) {
-    const cfg = PARTICLE_CFG[type]; this.pCfg = cfg; const S = this.particles; S.count = cfg.count; S.additive = cfg.additive !== false;
+    const cfg = PARTICLE_CFG[type] || PARTICLE_CFG.pollen; this.pCfg = cfg; const S = this.particles; S.count = cfg.count; S.additive = cfg.additive !== false;
     const d = S.data, P = this.player;
     for (let i = 0; i < cfg.count; i++) {
       const c = cfg.colors[i % cfg.colors.length];
@@ -659,7 +886,7 @@ class Game {
     }
   }
   updateParticles(dt) {
-    const cfg = this.pCfg, S = this.particles, d = S.data, P = this.player, t = this.time, R = 14;
+    const cfg = this.pCfg, S = this.particles, d = S.data, t = this.time, R = 14;
     const px = this.cam.target[0], pz = this.cam.target[2];
     for (let i = 0; i < S.count; i++) {
       const o = i * 8, ph = this.pPhase[i];
@@ -692,20 +919,25 @@ class Game {
     e.style.animation = 'none'; void e.offsetWidth; e.style.animation = '';
     clearTimeout(this._popT); this._popT = setTimeout(() => e.classList.add('hidden'), 1100);
   }
-  burst(pos, colors, n, speed, life) {
+  /* Une particule d'effet : position, couleur, vitesse, durée, taille, gravité */
+  spawn(x, y, z, c, vx, vy, vz, life, size, grav) {
     const S = this.fx, d = S.data;
+    const i = S.count < S.max ? S.count++ : Math.floor(Math.random() * S.max);
+    const o = i * 8;
+    d[o] = x; d[o + 1] = y; d[o + 2] = z;
+    d[o + 3] = c[0]; d[o + 4] = c[1]; d[o + 5] = c[2]; d[o + 6] = 1; d[o + 7] = size;
+    this.fxVel[i * 3] = vx; this.fxVel[i * 3 + 1] = vy; this.fxVel[i * 3 + 2] = vz;
+    this.fxMax[i] = life; this.fxLife[i] = life; this.fxGrav[i] = grav;
+  }
+  burst(pos, colors, n, speed, life, grav = -7) {
     for (let k = 0; k < n; k++) {
-      let i;
-      if (S.count < S.max) i = S.count++; else i = Math.floor(Math.random() * S.max);
-      const o = i * 8, c = colors[k % colors.length];
-      d[o] = pos[0]; d[o + 1] = pos[1]; d[o + 2] = pos[2];
-      d[o + 3] = c[0]; d[o + 4] = c[1]; d[o + 5] = c[2]; d[o + 6] = 1; d[o + 7] = 3 + Math.random() * 4;
+      const c = colors[k % colors.length];
       const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI - Math.PI / 2, s = speed * (0.4 + Math.random() * 0.8);
-      this.fxVel[i * 3] = Math.cos(a) * Math.cos(e) * s; this.fxVel[i * 3 + 1] = Math.abs(Math.sin(e)) * s + 1.5; this.fxVel[i * 3 + 2] = Math.sin(a) * Math.cos(e) * s;
-      this.fxMax[i] = (life || 1) * (0.9 + Math.random() * 1.2); this.fxLife[i] = this.fxMax[i];
-      if (life) { d[o + 7] = 2 + Math.random() * 2; this.fxVel[i * 3 + 1] *= 0.4; }
+      const vy = (Math.abs(Math.sin(e)) * s + 1.5) * (life ? 0.4 : 1);
+      this.spawn(pos[0], pos[1], pos[2], c, Math.cos(a) * Math.cos(e) * s, vy, Math.sin(a) * Math.cos(e) * s,
+        (life || 1) * (0.9 + Math.random() * 1.2), life ? 2 + Math.random() * 2 : 3 + Math.random() * 4, grav);
     }
-    S.additive = false;
+    this.fx.additive = false;
   }
   updateFx(dt) {
     const S = this.fx, d = S.data;
@@ -715,14 +947,14 @@ class Game {
         const j = --S.count;
         if (i !== j) {
           d.copyWithin(i * 8, j * 8, j * 8 + 8);
-          this.fxVel.copyWithin(i * 3, j * 3, j * 3 + 3); this.fxLife[i] = this.fxLife[j]; this.fxMax[i] = this.fxMax[j];
+          this.fxVel.copyWithin(i * 3, j * 3, j * 3 + 3); this.fxLife[i] = this.fxLife[j]; this.fxMax[i] = this.fxMax[j]; this.fxGrav[i] = this.fxGrav[j];
         }
         i--; continue;
       }
       const o = i * 8;
-      this.fxVel[i * 3 + 1] -= 7 * dt;
+      this.fxVel[i * 3 + 1] += this.fxGrav[i] * dt;
       d[o] += this.fxVel[i * 3] * dt; d[o + 1] += this.fxVel[i * 3 + 1] * dt; d[o + 2] += this.fxVel[i * 3 + 2] * dt;
-      if (d[o + 1] < 0.05) { d[o + 1] = 0.05; this.fxVel[i * 3 + 1] *= -0.4; this.fxVel[i * 3] *= 0.8; this.fxVel[i * 3 + 2] *= 0.8; }
+      if (d[o + 1] < 0.05 && this.fxGrav[i] < 0) { d[o + 1] = 0.05; this.fxVel[i * 3 + 1] *= -0.4; this.fxVel[i * 3] *= 0.8; this.fxVel[i * 3 + 2] *= 0.8; }
       d[o + 6] = clamp(this.fxLife[i] / this.fxMax[i] * 1.5, 0, 1);
     }
   }

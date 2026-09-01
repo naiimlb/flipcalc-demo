@@ -83,12 +83,12 @@ function mulberry32(seed) {
 }
 
 /* ---------- Constructeur de géométrie ---------- */
-// Un vertex = pos(3) + normale(3) + couleur(4: rgb + émissif)
+// Un vertex = pos(3) + normale(3) + couleur(4: rgb + émissif) + uv(2, négatif = sans texture)
 class MeshBuilder {
-  constructor() { this.pos = []; this.nor = []; this.col = []; this.idx = []; this.vcount = 0; }
+  constructor() { this.pos = []; this.nor = []; this.col = []; this.uv = []; this.idx = []; this.vcount = 0; }
   get vertexCount() { return this.vcount; }
 
-  _push(p, n, c, m) {
+  _push(p, n, c, m, uv) {
     let x = p[0], y = p[1], z = p[2], nx = n[0], ny = n[1], nz = n[2];
     if (m) {
       const q = M4.transformPoint(m, p); x = q[0]; y = q[1]; z = q[2];
@@ -96,6 +96,7 @@ class MeshBuilder {
     }
     this.pos.push(x, y, z); this.nor.push(nx, ny, nz);
     this.col.push(c[0], c[1], c[2], c[3] || 0);
+    this.uv.push(uv ? uv[0] : -1, uv ? uv[1] : -1); // uv < 0 = pas de texture
     return this.vcount++;
   }
 
@@ -123,8 +124,8 @@ class MeshBuilder {
     return this;
   }
 
-  /* Sphère UV (rayon r) — scale optionnel [sx,sy,sz] */
-  sphere(r, seg, ring, color, m, scale) {
+  /* Sphère UV (rayon r) — scale optionnel [sx,sy,sz] ; opts.uv(p, dir) -> [u,v] ou null */
+  sphere(r, seg, ring, color, m, scale, opts = {}) {
     const cf = typeof color === 'function';
     const sx = scale ? scale[0] : 1, sy = scale ? scale[1] : 1, sz = scale ? scale[2] : 1;
     const base = this.vcount;
@@ -136,12 +137,12 @@ class MeshBuilder {
         const p = [nx * r * sx, ny * r * sy, nz * r * sz];
         const n = [nx / sx, ny / sy, nz / sz];
         const c = cf ? color(p[0], p[1], p[2], n) : color;
-        this._push(p, n, c, m);
+        this._push(p, n, c, m, opts.uv ? opts.uv(p, [nx, ny, nz]) : null);
       }
     }
     for (let i = 0; i < ring; i++) for (let j = 0; j < seg; j++) {
       const a = base + i * (seg + 1) + j, b = a + seg + 1;
-      this.idx.push(a, b, a + 1, a + 1, b, b + 1);
+      this.idx.push(a, a + 1, b, b, a + 1, b + 1); // sens antihoraire vu de l'extérieur
     }
     return this;
   }
@@ -242,7 +243,7 @@ class MeshBuilder {
       const base = this.vcount;
       this._push([a[0], a[1], ht], n, color, m); this._push([b[0], b[1], ht], n, color, m);
       this._push([b[0], b[1], -ht], n, color, m); this._push([a[0], a[1], -ht], n, color, m);
-      this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+      this.idx.push(base, base + 2, base + 1, base, base + 3, base + 2);
     }
     return this;
   }
@@ -253,7 +254,8 @@ class MeshBuilder {
     for (let i = 0; i < other.vcount; i++) {
       this._push([other.pos[i * 3], other.pos[i * 3 + 1], other.pos[i * 3 + 2]],
         [other.nor[i * 3], other.nor[i * 3 + 1], other.nor[i * 3 + 2]],
-        [other.col[i * 4], other.col[i * 4 + 1], other.col[i * 4 + 2], other.col[i * 4 + 3]], m);
+        [other.col[i * 4], other.col[i * 4 + 1], other.col[i * 4 + 2], other.col[i * 4 + 3]], m,
+        other.uv[i * 2] >= 0 ? [other.uv[i * 2], other.uv[i * 2 + 1]] : null);
     }
     for (const k of other.idx) this.idx.push(k + base);
     return this;
@@ -272,11 +274,13 @@ class Mesh {
   constructor(gl, b) {
     this.gl = gl;
     const n = b.vcount;
-    const data = new Float32Array(n * 10);
+    const data = new Float32Array(n * 12);
     for (let i = 0; i < n; i++) {
-      data[i * 10] = b.pos[i * 3]; data[i * 10 + 1] = b.pos[i * 3 + 1]; data[i * 10 + 2] = b.pos[i * 3 + 2];
-      data[i * 10 + 3] = b.nor[i * 3]; data[i * 10 + 4] = b.nor[i * 3 + 1]; data[i * 10 + 5] = b.nor[i * 3 + 2];
-      data[i * 10 + 6] = b.col[i * 4]; data[i * 10 + 7] = b.col[i * 4 + 1]; data[i * 10 + 8] = b.col[i * 4 + 2]; data[i * 10 + 9] = b.col[i * 4 + 3];
+      const o = i * 12;
+      data[o] = b.pos[i * 3]; data[o + 1] = b.pos[i * 3 + 1]; data[o + 2] = b.pos[i * 3 + 2];
+      data[o + 3] = b.nor[i * 3]; data[o + 4] = b.nor[i * 3 + 1]; data[o + 5] = b.nor[i * 3 + 2];
+      data[o + 6] = b.col[i * 4]; data[o + 7] = b.col[i * 4 + 1]; data[o + 8] = b.col[i * 4 + 2]; data[o + 9] = b.col[i * 4 + 3];
+      data[o + 10] = b.uv[i * 2]; data[o + 11] = b.uv[i * 2 + 1];
     }
     this.vbo = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
@@ -298,6 +302,7 @@ class Node {
     this.mesh = mesh;
     this.position = [0, 0, 0]; this.rotation = [0, 0, 0]; this.scale = [1, 1, 1];
     this.children = []; this.visible = true; this.alpha = 1; this.additive = false; this.noFog = false;
+    this.texture = null; this.noGlow = false;
     this.world = M4.create(); this.local = M4.create();
     this.parent = null;
   }
@@ -312,19 +317,20 @@ class Node {
 
 /* ---------- Shaders ---------- */
 const VS_MAIN = `
-attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol;
+attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol; attribute vec2 aUV;
 uniform mat4 uProj, uView, uModel; uniform mat3 uNormal;
-varying vec3 vNor; varying vec4 vCol; varying vec3 vWorld;
+varying vec3 vNor; varying vec4 vCol; varying vec3 vWorld; varying vec2 vUV;
 void main(){
   vec4 w = uModel * vec4(aPos, 1.0);
-  vWorld = w.xyz; vNor = uNormal * aNor; vCol = aCol;
+  vWorld = w.xyz; vNor = uNormal * aNor; vCol = aCol; vUV = aUV;
   gl_Position = uProj * uView * w;
 }`;
 const FS_MAIN = `
 precision mediump float;
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGroundCol, uFogCol, uCamPos;
-uniform float uFogDensity, uAlpha;
-varying vec3 vNor; varying vec4 vCol; varying vec3 vWorld;
+uniform float uFogDensity, uAlpha, uGlow, uFlash, uHasTex;
+uniform sampler2D uTex;
+varying vec3 vNor; varying vec4 vCol; varying vec3 vWorld; varying vec2 vUV;
 void main(){
   vec3 n = normalize(vNor);
   float hemi = n.y * 0.5 + 0.5;
@@ -333,11 +339,20 @@ void main(){
   vec3 v = normalize(uCamPos - vWorld);
   vec3 h = normalize(uSunDir + v);
   float spec = pow(max(dot(n, h), 0.0), 28.0) * 0.18;
-  vec3 lit = vCol.rgb * (amb + uSunCol * diff) + uSunCol * spec;
-  vec3 col = mix(lit, vCol.rgb, vCol.a);
+  vec3 light = amb + uSunCol * diff;
+  vec3 lit = vCol.rgb * light + uSunCol * spec;
+  vec3 col = mix(lit, vCol.rgb * uGlow, vCol.a);
+  if (uHasTex > 0.5 && vUV.x >= 0.0) {
+    // photo du visage : disque fondu dans la peau, légèrement éclairé par la scène
+    vec4 tx = texture2D(uTex, vUV);
+    float mk = 1.0 - smoothstep(0.36, 0.47, length(vUV - 0.5));
+    vec3 tl = tx.rgb * mix(vec3(1.0), light, 0.4);
+    col = mix(col, tl, mk);
+  }
   float d = distance(uCamPos, vWorld);
   float f = 1.0 - exp(-uFogDensity * uFogDensity * d * d);
   col = mix(col, uFogCol, clamp(f, 0.0, 1.0));
+  col += uFlash * vec3(0.32, 0.36, 0.48);
   gl_FragColor = vec4(col, uAlpha);
 }`;
 const VS_PART = `
@@ -407,7 +422,11 @@ class Renderer {
     this.proj = M4.create(); this.view = M4.create();
     this.normal3 = new Float32Array(9);
     this.camPos = [0, 5, 5];
-    this.light = { sunDir: [0.4, 0.8, 0.45], sunCol: [1, 0.95, 0.85], sky: [0.5, 0.6, 0.8], ground: [0.25, 0.22, 0.2], fog: [0.6, 0.7, 0.9], fogDensity: 0.02 };
+    this.light = { sunDir: [0.4, 0.8, 0.45], sunCol: [1, 0.95, 0.85], sky: [0.5, 0.6, 0.8], ground: [0.25, 0.22, 0.2], fog: [0.6, 0.7, 0.9], fogDensity: 0.02, flash: 0 };
+    this.glow = 1; // pulsation des surfaces émissives (néons, lave, étoiles)
+    this.whiteTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.whiteTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
     this.pixelRatio = 1;
     this.fov = 60 * Math.PI / 180;
     gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
@@ -429,8 +448,8 @@ class Renderer {
   }
   render(root, particles) {
     const gl = this.gl, L = this.light, P = this.main;
-    const f = L.fog;
-    gl.clearColor(f[0], f[1], f[2], 1);
+    const f = L.fog, fl = L.flash || 0;
+    gl.clearColor(Math.min(1, f[0] + fl * 0.32), Math.min(1, f[1] + fl * 0.36), Math.min(1, f[2] + fl * 0.48), 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(P.prog);
     gl.uniformMatrix4fv(P.u.uProj, false, this.proj);
@@ -440,6 +459,9 @@ class Renderer {
     gl.uniform3fv(P.u.uFogCol, L.fog); gl.uniform3fv(P.u.uCamPos, this.camPos);
     gl.uniform1f(P.u.uFogDensity, L.fogDensity);
     gl.uniform1f(P.u.uAlpha, 1);
+    gl.uniform1f(P.u.uFlash, fl);
+    gl.uniform1i(P.u.uTex, 0);
+    gl.activeTexture(gl.TEXTURE0);
     this.transparent.length = 0; this.drawCalls = 0;
     root.updateWorld(null);
     gl.disable(gl.BLEND); gl.depthMask(true);
@@ -469,10 +491,14 @@ class Renderer {
     gl.uniformMatrix4fv(P.u.uModel, false, n.world);
     gl.uniformMatrix3fv(P.u.uNormal, false, M4.normalMat3(this.normal3, n.world));
     if (n.noFog) gl.uniform1f(P.u.uFogDensity, 0);
+    gl.uniform1f(P.u.uGlow, n.noGlow ? 1 : this.glow);
+    gl.bindTexture(gl.TEXTURE_2D, n.texture || this.whiteTex);
+    gl.uniform1f(P.u.uHasTex, n.texture ? 1 : 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, m.vbo);
-    gl.enableVertexAttribArray(P.a.aPos); gl.vertexAttribPointer(P.a.aPos, 3, gl.FLOAT, false, 40, 0);
-    gl.enableVertexAttribArray(P.a.aNor); gl.vertexAttribPointer(P.a.aNor, 3, gl.FLOAT, false, 40, 12);
-    gl.enableVertexAttribArray(P.a.aCol); gl.vertexAttribPointer(P.a.aCol, 4, gl.FLOAT, false, 40, 24);
+    gl.enableVertexAttribArray(P.a.aPos); gl.vertexAttribPointer(P.a.aPos, 3, gl.FLOAT, false, 48, 0);
+    gl.enableVertexAttribArray(P.a.aNor); gl.vertexAttribPointer(P.a.aNor, 3, gl.FLOAT, false, 48, 12);
+    gl.enableVertexAttribArray(P.a.aCol); gl.vertexAttribPointer(P.a.aCol, 4, gl.FLOAT, false, 48, 24);
+    gl.enableVertexAttribArray(P.a.aUV); gl.vertexAttribPointer(P.a.aUV, 2, gl.FLOAT, false, 48, 40);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo);
     if (n.doubleSided) gl.disable(gl.CULL_FACE);
     gl.drawElements(gl.TRIANGLES, m.count, m.indexType, 0);
@@ -511,3 +537,17 @@ const smoothstep = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 function hex(h) { return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; }
 function mixc(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
 function mulc(a, k) { return [a[0] * k, a[1] * k, a[2] * k]; }
+function mixHex(a, b, t) { return mixc(hex(a), hex(b), t); }
+/* Texture 2D depuis un canvas / une image (photo du visage) */
+function makeTexture(gl, source, existing) {
+  const t = existing || gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  return t;
+}

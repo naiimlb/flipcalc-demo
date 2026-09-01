@@ -7,19 +7,50 @@ const CS = 2.0;   // taille d'une cellule (unités monde)
 const WT = 0.4;   // épaisseur des murs
 const WH = 1.5;   // hauteur des murs
 
-/* 10 niveaux : taille de la grille, temps par cellule du chemin (s), thème */
-const LEVELS = [
-  { name: 'Prairie', sub: 'Démo · apprentissage', emoji: '🌼', size: 4, perCell: 0, theme: 'prairie', seed: 101 },
-  { name: 'Jungle', sub: 'Facile', emoji: '🌴', size: 6, perCell: 3.0, theme: 'jungle', seed: 202 },
-  { name: 'Plage', sub: 'Facile', emoji: '🏖️', size: 8, perCell: 2.5, theme: 'beach', seed: 303 },
-  { name: 'Désert', sub: 'Moyen', emoji: '🏜️', size: 10, perCell: 2.2, theme: 'desert', seed: 404 },
-  { name: 'Montagne', sub: 'Moyen', emoji: '🏔️', size: 12, perCell: 2.0, theme: 'mountain', seed: 505 },
-  { name: 'Forêt d’automne', sub: 'Moyen +', emoji: '🍂', size: 14, perCell: 1.8, theme: 'autumn', seed: 606 },
-  { name: 'Volcan', sub: 'Difficile', emoji: '🌋', size: 16, perCell: 1.6, theme: 'volcano', seed: 707 },
-  { name: 'Grotte de glace', sub: 'Difficile', emoji: '❄️', size: 18, perCell: 1.45, theme: 'ice', seed: 808 },
-  { name: 'Ville néon', sub: 'Expert', emoji: '🌃', size: 21, perCell: 1.3, theme: 'neon', seed: 909 },
-  { name: 'Espace', sub: 'Légende', emoji: '🪐', size: 24, perCell: 1.15, theme: 'space', seed: 1010 },
+/* ---------- 10 mondes × 5 niveaux = 50 niveaux (le 0 est la démo) ----------
+   Chaque monde garde son décor mais change d'ambiance à chaque niveau
+   (aube, jour, crépuscule, nuit, orage, brume) et grandit d'un cran. */
+const WORLDS = [
+  { name: 'Prairie', emoji: '🌼', theme: 'prairie', sizes: [4, 5, 6, 7, 8], variants: ['jour', 'aube', 'crepuscule', 'nuit', 'orage'] },
+  { name: 'Jungle', emoji: '🌴', theme: 'jungle', sizes: [7, 8, 9, 10, 11], variants: ['aube', 'jour', 'orage', 'crepuscule', 'nuit'] },
+  { name: 'Plage', emoji: '🏖️', theme: 'beach', sizes: [9, 10, 11, 12, 13], variants: ['jour', 'aube', 'crepuscule', 'nuit', 'orage'] },
+  { name: 'Désert', emoji: '🏜️', theme: 'desert', sizes: [11, 12, 13, 14, 15], variants: ['aube', 'jour', 'brume', 'crepuscule', 'nuit'] },
+  { name: 'Montagne', emoji: '🏔️', theme: 'mountain', sizes: [12, 13, 14, 15, 16], variants: ['jour', 'aube', 'brume', 'crepuscule', 'nuit'] },
+  { name: 'Forêt d’automne', emoji: '🍂', theme: 'autumn', sizes: [14, 15, 16, 17, 18], variants: ['aube', 'jour', 'crepuscule', 'orage', 'nuit'] },
+  { name: 'Volcan', emoji: '🌋', theme: 'volcano', sizes: [15, 16, 17, 18, 19], variants: ['jour', 'crepuscule', 'brume', 'orage', 'nuit'] },
+  { name: 'Grotte de glace', emoji: '❄️', theme: 'ice', sizes: [16, 17, 18, 19, 20], variants: ['jour', 'aube', 'brume', 'crepuscule', 'nuit'] },
+  { name: 'Ville néon', emoji: '🌃', theme: 'neon', sizes: [18, 19, 20, 21, 22], variants: ['jour', 'orage', 'aube', 'crepuscule', 'nuit'] },
+  { name: 'Espace', emoji: '🪐', theme: 'space', sizes: [20, 21, 22, 23, 24], variants: ['jour', 'aube', 'crepuscule', 'brume', 'nuit'] },
 ];
+
+/* Ambiances : les couleurs du thème sont mélangées vers celles de l'ambiance (facteur k) */
+const VARIANTS = {
+  jour: { label: 'Jour', emoji: '☀️', suffix: '' },
+  aube: { label: 'Aube', emoji: '🌅', suffix: 'à l’aube', sky: ['#6a5fcf', '#ffd4bd'], fog: '#f3c9bd', hemiSky: '#ffc4c0', sunCol: [1.0, 0.82, 0.72], sunDir: [0.8, 0.32, 0.5], k: 0.6, cloud: '#ffd9cc' },
+  crepuscule: { label: 'Crépuscule', emoji: '🌇', suffix: 'au crépuscule', sky: ['#2d1b52', '#ff9350'], fog: '#e59a6a', hemiSky: '#ff9d6a', sunCol: [1.0, 0.62, 0.38], sunDir: [-0.8, 0.22, 0.5], k: 0.65, cloud: '#ffb08a' },
+  nuit: { label: 'Nuit', emoji: '🌙', suffix: 'de nuit', sky: ['#040816', '#152a5c'], fog: '#0d1834', hemiSky: '#3b4f8f', hemiGround: '#05070f', sunCol: [0.5, 0.6, 0.95], sunDir: [0.35, 0.8, 0.45], k: 0.85, night: true, cloud: '#2a3558' },
+  orage: { label: 'Orage', emoji: '⛈️', suffix: 'sous l’orage', sky: ['#1f2530', '#6c7789'], fog: '#5f6a7a', hemiSky: '#8a94a6', sunCol: [0.62, 0.65, 0.75], k: 0.8, fogMul: 1.6, particles: 'rain', lightning: true, cloud: '#3d4654', clouds: true },
+  brume: { label: 'Brume', emoji: '🌫️', suffix: 'dans la brume', sky: ['#9aa6b5', '#e8edf2'], fog: '#c9d2dc', hemiSky: '#d7dfe8', sunCol: [0.85, 0.87, 0.9], k: 0.7, fogMul: 2.2, cloud: '#e4e9ef' },
+};
+
+const LEVELS = [];
+WORLDS.forEach((W, wi) => {
+  W.sizes.forEach((size, k) => {
+    const i = LEVELS.length, v = VARIANTS[W.variants[k]];
+    LEVELS.push({
+      index: i, world: wi, step: k, demo: i === 0,
+      name: i === 0 ? W.name : (W.name + (v.suffix ? ' ' + v.suffix : '')),
+      emoji: W.emoji, vEmoji: v.emoji, size, theme: W.theme, variant: W.variants[k],
+      seed: 1000 + i * 37, tight: i <= 1 ? 0 : (i - 1) / (WORLDS.length * 5 - 2),
+    });
+  });
+});
+/* Étiquette de difficulté d'un niveau (affichage) */
+function levelTier(L) {
+  if (L.demo) return 'Démo';
+  const t = L.tight;
+  return t < 0.18 ? 'Facile' : t < 0.4 ? 'Moyen' : t < 0.62 ? 'Difficile' : t < 0.84 ? 'Expert' : 'Légende';
+}
 
 /* ---------- Thèmes visuels ---------- */
 const THEMES = {
@@ -84,6 +115,36 @@ const THEMES = {
     props: [['planet', 12], ['asteroid', 30], ['crystal', 12], ['satellite', 4]], particles: 'stars', sunDisc: null, clouds: false,
   },
 };
+
+
+/* Thème effectif d'un niveau : thème du monde + ambiance (mémorisé) */
+const _themeCache = new Map();
+function themeFor(level) {
+  const key = level.theme + '/' + (level.variant || 'jour');
+  if (_themeCache.has(key)) return _themeCache.get(key);
+  const base = THEMES[level.theme];
+  const v = VARIANTS[level.variant || 'jour'];
+  const th = Object.assign({}, base, { wall: Object.assign({}, base.wall), cloudCol: '#ffffff' });
+  if (v.k) {
+    const mixHexStr = (a, b, t) => { const c = mixHex(a, b, t); return '#' + c.map(x => Math.round(clamp(x, 0, 1) * 255).toString(16).padStart(2, '0')).join(''); };
+    th.sky = [mixHexStr(base.sky[0], v.sky[0], v.k), mixHexStr(base.sky[1], v.sky[1], v.k)];
+    th.fog = mixHexStr(base.fog, v.fog, v.k);
+    th.hemiSky = mixHexStr(base.hemiSky, v.hemiSky, v.k);
+    if (v.hemiGround) th.hemiGround = mixHexStr(base.hemiGround, v.hemiGround, v.k);
+    th.sunCol = v.sunCol; if (v.sunDir) th.sun = v.sunDir;
+    th.fogDensity = base.fogDensity * (v.fogMul || 1);
+    th.cloudCol = v.cloud || th.cloudCol;
+    if (v.clouds) th.clouds = true;
+    if (v.night) {
+      th.sunDisc = null; th.moon = th.moon || '#f4f0d8';
+      if (th.particles === 'pollen' || th.particles === 'bubbles' || th.particles === 'dust') th.particles = 'fireflies';
+    } else if (v.lightning || v.fogMul) { th.sunDisc = null; th.moon = null; }
+    if (v.particles) th.particles = v.particles;
+    th.lightning = !!v.lightning; th.night = !!v.night;
+  }
+  _themeCache.set(key, th);
+  return th;
+}
 
 /* ---------- Génération de labyrinthe (backtracker récursif, seedé) ---------- */
 const DIRS = [[0, -1, 1, 4], [1, 0, 2, 8], [0, 1, 4, 1], [-1, 0, 8, 2]]; // dx, dz, bit, bit opposé
@@ -160,9 +221,15 @@ function bfsFull(maze, from) {
   }
   return { dist, parent };
 }
+/* Chrono : trajet réel (≈0,72 s par case, hésitations comprises) × marge qui se resserre
+   avec la difficulté, plus un budget d'exploration des impasses proportionnel à la grille. */
 function timeLimit(level, maze) {
-  if (!level.perCell) return Infinity;
-  return Math.max(20, Math.round((maze.pathLen * level.perCell + 8) / 5) * 5);
+  if (level.demo) return Infinity;
+  const t = clamp(level.tight == null ? 0.5 : level.tight, 0, 1);
+  const perCell = 0.72 * lerp(2.0, 1.45, t);
+  const explore = lerp(0.08, 0.04, t);
+  const raw = maze.pathLen * perCell + maze.w * maze.h * explore + 4;
+  return Math.max(15, Math.round(raw / 5) * 5);
 }
 
 /* ---------- Constructeur "chunké" (sécurité index 16 bits) ---------- */
@@ -410,7 +477,7 @@ const PROPS = {
 
 /* ---------- Construction du monde ---------- */
 function buildWorld(gl, level, maze) {
-  const th = THEMES[level.theme];
+  const th = themeFor(level);
   const rng = mulberry32(level.seed * 31 + 7);
   const W = maze.w * CS, H = maze.h * CS;
   const cb = new ChunkedBuilder();
@@ -484,7 +551,7 @@ function buildWorld(gl, level, maze) {
   const s0 = hex(th.sky[0]), s1 = hex(th.sky[1]);
   const skyB = new MeshBuilder();
   skyB.sphere(300, 16, 12, (x, y, z) => { const t = clamp(y / 300, -0.1, 1); const c = mixc(s1, s0, Math.pow(Math.max(t, 0), 0.6)); return [c[0], c[1], c[2], 1]; }, null);
-  const sky = new Node(skyB.build(gl)); sky.noFog = true; sky.doubleSided = true;
+  const sky = new Node(skyB.build(gl)); sky.noFog = true; sky.doubleSided = true; sky.noGlow = true;
   /* Soleil / lune */
   if (th.sunDisc || th.moon) {
     const c = hex(th.sunDisc || th.moon);
@@ -493,7 +560,7 @@ function buildWorld(gl, level, maze) {
     const p = [d[0] / l * 240, d[1] / l * 240, d[2] / l * 240];
     sb.sphere(th.moon ? 10 : 14, 14, 10, [c[0], c[1], c[2], 1], T(p));
     sb.sphere(th.moon ? 14 : 22, 14, 10, [c[0], c[1], c[2], 1], T(p));
-    const sun = new Node(sb.build(gl)); sun.noFog = true;
+    const sun = new Node(sb.build(gl)); sun.noFog = true; sun.noGlow = true;
     if (th.moon) sun.alpha = 0.95; else sun.alpha = 0.55; sun.additive = true;
     sky.add(sun);
   }
@@ -501,9 +568,11 @@ function buildWorld(gl, level, maze) {
   let clouds = null;
   if (th.clouds) {
     const cbld = new MeshBuilder();
-    for (let i = 0; i < 14; i++) {
-      const x = -60 + rng() * (W + 120), z = -60 + rng() * (H + 120), y = 16 + rng() * 8, s = 2 + rng() * 3;
-      for (let k = 0; k < 4; k++) cbld.sphere(s * (0.6 + rng() * 0.5), 8, 6, [1, 1, 1, 0.75], T([x + (k - 1.5) * s * 0.9, y + rng() * s * 0.3, z + (rng() - 0.5) * s]), [1, 0.55, 1]);
+    const cc = hex(th.cloudCol || '#ffffff'), ccol = [cc[0], cc[1], cc[2], th.lightning ? 0.3 : 0.75];
+    const n = th.lightning ? 22 : 14;
+    for (let i = 0; i < n; i++) {
+      const x = -60 + rng() * (W + 120), z = -60 + rng() * (H + 120), y = (th.lightning ? 11 : 16) + rng() * 8, s = 2 + rng() * 3;
+      for (let k = 0; k < 4; k++) cbld.sphere(s * (0.6 + rng() * 0.5), 8, 6, ccol, T([x + (k - 1.5) * s * 0.9, y + rng() * s * 0.3, z + (rng() - 0.5) * s]), [1, 0.55, 1]);
     }
     clouds = new Node(cbld.build(gl)); clouds.alpha = 0.9;
   }
@@ -526,6 +595,10 @@ function buildPortal(gl, accent) {
   return { node: g, ring1, ring2, star, beam };
 }
 function buildStarMesh(gl) { return (new MeshBuilder()).star(0.24, 0.11, 0.08, [1, 0.85, 0.2, 0.85]).build(gl); }
+/* Halo lumineux au sol sous chaque étoile */
+function buildHaloMesh(gl) { return (new MeshBuilder()).disc(0.55, 20, [1, 0.85, 0.3, 1]).build(gl); }
+/* Onde de choc (anneau) à la collecte d'une étoile */
+function buildRingMesh(gl) { return (new MeshBuilder()).torus(1, 0.06, 32, 6, [1, 0.95, 0.6, 1]).build(gl); }
 function buildArrowMesh(gl) {
   const b = new MeshBuilder();
   const c = [1, 0.82, 0.2, 0.85];

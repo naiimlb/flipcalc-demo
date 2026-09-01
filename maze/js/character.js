@@ -5,8 +5,7 @@
    ============================================================ */
 'use strict';
 
-const SKIN = [0.82, 0.60, 0.44];
-const SKIN_DARK = [0.70, 0.50, 0.36];
+const SKIN_DEFAULT = [0.82, 0.60, 0.44];
 const HAIR = [0.13, 0.085, 0.06];
 const HAIR_HI = [0.20, 0.13, 0.09];
 const BLACK = [0.07, 0.07, 0.08];
@@ -15,8 +14,13 @@ const SOLE = [0.22, 0.22, 0.24];
 const PRINT = [0.55, 0.56, 0.58];
 const PRINT_DARK = [0.30, 0.31, 0.33];
 
+/* opts.tee : couleur du t-shirt (#hex) · opts.face : texture WebGL de la photo du joueur
+   · opts.skin : teinte de peau [r,g,b] (déduite de la photo) */
 function buildCharacter(gl, opts = {}) {
   const TEE = opts.tee ? hex(opts.tee) : [0.94, 0.94, 0.96];
+  const SKIN = opts.skin || SKIN_DEFAULT;
+  const SKIN_DARK = mulc(SKIN, 0.85);
+  const FACE = opts.face || null;
   const TEE_SHADE = mulc(TEE, 0.86);
   const lum = TEE[0] * 0.3 + TEE[1] * 0.6 + TEE[2] * 0.1;
   const LOGO = lum > 0.55 ? [0.35, 0.36, 0.38] : [0.92, 0.92, 0.95];
@@ -90,13 +94,15 @@ function buildCharacter(gl, opts = {}) {
   head.position = [0, 1.02, 0];
   {
     const b = new MeshBuilder();
-    // crâne
-    b.sphere(0.135, 18, 14, (x, y, z) => (z < -0.02 ? SKIN_DARK : SKIN), T([0, 0.12, 0.005]), [0.95, 1.08, 1]);
+    // crâne — avec une photo : projection plane sur l'avant, le disque fond dans la peau (shader)
+    const R = 0.135, SX = 0.95, SY = 1.08, ZOOM = 0.86;
+    const faceUV = FACE ? (p, d) => (d[2] > 0.05 ? [0.5 + p[0] / (R * SX) * 0.5 / ZOOM, 0.5 - p[1] / (R * SY) * 0.5 / ZOOM] : null) : null;
+    b.sphere(R, FACE ? 28 : 18, FACE ? 22 : 14, (x, y, z) => (z < -0.02 ? SKIN_DARK : SKIN), T([0, 0.12, 0.005]), [SX, SY, 1], { uv: faceUV });
     // oreilles
     b.sphere(0.03, 8, 6, SKIN_DARK, T([-0.125, 0.10, 0.0]), [0.6, 1, 0.8]);
     b.sphere(0.03, 8, 6, SKIN_DARK, T([0.125, 0.10, 0.0]), [0.6, 1, 0.8]);
-    // yeux
-    for (const s of [-1, 1]) {
+    // yeux, nez, bouche : seulement sans photo
+    for (const s of FACE ? [] : [-1, 1]) {
       b.sphere(0.03, 10, 8, [0.97, 0.97, 0.97, 0.15], T([s * 0.05, 0.13, 0.115]), [1, 1, 0.6]);
       b.sphere(0.016, 8, 6, [0.20, 0.13, 0.08, 0.2], T([s * 0.05, 0.13, 0.133]));
       b.sphere(0.008, 6, 4, [0.05, 0.04, 0.03, 0.3], T([s * 0.05, 0.132, 0.146]));
@@ -104,12 +110,14 @@ function buildCharacter(gl, opts = {}) {
       // sourcils
       b.box(0.055, 0.012, 0.012, HAIR, T([s * 0.05, 0.168, 0.13], 0, 0, -s * 0.10));
     }
-    // nez
-    b.sphere(0.02, 8, 6, SKIN_DARK, T([0, 0.10, 0.135]), [0.8, 1.1, 1]);
-    // bouche (léger sourire)
-    b.box(0.05, 0.012, 0.01, [0.62, 0.32, 0.30, 0.1], T([0, 0.055, 0.128]));
-    b.box(0.014, 0.014, 0.01, [0.62, 0.32, 0.30, 0.1], T([-0.028, 0.062, 0.127], 0, 0, 0.6));
-    b.box(0.014, 0.014, 0.01, [0.62, 0.32, 0.30, 0.1], T([0.028, 0.062, 0.127], 0, 0, -0.6));
+    if (!FACE) {
+      // nez
+      b.sphere(0.02, 8, 6, SKIN_DARK, T([0, 0.10, 0.135]), [0.8, 1.1, 1]);
+      // bouche (léger sourire)
+      b.box(0.05, 0.012, 0.01, [0.62, 0.32, 0.30, 0.1], T([0, 0.055, 0.128]));
+      b.box(0.014, 0.014, 0.01, [0.62, 0.32, 0.30, 0.1], T([-0.028, 0.062, 0.127], 0, 0, 0.6));
+      b.box(0.014, 0.014, 0.01, [0.62, 0.32, 0.30, 0.1], T([0.028, 0.062, 0.127], 0, 0, -0.6));
+    }
     // cheveux : calotte + boucles
     b.sphere(0.135, 16, 12, HAIR, T([0, 0.19, -0.045]), [1.06, 0.85, 1.0]);
     const curls = 44;
@@ -142,6 +150,7 @@ function buildCharacter(gl, opts = {}) {
       b.sphere(0.038, 8, 6, i % 2 ? HAIR_HI : HAIR, T([x, 0.262 - Math.abs(x) * 0.4, 0.095]));
     }
     head.mesh = b.build(gl);
+    head.texture = FACE;
   }
 
   /* ----- Ombre portée (disque translucide) ----- */
@@ -185,8 +194,16 @@ function buildCharacter(gl, opts = {}) {
         body.position[1] = Math.sin(t * 2) * 0.01; body.rotation[0] = 0; body.rotation[2] = 0;
         legL.rotation[0] = 0; legR.rotation[0] = 0;
         armL.rotation[0] = 0.1; armL.rotation[2] = 0.1;
-        armR.rotation[0] = -0.3; armR.rotation[2] = -2.45 + Math.sin(t * 9) * 0.3;
+        // bras levé au-dessus de la tête (jamais devant le visage)
+        armR.rotation[0] = 0.35; armR.rotation[2] = -2.8 + Math.sin(t * 9) * 0.28;
         head.rotation[0] = -0.08; head.rotation[1] = Math.sin(t * 1.5) * 0.15; head.rotation[2] = 0.1;
+        root.rotation[0] = 0; root.rotation[2] = 0; this.jump = 0;
+      } else if (this.mode === 'pose') {
+        // pose face caméra (atelier du visage) : bras le long du corps, tête droite
+        body.position[1] = Math.sin(t * 2) * 0.008; body.rotation[0] = 0; body.rotation[2] = 0;
+        legL.rotation[0] = 0; legR.rotation[0] = 0;
+        armL.rotation[0] = 0.05; armR.rotation[0] = 0.05; armL.rotation[2] = 0.28; armR.rotation[2] = -0.28;
+        head.rotation[0] = -0.04; head.rotation[1] = 0; head.rotation[2] = 0;
         root.rotation[0] = 0; root.rotation[2] = 0; this.jump = 0;
       } else if (this.mode === 'lose') {
         body.rotation[0] = 0.35; head.rotation[0] = 0.55; head.rotation[1] = 0;
