@@ -9,16 +9,17 @@ const SKIN = [0.82, 0.60, 0.44];
 const SKIN_DARK = [0.70, 0.50, 0.36];
 const HAIR = [0.13, 0.085, 0.06];
 const HAIR_HI = [0.20, 0.13, 0.09];
-const TEE = [0.94, 0.94, 0.96];
-const TEE_SHADE = [0.82, 0.83, 0.87];
 const BLACK = [0.07, 0.07, 0.08];
 const BLACK_HI = [0.14, 0.14, 0.16];
 const SOLE = [0.22, 0.22, 0.24];
 const PRINT = [0.55, 0.56, 0.58];
 const PRINT_DARK = [0.30, 0.31, 0.33];
-const LOGO = [0.35, 0.36, 0.38];
 
-function buildCharacter(gl) {
+function buildCharacter(gl, opts = {}) {
+  const TEE = opts.tee ? hex(opts.tee) : [0.94, 0.94, 0.96];
+  const TEE_SHADE = mulc(TEE, 0.86);
+  const lum = TEE[0] * 0.3 + TEE[1] * 0.6 + TEE[2] * 0.1;
+  const LOGO = lum > 0.55 ? [0.35, 0.36, 0.38] : [0.92, 0.92, 0.95];
   const rng = mulberry32(4242);
   const root = new Node();
   const body = root.add(new Node());
@@ -179,6 +180,14 @@ function buildCharacter(gl) {
         legL.rotation[0] = Math.sin(p) * 0.25; legR.rotation[0] = -Math.sin(p) * 0.25;
         head.rotation[0] = -0.25; head.rotation[1] = Math.sin(t * 3) * 0.2;
         root.rotation[1] += dt * 5;
+      } else if (this.mode === 'wave') {
+        // salue de la main (menu)
+        body.position[1] = Math.sin(t * 2) * 0.01; body.rotation[0] = 0; body.rotation[2] = 0;
+        legL.rotation[0] = 0; legR.rotation[0] = 0;
+        armL.rotation[0] = 0.1; armL.rotation[2] = 0.1;
+        armR.rotation[0] = -0.3; armR.rotation[2] = -2.45 + Math.sin(t * 9) * 0.3;
+        head.rotation[0] = -0.08; head.rotation[1] = Math.sin(t * 1.5) * 0.15; head.rotation[2] = 0.1;
+        root.rotation[0] = 0; root.rotation[2] = 0; this.jump = 0;
       } else if (this.mode === 'lose') {
         body.rotation[0] = 0.35; head.rotation[0] = 0.55; head.rotation[1] = 0;
         armL.rotation[0] = 0.2; armR.rotation[0] = 0.2; armL.rotation[2] = 0.15; armR.rotation[2] = -0.15;

@@ -21,7 +21,31 @@ const PARTICLE_CFG = {
   stars: { count: 450, colors: [[1, 1, 1], [0.8, 0.9, 1], [1, 0.9, 0.7]], size: [1.5, 4], mode: 'dome', alpha: 0.9, additive: true, twinkle: true },
 };
 
-function loadProgress() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || { levels: {} }; } catch (e) { return { levels: {} }; } }
+const MODES = {
+  detente: { label: '🐣 Détente', hint: 'Sans chrono, indices gratuits. Idéal pour les petits.', timeMul: Infinity, hintFree: true },
+  normal: { label: '🙂 Normal', hint: 'Le chrono tourne, 3 étoiles à décrocher.', timeMul: 1 },
+  expert: { label: '🔥 Expert', hint: 'Moins de temps et pas d’indice. Pour les champions !', timeMul: 0.7, noHint: true },
+};
+const OUTFITS = [
+  { id: 'blanc', name: 'Blanc', tee: '#f0f0f5', need: 0 },
+  { id: 'rouge', name: 'Rouge', tee: '#e53935', need: 3 },
+  { id: 'bleu', name: 'Bleu', tee: '#1e88e5', need: 6 },
+  { id: 'vert', name: 'Vert', tee: '#43a047', need: 9 },
+  { id: 'jaune', name: 'Jaune', tee: '#fdd835', need: 12 },
+  { id: 'violet', name: 'Violet', tee: '#8e24aa', need: 16 },
+  { id: 'noir', name: 'Noir', tee: '#1c1c22', need: 20 },
+  { id: 'or', name: 'Or', tee: '#ffb300', need: 25 },
+  { id: 'rose', name: 'Rose', tee: '#ff4fa3', need: 30 },
+];
+const POPS = ['Super !', 'Génial !', 'Bravo !', 'Top !', 'Waouh !', 'Yes !'];
+const MAX_STARS = 3 * (LEVELS.length);
+
+function loadProgress() {
+  let p = null; try { p = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { }
+  p = p || {}; p.levels = p.levels || {}; p.settings = Object.assign({ mode: 'normal', outfit: 'blanc' }, p.settings || {});
+  p.random = p.random || { played: 0 };
+  return p;
+}
 function saveProgress(p) { try { localStorage.setItem(STORE_KEY, JSON.stringify(p)); } catch (e) { } }
 function fmtTime(s) {
   if (!isFinite(s)) return '∞';
@@ -40,7 +64,7 @@ class Game {
     this.progress = loadProgress();
     this.state = 'menu';
     this.scene = new Node();
-    this.character = buildCharacter(this.gl);
+    this.character = buildCharacter(this.gl, { tee: this.outfit().tee });
     this.starMesh = buildStarMesh(this.gl);
     this.arrow = new Node(buildArrowMesh(this.gl)); this.arrow.visible = false;
     this.particles = new ParticleSystem(this.gl, 500);
@@ -54,7 +78,9 @@ class Game {
       hud: $('#hud'), timer: $('#hudTimer'), lvl: $('#hudLevel'), stars: $('#hudStars'), tip: $('#tip'), toast: $('#toast'),
       menu: $('#menu'), levels: $('#levels'), pause: $('#pause'), result: $('#result'), banner: $('#banner'),
       joy: $('#joy'), knob: $('#joyKnob'), vignette: $('#vignette'), minimap: $('#minimap'), hint: $('#btnHint'),
+      hero: $('#hero'), bubble: $('#heroBubble'), pop: $('#pop'), modes: $('#modes'), outfits: $('#outfits'), starsTotal: $('#starsTotal'),
     };
+    this.randomLevel = null;
     this.mm = { ctx: this.ui.minimap.getContext('2d'), layer: document.createElement('canvas'), dirty: true, cell: 8 };
     this.bindUI(); this.bindInput();
     this.resize();
@@ -75,18 +101,66 @@ class Game {
     $('#btnMenu').addEventListener('click', () => { this.audio.tap(); this.showMenu(); });
     $('#btnHint').addEventListener('click', () => this.useHint());
     $('#btnRetry').addEventListener('click', () => { this.audio.tap(); this.startLevel(this.levelIndex); });
-    $('#btnNext').addEventListener('click', () => { this.audio.tap(); this.startLevel(Math.min(LEVELS.length - 1, this.levelIndex + 1)); });
+    $('#btnNext').addEventListener('click', () => { this.audio.tap(); if (this.levelIndex < 0) this.startRandom(); else this.startLevel(Math.min(LEVELS.length - 1, this.levelIndex + 1)); });
     $('#btnResultMenu').addEventListener('click', () => { this.audio.tap(); this.showMenu(); });
+    $('#btnRandom').addEventListener('click', () => { this.audio.init(); this.audio.tap(); this.startRandom(); });
+    $('#btnDetente').addEventListener('click', () => { this.audio.tap(); this.setMode('detente'); this.startLevel(this.levelIndex); });
+    this.ui.modes.innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="seg" data-mode="${k}">${m.label}</button>`).join('') ;
+    const hint = document.createElement('div'); hint.className = 'mode-hint'; this.ui.modes.after(hint); this.ui.modeHint = hint;
+    this.ui.modes.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => { this.audio.init(); this.audio.tap(); this.setMode(b.dataset.mode); }));
     const muteBtns = [$('#btnMute'), $('#btnMute2')];
     const refreshMute = () => muteBtns.forEach(b => b.textContent = this.audio.muted ? '🔇 Son coupé' : '🔊 Son');
     muteBtns.forEach(b => b.addEventListener('click', () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); refreshMute(); if (!this.audio.muted) this.audio.tap(); }));
     refreshMute();
     $('#btnReset').addEventListener('click', () => {
-      if (confirm('Remettre la progression à zéro ?')) { this.progress = { levels: {} }; saveProgress(this.progress); this.renderLevels(); }
+      if (confirm('Remettre la progression à zéro ?')) { const st = this.progress.settings; this.progress = { levels: {}, settings: Object.assign(st, { outfit: 'blanc' }), random: { played: 0 } }; saveProgress(this.progress); this.setOutfit('blanc'); this.renderLevels(); }
     });
     this.ui.banner.addEventListener('pointerdown', () => this.skipIntro());
   }
   firstUnfinished() { for (let i = 0; i < LEVELS.length; i++) if (!this.progress.levels[i]) return i; return 0; }
+  mode() { return MODES[this.progress.settings.mode] || MODES.normal; }
+  setMode(k) {
+    if (!MODES[k]) return;
+    this.progress.settings.mode = k; saveProgress(this.progress); this.renderModes();
+  }
+  renderModes() {
+    const k = this.progress.settings.mode;
+    this.ui.modes.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.mode === k));
+    this.ui.modeHint.textContent = MODES[k].hint;
+  }
+  totalStars() { let n = 0; for (const k in this.progress.levels) n += this.progress.levels[k].rating || 0; return n; }
+  outfit() { return OUTFITS.find(o => o.id === this.progress.settings.outfit) || OUTFITS[0]; }
+  setOutfit(id) {
+    const o = OUTFITS.find(x => x.id === id); if (!o) return;
+    this.progress.settings.outfit = id; saveProgress(this.progress);
+    // reconstruit le personnage avec la nouvelle couleur
+    const old = this.character;
+    const pos = old.root.position.slice(), rot = old.root.rotation.slice(), mode = old.mode;
+    const kill = (n) => { if (n.mesh) n.mesh.dispose(); n.children.forEach(kill); };
+    this.scene.remove(old.root); kill(old.root);
+    this.character = buildCharacter(this.gl, { tee: o.tee });
+    this.character.root.position = pos; this.character.root.rotation = rot; this.character.mode = mode;
+    this.scene.add(this.character.root);
+    this.renderOutfits();
+  }
+  renderOutfits() {
+    const el = this.ui.outfits; el.innerHTML = '';
+    const stars = this.totalStars(), cur = this.progress.settings.outfit;
+    for (const o of OUTFITS) {
+      const b = document.createElement('button');
+      const locked = stars < o.need;
+      b.className = 'outfit' + (o.id === cur ? ' active' : '') + (locked ? ' locked' : '');
+      b.style.background = o.tee; b.title = o.name;
+      b.innerHTML = (o.id === cur ? '✓' : '') + (locked ? `<span class="lk">⭐ ${o.need}</span>` : '');
+      b.addEventListener('click', () => {
+        this.audio.init();
+        if (locked) { this.toast(`Gagne ${o.need - stars} étoile${o.need - stars > 1 ? 's' : ''} de plus pour ${o.name.toLowerCase()} 🔒`); return; }
+        this.audio.tap(); this.setOutfit(o.id); this.bubbleSay(`Trop beau, le t-shirt ${o.name.toLowerCase()} !`);
+      });
+      el.appendChild(b);
+    }
+  }
+  bubbleSay(txt) { const b = this.ui.bubble; b.textContent = txt; b.style.animation = 'none'; void b.offsetWidth; b.style.animation = ''; }
   isUnlocked(i) { return i === 0 || !!this.progress.levels[i - 1] || !!this.progress.levels[i]; }
   renderLevels() {
     const el = this.ui.levels; el.innerHTML = '';
@@ -98,6 +172,8 @@ class Game {
       const maze = generateMaze(L.size, L.size, L.seed);
       const limit = timeLimit(L, maze);
       const rating = done ? done.rating : 0;
+      const th = THEMES[L.theme];
+      card.style.setProperty('--c1', th.sky[0]); card.style.setProperty('--c2', th.sky[1]);
       card.innerHTML = `<div class="c-emoji">${L.emoji}</div>
         <div class="c-body"><div class="c-name">${i === 0 ? 'Démo' : 'Niveau ' + i} · ${L.name}</div>
         <div class="c-meta">${L.sub} · ${L.size}×${L.size} · ⏱ ${fmtTime(limit)}</div>
@@ -107,7 +183,24 @@ class Game {
       else card.addEventListener('click', () => this.toast('Termine le niveau précédent pour débloquer 🔒'));
       el.appendChild(card);
     });
-    $('#btnPlay').textContent = this.firstUnfinished() === 0 && !this.progress.levels[0] ? '▶ Commencer la démo' : '▶ Jouer';
+    const fu = this.firstUnfinished();
+    $('#btnPlay').textContent = fu === 0 && !this.progress.levels[0] ? '▶ Commencer la démo' : (Object.keys(this.progress.levels).length >= LEVELS.length ? '▶ Rejouer' : `▶ Jouer · niveau ${fu}`);
+    const total = this.totalStars();
+    this.ui.starsTotal.textContent = `⭐ ${total} / ${MAX_STARS}`;
+    this.renderModes(); this.renderOutfits();
+    const done = Object.keys(this.progress.levels).length;
+    if (done === 0) this.bubbleSay('Salut ! Prêt à sortir du labyrinthe ?');
+    else if (done >= LEVELS.length) this.bubbleSay(total >= MAX_STARS ? 'Tu as TOUT réussi ! Légende 👑' : 'Tous les niveaux finis ! Vise les 3 étoiles ⭐');
+    else this.bubbleSay(['On continue l’aventure ?', 'Encore un labyrinthe ?', 'Prêt pour la suite ?', 'Allez, on y va !'][done % 4]);
+  }
+  /* Labyrinthe surprise : thème et taille aléatoires */
+  startRandom() {
+    const themes = Object.keys(THEMES).filter(t => t !== 'prairie');
+    const theme = themes[Math.floor(Math.random() * themes.length)];
+    const size = 7 + Math.floor(Math.random() * 10);
+    const base = LEVELS.find(L => L.theme === theme) || LEVELS[1];
+    this.randomLevel = { name: base.name + ' surprise', sub: 'Surprise', emoji: '🎲', size, perCell: lerp(2.6, 1.4, (size - 7) / 9), theme, seed: Math.floor(Math.random() * 1e9), random: true };
+    this.startLevel(-1);
   }
   showMenu() {
     this.state = 'menu';
@@ -116,9 +209,13 @@ class Game {
     this.ui.menu.classList.remove('hidden');
     this.renderLevels();
     if (this.levelIndex !== 0) this.loadLevel(0, true);
-    this.menuAngle = 0.6;
-    this.character.mode = 'idle';
+    // le personnage vient saluer sur la "scène" devant le labyrinthe
+    const P = this.player; P.x = this.maze.w * CS / 2; P.z = this.maze.h * CS + 2.8;
+    this.character.root.position = [P.x, 0, P.z];
+    this.menuAngle = 0.35;
+    this.character.mode = 'wave'; this.character.t = 0;
     this.character.root.rotation[1] = 0.35;
+    this.cam.pos = [P.x + 1, 1.5, P.z + 3]; this.cam.target = [P.x, 0.6, P.z];
     this.hideJoy();
   }
   toast(msg, ms = 1800) {
@@ -137,10 +234,10 @@ class Game {
   }
   loadLevel(i, forMenu = false) {
     this.disposeWorld();
-    const L = LEVELS[i];
+    const L = i < 0 ? this.randomLevel : LEVELS[i];
     this.levelIndex = i; this.level = L;
     this.maze = generateMaze(L.size, L.size, L.seed);
-    this.limit = timeLimit(L, this.maze);
+    this.limit = i === 0 ? Infinity : timeLimit(L, this.maze) * this.mode().timeMul;
     const built = buildWorld(this.gl, L, this.maze);
     this.theme = built.theme;
     this.worldNodes = [built.world, built.sky, built.clouds].filter(Boolean);
@@ -186,8 +283,9 @@ class Game {
     this.audio.startAmbient(this.level.theme);
     this.ui.menu.classList.add('hidden'); this.ui.pause.classList.add('hidden'); this.ui.result.classList.add('hidden');
     this.ui.hud.classList.remove('hidden');
-    this.ui.lvl.textContent = `${this.level.emoji} ${i === 0 ? 'Démo' : 'Niv. ' + i}`;
-    this.ui.hint.style.display = i === 0 ? 'none' : '';
+    this.ui.lvl.textContent = `${this.level.emoji} ${i === 0 ? 'Démo' : i < 0 ? 'Surprise' : 'Niv. ' + i}`;
+    this.ui.hint.style.display = (i === 0 || this.mode().noHint) ? 'none' : '';
+    this.dustT = 0;
     this.updateHud();
     // intro (survol du labyrinthe)
     this.state = 'intro'; this.introT = 0;
@@ -199,8 +297,8 @@ class Game {
     this.cam.pos = this.introFrom.slice(); this.cam.target = this.introLook.slice();
     const b = this.ui.banner;
     b.querySelector('.b-emoji').textContent = this.level.emoji;
-    b.querySelector('.b-title').textContent = (i === 0 ? 'Démo — ' : `Niveau ${i} — `) + this.level.name;
-    b.querySelector('.b-sub').textContent = isFinite(this.limit) ? `Sors du labyrinthe en moins de ${fmtTime(this.limit)} !` : 'Apprends à jouer, sans limite de temps.';
+    b.querySelector('.b-title').textContent = (i === 0 ? 'Démo — ' : i < 0 ? '' : `Niveau ${i} — `) + this.level.name;
+    b.querySelector('.b-sub').textContent = i === 0 ? 'Apprends à jouer, sans limite de temps.' : isFinite(this.limit) ? `Sors du labyrinthe en moins de ${fmtTime(this.limit)} !` : 'Mode Détente : prends ton temps, trouve la sortie !';
     b.classList.remove('hidden');
     this.tutorialStep = i === 0 ? 0 : -1;
     this.ui.tip.classList.add('hidden');
@@ -224,11 +322,12 @@ class Game {
     else this.ui.tip.classList.add('hidden');
   }
   useHint() {
-    if (this.state !== 'playing' || this.levelIndex === 0) return;
+    if (this.state !== 'playing' || this.levelIndex === 0 || this.mode().noHint) return;
     if (this.time < this.hintUntil) return;
     this.audio.init(); this.audio.hint();
     this.hintUntil = this.time + 4.5;
-    if (isFinite(this.limit)) { this.elapsed += 5; this.toast('💡 Indice : −5 s', 1400); }
+    if (isFinite(this.limit) && !this.mode().hintFree) { this.elapsed += 5; this.toast('💡 Indice : −5 s', 1400); }
+    else this.toast('💡 Suis la flèche !', 1200);
   }
 
   /* ---------- Entrées ---------- */
@@ -333,10 +432,15 @@ class Game {
     this.updateParticles(dt); this.updateFx(dt);
 
     if (this.state === 'menu') {
-      this.menuAngle += dt * 0.25;
-      const r = 3.2;
-      this.cam.pos = [P.x + Math.sin(this.menuAngle) * r, 1.9 + Math.sin(t * 0.5) * 0.2, P.z + Math.cos(this.menuAngle) * r];
-      this.cam.target = [P.x, 0.75, P.z];
+      this.menuAngle = 0.35 + Math.sin(t * 0.35) * 0.35;
+      const r = 4.4;
+      this.cam.pos = [P.x + Math.sin(this.menuAngle) * r, 1.3 + Math.sin(t * 0.5) * 0.08, P.z + Math.cos(this.menuAngle) * r];
+      // décale la visée pour que le personnage apparaisse dans la zone "hero" du menu
+      const rect = this.ui.hero.getBoundingClientRect();
+      const cy = (rect.top + rect.height * 0.58) / window.innerHeight;
+      const ndc = (0.5 - cy) * 2;
+      const ty = 0.62 - ndc * r * Math.tan(this.renderer.fov / 2) * 0.95;
+      this.cam.target = [P.x, ty, P.z];
       ch.root.rotation[1] = this.menuAngle;
       ch.update(dt, 0);
     } else if (this.state === 'intro') {
@@ -415,6 +519,12 @@ class Game {
       let d = target - P.facing; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       P.facing += d * (1 - Math.exp(-dt * 14));
       if (sp > 1.2) this.audio.step();
+      this.dustT -= dt;
+      if (sp > 2.2 && this.dustT <= 0) {
+        this.dustT = 0.11;
+        const f = hex(this.theme.floor[1]); const c = [Math.min(1, f[0] + 0.25), Math.min(1, f[1] + 0.25), Math.min(1, f[2] + 0.25)];
+        this.burst([P.x - Math.sin(P.facing) * 0.25, 0.12, P.z - Math.cos(P.facing) * 0.25], [c], 2, 0.7, 0.45);
+      }
     }
     ch.root.position[0] = P.x; ch.root.position[2] = P.z; ch.root.position[1] = 0; ch.root.rotation[1] = P.facing;
     ch.mode = 'walk'; ch.update(dt, sp / PLAYER_SPEED);
@@ -431,7 +541,7 @@ class Game {
       if (d < 0.6) {
         s.collected = true; s.visible = false; this.collected++; this.audio.star();
         this.burst(s.position, [[1, 0.85, 0.2], [1, 1, 0.6]], 40, 3.5);
-        this.toast(this.collected === 3 ? '⭐ Toutes les étoiles !' : '⭐ +1', 900);
+        this.pop(this.collected === 3 ? 'Toutes les étoiles !' : POPS[Math.floor(Math.random() * POPS.length)]);
         if (this.tutorialStep === 2) { this.tutorialStep = 3; this.showTutorial(); }
       }
     }
@@ -452,13 +562,24 @@ class Game {
     this.burst([p[0], 1.2, p[2]], [[1, 0.3, 0.4], [0.3, 0.9, 1], [1, 0.9, 0.2], [0.5, 1, 0.4], [1, 1, 1]], 220, 6);
     const rem = this.limit - this.elapsed;
     let rating = 1;
-    if (!isFinite(this.limit) || rem / this.limit >= 0.4) rating++;
+    const timeStar = this.levelIndex === 0 ? true : (isFinite(this.limit) && rem / this.limit >= 0.4);
+    if (timeStar) rating++;
     if (this.collected === 3) rating++;
-    const prev = this.progress.levels[this.levelIndex];
-    const best = prev && isFinite(prev.best) ? Math.min(prev.best, this.elapsed) : this.elapsed;
-    this.progress.levels[this.levelIndex] = { rating: Math.max(rating, prev ? prev.rating : 0), best, stars: Math.max(this.collected, prev ? prev.stars : 0) };
+    this.lastRating = rating; this.lastTimeStar = timeStar; this.newRecord = false;
+    if (this.levelIndex >= 0) {
+      const prev = this.progress.levels[this.levelIndex];
+      const best = prev && isFinite(prev.best) ? Math.min(prev.best, this.elapsed) : this.elapsed;
+      if (prev && isFinite(prev.best) && this.elapsed < prev.best - 0.05) this.newRecord = true;
+      const beforeStars = this.totalStars();
+      this.progress.levels[this.levelIndex] = { rating: Math.max(rating, prev ? prev.rating : 0), best, stars: Math.max(this.collected, prev ? prev.stars : 0) };
+      const after = this.totalStars();
+      this.unlockedOutfits = OUTFITS.filter(o => o.need > beforeStars && o.need <= after);
+    } else {
+      this.progress.random.played++;
+      this.progress.random.best = Math.min(this.progress.random.best || Infinity, this.elapsed);
+      this.unlockedOutfits = [];
+    }
     saveProgress(this.progress);
-    this.lastRating = rating;
   }
   lose() {
     this.state = 'lost'; this.winT = 0; this.character.mode = 'lose';
@@ -470,16 +591,23 @@ class Game {
     r.querySelector('.r-stars').innerHTML = won ? [1, 2, 3].map(k => `<span class="${k <= this.lastRating ? 'on' : ''}" style="animation-delay:${k * 0.18}s">★</span>`).join('') : '';
     const lines = [];
     if (won) {
-      lines.push(`⏱ Temps : <b>${fmtTime(this.elapsed)}</b>${isFinite(this.limit) ? ` / ${fmtTime(this.limit)}` : ''}`);
+      lines.push(`⏱ Temps : <b>${fmtTime(this.elapsed)}</b>${isFinite(this.limit) ? ` / ${fmtTime(this.limit)}` : ''}${this.newRecord ? ' 🏅 <b>Nouveau record !</b>' : ''}`);
       lines.push(`⭐ Étoiles : <b>${this.collected} / 3</b>`);
+      if (!this.lastTimeStar && !isFinite(this.limit)) lines.push('Joue en mode 🙂 Normal pour gagner l’étoile du chrono.');
+      else if (!this.lastTimeStar) lines.push('Finis avec 40 % du temps restant pour l’étoile du chrono.');
+      if (this.unlockedOutfits && this.unlockedOutfits.length) lines.push(`👕 Nouvelle tenue débloquée : <b>${this.unlockedOutfits.map(o => o.name).join(', ')}</b> !`);
       if (this.levelIndex === 0) lines.push('Tu es prêt pour le niveau 1 ! 💪');
       else if (this.levelIndex === LEVELS.length - 1) lines.push('Tu as terminé tous les niveaux ! 👑');
     } else {
-      lines.push(`Le labyrinthe ${this.level.name} demandait moins de <b>${fmtTime(this.limit)}</b>.`);
-      lines.push('Astuce : utilise 💡 pour voir le chemin quelques secondes.');
+      const left = this.maze.distExit[this.player.cell];
+      lines.push(left <= 3 ? `Argh, tu étais à <b>${left} case${left > 1 ? 's' : ''}</b> de la sortie !` : `Il te restait <b>${left} cases</b> à parcourir. Pas grave, on réessaie !`);
+      lines.push(this.mode().noHint ? 'En mode Expert, pas d’indice… Courage !' : 'Astuce : utilise 💡 pour voir le chemin quelques secondes.');
     }
     r.querySelector('.r-lines').innerHTML = lines.map(l => `<div>${l}</div>`).join('');
-    $('#btnNext').style.display = won && this.levelIndex < LEVELS.length - 1 ? '' : 'none';
+    const hasNext = won && (this.levelIndex < 0 || this.levelIndex < LEVELS.length - 1);
+    $('#btnNext').style.display = hasNext ? '' : 'none';
+    $('#btnNext').textContent = this.levelIndex < 0 ? '🎲 Un autre surprise' : '➡ Niveau suivant';
+    $('#btnDetente').style.display = (!won && this.progress.settings.mode !== 'detente') ? '' : 'none';
     $('#btnRetry').textContent = won ? '↺ Rejouer' : '↺ Réessayer';
     r.classList.remove('hidden');
   }
@@ -544,7 +672,12 @@ class Game {
       if (cfg.twinkle) d[o + 6] = cfg.alpha * (0.45 + 0.55 * Math.abs(Math.sin(t * 2.2 + ph * 3)));
     }
   }
-  burst(pos, colors, n, speed) {
+  pop(txt) {
+    const e = this.ui.pop; e.textContent = txt; e.classList.remove('hidden');
+    e.style.animation = 'none'; void e.offsetWidth; e.style.animation = '';
+    clearTimeout(this._popT); this._popT = setTimeout(() => e.classList.add('hidden'), 1100);
+  }
+  burst(pos, colors, n, speed, life) {
     const S = this.fx, d = S.data;
     for (let k = 0; k < n; k++) {
       let i;
@@ -554,7 +687,8 @@ class Game {
       d[o + 3] = c[0]; d[o + 4] = c[1]; d[o + 5] = c[2]; d[o + 6] = 1; d[o + 7] = 3 + Math.random() * 4;
       const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI - Math.PI / 2, s = speed * (0.4 + Math.random() * 0.8);
       this.fxVel[i * 3] = Math.cos(a) * Math.cos(e) * s; this.fxVel[i * 3 + 1] = Math.abs(Math.sin(e)) * s + 1.5; this.fxVel[i * 3 + 2] = Math.sin(a) * Math.cos(e) * s;
-      this.fxMax[i] = 0.9 + Math.random() * 1.2; this.fxLife[i] = this.fxMax[i];
+      this.fxMax[i] = (life || 1) * (0.9 + Math.random() * 1.2); this.fxLife[i] = this.fxMax[i];
+      if (life) { d[o + 7] = 2 + Math.random() * 2; this.fxVel[i * 3 + 1] *= 0.4; }
     }
     S.additive = false;
   }

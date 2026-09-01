@@ -31,6 +31,15 @@ Le temps imparti est calculé à partir de la longueur du chemin de sortie, avec
 qui se réduit de niveau en niveau. Chaque niveau se débloque en terminant le précédent.
 Notation : 1 étoile pour sortir, +1 s'il reste 40 % du temps, +1 pour les 3 étoiles ramassées.
 
+## Pour tous les publics
+
+- **3 modes** choisis depuis le menu : 🐣 Détente (sans chrono, indices gratuits, idéal pour les petits),
+  🙂 Normal, 🔥 Expert (temps réduit de 30 %, pas d'indice).
+- **Tenues à débloquer** : 9 couleurs de t-shirt gagnées avec les étoiles (⭐ 3, 6, 9… jusqu'à 30).
+- **🎲 Labyrinthe surprise** : un labyrinthe aléatoire (décor et taille tirés au sort) pour rejouer à l'infini.
+- Le personnage accueille le joueur sur le menu, encouragements à chaque étoile, nouveau record signalé,
+  écran de défaite bienveillant avec bouton « Réessayer sans chrono ».
+
 ## Fonctionnalités
 
 - Survol cinématique du labyrinthe au lancement de chaque niveau, puis caméra qui suit le joueur.

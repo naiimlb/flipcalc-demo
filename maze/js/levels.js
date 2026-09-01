@@ -464,6 +464,8 @@ function buildWorld(gl, level, maze) {
         else { z = H + d; x = -maxD + rng() * (W + 2 * maxD); }
         tries++;
       } while (tries < 5 && x > -margin && x < W + margin && z > -margin && z < H + margin);
+      // laisse libre la "scène" devant le labyrinthe (personnage du menu)
+      if (Math.hypot(x - W / 2, z - (H + 2.8)) < 3.2) continue;
       fn(cb.b, T([x, 0, z], rng() * Math.PI * 2), rng);
     }
   };
