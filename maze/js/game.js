@@ -44,13 +44,14 @@ const MAX_STARS = 3 * LEVELS.length;
 const FIREWORK_COLORS = [[1, 0.3, 0.4], [0.3, 0.9, 1], [1, 0.9, 0.2], [0.5, 1, 0.4], [1, 1, 1], [0.8, 0.5, 1]];
 
 function loadProgress() {
-  let p = null; try { p = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { }
+  let p = null; try { p = JSON.parse(localStorage.getItem(progressKey())); } catch (e) { }
   p = p || {}; p.levels = p.levels || {};
   p.settings = Object.assign({ mode: 'normal', outfit: 'blanc', faceAsked: false, world: 0 }, p.settings || {});
   p.random = p.random || { played: 0 };
   return p;
 }
-function saveProgress(p) { try { localStorage.setItem(STORE_KEY, JSON.stringify(p)); } catch (e) { } }
+/* Sauvegarde automatique : appelée à chaque changement, dans l'espace du compte courant */
+function saveProgress(p) { try { localStorage.setItem(progressKey(), JSON.stringify(p)); } catch (e) { } }
 function fmtTime(s) {
   if (!isFinite(s)) return '∞';
   s = Math.max(0, s);
@@ -91,10 +92,12 @@ class Game {
       menu: $('#menu'), worlds: $('#worlds'), levels: $('#levels'), levelInfo: $('#levelInfo'),
       pause: $('#pause'), result: $('#result'), banner: $('#banner'), fade: $('#fade'),
       joy: $('#joy'), knob: $('#joyKnob'), vignette: $('#vignette'), minimap: $('#minimap'), hint: $('#btnHint'),
-      hero: $('#hero'), crHero: $('#creatorHero'), bubble: $('#heroBubble'), pop: $('#pop'), modes: $('#modes'), outfits: $('#outfits'), starsTotal: $('#starsTotal'),
+      hero: $('#hero'), crHero: $('#creatorHero'), acHero: $('#accountHero'), bubble: $('#heroBubble'), pop: $('#pop'), modes: $('#modes'), outfits: $('#outfits'), starsTotal: $('#starsTotal'),
     };
     this.mm = { ctx: this.ui.minimap.getContext('2d'), layer: document.createElement('canvas'), dirty: true, cell: 8 };
     this.creator = new FaceCreator(this);
+    this.account = new AccountUI(this);
+    this.accountOpen = false;
     this.bindUI(); this.bindInput();
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -120,6 +123,7 @@ class Game {
     $('#btnRandom').addEventListener('click', tap(() => this.startRandom()));
     $('#btnDetente').addEventListener('click', tap(() => { this.setMode('detente'); this.replay(); }));
     $('#btnFace').addEventListener('click', tap(() => this.creator.open(false)));
+    $('#accountBar').addEventListener('click', tap(() => this.account.open(false)));
     this.ui.modes.innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="seg" data-mode="${k}">${m.label}</button>`).join('');
     this.ui.modes.querySelectorAll('.seg').forEach(b => b.addEventListener('click', tap(() => this.setMode(b.dataset.mode))));
     this.ui.modeHint = $('#modeHint');
@@ -190,10 +194,24 @@ class Game {
     // la texture est mise à jour en place : ne reconstruit que si la présence ou la peau change
     const skinMoved = !oldSkin !== !this.skin || (oldSkin && this.skin && oldSkin.some((c, i) => Math.abs(c - this.skin[i]) > 0.035));
     if (had !== !!this.face || skinMoved) this.rebuildCharacter();
-    if (save) { try { canvas ? localStorage.setItem(FACE_KEY, this.faceCanvas.toDataURL('image/jpeg', 0.85)) : localStorage.removeItem(FACE_KEY); } catch (e) { } }
+    if (save) { try { canvas ? localStorage.setItem(faceKey(), this.faceCanvas.toDataURL('image/jpeg', 0.85)) : localStorage.removeItem(faceKey()); } catch (e) { } if (!ACCOUNTS.isGuest()) this.flashSaved(); }
+  }
+  /* Recharge tout l'état propre au compte courant (progression, tenue, visage) */
+  switchAccount() {
+    this.progress = loadProgress();
+    this.menuWorld = clamp(this.progress.settings.world | 0, 0, WORLDS.length - 1);
+    if (this.face) { this.gl.deleteTexture(this.face); this.face = null; this.faceCanvas = null; this.skin = null; }
+    this.rebuildCharacter();
+    this.loadSavedFace();
+    if (this.state === 'menu') { this.renderMenu(); this.ensurePreview(this.menuWorld, true); this.placeOnStage(); }
+  }
+  flashSaved(txt) {
+    const e = $('#saved'); e.textContent = '💾 ' + (txt || 'Sauvegardé'); e.classList.remove('hidden');
+    e.style.animation = 'none'; void e.offsetWidth; e.style.animation = '';
+    clearTimeout(this._savedT); this._savedT = setTimeout(() => e.classList.add('hidden'), 2200);
   }
   loadSavedFace() {
-    let d = null; try { d = localStorage.getItem(FACE_KEY); } catch (e) { }
+    let d = null; try { d = localStorage.getItem(faceKey()); } catch (e) { }
     if (!d) return;
     this._faceLoading = true;
     const img = new Image();
@@ -201,6 +219,7 @@ class Game {
       const c = document.createElement('canvas'); c.width = c.height = FACE_SIZE;
       c.getContext('2d').drawImage(img, 0, 0, FACE_SIZE, FACE_SIZE);
       this.setFace(c, false); this._faceLoading = false;
+      if (this.state === 'menu') this.renderMenu();
     };
     img.onerror = () => { this._faceLoading = false; };
     img.src = d;
@@ -237,6 +256,11 @@ class Game {
     this.ui.starsTotal.textContent = `⭐ ${total} / ${MAX_STARS}`;
     this.renderModes(); this.renderOutfits(); this.renderWorlds(); this.renderLevels();
     $('#btnFace').textContent = this.faceCanvas ? '📸 Changer mon visage' : '📸 Mettre mon visage';
+    const bar = $('#accountBar'), guest = ACCOUNTS.isGuest();
+    bar.classList.toggle('guest', guest);
+    bar.innerHTML = guest ? '<span class="ab-av">👤</span><span>Invité</span><span class="ab-cta">Créer un compte ›</span>'
+      : `<span class="ab-av">${this.faceCanvas ? '<img alt="">' : '👤'}</span><span class="ab-name"></span><span class="ab-cta">💾 auto</span>`;
+    if (!guest) { bar.querySelector('.ab-name').textContent = ACCOUNTS.displayName(); const im = bar.querySelector('img'); if (im) im.src = this.faceCanvas.toDataURL('image/jpeg', 0.7); }
     const done = Object.keys(this.progress.levels).length;
     if (done === 0) this.bubbleSay('Salut ! Prêt à sortir du labyrinthe ?');
     else if (all) this.bubbleSay(total >= MAX_STARS ? 'Tu as TOUT réussi ! Légende 👑' : 'Tous les niveaux finis ! Vise les 3 étoiles ⭐');
@@ -372,7 +396,9 @@ class Game {
     this.ensurePreview(this.menuWorld, false);
     this.placeOnStage();
     this.hideJoy();
-    if (!this.faceCanvas && !this.progress.settings.faceAsked && !this._faceLoading && !this.creatorOpen) setTimeout(() => { if (this.state === 'menu') this.creator.open(true); }, 700);
+    if (this.accountOpen) return;
+    if (ACCOUNTS.current() === null) { setTimeout(() => { if (this.state === 'menu' && !this.accountOpen) this.account.open(true); }, 500); return; }
+    if (!this.faceCanvas && !this.progress.settings.faceAsked && !this._faceLoading && !this.creatorOpen) setTimeout(() => { if (this.state === 'menu' && !this.accountOpen) this.creator.open(true); }, 700);
   }
   toast(msg, ms = 1800) {
     const t = this.ui.toast; t.textContent = msg; t.classList.remove('hidden');
@@ -611,12 +637,12 @@ class Game {
 
     if (this.state === 'menu') {
       // menu : la caméra tourne doucement ; atelier : elle reste face au visage, plus près
-      const cr = this.creatorOpen;
+      const cr = this.creatorOpen || this.accountOpen;
       this.menuAngle = cr ? Math.sin(t * 0.5) * 0.12 : 0.35 + Math.sin(t * 0.35) * 0.35;
       const r = cr ? 3.2 : 4.4;
       this.cam.pos = [P.x + Math.sin(this.menuAngle) * r, (cr ? 1.15 : 1.3) + Math.sin(t * 0.5) * 0.08, P.z + Math.cos(this.menuAngle) * r];
       // décale la visée pour que le personnage apparaisse dans la zone "hero" du menu (ou de l'atelier)
-      const rect = (cr ? this.ui.crHero : this.ui.hero).getBoundingClientRect();
+      const rect = (this.accountOpen ? this.ui.acHero : cr ? this.ui.crHero : this.ui.hero).getBoundingClientRect();
       const cy = (rect.top + rect.height * (cr ? 0.5 : 0.58)) / window.innerHeight;
       const ndc = (0.5 - cy) * 2;
       const ty = (cr ? 0.95 : 0.62) - ndc * r * Math.tan(this.renderer.fov / 2) * 0.95;
@@ -815,6 +841,7 @@ class Game {
       this.unlockedOutfits = [];
     }
     saveProgress(this.progress);
+    if (!ACCOUNTS.isGuest()) setTimeout(() => this.flashSaved(`Sauvegardé · ${ACCOUNTS.displayName()}`), 2200);
   }
   lose() {
     this.state = 'lost'; this.winT = 0; this.character.mode = 'lose';

@@ -192,6 +192,38 @@
   .li-go { font-size: 24px; opacity: .8; width: 22px; text-align: center; }
   .menufoot { display: flex; gap: 10px; margin-top: 16px; justify-content: center; padding-bottom: 24px; }
 
+  /* Espace joueur */
+  .accountbar { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 12px 6px 6px; border-radius: 999px; color: #fff;
+    background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 13px; font-weight: 800; transition: transform .1s; }
+  .accountbar:active { transform: scale(.96); }
+  .accountbar.guest { border-color: rgba(255,224,102,.55); }
+  .ab-av { width: 28px; height: 28px; border-radius: 50%; background: var(--paper); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 15px; }
+  .ab-av img { width: 100%; height: 100%; object-fit: cover; }
+  .ab-cta { opacity: .75; font-weight: 600; }
+  .accountbar.guest .ab-cta { color: var(--gold); opacity: 1; }
+  #account { justify-content: flex-end; padding-bottom: calc(14px + var(--sab)); background: linear-gradient(180deg, rgba(8,10,30,.1) 0%, rgba(8,10,30,.1) 22%, rgba(8,10,30,.88) 45%); z-index: 12; overflow-y: auto; }
+  .ac-panel { padding-top: 20px; text-align: left; }
+  .ac-panel .p-title { text-align: center; }
+  .ac-who { font-size: 13px; opacity: .85; line-height: 1.45; text-align: center; margin: 4px 0 12px; }
+  .ac-list { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; margin-bottom: 8px; scrollbar-width: none; }
+  .ac-list::-webkit-scrollbar { display: none; }
+  .acc { flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-line); color: #fff; font-size: 13px; }
+  .acc.active { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255,224,102,.3); }
+  .acc-av { width: 26px; height: 26px; border-radius: 50%; background: var(--paper); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .acc-stars { opacity: .75; font-weight: 600; }
+  .ac-field { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+  .ac-field label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: .75; }
+  .ac-input { display: flex; align-items: center; background: rgba(0,0,0,.28); border: 1px solid var(--glass-line); border-radius: 14px; padding: 0 6px 0 14px; }
+  .ac-input:focus-within { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34,230,255,.18); }
+  .ac-input input { flex: 1; min-width: 0; background: transparent; border: 0; color: #fff; font: inherit; font-size: 17px; font-weight: 700; padding: 12px 0; outline: none;
+    -webkit-user-select: text; user-select: text; }
+  .ac-input input::placeholder { color: rgba(255,255,255,.35); font-weight: 600; }
+  .ac-eye { width: 40px; height: 40px; border: 0; background: transparent; font-size: 18px; opacity: .8; }
+  .ac-err { min-height: 18px; color: #ffb4b4; font-size: 13px; margin-top: 8px; text-align: center; }
+  .btn.danger { background: rgba(255,82,82,.16); border-color: rgba(255,82,82,.5); color: #ffd9d9; }
+  .saved { position: fixed; left: 50%; top: calc(12px + var(--sat)); transform: translateX(-50%); z-index: 14; background: rgba(16,18,40,.9); border: 1px solid rgba(34,230,255,.5); color: #bff6ff;
+    padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; pointer-events: none; animation: popin .35s cubic-bezier(.2,1.4,.4,1); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+
   /* Atelier du héros */
   #creator { justify-content: flex-end; padding-bottom: calc(14px + var(--sab)); background: linear-gradient(180deg, rgba(8,10,30,.1) 0%, rgba(8,10,30,.1) 30%, rgba(8,10,30,.85) 55%); z-index: 12; }
   .cr-hero { flex: 1; width: 100%; min-height: 150px; }
@@ -259,6 +291,7 @@
 <div id="menu" class="overlay scroll">
   <div class="logo">MAZE<span>RUN</span></div>
   <div class="tagline">50 labyrinthes · 10 mondes</div>
+  <button id="accountBar" class="accountbar guest"><span class="ab-av">👤</span><span>Invité</span><span class="ab-cta">Créer un compte ›</span></button>
   <div id="hero"><div class="bubble" id="heroBubble">Salut ! Prêt à sortir du labyrinthe ?</div></div>
   <button id="btnPlay" class="big">▶ Jouer</button>
   <div class="modes" id="modes"></div>
@@ -277,6 +310,30 @@
   <div class="menufoot">
     <button id="btnMute" class="ghost">🔊 Son</button>
     <button id="btnReset" class="ghost">↺ Progression</button>
+  </div>
+</div>
+
+<div id="saved" class="saved hidden">💾 Sauvegardé</div>
+
+<div id="account" class="overlay scroll hidden">
+  <div class="cr-hero" id="accountHero"></div>
+  <div class="panel ac-panel">
+    <div class="p-title" id="acTitle">Espace joueur</div>
+    <div class="ac-who" id="acWho"></div>
+    <div class="ac-list hidden" id="acList"></div>
+    <div class="modes" id="acTabs" style="width:100%;margin-top:0">
+      <button type="button" class="seg" data-mode="login">Se connecter</button>
+      <button type="button" class="seg" data-mode="create">Créer un compte</button>
+    </div>
+    <form id="acForm" autocomplete="on">
+      <div class="ac-field"><label for="acName">Pseudo</label>
+        <div class="ac-input"><input id="acName" name="username" type="text" placeholder="ex. Naïm" maxlength="16" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next"></div></div>
+      <div class="ac-field"><label for="acPwd">Mot de passe</label>
+        <div class="ac-input"><input id="acPwd" name="password" type="password" placeholder="au moins 4 caractères" enterkeyhint="go"><button type="button" class="ac-eye" id="acEye" aria-label="Afficher le mot de passe">👁</button></div></div>
+      <div class="ac-err" id="acErr"></div>
+    </form>
+    <div class="btnrow" id="acButtons" style="margin-top:6px"></div>
+    <div class="help" style="text-align:center">Comptes et sauvegardes restent sur cet appareil. Chaque joueur a sa propre progression.</div>
   </div>
 </div>
 
@@ -333,6 +390,7 @@
 <script src="js/critters.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/creator.js"></script>
+<script src="js/accounts.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
