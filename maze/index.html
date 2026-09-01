@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<title>Maze Run — Labyrinthe 3D</title>
+<title>Maze Run</title>
 <style>
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px); }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -94,13 +94,14 @@
   .btn.primary { background: linear-gradient(120deg, #ffe066, #ff9f43); color: #15182b; border: 0; }
   .btn:active { transform: scale(.96); }
   .ghost { background: transparent; border: 1px solid rgba(255,255,255,.25); color: #fff; padding: 10px 14px; border-radius: 14px; font-weight: 700; font-size: 14px; }
+  .ghost.warn { background: rgba(255,82,82,.22); border-color: #ff5252; color: #ffd9d9; }
   .btnrow { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
 
   /* Menu / sélection de niveaux */
   #menu { justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; display: block; text-align: center;
     background: linear-gradient(180deg, rgba(8,10,30,.15) 0%, rgba(8,10,30,.15) 34%, rgba(8,10,30,.8) 52%, rgba(8,10,30,.9) 100%); }
   #menu > * { margin-left: auto; margin-right: auto; }
-  #hero { height: 30vh; min-height: 170px; position: relative; width: 100%; }
+  #hero { height: 30vh; min-height: 170px; position: relative; width: 100%; margin-top: 24px; }
   .bubble { position: absolute; left: 50%; top: -4px; transform: translateX(-50%); background: #fff; color: #15182b; font-weight: 800; font-size: 14px;
     padding: 9px 14px; border-radius: 16px; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.3); animation: popin .5s cubic-bezier(.2,1.4,.4,1) .3s both; }
   .bubble::after { content: ''; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }

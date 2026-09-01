@@ -58,3 +58,18 @@ Notation : 1 étoile pour sortir, +1 s'il reste 40 % du temps, +1 pour les 3 ét
 - `js/levels.js` — niveaux, thèmes, génération de labyrinthe, décors.
 - `js/audio.js` — effets sonores synthétisés (WebAudio).
 - `js/game.js` — boucle de jeu, caméra, entrées tactiles, HUD, mini-carte.
+- `build-standalone.js` — assemble une version en un seul fichier.
+
+## Version autonome
+
+Les cinq scripts partagent déjà la portée globale : `build-standalone.js` les concatène dans un
+`<script>` inline pour produire une page qui se suffit à elle-même.
+
+```sh
+node build-standalone.js              # -> standalone.html (page complète, ouvrable au double-clic)
+node build-standalone.js --artifact   # -> artifact.html (fragment sans doctype/head/body)
+```
+
+`standalone.html` et `artifact.html` sont générés : modifier `index.html` ou `js/`, puis relancer
+la commande. La variante `--artifact` omet le doctype, l'en-tête et les balises `<body>`, que le
+conteneur d'artefact fournit lui-même.

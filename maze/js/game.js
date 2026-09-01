@@ -112,8 +112,23 @@ class Game {
     const refreshMute = () => muteBtns.forEach(b => b.textContent = this.audio.muted ? '🔇 Son coupé' : '🔊 Son');
     muteBtns.forEach(b => b.addEventListener('click', () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); refreshMute(); if (!this.audio.muted) this.audio.tap(); }));
     refreshMute();
-    $('#btnReset').addEventListener('click', () => {
-      if (confirm('Remettre la progression à zéro ?')) { const st = this.progress.settings; this.progress = { levels: {}, settings: Object.assign(st, { outfit: 'blanc' }), random: { played: 0 } }; saveProgress(this.progress); this.setOutfit('blanc'); this.renderLevels(); }
+    // remise à zéro en deux temps (les fenêtres modales sont bloquées dans une iframe)
+    const reset = $('#btnReset');
+    reset.addEventListener('click', () => {
+      this.audio.init(); this.audio.tap();
+      if (!this._resetArmed) {
+        this._resetArmed = true;
+        reset.textContent = '⚠️ Confirmer ?'; reset.classList.add('warn');
+        clearTimeout(this._resetT);
+        this._resetT = setTimeout(() => { this._resetArmed = false; reset.textContent = '↺ Progression'; reset.classList.remove('warn'); }, 4000);
+        return;
+      }
+      clearTimeout(this._resetT); this._resetArmed = false;
+      reset.textContent = '↺ Progression'; reset.classList.remove('warn');
+      const st = this.progress.settings;
+      this.progress = { levels: {}, settings: Object.assign(st, { outfit: 'blanc' }), random: { played: 0 } };
+      saveProgress(this.progress); this.setOutfit('blanc'); this.renderLevels();
+      this.toast('Progression remise à zéro');
     });
     this.ui.banner.addEventListener('pointerdown', () => this.skipIntro());
   }
