@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mood">
+<meta name="theme-color" content="#0A0912">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="Mood — des films et des musiques choisis selon ton humeur du moment et tes goûts.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<title>Mood — films &amp; musiques selon ton humeur</title>
+</head>
+<body>
+
+<div id="aurore"><i></i><i></i><i></i></div>
+
+<!-- ───────── Intro ───────── -->
+<section class="ecran" id="ecr-intro">
+  <div style="margin:auto 0">
+    <div style="font-size:3.2rem;line-height:1">🎧</div>
+    <h1 class="titre" style="margin-top:14px">Dis-moi comment tu vas.<br>Je m’occupe du reste.</h1>
+    <p class="sous">Mood apprend d’abord tes goûts, puis te pose quelques questions sur ton humeur du moment — et te sort le film ou l’album qui colle vraiment. Pas un top 50 générique.</p>
+    <p class="note">Tout reste sur ton iPhone. Aucun compte, aucune donnée envoyée.</p>
+  </div>
+  <div class="barre-bas">
+    <button class="btn" id="btnCommencer">Construire mon profil · 2 min</button>
+  </div>
+</section>
+
+<!-- ───────── Onboarding ───────── -->
+<section class="ecran" id="ecr-onboard">
+  <div class="entete">
+    <button class="retour" id="onbRetour" aria-label="Retour">‹</button>
+    <h2 id="onbTitre">Tes goûts</h2>
+    <span class="pas" id="onbPas">1/7</span>
+  </div>
+  <div class="progres"><i id="onbProgres" style="width:14%"></i></div>
+  <div id="onbContenu"></div>
+  <div class="barre-bas">
+    <button class="btn" id="onbSuivant">Continuer</button>
+  </div>
+</section>
+
+<!-- ───────── Accueil ───────── -->
+<section class="ecran avec-nav" id="ecr-home">
+  <div class="entete">
+    <h2 id="homeSalut">Salut 👋</h2>
+  </div>
+  <div class="hero">
+    <h3>Comment tu te sens,<br>là, maintenant&#8239;?</h3>
+    <p>8 questions rapides, moins d’une minute, et une sélection taillée pour ton humeur du moment.</p>
+    <button class="btn" id="btnAnalyse">Analyser mon humeur</button>
+  </div>
+  <div id="homeQuoi"></div>
+  <div id="homeDerniere"></div>
+</section>
+
+<!-- ───────── Questions ───────── -->
+<section class="ecran" id="ecr-quiz">
+  <div class="entete">
+    <button class="retour" id="quizRetour" aria-label="Retour">‹</button>
+    <h2 id="quizTitre">Ton humeur</h2>
+    <span class="pas" id="quizPas"></span>
+  </div>
+  <div class="progres"><i id="quizProgres" style="width:8%"></i></div>
+  <div id="quizContenu"></div>
+</section>
+
+<!-- ───────── Analyse ───────── -->
+<section class="ecran" id="ecr-analyse">
+  <div class="orbe"></div>
+  <div id="analyseTxt"></div>
+</section>
+
+<!-- ───────── Résultats ───────── -->
+<section class="ecran" id="ecr-reco">
+  <div class="entete">
+    <button class="retour" id="recoRetour" aria-label="Retour">‹</button>
+    <h2>Pour toi, maintenant</h2>
+  </div>
+  <p class="sous" id="recoResume" style="margin:0 0 16px"></p>
+  <div class="onglets cache" id="recoOnglets">
+    <button class="onglet actif" data-type="film">🎬 Films</button>
+    <button class="onglet" data-type="musique">🎵 Musiques</button>
+  </div>
+  <div id="recoListe"></div>
+  <div style="display:flex;gap:8px;margin:6px 0 10px">
+    <button class="btn fantome mini" id="btnAutres">🔄 Autre chose</button>
+    <button class="btn fantome mini" id="btnAffiner">🎯 Affiner</button>
+  </div>
+</section>
+
+<!-- ───────── Favoris ───────── -->
+<section class="ecran avec-nav" id="ecr-favoris">
+  <div class="entete"><h2>Mes coups de cœur</h2></div>
+  <div id="favListe"></div>
+</section>
+
+<!-- ───────── Profil ───────── -->
+<section class="ecran avec-nav" id="ecr-profil">
+  <div class="entete"><h2>Mes goûts</h2></div>
+  <div id="profilContenu"></div>
+</section>
+
+<!-- ───────── Onglets ───────── -->
+<nav id="nav">
+  <button data-ecran="ecr-home" class="actif"><span class="ico">✨</span>Humeur</button>
+  <button data-ecran="ecr-favoris"><span class="ico">❤️</span>Coups de cœur</button>
+  <button data-ecran="ecr-profil"><span class="ico">⚙️</span>Mes goûts</button>
+</nav>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

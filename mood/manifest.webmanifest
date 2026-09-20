@@ -1,0 +1,18 @@
+{
+  "name": "Mood — films & musiques selon ton humeur",
+  "short_name": "Mood",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0912",
+  "theme_color": "#0A0912",
+  "lang": "fr",
+  "description": "Mood apprend tes goûts, analyse ton humeur du moment et te conseille le film ou l'album qui colle vraiment.",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
