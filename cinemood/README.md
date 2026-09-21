@@ -48,6 +48,8 @@ Autres commandes :
 | `npm test` | Les 96 tests unitaires du moteur (lanceur natif de Node) |
 | `npm run typecheck` | Vérification TypeScript, sans génération |
 | `npm run demo:profils` | Affiche les sélections de trois profils fictifs |
+| `npm run valider` | Campagne de validation : 6 profils × 6 contextes, rapport complet |
+| `npm run audit:mobile` | Contrôle statique des règles Safari iOS |
 | `node scripts/generer-icones.mjs` | Régénère les icônes et écrans de lancement |
 
 ---
@@ -237,9 +239,20 @@ test** à installer. Ils couvrent :
 - `moteur.test.ts` — bout en bout sur le vrai catalogue : filtrage strict,
   rotation, refus définitifs, effet de l'humeur, états vides.
 
-Deux de ces tests ont d'ailleurs révélé de vrais défauts pendant le
-développement (une définition de « pépite » trop large, et une hypothèse
-fausse sur l'ordre de sortie du MMR).
+- `validation.test.ts` — la campagne complète : six profils de référence
+  (dont une mineure de 15 ans, un étudiant sans abonnement et un profil à
+  sept genres détestés) croisés avec six contextes, soit 36 sélections
+  vérifiées règle par règle.
+
+Ces tests ont révélé neuf défauts réels pendant le développement, dont :
+des genres détestés simplement pénalisés au lieu d'être exclus, un quota
+de diversité qui écrasait le goût déclaré, et deux profils enfermés dans
+leur passé faute de plancher d'actualité. Tous corrigés.
+
+```bash
+npm run valider        # le rapport lisible, profil par profil
+npm run audit:mobile   # les règles Safari iOS vérifiées dans le code
+```
 
 ---
 
