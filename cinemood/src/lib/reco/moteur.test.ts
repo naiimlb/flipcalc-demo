@@ -11,7 +11,7 @@ const ANNEE = 2026;
 describe('filtrage strict — les règles non négociables', () => {
   test('ne propose JAMAIS un titre indisponible sur les plateformes de la personne', () => {
     const p = profil({ plateformes: ['netflix'] });
-    const retenus = filtrerStrict(CATALOGUE_DEMO, p, contexte(), ANNEE);
+    const retenus = filtrerStrict(CATALOGUE_DEMO, p, historiqueVide(), contexte(), ANNEE);
     assert.ok(retenus.length > 0, 'le catalogue de démo doit contenir des titres Netflix');
     for (const t of retenus) {
       assert.ok(t.plateformes.includes('netflix'), `${t.titre} n’est pas sur Netflix`);
@@ -20,7 +20,7 @@ describe('filtrage strict — les règles non négociables', () => {
 
   test('« aucun abonnement » bascule sur les seules offres gratuites', () => {
     const p = profil({ plateformes: [] });
-    const retenus = filtrerStrict(CATALOGUE_DEMO, p, contexte(), ANNEE);
+    const retenus = filtrerStrict(CATALOGUE_DEMO, p, historiqueVide(), contexte(), ANNEE);
     assert.ok(retenus.length > 0, 'il doit rester des titres gratuits à proposer');
     for (const t of retenus) {
       assert.ok(
@@ -33,7 +33,7 @@ describe('filtrage strict — les règles non négociables', () => {
   test('aucun contenu -16 ou -18 pour un mineur', () => {
     // Né en 2012 : 14 ans en 2026.
     const ado = profil({ anneeNaissance: 2012, plateformes: ['netflix', 'max', 'prime', 'canal', 'disney'] });
-    const retenus = filtrerStrict(CATALOGUE_DEMO, ado, contexte(), ANNEE);
+    const retenus = filtrerStrict(CATALOGUE_DEMO, ado, historiqueVide(), contexte(), ANNEE);
     assert.ok(retenus.length > 0);
     for (const t of retenus) {
       assert.ok(['TP', '10', '12'].includes(t.classification), `${t.titre} (${t.classification}) interdit à 14 ans`);
@@ -42,7 +42,7 @@ describe('filtrage strict — les règles non négociables', () => {
 
   test('une soirée « en famille » plafonne la classification, même pour un adulte', () => {
     const adulte = profil({ anneeNaissance: 1985, plateformes: ['netflix', 'max', 'prime', 'disney', 'canal'] });
-    const retenus = filtrerStrict(CATALOGUE_DEMO, adulte, contexte({ compagnie: 'famille' }), ANNEE);
+    const retenus = filtrerStrict(CATALOGUE_DEMO, adulte, historiqueVide(), contexte({ compagnie: 'famille' }), ANNEE);
     assert.ok(retenus.length > 0);
     for (const t of retenus) {
       assert.ok(['TP', '10'].includes(t.classification), `${t.titre} n’est pas une séance familiale`);
@@ -51,14 +51,14 @@ describe('filtrage strict — les règles non négociables', () => {
 
   test('respecte le choix films / séries', () => {
     const seriesSeulement = profil({ typesSouhaites: ['serie'], plateformes: ['netflix', 'max', 'prime'] });
-    const retenus = filtrerStrict(CATALOGUE_DEMO, seriesSeulement, contexte(), ANNEE);
+    const retenus = filtrerStrict(CATALOGUE_DEMO, seriesSeulement, historiqueVide(), contexte(), ANNEE);
     assert.ok(retenus.length > 0);
     assert.ok(retenus.every((t) => t.type === 'serie'));
   });
 
   test('écarte l’animation quand elle a été refusée au test', () => {
     const p = profil({ animationOk: false, plateformes: ['netflix', 'disney', 'crunchyroll'] });
-    const retenus = filtrerStrict(CATALOGUE_DEMO, p, contexte(), ANNEE);
+    const retenus = filtrerStrict(CATALOGUE_DEMO, p, historiqueVide(), contexte(), ANNEE);
     assert.ok(retenus.every((t) => !t.animation));
   });
 });

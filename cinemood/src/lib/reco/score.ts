@@ -16,6 +16,7 @@ import {
   PENALITES,
   POIDS_FACETTES,
   POIDS_SCORE,
+  POIDS_SCORE_HUMEUR_CHOISIE,
   QUALITE,
 } from './poids.ts';
 import type { Contexte, DetailScore, Historique, ProfilUtilisateur, Titre } from './types.ts';
@@ -175,13 +176,28 @@ export function scoreFraicheur(titre: Titre, anneeCourante: number): number {
    4. Pénalités.
    --------------------------------------------------------------------- */
 
+export interface OptionsPenalites {
+  /**
+   * `true` quand le catalogue courant porte des bandes-annonces : les
+   * titres qui n'en ont pas sont alors défavorisés. En mode démo, où
+   * aucun titre n'en a, l'option reste à `false`.
+   */
+  penaliserSansBandeAnnonce?: boolean;
+}
+
 export function calculerPenalites(
   titre: Titre,
   profil: ProfilUtilisateur,
   historique: Historique,
   contexte: Contexte,
+  options: OptionsPenalites = {},
 ): number {
   let total = 0;
+
+  // Bande-annonce absente alors que le catalogue en fournit ailleurs.
+  if (options.penaliserSansBandeAnnonce && !titre.bandeAnnonce) {
+    total += PENALITES.sansBandeAnnonce;
+  }
 
   // Déjà vu, noté.
   const vu = historique.vus[titre.id];
@@ -242,20 +258,24 @@ export function scorerTitre(
   historique: Historique,
   contexte: Contexte,
   anneeCourante: number,
+  options: OptionsPenalites = {},
 ): { score: number; detail: DetailScore } {
   const { score: gouts, contributions } = affiniteGouts(titre, profil);
   const epoque = bonusEpoque(titre, profil, anneeCourante);
   const humeur = scoreHumeur(titre, contexte);
   const qualite = scoreQualite(titre);
   const fraicheur = scoreFraicheur(titre, anneeCourante);
-  const penalites = calculerPenalites(titre, profil, historique, contexte);
+  const penalites = calculerPenalites(titre, profil, historique, contexte, options);
+
+  // Choisir une humeur est un acte volontaire : elle pèse alors plus lourd.
+  const poids = contexte.humeur ? POIDS_SCORE_HUMEUR_CHOISIE : POIDS_SCORE;
 
   const brut =
-    POIDS_SCORE.gouts * gouts +
-    POIDS_SCORE.epoque * epoque +
-    POIDS_SCORE.humeur * humeur +
-    POIDS_SCORE.qualite * qualite +
-    POIDS_SCORE.fraicheur * fraicheur;
+    poids.gouts * gouts +
+    poids.epoque * epoque +
+    poids.humeur * humeur +
+    poids.qualite * qualite +
+    poids.fraicheur * fraicheur;
 
   return {
     score: brut - penalites,

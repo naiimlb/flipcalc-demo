@@ -186,6 +186,12 @@ export interface Recommandation {
   detail: DetailScore;
   /** `true` si le titre a été injecté au titre de la découverte. */
   pepite: boolean;
+  /**
+   * `true` si une bande-annonce intégrable est connue pour ce titre.
+   * `false` = l'interface bascule sur une recherche YouTube, et la carte
+   * le signale. Aucun titre n'est proposé sans l'une ou l'autre.
+   */
+  bandeAnnonceDisponible: boolean;
   /** Phrase « Pourquoi pour toi » générée localement. */
   pourquoi: string;
 }

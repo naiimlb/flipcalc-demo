@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "CinéMood — recommandations de films et séries selon l'humeur, la génération et les plateformes de streaming.",
-  "engines": { "node": ">=20.9.0" },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,7 +13,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"src/lib/reco/**/*.test.ts\"",
-    "demo:profils": "node scripts/demo-profils.ts"
+    "demo:profils": "node scripts/demo-profils.ts",
+    "valider": "node scripts/valider-algorithme.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.33.1",

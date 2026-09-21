@@ -15,15 +15,39 @@ import type { Classification, Humeur, Rythme, Tonalite } from './types.ts';
    --------------------------------------------------------------------- */
 export const POIDS_SCORE = {
   /** Affinité avec le vecteur de goûts (genres, gens, mots-clés…). */
-  gouts: 0.42,
-  /** Bonus de génération : nostalgie + culture de sa tranche d'âge. */
-  epoque: 0.14,
+  gouts: 0.40,
+  /**
+   * Bonus de génération : nostalgie + culture de sa tranche d'âge.
+   * Relevé de 0,14 à 0,18 : à 0,14, un profil de 15 ans et un profil de
+   * 45 ans partageant une plateforme recevaient des titres communs, ce
+   * que l'adaptation à l'époque est précisément censée éviter.
+   */
+  epoque: 0.18,
   /** Adéquation avec l'humeur et le contexte du moment. */
   humeur: 0.24,
   /** Qualité perçue : note TMDB amortie par le nombre de votes. */
-  qualite: 0.13,
+  qualite: 0.12,
   /** Fraîcheur et tendance : évite un catalogue figé dans le passé. */
-  fraicheur: 0.07,
+  fraicheur: 0.06,
+} as const;
+
+/**
+ * Répartition appliquée quand la personne a EXPLICITEMENT choisi une
+ * humeur sur l'écran d'accueil.
+ *
+ * Pourquoi deux répartitions : sans ce basculement, un profil au goût
+ * très marqué (quelqu'un qui n'aime que le drame, par exemple) reçoit
+ * quasiment la même liste qu'il se dise « fatigué » ou « à cran » — le
+ * terme de goûts écrase tout. Or choisir une humeur est un acte
+ * volontaire : il doit se voir. Le poids passe donc de 0,24 à 0,36,
+ * prélevé surtout sur les goûts.
+ */
+export const POIDS_SCORE_HUMEUR_CHOISIE = {
+  gouts: 0.32,
+  epoque: 0.17,
+  humeur: 0.36,
+  qualite: 0.10,
+  fraicheur: 0.05,
 } as const;
 
 /* ---------------------------------------------------------------------
@@ -67,6 +91,12 @@ export const PENALITES = {
   languePreferee: 0.06,
   /** Un sujet listé dans « à éviter » apparaît dans les mots-clés. */
   sujetAEviter: 1.5,
+  /**
+   * Aucune bande-annonce intégrable connue. Appliquée UNIQUEMENT quand le
+   * catalogue en fournit pour d'autres titres : en mode démo, aucun titre
+   * n'en a, la pénalité serait alors universelle donc inutile.
+   */
+  sansBandeAnnonce: 0.3,
 } as const;
 
 /** Durée pendant laquelle un titre déjà proposé reste pénalisé (7 jours). */
@@ -89,6 +119,8 @@ export const EPOQUE = {
   bonusActualite: 0.62,
   /** Années récentes considérées comme « actualité ». */
   fenetreActualiteAnnees: 3,
+  /** Fenêtre, plus large, de ce qui compte comme « nouveauté » à l'écran. */
+  fenetreNouveautesAnnees: 8,
   /** Multiplicateur appliqué si la personne a déclaré préférer le récent. */
   multiPreferenceRecent: 1.35,
   multiPreferenceClassique: 1.35,
@@ -128,8 +160,51 @@ export const DIVERSITE = {
   affiniteMinPepite: 0.34,
   /** Nombre maximal de titres partageant le même genre principal. */
   maxParGenrePrincipal: 3,
+  /**
+   * Quota relevé pour un genre que la personne a explicitement coché
+   * comme adoré au test.
+   *
+   * Sans cette distinction, la diversité se retourne contre le goût :
+   * quelqu'un qui déclare n'aimer que l'animation japonaise recevait
+   * sept titres hors de son genre, choisis sur leur seule qualité — et
+   * se retrouvait avec la même liste qu'un profil qui n'a rien à voir
+   * avec le sien. Varier à l'intérieur de ce qu'on aime, oui ; imposer
+   * ce qu'on n'a pas demandé, non.
+   */
+  maxParGenreAdore: 4,
   /** Nombre maximal de titres du même réalisateur. */
   maxParRealisateur: 1,
+  /**
+   * Part minimale de la sélection devant toucher au moins un genre que
+   * la personne a explicitement déclaré aimer — quand le catalogue le
+   * permet.
+   *
+   * Pourquoi ce plancher. Le quota par genre principal protège de la
+   * monotonie, mais il se retournait contre le goût : quelqu'un qui
+   * n'aime que l'animation japonaise voyait ses anime plafonnés à
+   * quatre, les six places restantes étant comblées par les titres les
+   * mieux notés de sa plateforme — c'est-à-dire exactement ceux que
+   * TOUT LE MONDE reçoit. Deux profils que rien ne rapproche se
+   * retrouvaient alors avec un tiers de titres communs.
+   *
+   * 0,7 laisse de la place aux pépites (≈ 0,18) et à la respiration.
+   */
+  plancherPertinence: 0.75,
+  /**
+   * Plafond d'affichage : part maximale de la sélection portant le même
+   * genre tel qu'il s'affiche sur la carte. Volontairement plus bas que
+   * le plancher de pertinence, pour que « rester dans ses goûts » ne
+   * veuille pas dire « dix fois la même chose ».
+   */
+  plafondGenreAffichage: 0.6,
+  /**
+   * Part minimale de sorties récentes dans la sélection, quand le vivier
+   * en contient. Contrepoids direct au bonus de nostalgie : sans lui, un
+   * profil dont la fenêtre de jeunesse est bien fournie ne recevait QUE
+   * des titres de vingt ans d'âge — exactement ce que le cahier des
+   * charges interdit.
+   */
+  plancherActualite: 0.2,
 } as const;
 
 /* ---------------------------------------------------------------------

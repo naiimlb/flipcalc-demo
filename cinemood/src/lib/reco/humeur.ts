@@ -72,9 +72,14 @@ export function scoreHumeur(titre: Titre, contexte: Contexte): number {
   const voletGenres = recouvrement(titre.genres, reglage.genres);
   const voletTonalites = recouvrement(titre.tonalites, reglage.tonalites);
   const voletRythme = reglage.rythmes.includes(titre.rythme) ? 1 : 0;
-  const malus = titre.genres.some((g) => reglage.genresMalus.includes(g)) ? 0.28 : 0;
+  const malusGenre = titre.genres.some((g) => reglage.genresMalus.includes(g)) ? 0.28 : 0;
+  // Aucune tonalité commune avec l'humeur : ce n'est pas neutre, c'est à
+  // contre-emploi. Sans ce malus, un même titre « intense et léger »
+  // remontait aussi bien pour « fatigué » que pour « adrénaline ».
+  const malusTonalite = voletTonalites === 0 ? 0.16 : 0;
+  const malus = malusGenre + malusTonalite;
 
-  const coeur = 0.46 * voletGenres + 0.28 * voletTonalites + 0.26 * voletRythme;
+  const coeur = 0.42 * voletGenres + 0.32 * voletTonalites + 0.26 * voletRythme;
 
   const total =
     (1 - poidsDuree) * coeur + poidsDuree * voletDuree + 0.1 * voletCompagnie - malus;
