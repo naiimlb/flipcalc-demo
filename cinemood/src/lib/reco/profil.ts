@@ -171,6 +171,8 @@ export function enregistrerExpositions(
 export interface ReponsesTest {
   pseudo: string;
   anneeNaissance: number;
+  /** Facultatif, et sans effet sur les recommandations. */
+  genrePersonne?: string;
   typesSouhaites: TypeContenu[];
   genresAdores: string[];
   genresDetestes: string[];
@@ -232,6 +234,7 @@ export function construireProfilDepuisTest(reponses: ReponsesTest): ProfilUtilis
   return {
     pseudo: reponses.pseudo,
     anneeNaissance: reponses.anneeNaissance,
+    genrePersonne: reponses.genrePersonne,
     typesSouhaites: reponses.typesSouhaites.length ? reponses.typesSouhaites : ['film', 'serie'],
     genresAdores: reponses.genresAdores,
     genresDetestes: reponses.genresDetestes,

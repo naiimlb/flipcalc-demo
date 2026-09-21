@@ -103,6 +103,12 @@ export type FacetteGouts = keyof VecteurGouts;
 export interface ProfilUtilisateur {
   pseudo: string;
   anneeNaissance: number;
+  /**
+   * Réponse facultative à la question « genre » du test.
+   * Elle n'entre dans AUCUN calcul de recommandation : elle est
+   * conservée uniquement parce que la personne a choisi de la donner.
+   */
+  genrePersonne?: string;
   /** Types de contenus souhaités : films, séries, ou les deux. */
   typesSouhaites: TypeContenu[];
   genresAdores: string[];
