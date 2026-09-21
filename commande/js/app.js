@@ -1,7 +1,7 @@
 /* =====================================================================
    app.js — démarrage, routeur, coquille (barre d'onglets, état réseau)
    ===================================================================== */
-import { el, icon, toast, plural } from './ui.js';
+import { el, frag, icon, toast, plural, sheet, field } from './ui.js';
 import { applyTheme } from './theme.js';
 import * as auth from './auth.js';
 import * as store from './store.js';
@@ -148,6 +148,34 @@ function mount() {
 
 /* -------------------------------------------------------- Démarrage */
 
+/* Arrivée par un lien « mot de passe oublié » : on choisit le nouveau tout de suite. */
+function ouvrirNouveauMotDePasse() {
+  sheet('Choisis un nouveau mot de passe', (close) => {
+    const p1 = el('input', { type: 'password', autocomplete: 'new-password', placeholder: '6 caractères minimum' });
+    const valider = el('button', { class: 'btn primary', type: 'button' }, ['Enregistrer']);
+    valider.addEventListener('click', async () => {
+      if (p1.value.length < 6) return toast('6 caractères minimum', 'err');
+      valider.disabled = true;
+      try {
+        await auth.updatePassword(p1.value);
+        close();
+        toast('Mot de passe modifié', 'ok');
+      } catch (e) {
+        valider.disabled = false;
+        toast(e.message, 'err');
+      }
+    });
+    return frag([
+      el('p', {
+        text: 'Ton lien de réinitialisation est valide. Saisis ton nouveau mot de passe.',
+        style: 'color:var(--text-dim);font-size:.9rem;margin-bottom:14px',
+      }),
+      field('Nouveau mot de passe', p1),
+      el('div', { class: 'sheet-actions' }, [valider]),
+    ]);
+  });
+}
+
 function retirerSplash() {
   const boot = document.getElementById('boot');
   if (!boot) return;
@@ -160,6 +188,9 @@ async function boot() {
   root.appendChild(view);
 
   const session = await auth.restore();
+  const msg = auth.prendreMessageURL();
+  if (msg) setTimeout(() => toast(msg.texte, msg.kind), 400);
+  auth.onRecovery(() => setTimeout(ouvrirNouveauMotDePasse, 500));
   if (session) {
     store.open(session);
     mount();

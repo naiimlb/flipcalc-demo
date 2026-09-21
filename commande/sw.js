@@ -1,7 +1,7 @@
 /* =====================================================================
    sw.js — cache de l'app pour un démarrage hors ligne (cuisines, caves)
    ===================================================================== */
-const VERSION = 'commande-express-v1';
+const VERSION = 'commande-express-v2';
 const SHELL = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const SHELL = [
   './js/store.js',
   './js/auth.js',
   './js/cloud.js',
+  './js/config.js',
   './js/seed.js',
   './js/message.js',
   './js/screens/auth.js',

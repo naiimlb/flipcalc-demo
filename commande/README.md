@@ -6,7 +6,10 @@ Application web mobile-first, en français, pour les gérants de fast-food, snac
 traiteurs indépendants. Elle tient dans un dossier statique : ni build, ni bundler,
 ni dépendance npm. HTML + CSS + modules ES.
 
-👉 **[Ouvrir l'application](index.html)**
+👉 **[https://naiimlb.github.io/flipcalc-demo/commande/](https://naiimlb.github.io/flipcalc-demo/commande/)**
+
+Installation, configuration Supabase et vérification de la sécurité :
+**[DEPLOIEMENT.md](DEPLOIEMENT.md)**.
 
 ---
 
@@ -74,6 +77,9 @@ l'app en cache : elle démarre même sans réseau, en cave comme en chambre froi
 
 ## Brancher la sauvegarde cloud (Supabase)
 
+> Procédure complète, URL de redirection et test de sécurité :
+> **[DEPLOIEMENT.md](DEPLOIEMENT.md)**.
+
 Sans configuration, l'app démarre en **mode local** : tout reste sur l'appareil.
 Pour retrouver ses données après reconnexion sur un autre téléphone :
 
@@ -83,13 +89,14 @@ Pour retrouver ses données après reconnexion sur un autre téléphone :
    (chaque utilisateur ne voit que ses propres lignes) et la fonction
    `delete_my_account()` utilisée par la suppression RGPD.
 3. **Project Settings → API** : copier l'`URL` du projet et la clé publique `anon`.
-4. Dans l'app : écran de connexion → **Configurer la sauvegarde cloud**
-   (ou Réglages → Sauvegarde), coller les deux valeurs.
+4. Renseigner les deux valeurs dans [`js/config.js`](js/config.js) (site public),
+   ou, pour un essai sur un seul appareil, écran de connexion →
+   **Configurer la sauvegarde cloud**.
 
 La clé `anon` est publique par nature ; c'est la RLS qui protège les données.
 
-Pour figer la configuration dans le code plutôt que par appareil, renseigner
-`BUILTIN` en haut de [`js/cloud.js`](js/cloud.js).
+La clé `service_role` ne doit **jamais** figurer dans ces fichiers : elle
+contourne la RLS et `config.js` est téléchargé par chaque navigateur.
 
 > **Authentification par email** : si la confirmation d'email est activée dans
 > Supabase (Authentication → Providers → Email), le nouvel utilisateur doit cliquer
@@ -142,7 +149,8 @@ commande/
 │   ├── app.js              démarrage, routeur, barre d'onglets
 │   ├── store.js            base locale d'abord + synchro Supabase
 │   ├── auth.js             comptes cloud ou local
-│   ├── cloud.js            configuration et client Supabase
+│   ├── config.js           URL + clé anon Supabase (le fichier à remplir)
+│   ├── cloud.js            client Supabase
 │   ├── seed.js             kits de départ
 │   ├── message.js          message de commande, liens wa.me / sms: / mailto:
 │   ├── theme.js, ui.js     thème, icônes, feuilles modales, toasts, formats

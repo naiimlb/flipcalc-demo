@@ -8,13 +8,16 @@
    les règles Row Level Security (voir supabase/schema.sql).
    ===================================================================== */
 
-const BUILTIN = {
-  url: '',      // ex. https://abcdefghijkl.supabase.co
-  anonKey: '',  // ex. eyJhbGciOi...
-};
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+
+const BUILTIN = { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
 
 const LS_KEY = 'ce:cloud';
-const CDN = 'https://esm.sh/@supabase/supabase-js@2.45.4';
+/* Deux CDN : si le premier est injoignable, on bascule sur le second. */
+const CDNS = [
+  'https://esm.sh/@supabase/supabase-js@2.45.4',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm',
+];
 
 export function cloudConfig() {
   try {
@@ -52,7 +55,14 @@ export async function client() {
   const cfg = cloudConfig();
   if (!cfg) return null;
   try {
-    if (!_lib) _lib = await import(/* @vite-ignore */ CDN);
+    if (!_lib) {
+      let derniere;
+      for (const url of CDNS) {
+        try { _lib = await import(/* @vite-ignore */ url); break; }
+        catch (e) { derniere = e; }
+      }
+      if (!_lib) throw derniere || new Error('Librairie Supabase injoignable');
+    }
     _client = _lib.createClient(cfg.url, cfg.anonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'ce:auth' },
     });

@@ -29,9 +29,17 @@ let meta = { lastPull: {} };
 let syncing = false;
 let timer = null;
 
-const bus = new EventTarget();
-export const on = (evt, fn) => { bus.addEventListener(evt, fn); return () => bus.removeEventListener(evt, fn); };
-const emit = (evt, detail) => bus.dispatchEvent(new CustomEvent(evt, { detail }));
+/* Émetteur minimal (plus portable que new EventTarget() sur vieux Safari). */
+const bus = new Map();
+export const on = (evt, fn) => {
+  if (!bus.has(evt)) bus.set(evt, new Set());
+  bus.get(evt).add(fn);
+  return () => bus.get(evt).delete(fn);
+};
+const emit = (evt, detail) => {
+  const abonnes = bus.get(evt);
+  if (abonnes) for (const fn of [...abonnes]) { try { fn({ detail }); } catch (e) { console.warn(e); } }
+};
 
 function blank() { return Object.fromEntries(TABLES.map((t) => [t, []])); }
 const nowISO = () => new Date().toISOString();
