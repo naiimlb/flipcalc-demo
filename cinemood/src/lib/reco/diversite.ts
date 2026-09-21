@@ -81,7 +81,13 @@ export function genrePrincipal(titre: Titre): string {
  * avec une soupape : si les quotas bloquent tout, on les relâche plutôt
  * que de renvoyer une liste trop courte.
  */
-export function reclasserMMR(candidats: Candidat[], taille: number, lambda = DIVERSITE.lambda): Candidat[] {
+export function reclasserMMR(
+  candidats: Candidat[],
+  taille: number,
+  // Annotation explicite : `DIVERSITE` est figé par `as const`, sans quoi
+  // le paramètre serait typé `0.72` et n'accepterait aucune autre valeur.
+  lambda: number = DIVERSITE.lambda,
+): Candidat[] {
   const restants = [...candidats].sort((a, b) => b.score - a.score);
   const choisis: Candidat[] = [];
   const compteurGenre: Record<string, number> = {};
@@ -191,7 +197,7 @@ export function injecterPepites(
   selection: Candidat[],
   reserve: Candidat[],
   taille: number,
-  part = DIVERSITE.partPepites,
+  part: number = DIVERSITE.partPepites,
 ): { liste: Candidat[]; idsPepites: Set<string> } {
   const objectif = Math.round(taille * part);
   const seuil = seuilPepite(reserve);
