@@ -5,6 +5,9 @@
    ---------------------------------------------------------------------
    Si Supabase n'est pas configuré, cette page n'a pas lieu d'être : on
    redirige vers l'installation, et l'app fonctionne en mode local.
+
+   Toute la logique d'authentification vit dans `@/lib/cloud/compte`
+   (pure, testée) : cette page ne fait que la brancher sur un formulaire.
    ===================================================================== */
 
 import Link from 'next/link';
@@ -12,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Bouton } from '@/components/Boutons';
+import { inscrire, connecter, traduireErreurAuth } from '@/lib/cloud/compte';
 import { SUPABASE_CONFIGURE } from '@/lib/supabase/config';
 import { clientNavigateur } from '@/lib/supabase/navigateur';
 
@@ -24,6 +28,8 @@ export default function PageConnexion() {
   const [motDePasse, setMotDePasse] = useState('');
   const [enCours, setEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /** `true` après une inscription qui attend une confirmation par e-mail. */
+  const [confirmationEnAttente, setConfirmationEnAttente] = useState(false);
 
   useEffect(() => {
     if (!SUPABASE_CONFIGURE) routeur.replace('/bienvenue/plateformes');
@@ -37,18 +43,28 @@ export default function PageConnexion() {
     setEnCours(true);
     setMessage(null);
 
-    const { error } =
-      mode === 'inscription'
-        ? await supabase.auth.signUp({ email, password: motDePasse })
-        : await supabase.auth.signInWithPassword({ email, password: motDePasse });
-
-    setEnCours(false);
-
-    if (error) {
-      setMessage(traduireErreur(error.message));
+    if (mode === 'inscription') {
+      const resultat = await inscrire(supabase, email, motDePasse, `${window.location.origin}/bienvenue/plateformes`);
+      setEnCours(false);
+      if (!resultat.ok) {
+        setMessage(resultat.erreur ?? 'Quelque chose a échoué. Réessaie dans un instant.');
+        return;
+      }
+      if (resultat.confirmationRequise) {
+        setConfirmationEnAttente(true);
+        return;
+      }
+      routeur.push('/bienvenue/plateformes');
       return;
     }
-    routeur.push('/bienvenue/plateformes');
+
+    const resultat = await connecter(supabase, email, motDePasse);
+    setEnCours(false);
+    if (!resultat.ok) {
+      setMessage(resultat.erreur ?? 'Quelque chose a échoué. Réessaie dans un instant.');
+      return;
+    }
+    routeur.push('/accueil');
   }
 
   async function avecFournisseur(fournisseur: 'apple' | 'google') {
@@ -58,7 +74,39 @@ export default function PageConnexion() {
       provider: fournisseur,
       options: { redirectTo: `${window.location.origin}/bienvenue/plateformes` },
     });
-    if (error) setMessage('Ce mode de connexion n’est pas encore activé sur ce projet.');
+    if (error) setMessage(traduireErreurAuth(error.message));
+  }
+
+  /* --- Écran « vérifie ta boîte mail » --------------------------------- */
+  if (confirmationEnAttente) {
+    return (
+      <main className="relative min-h-[100dvh] px-7">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-lueur" aria-hidden="true" />
+        <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col items-center justify-center py-16 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full verre">
+            <svg viewBox="0 0 24 24" className="h-7 w-7 text-or" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 6.5h16v11H4zM4 7l8 6 8-6" />
+            </svg>
+          </div>
+          <h1 className="mt-7 font-titre text-[2rem] leading-tight text-ivoire">Vérifie ta boîte mail</h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-cendre">
+            On a envoyé un lien de confirmation à <span className="text-ivoire">{email}</span>. Clique dessus
+            pour activer ton compte — tu reviendras directement ici, connecté·e.
+          </p>
+          <p className="mt-6 text-[13px] leading-relaxed text-estompe">
+            Rien reçu ? Vérifie tes courriers indésirables, ou{' '}
+            <button
+              type="button"
+              onClick={() => setConfirmationEnAttente(false)}
+              className="text-cendre underline underline-offset-4"
+            >
+              recommence l’inscription
+            </button>
+            .
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -110,6 +158,14 @@ export default function PageConnexion() {
             />
           </div>
 
+          {mode === 'connexion' && (
+            <div className="text-right">
+              <Link href="/connexion/mot-de-passe-oublie" className="text-[13px] text-cendre underline underline-offset-4">
+                Mot de passe oublié ?
+              </Link>
+            </div>
+          )}
+
           {message && (
             <p role="alert" className="rounded-douce border border-alerte/30 bg-alerte/[0.08] px-4 py-3 text-[14px] text-alerte">
               {message}
@@ -138,7 +194,10 @@ export default function PageConnexion() {
 
         <button
           type="button"
-          onClick={() => setMode(mode === 'inscription' ? 'connexion' : 'inscription')}
+          onClick={() => {
+            setMode(mode === 'inscription' ? 'connexion' : 'inscription');
+            setMessage(null);
+          }}
           className="mt-8 text-center text-[14px] text-cendre underline underline-offset-4"
         >
           {mode === 'inscription' ? 'J’ai déjà un compte' : 'Créer un compte'}
@@ -150,14 +209,4 @@ export default function PageConnexion() {
       </div>
     </main>
   );
-}
-
-/** Messages Supabase traduits : l'utilisateur ne lit pas l'anglais. */
-function traduireErreur(message: string): string {
-  const m = message.toLowerCase();
-  if (m.includes('invalid login')) return 'E-mail ou mot de passe incorrect.';
-  if (m.includes('already registered')) return 'Un compte existe déjà avec cet e-mail.';
-  if (m.includes('password')) return 'Mot de passe trop court : 8 caractères minimum.';
-  if (m.includes('email')) return 'Cette adresse e-mail ne semble pas valide.';
-  return 'Quelque chose a échoué. Réessaie dans un instant.';
 }

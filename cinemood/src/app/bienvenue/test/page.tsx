@@ -66,6 +66,8 @@ export default function PageTest() {
   const routeur = useRouter();
   const [etape, setEtape] = useState(0);
   const [termine, setTermine] = useState(false);
+  const [enregistrement, setEnregistrement] = useState(false);
+  const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
   const [b, setB] = useState<Brouillon>({
     ...BROUILLON_INITIAL,
     pseudo: profil?.pseudo ?? '',
@@ -95,7 +97,17 @@ export default function PageTest() {
     true,
   ][etape];
 
-  function terminer() {
+  /**
+   * Terminer le test écrit le profil définitif. On attend la
+   * confirmation du serveur : si elle échoue, on reste sur cette
+   * dernière question, réponses intactes, plutôt que de montrer l'écran
+   * « profil cinéma » alors que rien n'a vraiment été sauvegardé.
+   */
+  async function terminer() {
+    if (enregistrement) return;
+    setEnregistrement(true);
+    setErreurEnvoi(null);
+
     const parId = new Map(CATALOGUE_DEMO.map((t) => [t.id, t]));
     const profilFinal = construireProfilDepuisTest({
       pseudo: b.pseudo.trim(),
@@ -116,7 +128,13 @@ export default function PageTest() {
       aEviter: decouper(b.aEviter),
       interets: decouper(b.interets),
     });
-    definirProfil(profilFinal, { testTermine: true, plateformesChoisies: true });
+
+    const resultat = await definirProfil(profilFinal, { testTermine: true, plateformesChoisies: true });
+    setEnregistrement(false);
+    if (!resultat.ok) {
+      setErreurEnvoi(resultat.erreur ?? 'La sauvegarde a échoué. Vérifie ta connexion et réessaie.');
+      return;
+    }
     setTermine(true);
   }
 
@@ -461,13 +479,21 @@ export default function PageTest() {
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       >
         <div className="mx-auto max-w-xl">
+          {erreurEnvoi && (
+            <p
+              role="alert"
+              className="mb-3 rounded-douce border border-alerte/30 bg-alerte/[0.08] px-4 py-3 text-[13px] text-alerte"
+            >
+              {erreurEnvoi}
+            </p>
+          )}
           <Bouton
             variante="or"
             pleineLargeur
-            disabled={!valide}
-            onClick={() => (etape === NOMBRE_ECRANS - 1 ? terminer() : setEtape(etape + 1))}
+            disabled={!valide || enregistrement}
+            onClick={() => (etape === NOMBRE_ECRANS - 1 ? void terminer() : setEtape(etape + 1))}
           >
-            {etape === NOMBRE_ECRANS - 1 ? 'Voir mon profil cinéma' : 'Continuer'}
+            {enregistrement ? 'Enregistrement…' : etape === NOMBRE_ECRANS - 1 ? 'Voir mon profil cinéma' : 'Continuer'}
           </Bouton>
         </div>
       </div>

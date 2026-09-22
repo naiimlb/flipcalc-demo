@@ -34,6 +34,8 @@ export default function PagePlateformes() {
   const [selection, setSelection] = useState<string[]>(profil?.plateformes ?? []);
   const [sansAbonnement, setSansAbonnement] = useState(false);
   const [pays, setPays] = useState(profil?.pays ?? 'FR');
+  const [enregistrement, setEnregistrement] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
 
   const payantes = PLATEFORMES.filter((p) => !p.gratuite);
   const gratuites = PLATEFORMES.filter((p) => p.gratuite);
@@ -70,13 +72,29 @@ export default function PagePlateformes() {
     };
   }
 
-  function continuer() {
-    if (!peutContinuer) return;
+  /**
+   * Choisir ses plateformes est la première écriture du compte : on
+   * attend la confirmation du serveur avant d'avancer. Si ça échoue
+   * (réseau coupé), la personne reste sur cet écran, ses choix intacts,
+   * plutôt que d'être envoyée vers le test avec un profil qui n'a en
+   * réalité jamais été enregistré.
+   */
+  async function continuer() {
+    if (!peutContinuer || enregistrement) return;
+    setEnregistrement(true);
+    setErreur(null);
+
     const base = profil ?? profilDeDepart();
-    definirProfil(
+    const resultat = await definirProfil(
       { ...base, plateformes: sansAbonnement ? [] : selection, pays },
       { plateformesChoisies: true },
     );
+
+    setEnregistrement(false);
+    if (!resultat.ok) {
+      setErreur(resultat.erreur ?? 'La sauvegarde a échoué. Vérifie ta connexion et réessaie.');
+      return;
+    }
     routeur.push('/bienvenue/test');
   }
 
@@ -182,9 +200,17 @@ export default function PagePlateformes() {
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       >
         <div className="mx-auto max-w-xl">
+          {erreur && (
+            <p
+              role="alert"
+              className="mb-3 rounded-douce border border-alerte/30 bg-alerte/[0.08] px-4 py-3 text-[13px] text-alerte"
+            >
+              {erreur}
+            </p>
+          )}
           <motion.div animate={{ opacity: peutContinuer ? 1 : 0.45 }}>
-            <Bouton variante="or" pleineLargeur onClick={continuer} disabled={!peutContinuer}>
-              Continuer
+            <Bouton variante="or" pleineLargeur onClick={() => void continuer()} disabled={!peutContinuer || enregistrement}>
+              {enregistrement ? 'Enregistrement…' : 'Continuer'}
             </Bouton>
           </motion.div>
           <p className="mt-2.5 text-center text-[12px] text-estompe">

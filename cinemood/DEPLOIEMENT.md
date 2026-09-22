@@ -124,9 +124,14 @@ Supabase gère l'inscription, la connexion et la sauvegarde des profils.
 4. Tu dois voir `Success. No rows returned`. C'est normal : le script crée des
    tables, il n'en lit aucune.
 5. Vérifie : menu **Table Editor** → tu dois voir `profils`, `liste`,
-   `interactions`, `expositions`, chacune marquée **RLS enabled**.
+   `interactions`, `expositions`, `refus` et `humeurs_choisies`, chacune
+   marquée **RLS enabled**.
 
-> Le script est rejouable : si tu le relances, rien ne casse.
+> Le script est rejouable : si tu le relances, rien ne casse. **Tu avais déjà
+> un projet Supabase avant l'ajout des comptes complets ?** Relance
+> simplement ce même script : il ajoute les tables `refus` et
+> `humeurs_choisies` ainsi que la fonction `enregistrer_expositions`, sans
+> toucher à ce qui existe déjà (`create table if not exists`).
 
 ### 3.3 Récupérer les deux valeurs
 
@@ -148,18 +153,30 @@ Menu **Project Settings** (l'engrenage) → **API** :
 
 Menu **Authentication** → **Providers** :
 
-- **Email** est activé par défaut. Pour tester vite, va dans
-  **Authentication → Sign In / Providers → Email** et **désactive**
-  *Confirm email* : tu pourras créer un compte sans passer par ta boîte mail.
-  Réactive-le quand l'app sera partagée à d'autres.
+- **Email** est activé par défaut, avec *Confirm email* activé — **laisse-le
+  activé**, y compris pour tester : l'app sait gérer ce cas (elle affiche un
+  écran « Vérifie ta boîte mail » après l'inscription, et bascule
+  automatiquement sur la page connectée une fois le lien cliqué). Si tu
+  préfères vraiment aller plus vite pendant les tout premiers tests, tu peux
+  le désactiver temporairement dans **Authentication → Sign In / Providers →
+  Email**, mais pense à le réactiver avant de partager l'app.
 - **Google** et **Apple** sont facultatifs. Ils demandent chacun un compte
   développeur chez le fournisseur (et Apple est payant, 99 €/an). Les boutons
   sont déjà dans l'app : ils s'activeront d'eux-mêmes une fois les providers
   configurés côté Supabase. **Tu peux très bien t'en passer.**
 
 Menu **Authentication → URL Configuration** : une fois l'étape 4 faite,
-reviens ici et renseigne ton adresse Vercel dans **Site URL** et dans
-**Redirect URLs** (`https://ton-app.vercel.app/**`).
+reviens ici et renseigne ton adresse Vercel :
+
+- **Site URL** : `https://ton-app.vercel.app`
+- **Redirect URLs** : ajoute `https://ton-app.vercel.app/**` (ce joker couvre
+  toutes les pages de l'app, y compris les deux qui reçoivent un lien par
+  e-mail : `/bienvenue/plateformes` pour la confirmation d'inscription, et
+  `/connexion/nouveau-mot-de-passe` pour la réinitialisation de mot de passe).
+
+> Sans cette étape, les liens envoyés par e-mail renvoient vers
+> `localhost` et échouent une fois l'app en ligne — c'est l'erreur
+> « Invalid redirect URL » de la section [Si ça ne marche pas](#si-ça-ne-marche-pas).
 
 ---
 
@@ -327,8 +344,35 @@ navigateur ; **tout le reste doit rester sur le serveur**. Ne préfixe jamais
 - [ ] « Déjà vu 👍 » le déplace vers *Déjà vus*.
 - [ ] *Profil* → décocher une plateforme fait disparaître ses titres de la
       sélection suivante.
-- [ ] « Refaire le test » repart bien de l'écran 1.
+- [ ] « Refaire le test » demande confirmation avant de repartir de l'écran 1.
 - [ ] La suppression de compte demande confirmation avant d'agir.
+
+### Comptes — à faire avant de partager l'app (voir aussi le point 5 de la
+      demande initiale : ces vérifications doivent passer avant tout envoi
+      de l'URL à quelqu'un d'autre)
+
+- [ ] **Inscription** avec un premier e-mail de test → si *Confirm email* est
+      actif, l'écran « Vérifie ta boîte mail » s'affiche ; cliquer le lien
+      reçu ouvre bien l'app, connecté·e.
+- [ ] Une fois connecté·e : répondre au test de personnalité, cocher des
+      plateformes, ajouter au moins un titre à *Ma liste*.
+- [ ] Se déconnecter (*Profil → Se déconnecter*), puis se reconnecter avec le
+      **même compte** : le profil, les plateformes et *Ma liste* sont
+      identiques à avant la déconnexion.
+- [ ] Créer un **second compte de test** (autre e-mail) : il ne doit voir
+      **aucune** donnée du premier (profil vierge, liste vide, plateformes
+      non cochées).
+- [ ] *Profil → Modifier mon e-mail* : un e-mail de confirmation part bien
+      vers la nouvelle adresse.
+- [ ] *Profil → Modifier mon mot de passe* : se déconnecter, se reconnecter
+      avec le nouveau mot de passe.
+- [ ] *Connexion → Mot de passe oublié* : le lien reçu par e-mail ouvre
+      `/connexion/nouveau-mot-de-passe` et permet de choisir un nouveau mot
+      de passe, qui fonctionne ensuite à la connexion.
+- [ ] Couper le réseau puis rouvrir l'app connecté·e : un message clair
+      indique que le chargement a échoué (pas un profil vide qui donnerait
+      l'impression que les données ont disparu) ; remettre le réseau et
+      réessayer les récupère.
 
 ### Robustesse
 
@@ -350,8 +394,8 @@ navigateur ; **tout le reste doit rester sur le serveur**. Ne préfixe jamais
 | L'app affiche « Mode démo » alors que tu as la clé TMDB | Variable absente, mal nommée, ou pas de redéploiement | Vérifie l'orthographe exacte `TMDB_ACCESS_TOKEN`, puis Redeploy |
 | « Rien ne passe les filtres » | Peu de titres sur tes plateformes à cette humeur | Enlève l'humeur, ajoute une plateforme, augmente la durée max |
 | Erreur 401 dans les logs Vercel | Tu as copié la clé v3 (32 caractères) | Reprends l'*API Read Access Token* (v4), celui qui commence par `eyJ` |
-| L'inscription ne finalise jamais | *Confirm email* actif et mail non reçu | Supabase → Authentication → Email → désactive *Confirm email* |
-| « Invalid redirect URL » à la connexion | Adresse Vercel non déclarée | Supabase → Authentication → URL Configuration → ajoute `https://ton-app.vercel.app/**` |
+| L'écran « Vérifie ta boîte mail » reste bloqué, rien ne se passe | Mail de confirmation non reçu (souvent : dans les indésirables) | Vérifie les courriers indésirables ; en dernier recours, Supabase → Authentication → Email → désactive temporairement *Confirm email* |
+| « Invalid redirect URL » à la connexion, ou lien de confirmation/réinitialisation qui échoue une fois en ligne | Adresse Vercel non déclarée dans Supabase | Supabase → Authentication → URL Configuration → ajoute `https://ton-app.vercel.app/**` dans *Redirect URLs* (voir étape 3.4) |
 | Les affiches sont des compositions colorées, pas de vraies affiches | Tu es en mode démo | C'est normal : ajoute la clé TMDB |
 | L'app ne se met pas à jour sur l'iPhone | Service worker en cache | Ferme l'app complètement et rouvre-la |
 
