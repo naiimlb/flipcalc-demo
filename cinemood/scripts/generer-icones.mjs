@@ -17,10 +17,10 @@ const ICI = dirname(fileURLToPath(import.meta.url));
 const SORTIE = join(ICI, '..', 'public', 'icons');
 
 /* --- Palette, alignée sur tailwind.config.ts ----------------------- */
-const NUIT = [7, 6, 10];
-const OR_CLAIR = [240, 223, 187];
-const OR = [216, 189, 133];
-const OR_SOMBRE = [156, 131, 85];
+const NUIT = [6, 4, 11];
+const VIOLET_CLAIR = [164, 107, 255];
+const VIOLET = [123, 44, 255];
+const ROSE = [255, 46, 147];
 
 /* =====================================================================
    1. Encodeur PNG minimal (RGBA, 8 bits, non entrelacé).
@@ -66,7 +66,7 @@ function encoderPng(largeur, hauteur, pixels) {
 }
 
 /* =====================================================================
-   2. Rendu du logo : un obturateur doré sur fond nuit.
+   2. Rendu du logo : un obturateur violet-rose sur fond nuit.
    ===================================================================== */
 const melanger = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * Math.max(0, Math.min(1, t))));
 
@@ -80,7 +80,7 @@ function couleurLogo(u, v, epaisseurAnneau = 0.075) {
 
   // Dégradé diagonal, comme le SVG de la vitrine.
   const t = (u + v + 2) / 4;
-  const teinte = t < 0.5 ? melanger(OR_CLAIR, OR, t * 2) : melanger(OR, OR_SOMBRE, (t - 0.5) * 2);
+  const teinte = t < 0.5 ? melanger(VIOLET_CLAIR, VIOLET, t * 2) : melanger(VIOLET, ROSE, (t - 0.5) * 2);
 
   // Anneau extérieur.
   if (rayon > 1 - epaisseurAnneau) return { couleur: teinte, alpha: 1 };
@@ -123,7 +123,7 @@ function dessiner(largeur, hauteur, { proportionLogo = 0.64, fond = NUIT, arrond
 
           // Fond, avec une lueur dorée très légère vers le haut.
           const lueur = Math.max(0, 1 - Math.hypot((px - centreX) / largeur, (py) / hauteur) * 2.2);
-          let couleur = melanger(fond, OR_SOMBRE, lueur * 0.09);
+          let couleur = melanger(fond, VIOLET, lueur * 0.16);
           let alpha = 1;
 
           // Coins arrondis (icône classique iOS).
@@ -192,22 +192,22 @@ writeFileSync(
   join(SORTIE, 'icone.svg'),
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CinéMood">
   <defs>
-    <linearGradient id="or" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#F0DFBB"/><stop offset="60%" stop-color="#D8BD85"/><stop offset="100%" stop-color="#9C8355"/>
+    <linearGradient id="marque" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A46BFF"/><stop offset="55%" stop-color="#7B2CFF"/><stop offset="100%" stop-color="#FF2E93"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" fill="#07060A"/>
-  <circle cx="256" cy="256" r="170" fill="none" stroke="url(#or)" stroke-width="14"/>
+  <rect width="512" height="512" fill="#06040B"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="url(#marque)" stroke-width="14"/>
   ${[0, 60, 120, 180, 240, 300]
     .map(
       (angle) =>
-        `<path d="M256 256 L256 100 A156 156 0 0 1 391 178 Z" fill="url(#or)" opacity="${(
+        `<path d="M256 256 L256 100 A156 156 0 0 1 391 178 Z" fill="url(#marque)" opacity="${(
           0.16 +
           (angle / 360) * 0.5
         ).toFixed(2)}" transform="rotate(${angle} 256 256)"/>`,
     )
     .join('\n  ')}
-  <circle cx="256" cy="256" r="44" fill="#07060A"/>
+  <circle cx="256" cy="256" r="44" fill="#06040B"/>
 </svg>
 `,
 );

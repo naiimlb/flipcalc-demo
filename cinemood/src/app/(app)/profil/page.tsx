@@ -15,6 +15,7 @@ import { PastillePlateforme } from '@/components/PastillePlateforme';
 import { profilCinema, LIBELLE_TONALITE } from '@/lib/reco/explication';
 import { generation } from '@/lib/reco/epoque';
 import { PLATEFORMES } from '@/lib/reco/plateformes';
+import { changerEmail, definirNouveauMotDePasse, deconnecter, supprimerCompteCloud } from '@/lib/cloud/compte';
 import { SUPABASE_CONFIGURE } from '@/lib/supabase/config';
 import { clientNavigateur } from '@/lib/supabase/navigateur';
 import { useApp } from '@/lib/etat/magasin';
@@ -22,10 +23,22 @@ import { GENRES_PROPOSES } from '@/lib/tmdb/genres';
 import type { Tonalite } from '@/lib/reco/types';
 
 export default function PageProfil() {
-  const { profil, majProfil, reinitialiser, connecte } = useApp();
+  const { profil, majProfil, reinitialiser, connecte, emailCompte } = useApp();
   const routeur = useRouter();
   const [confirmationSuppression, setConfirmationSuppression] = useState(false);
+  const [confirmationRefaireTest, setConfirmationRefaireTest] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const [editionEmail, setEditionEmail] = useState(false);
+  const [nouvelEmail, setNouvelEmail] = useState('');
+  const [enCoursEmail, setEnCoursEmail] = useState(false);
+  const [messageEmail, setMessageEmail] = useState<string | null>(null);
+
+  const [editionMotDePasse, setEditionMotDePasse] = useState(false);
+  const [nouveauMotDePasse, setNouveauMotDePasse] = useState('');
+  const [confirmationMotDePasse, setConfirmationMotDePasse] = useState('');
+  const [enCoursMotDePasse, setEnCoursMotDePasse] = useState(false);
+  const [messageMotDePasse, setMessageMotDePasse] = useState<string | null>(null);
 
   if (!profil) return null;
   const carte = profilCinema(profil);
@@ -53,7 +66,7 @@ export default function PageProfil() {
 
   async function seDeconnecter() {
     const supabase = clientNavigateur();
-    if (supabase) await supabase.auth.signOut();
+    if (supabase) await deconnecter(supabase);
     reinitialiser();
     routeur.push('/');
   }
@@ -63,28 +76,72 @@ export default function PageProfil() {
     if (supabase) {
       // La fonction SQL `supprimer_mon_compte` efface la ligne dans
       // auth.users ; la cascade nettoie profil, liste et interactions.
-      const { error } = await supabase.rpc('supprimer_mon_compte');
-      if (error) {
-        setMessage('La suppression a échoué. Réessaie dans un instant.');
+      const resultat = await supprimerCompteCloud(supabase);
+      if (!resultat.ok) {
+        setMessage(resultat.erreur ?? 'La suppression a échoué. Réessaie dans un instant.');
         return;
       }
-      await supabase.auth.signOut();
+      await deconnecter(supabase);
     }
     reinitialiser();
     routeur.push('/');
   }
 
+  async function envoyerNouvelEmail(evenement: React.FormEvent) {
+    evenement.preventDefault();
+    const supabase = clientNavigateur();
+    if (!supabase) return;
+    setEnCoursEmail(true);
+    setMessageEmail(null);
+    const resultat = await changerEmail(supabase, nouvelEmail);
+    setEnCoursEmail(false);
+    if (!resultat.ok) {
+      setMessageEmail(resultat.erreur ?? 'Quelque chose a échoué. Réessaie dans un instant.');
+      return;
+    }
+    setMessageEmail(
+      `Un e-mail de confirmation a été envoyé à ${nouvelEmail}. Le changement ne prendra effet qu’après avoir cliqué sur le lien qu’il contient.`,
+    );
+    setNouvelEmail('');
+  }
+
+  async function envoyerNouveauMotDePasse(evenement: React.FormEvent) {
+    evenement.preventDefault();
+    const supabase = clientNavigateur();
+    if (!supabase) return;
+    if (nouveauMotDePasse.length < 8) {
+      setMessageMotDePasse('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
+    if (nouveauMotDePasse !== confirmationMotDePasse) {
+      setMessageMotDePasse('Les deux mots de passe ne correspondent pas.');
+      return;
+    }
+    setEnCoursMotDePasse(true);
+    setMessageMotDePasse(null);
+    const resultat = await definirNouveauMotDePasse(supabase, nouveauMotDePasse);
+    setEnCoursMotDePasse(false);
+    if (!resultat.ok) {
+      setMessageMotDePasse(resultat.erreur ?? 'Quelque chose a échoué. Réessaie dans un instant.');
+      return;
+    }
+    setMessageMotDePasse('Mot de passe mis à jour.');
+    setNouveauMotDePasse('');
+    setConfirmationMotDePasse('');
+    setEditionMotDePasse(false);
+  }
+
   return (
     <>
       <header className="zone-sure-haut px-5 pb-2 pt-4">
-        <h1 className="font-titre text-[2.2rem] leading-none text-ivoire">Profil</h1>
+        <h1 className="font-affiche text-[2.2rem] leading-none text-ivoire">Profil</h1>
       </header>
 
       {/* --- Carte d'identité cinéma ------------------------------------ */}
       <section className="mt-6 px-5">
         <div className="grain relative overflow-hidden rounded-carte verre p-6">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-or/75">Ton profil cinéma</p>
-          <p className="mt-2 font-titre text-[2rem] leading-tight text-ivoire">{carte.titre}</p>
+          <p className="etiquette">Ton profil cinéma</p>
+          <p className="mt-2 font-affiche text-[2rem] leading-tight text-ivoire">{carte.titre}</p>
           <p className="mt-2 text-[14px] leading-relaxed text-cendre">{carte.resume}</p>
           <p className="mt-4 text-[12px] text-estompe">
             {profil.pseudo} · {generation(profil.anneeNaissance)} ·{' '}
@@ -105,11 +162,11 @@ export default function PageProfil() {
                 onClick={() => basculerPlateforme(p.id)}
                 aria-pressed={actif}
                 className={`flex min-h-[74px] flex-col items-center justify-center gap-2 rounded-douce border px-1.5 transition-colors ${
-                  actif ? 'border-or/60 bg-or/10' : 'border-white/[0.07] bg-white/[0.02]'
+                  actif ? 'border-accent/60 bg-accent/10' : 'border-white/[0.07] bg-white/[0.02]'
                 }`}
               >
                 <PastillePlateforme id={p.id} taille="petite" />
-                <span className={`text-center text-[11px] leading-tight ${actif ? 'text-orClair' : 'text-estompe'}`}>
+                <span className={`text-center text-[11px] leading-tight ${actif ? 'text-ivoire' : 'text-estompe'}`}>
                   {p.nom}
                 </span>
               </button>
@@ -206,9 +263,155 @@ export default function PageProfil() {
       {/* --- Compte -------------------------------------------------------- */}
       <Bloc titre="Compte">
         <div className="space-y-3">
-          <Bouton variante="verre" pleineLargeur onClick={() => routeur.push('/bienvenue/test')}>
-            Refaire le test de personnalité
-          </Bouton>
+          {SUPABASE_CONFIGURE && connecte && emailCompte && (
+            <p className="text-[13px] text-cendre">
+              Connecté·e en tant que <span className="text-ivoire">{emailCompte}</span>
+            </p>
+          )}
+
+          {SUPABASE_CONFIGURE && connecte && (
+            <>
+              {!editionEmail ? (
+                <Bouton
+                  variante="verre"
+                  pleineLargeur
+                  onClick={() => {
+                    setEditionEmail(true);
+                    setMessageEmail(null);
+                    setNouvelEmail('');
+                  }}
+                >
+                  Modifier mon e-mail
+                </Bouton>
+              ) : (
+                <form onSubmit={envoyerNouvelEmail} className="rounded-douce border border-white/10 bg-white/[0.02] p-4">
+                  <label htmlFor="nouvel-email" className="mb-2 block text-[13px] text-cendre">
+                    Nouvelle adresse e-mail
+                  </label>
+                  <input
+                    id="nouvel-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    required
+                    value={nouvelEmail}
+                    onChange={(e) => setNouvelEmail(e.target.value)}
+                    placeholder="ton@email.fr"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
+                  />
+                  {messageEmail && <p className="mt-3 text-[13px] leading-relaxed text-cendre">{messageEmail}</p>}
+                  <div className="mt-4 flex gap-3">
+                    <Bouton
+                      type="button"
+                      variante="fantome"
+                      className="flex-1"
+                      onClick={() => {
+                        setEditionEmail(false);
+                        setMessageEmail(null);
+                      }}
+                    >
+                      Annuler
+                    </Bouton>
+                    <Bouton variante="accent" type="submit" className="flex-1" disabled={enCoursEmail}>
+                      {enCoursEmail ? 'Envoi…' : 'Valider'}
+                    </Bouton>
+                  </div>
+                </form>
+              )}
+
+              {!editionMotDePasse ? (
+                <Bouton
+                  variante="verre"
+                  pleineLargeur
+                  onClick={() => {
+                    setEditionMotDePasse(true);
+                    setMessageMotDePasse(null);
+                    setNouveauMotDePasse('');
+                    setConfirmationMotDePasse('');
+                  }}
+                >
+                  Modifier mon mot de passe
+                </Bouton>
+              ) : (
+                <form
+                  onSubmit={envoyerNouveauMotDePasse}
+                  className="rounded-douce border border-white/10 bg-white/[0.02] p-4"
+                >
+                  <label htmlFor="nouveau-mdp" className="mb-2 block text-[13px] text-cendre">
+                    Nouveau mot de passe
+                  </label>
+                  <input
+                    id="nouveau-mdp"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={nouveauMotDePasse}
+                    onChange={(e) => setNouveauMotDePasse(e.target.value)}
+                    placeholder="8 caractères minimum"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
+                  />
+                  <label htmlFor="confirmation-mdp" className="mb-2 mt-3 block text-[13px] text-cendre">
+                    Confirme-le
+                  </label>
+                  <input
+                    id="confirmation-mdp"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={confirmationMotDePasse}
+                    onChange={(e) => setConfirmationMotDePasse(e.target.value)}
+                    placeholder="Confirme le mot de passe"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
+                  />
+                  {messageMotDePasse && (
+                    <p className="mt-3 text-[13px] leading-relaxed text-cendre">{messageMotDePasse}</p>
+                  )}
+                  <div className="mt-4 flex gap-3">
+                    <Bouton
+                      type="button"
+                      variante="fantome"
+                      className="flex-1"
+                      onClick={() => {
+                        setEditionMotDePasse(false);
+                        setMessageMotDePasse(null);
+                      }}
+                    >
+                      Annuler
+                    </Bouton>
+                    <Bouton variante="accent" type="submit" className="flex-1" disabled={enCoursMotDePasse}>
+                      {enCoursMotDePasse ? 'Enregistrement…' : 'Valider'}
+                    </Bouton>
+                  </div>
+                </form>
+              )}
+            </>
+          )}
+
+          {!confirmationRefaireTest ? (
+            <Bouton variante="verre" pleineLargeur onClick={() => setConfirmationRefaireTest(true)}>
+              Refaire le test de personnalité
+            </Bouton>
+          ) : (
+            <div className="rounded-douce border border-accent/30 bg-accent/[0.06] p-4">
+              <p className="text-[14px] leading-relaxed text-ivoire">
+                Refaire le test remplacera ton profil de goûts actuel par les nouvelles réponses.
+              </p>
+              <div className="mt-4 flex gap-3">
+                <Bouton variante="verre" onClick={() => setConfirmationRefaireTest(false)} className="flex-1">
+                  Annuler
+                </Bouton>
+                <Bouton
+                  variante="accent"
+                  className="flex-1"
+                  onClick={() => routeur.push('/bienvenue/test')}
+                >
+                  Continuer
+                </Bouton>
+              </div>
+            </div>
+          )}
 
           {SUPABASE_CONFIGURE && connecte && (
             <Bouton variante="verre" pleineLargeur onClick={() => void seDeconnecter()}>
@@ -233,7 +436,7 @@ export default function PageProfil() {
                 <button
                   type="button"
                   onClick={() => void supprimerLeCompte()}
-                  className="flex-1 rounded-douce bg-alerte/90 px-4 font-semibold text-nuit"
+                  className="flex-1 rounded-douce bg-alerte/90 px-4 font-semibold text-white"
                 >
                   Supprimer
                 </button>
@@ -263,7 +466,7 @@ function Bloc({
 }) {
   return (
     <section className="mt-9 px-5">
-      <h2 className="font-titre text-[1.4rem] text-ivoire">{titre}</h2>
+      <h2 className="font-affiche text-[1.4rem] text-ivoire">{titre}</h2>
       {sousTitre && <p className="mb-4 mt-1 text-[13px] leading-relaxed text-estompe">{sousTitre}</p>}
       <div className={sousTitre ? '' : 'mt-4'}>{children}</div>
     </section>

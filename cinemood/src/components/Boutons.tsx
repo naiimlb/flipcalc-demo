@@ -8,7 +8,7 @@
 import { motion } from 'framer-motion';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type Variante = 'or' | 'verre' | 'fantome';
+type Variante = 'accent' | 'verre' | 'fantome';
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variante?: Variante;
@@ -17,7 +17,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const STYLES: Record<Variante, string> = {
-  or: 'bg-voile-or text-nuit font-semibold shadow-or',
+  accent: 'bg-voile-accent text-white font-semibold shadow-accent',
   verre: 'verre text-ivoire font-medium',
   fantome: 'text-cendre font-medium',
 };
@@ -59,7 +59,7 @@ export function BoutonRond({
       aria-label={libelle}
       aria-pressed={actif}
       className={`flex h-[46px] w-[46px] items-center justify-center rounded-full transition-colors ${
-        actif ? 'bg-or text-nuit' : 'verre text-ivoire'
+        actif ? 'bg-accent text-white' : 'verre text-ivoire'
       } ${className}`}
       {...reste}
     >
@@ -81,7 +81,7 @@ export function Puce({
       aria-pressed={actif}
       className={`min-h-[44px] rounded-full border px-4 text-[15px] transition-colors ${
         actif
-          ? 'border-or/70 bg-or/15 text-orClair'
+          ? 'border-accent/70 bg-accent/15 text-ivoire'
           : 'border-white/10 bg-white/[0.035] text-cendre'
       } ${className}`}
       {...reste}

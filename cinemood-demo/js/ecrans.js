@@ -3,15 +3,16 @@
    ===================================================================== */
 
 import { recommander, classerPourDecouverte } from '../moteur/moteur.js';
+import { similariteTitres } from '../moteur/diversite.js';
 import { appliquerSignal, construireProfilDepuisTest, enregistrerExpositions, enregistrerSignal } from '../moteur/profil.js';
 import { profilCinema, LIBELLE_TONALITE } from '../moteur/explication.js';
 import { generation } from '../moteur/epoque.js';
 import { PLATEFORMES } from '../moteur/plateformes.js';
 import { TABLE_COMPAGNIE, TABLE_HUMEURS } from '../moteur/poids.js';
 import {
-  CATALOGUE_DEMO, PLATEFORME_PAR_ID, affiche, aller, classificationLisible, contexte,
-  dessinerOnglets, etat, format, icone, ouvrirBandeAnnonce, pastille, profilVierge,
-  reinitialiser, rendre, sauvegarder, squeletteCartes, surClic, txt,
+  CATALOGUE_DEMO, IDENTITE_HUMEUR, PLATEFORME_PAR_ID, affiche, aller, appliquerAccent,
+  classificationLisible, contexte, dessinerOnglets, etat, format, icone, iconeHumeur,
+  ouvrirBandeAnnonce, pastille, profilVierge, reinitialiser, rendre, sauvegarder, surClic, txt,
 } from './noyau.js';
 
 const ANNEE = new Date().getFullYear();
@@ -33,12 +34,12 @@ export function vitrine() {
   rendre(`<div class="grain" style="position:absolute;inset:0;pointer-events:none"></div>
     <div class="pad" style="min-height:100dvh;display:flex;flex-direction:column;padding-top:max(env(safe-area-inset-top),32px)">
       <header style="display:flex;align-items:center;gap:12px">
-        ${logo()}<span class="serif" style="font-size:22px;letter-spacing:0.02em">Ciné<span class="texte-or">Mood</span></span>
+        ${logo()}<span  style="font-size:22px;letter-spacing:0.02em">Ciné<span class="texte-accent">Mood</span></span>
       </header>
 
       <section style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-block:36px">
         <h1 class="apparition" style="font-size:clamp(38px,11vw,50px);font-weight:300;text-wrap:balance">
-          Arrête de chercher.<br><span class="texte-or">Commence à regarder.</span>
+          Arrête de chercher.<br><span class="texte-accent">Commence à regarder.</span>
         </h1>
         <p class="cendre apparition" style="margin-top:18px;font-size:16px;line-height:1.6;max-width:28rem">
           CinéMood choisit pour toi un film ou une série, selon ton humeur du moment, ce que tu as
@@ -46,14 +47,14 @@ export function vitrine() {
         </p>
         <ul class="apparition" style="margin-top:28px;list-style:none">
           ${arguments_.map(([t, d]) => `<li style="display:flex;gap:16px;margin-top:20px">
-            <span style="margin-top:9px;height:1px;width:28px;flex:0 0 auto;background:var(--voile-or)"></span>
+            <span style="margin-top:9px;height:1px;width:28px;flex:0 0 auto;background:linear-gradient(100deg, rgb(var(--accent)), rgb(var(--second)))"></span>
             <div><p style="font-size:15px;font-weight:500">${t}</p>
             <p class="muet" style="margin-top:2px">${d}</p></div></li>`).join('')}
         </ul>
       </section>
 
       <footer style="padding-bottom:max(env(safe-area-inset-bottom),32px)">
-        <button class="bouton or large" id="commencer" style="min-height:56px;font-size:17px">Commencer</button>
+        <button class="bouton accent large" id="commencer" style="min-height:56px;font-size:17px">Commencer</button>
         <p class="muet centre" style="margin-top:16px">
           Deux minutes de questions, et CinéMood te connaît mieux qu’un algorithme de catalogue.
         </p>
@@ -66,12 +67,12 @@ export function vitrine() {
 function logo() {
   return `<svg viewBox="0 0 40 40" style="width:36px;height:36px" role="img" aria-label="Logo CinéMood">
     <defs><linearGradient id="dl" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#F0DFBB"/><stop offset="60%" stop-color="#D8BD85"/><stop offset="100%" stop-color="#9C8355"/>
+      <stop offset="0%" stop-color="#A46BFF"/><stop offset="55%" stop-color="#7B2CFF"/><stop offset="100%" stop-color="#FF2E93"/>
     </linearGradient></defs>
-    <circle cx="20" cy="20" r="18" fill="none" stroke="url(#dl)" stroke-width="1.4"/>
+    <circle cx="20" cy="20" r="18" fill="none" stroke="url(#dl)" stroke-width="1.6"/>
     ${[0, 60, 120, 180, 240, 300].map((a) =>
-      `<path d="M20 20 L20 4 A16 16 0 0 1 33.9 12 Z" fill="url(#dl)" opacity="${(0.16 + (a / 360) * 0.5).toFixed(2)}" transform="rotate(${a} 20 20)"/>`).join('')}
-    <circle cx="20" cy="20" r="4.6" fill="#07060A"/></svg>`;
+      `<path d="M20 20 L20 4 A16 16 0 0 1 33.9 12 Z" fill="url(#dl)" opacity="${(0.2 + (a / 360) * 0.55).toFixed(2)}" transform="rotate(${a} 20 20)"/>`).join('')}
+    <circle cx="20" cy="20" r="4.6" fill="#06040B"/></svg>`;
 }
 
 /* =====================================================================
@@ -91,7 +92,7 @@ export function plateformes() {
     </button>`;
 
   rendre(`<div class="pad" style="padding-top:40px;padding-bottom:180px">
-      <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(216,189,133,0.7)">Étape 1 sur 2</p>
+      <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent-texte)">Étape 1 sur 2</p>
       <h1 style="margin-top:12px;font-size:40px;text-wrap:balance">Quelles plateformes as-tu ?</h1>
       <p class="cendre" style="margin-top:12px;font-size:15px;line-height:1.6">
         CinéMood ne te proposera jamais un titre indisponible sur tes services.
@@ -123,7 +124,7 @@ export function plateformes() {
     </div>
 
     <div class="barre-bas verre-fort"><div>
-      <button class="bouton or large" id="continuer" disabled>Continuer</button>
+      <button class="bouton accent large" id="continuer" disabled>Continuer</button>
       <p class="muet centre" id="compte" style="margin-top:10px">Sélectionne au moins une plateforme</p>
     </div></div>`);
 
@@ -131,18 +132,18 @@ export function plateformes() {
     for (const b of document.querySelectorAll('[data-plateforme]')) {
       const actif = !sansAbonnement && selection.includes(b.dataset.plateforme);
       b.setAttribute('aria-pressed', String(actif));
-      b.style.borderColor = actif ? 'rgba(216,189,133,0.6)' : 'rgba(255,255,255,0.07)';
-      b.style.background = actif ? 'rgba(216,189,133,0.1)' : 'rgba(255,255,255,0.025)';
-      b.style.color = actif ? 'var(--or-clair)' : 'var(--estompe)';
+      b.style.borderColor = actif ? 'rgb(var(--accent) / 0.8)' : 'rgba(255,255,255,0.07)';
+      b.style.background = actif ? 'rgb(var(--accent) / 0.18)' : 'rgba(255,255,255,0.025)';
+      b.style.color = actif ? 'var(--ivoire)' : 'var(--estompe)';
     }
     const aucun = document.getElementById('aucun');
     aucun.setAttribute('aria-pressed', String(sansAbonnement));
-    aucun.style.borderColor = sansAbonnement ? 'rgba(216,189,133,0.6)' : 'rgba(255,255,255,0.08)';
-    aucun.style.background = sansAbonnement ? 'rgba(216,189,133,0.1)' : 'rgba(255,255,255,0.02)';
+    aucun.style.borderColor = sansAbonnement ? 'rgb(var(--accent) / 0.8)' : 'rgba(255,255,255,0.08)';
+    aucun.style.background = sansAbonnement ? 'rgb(var(--accent) / 0.18)' : 'rgba(255,255,255,0.02)';
     document.getElementById('coche').innerHTML = sansAbonnement
       ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="#07060A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>` : '';
-    document.getElementById('coche').style.background = sansAbonnement ? 'var(--or)' : 'transparent';
-    document.getElementById('coche').style.borderColor = sansAbonnement ? 'var(--or)' : 'rgba(255,255,255,0.2)';
+    document.getElementById('coche').style.background = sansAbonnement ? 'rgb(var(--accent))' : 'transparent';
+    document.getElementById('coche').style.borderColor = sansAbonnement ? 'rgb(var(--accent))' : 'rgba(255,255,255,0.2)';
 
     const peut = sansAbonnement || selection.length > 0;
     document.getElementById('continuer').disabled = !peut;
@@ -212,7 +213,7 @@ export function test() {
       <div class="pad apparition" style="padding-top:32px;padding-bottom:140px">${contenu()}</div>
 
       <div class="barre-bas verre-fort"><div>
-        <button class="bouton or large" id="suivant" ${valide() ? '' : 'disabled'}>
+        <button class="bouton accent large" id="suivant" ${valide() ? '' : 'disabled'}>
           ${etape === NB_ECRANS - 1 ? 'Voir mon profil cinéma' : 'Continuer'}
         </button>
       </div></div>`, { onglets: false });
@@ -232,8 +233,8 @@ export function test() {
   const grandChoix = (options, estActif, attribut) => options.map(([valeur, libelle, detail]) =>
     `<button type="button" data-${attribut}="${valeur}" aria-pressed="${estActif(valeur)}"
       style="display:block;width:100%;border-radius:18px;padding:16px 20px;text-align:left;cursor:pointer;margin-top:12px;
-      border:1px solid ${estActif(valeur) ? 'rgba(216,189,133,0.6)' : 'rgba(255,255,255,0.08)'};
-      background:${estActif(valeur) ? 'rgba(216,189,133,0.1)' : 'rgba(255,255,255,0.025)'}">
+      border:1px solid ${estActif(valeur) ? 'rgb(var(--accent) / 0.8)' : 'rgba(255,255,255,0.08)'};
+      background:${estActif(valeur) ? 'rgb(var(--accent) / 0.18)' : 'rgba(255,255,255,0.025)'}">
       <span style="font-size:17px;color:var(--ivoire)">${libelle}</span>
       <span class="muet" style="display:block;margin-top:4px">${detail}</span></button>`).join('');
 
@@ -247,9 +248,9 @@ export function test() {
           border-radius:14px;overflow:hidden;opacity:${complet ? 0.35 : 1}">
           ${affiche(t)}
           ${actif ? `<span style="position:absolute;inset:0;background:rgba(7,6,10,0.5);
-            box-shadow:inset 0 0 0 2px var(--or);border-radius:14px">
+            box-shadow:inset 0 0 0 2px rgb(var(--accent));border-radius:14px">
             <span style="position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;
-              width:26px;height:26px;border-radius:999px;background:var(--voile-or)">
+              width:26px;height:26px;border-radius:999px;background:linear-gradient(100deg, rgb(var(--accent)), rgb(var(--second)))">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px" fill="none" stroke="#07060A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>
             </span></span>` : ''}
         </button></li>`;
@@ -287,7 +288,7 @@ export function test() {
           ], (v) => b.typesSouhaites.join(',') === v, 'types'));
       case 4:
         return question('Tes genres', 'Ce que tu adores, et ce qu’il vaut mieux éviter.',
-          `<p style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(216,189,133,0.7);margin-bottom:12px">J’adore</p>
+          `<p style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-texte);margin-bottom:12px">J’adore</p>
            <div style="display:flex;flex-wrap:wrap;gap:8px">${puces(GENRES, b.genresAdores, 'adore')}</div>
            <p style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(232,138,107,0.8);margin:32px 0 12px">J’évite</p>
            <div style="display:flex;flex-wrap:wrap;gap:8px">${puces(GENRES, b.genresDetestes, 'evite')}</div>`);
@@ -414,114 +415,276 @@ export function test() {
 function ecranProfilCinema() {
   const carte = profilCinema(etat.profil);
   rendre(`<div class="pad centre apparition" style="min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding-block:56px">
-      <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(216,189,133,0.7)">Ton profil cinéma</p>
+      <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent-texte)">Ton profil cinéma</p>
       <h1 style="margin-top:16px;font-size:48px;text-wrap:balance">${txt(carte.titre)}</h1>
       <p class="cendre" style="margin-top:20px;font-size:15px;line-height:1.6">${txt(carte.resume)}</p>
-      <div style="width:64px;height:1px;margin:32px auto 0;background:var(--voile-or)"></div>
+      <div style="width:64px;height:1px;margin:32px auto 0;background:linear-gradient(100deg, rgb(var(--accent)), rgb(var(--second)))"></div>
       <p class="muet" style="margin-top:32px">Tout reste modifiable dans ton profil. Plus tu utiliseras CinéMood,
         plus la sélection te ressemblera.</p>
-      <button class="bouton or large" id="go" style="margin-top:40px">Découvrir ma sélection</button>
+      <button class="bouton accent large" id="go" style="margin-top:40px">Découvrir ma sélection</button>
     </div>`);
   surClic('#go', () => aller('/accueil'));
 }
 
 /* =====================================================================
-   Accueil — humeur, contexte, sélection.
+   Accueil — un héros plein cadre, puis des carrousels.
+   ---------------------------------------------------------------------
+   Tous les carrousels dérivent d'UNE seule passe du moteur : ils
+   respectent donc exactement les mêmes règles dures (plateformes de la
+   personne, classification d'âge, refus définitifs). Aucun rail n'est
+   une liste décorative remplie à part.
    ===================================================================== */
 export function accueil() {
   dessinerOnglets('/accueil');
-  const prenom = etat.profil?.pseudo || 'toi';
+  appliquerAccent(contexte.humeur);
 
-  rendre(`<div class="tirer" id="tirer"><i></i></div>
-    <header class="pad" style="padding-top:max(env(safe-area-inset-top),20px);padding-bottom:4px">
-      <p style="font-size:13px;letter-spacing:0.2em;color:rgba(216,189,133,0.7)">${salutation()}</p>
-      <h1 style="margin-top:4px;font-size:42px">${txt(prenom)}</h1>
-    </header>
-
-    <section style="margin-top:28px" aria-label="Humeur et contexte">
-      <h2 class="pad" style="font-size:25px">Quelle est ton humeur ce soir ?</h2>
-      <div class="rail" style="margin-top:16px;padding-bottom:4px">
-        ${Object.entries(TABLE_HUMEURS).map(([cle, r]) => `
-          <button type="button" data-humeur="${cle}" aria-pressed="${contexte.humeur === cle}"
-            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-            width:104px;min-height:96px;padding:14px 6px;
-            border-radius:18px;cursor:pointer;border:1px solid ${contexte.humeur === cle ? 'rgba(216,189,133,0.6)' : 'rgba(255,255,255,0.07)'};
-            background:${contexte.humeur === cle ? 'rgba(216,189,133,0.12)' : 'rgba(255,255,255,0.03)'};
-            color:${contexte.humeur === cle ? 'var(--or-clair)' : 'var(--cendre)'}">
-            <span style="font-size:26px;line-height:1" aria-hidden="true">${r.emoji}</span>
-            <span style="font-size:11.5px;line-height:1.25;text-align:center;hyphens:auto">${txt(r.libelle)}</span>
-          </button>`).join('')}
-        <div style="width:8px"></div>
-      </div>
-
-      <div class="pad" style="margin-top:20px">
-        <p class="muet" style="margin-bottom:10px">Avec qui ?</p>
-        <div style="display:flex;gap:8px">
-          ${['seul', 'couple', 'potes', 'famille'].map((cle) => {
-            const r = TABLE_COMPAGNIE[cle]; const actif = contexte.compagnie === cle;
-            return `<button type="button" data-compagnie="${cle}" aria-pressed="${actif}"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;
-              border-radius:999px;cursor:pointer;font-size:13px;padding-inline:8px;
-              border:1px solid ${actif ? 'rgba(216,189,133,0.6)' : 'rgba(255,255,255,0.07)'};
-              background:${actif ? 'rgba(216,189,133,0.12)' : 'transparent'};
-              color:${actif ? 'var(--or-clair)' : 'var(--cendre)'}">
-              <span aria-hidden="true">${r.emoji}</span><span>${txt(r.libelle)}</span></button>`;
-          }).join('')}
-        </div>
-        <p class="muet" id="note-famille" style="margin-top:10px;${contexte.compagnie === 'famille' ? '' : 'display:none'}">
-          En famille, CinéMood ne propose que des titres tout public.</p>
-      </div>
-    </section>
-
-    <section class="pad" style="margin-top:32px" aria-label="Ta sélection">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
-        <h2 style="font-size:25px">Ta sélection</h2><span class="muet" id="compte-reco"></span>
-      </div>
-      <div id="cartes" class="pile">${squeletteCartes(2)}</div>
-      <p class="muet centre" style="margin-top:40px">
-        Ce produit utilise l’API TMDB mais n’est pas approuvé ni certifié par TMDB.
-      </p>
-    </section>`, { onglets: true });
-
-  surClic('[data-humeur]', (e) => {
-    const h = e.currentTarget.dataset.humeur;
-    contexte.humeur = contexte.humeur === h ? null : h;
-    accueil();
-  });
-  surClic('[data-compagnie]', (e) => { contexte.compagnie = e.currentTarget.dataset.compagnie; accueil(); });
-
-  tirerPourActualiser(() => calculerEtAfficher());
-  calculerEtAfficher();
-}
-
-function calculerEtAfficher() {
   const resultat = recommander(CATALOGUE_DEMO, etat.profil, etat.historique, contexte,
-    { taille: 12, anneeCourante: ANNEE, titresAimes: titresAimes() });
+    { taille: 30, anneeCourante: ANNEE, titresAimes: titresAimes() });
+  const recos = resultat.recommandations;
 
-  etat.historique = enregistrerExpositions(etat.historique, resultat.recommandations.map((r) => r.titre.id));
-  sauvegarder();
-
-  const hote = document.getElementById('cartes');
-  if (!hote) return;
-  document.getElementById('compte-reco').textContent =
-    resultat.recommandations.length ? `${resultat.recommandations.length} titres` : '';
-
-  if (resultat.recommandations.length === 0) {
-    hote.innerHTML = etatVide(
-      resultat.raisonVide === 'aucune_plateforme' ? 'Aucune plateforme sélectionnée' : 'Rien ne passe les filtres',
-      resultat.contraintesLimitantes.length
-        ? `Pour élargir : ${resultat.contraintesLimitantes.slice(0, 2).map((c) => `${txt(c.libelle.toLowerCase())} (+${c.gain} titres)`).join(', ')}.`
-        : 'Tes critères sont un peu trop serrés pour ce soir. Essaie une autre humeur.');
+  if (recos.length === 0) {
+    rendre(`${enteteAccueil()}
+      <div class="pad" style="margin-top:40px">
+        ${etatVide(
+          resultat.raisonVide === 'aucune_plateforme' ? 'Aucune plateforme sélectionnée' : 'Rien ne passe les filtres',
+          resultat.contraintesLimitantes.length
+            ? `Pour élargir : ${resultat.contraintesLimitantes.slice(0, 2).map((c) => `${txt(c.libelle.toLowerCase())} (+${c.gain} titres)`).join(', ')}.`
+            : 'Tes critères sont un peu trop serrés pour ce soir. Essaie une autre humeur.')}
+      </div>`, { onglets: true });
+    brancherEnteteAccueil();
     surClic('#vider-humeur', () => { contexte.humeur = null; accueil(); });
+    surClic('#vers-accueil', () => aller('/profil'));
     return;
   }
 
-  hote.innerHTML = resultat.recommandations.map(carteReco).join('')
-    + (resultat.contraintesLimitantes.length
-      ? `<p class="muet centre" style="margin-top:8px">Sélection courte : ${txt(resultat.contraintesLimitantes[0].libelle.toLowerCase())} débloquerait ${resultat.contraintesLimitantes[0].gain} titres.</p>`
-      : '');
+  const heros = recos[0];
+  const pourToi = recos.slice(1, 11);
 
-  brancherCartes(resultat.recommandations);
+  // « Parce que tu as aimé … » n'existe que s'il y a vraiment de quoi :
+  // un titre aimé, et des propositions qui lui ressemblent réellement.
+  const aimes = titresAimes();
+  const reference = aimes.length ? aimes[aimes.length - 1] : null;
+  const similaires = reference
+    ? recos.slice(1)
+      .filter((r) => r.titre.id !== reference.id)
+      .map((r) => ({ reco: r, proximite: similariteTitres(reference, r.titre) }))
+      .filter((x) => x.proximite > 0.12)
+      .sort((a, b) => b.proximite - a.proximite)
+      .slice(0, 10)
+      .map((x) => x.reco)
+    : [];
+
+  const nouveautes = recos.slice(1)
+    .filter((r) => r.titre.annee >= ANNEE - 2)
+    .sort((a, b) => b.titre.annee - a.titre.annee)
+    .slice(0, 10);
+
+  // Seuls les titres réellement affichés comptent comme exposés : c'est
+  // ce qui alimente la rotation d'une semaine sur l'autre.
+  const vus = [heros, ...pourToi, ...similaires, ...nouveautes].map((r) => r.titre.id);
+  etat.historique = enregistrerExpositions(etat.historique, [...new Set(vus)]);
+  sauvegarder();
+
+  rendre(`<div class="tirer" id="tirer"><i></i></div>
+    ${blocHeros(heros)}
+    ${enteteAccueil()}
+    ${railSection('Pour toi ce soir', `${recos.length} titres passent tes filtres`, pourToi)}
+    ${similaires.length >= 3
+      ? railSection(`Parce que tu as aimé ${txt(reference.titre)}`, 'Même veine, autre soirée', similaires)
+      : ''}
+    ${nouveautes.length >= 3
+      ? railSection('Nouveautés sur tes plateformes', `Sorties depuis ${ANNEE - 2}`, nouveautes)
+      : ''}
+    <p class="muet centre" style="margin-top:40px;padding-inline:28px">
+      Ce produit utilise l’API TMDB mais n’est pas approuvé ni certifié par TMDB.
+    </p>`, { onglets: true });
+
+  brancherEnteteAccueil();
+  brancherHeros(heros);
+  brancherVignettes(recos);
+  tirerPourActualiser(() => accueil());
+}
+
+/* En-tête flottant : salutation, prénom, et l'humeur du moment. */
+function enteteAccueil() {
+  const prenom = etat.profil?.pseudo || 'toi';
+  const reglage = contexte.humeur ? TABLE_HUMEURS[contexte.humeur] : null;
+  return `<div class="coiffe-accueil pad">
+      <div>
+        <p class="etiquette">${salutation()}</p>
+        <p class="nom-accueil">${txt(prenom)}</p>
+      </div>
+      <button type="button" class="chip-humeur" id="ouvrir-humeur">
+        ${contexte.humeur ? iconeHumeur(contexte.humeur) : icone('decouvrir')}
+        <span>${reglage ? txt(reglage.libelle) : 'Choisir une humeur'}</span>
+        ${icone('chevron', 'class="fleche"')}
+      </button>
+    </div>`;
+}
+
+function brancherEnteteAccueil() {
+  surClic('#ouvrir-humeur', () => aller('/humeur'));
+}
+
+/* Le héros : la proposition du soir, plein cadre. */
+function blocHeros(reco) {
+  const t = reco.titre;
+  const acces = plateformeAccessible(t);
+  return `<section class="heros grain" aria-label="La proposition du soir">
+      <div class="fond">${affiche(t, { sansTexte: true })}</div>
+      <div class="coiffe">
+        ${acces ? pastille(acces) : '<span></span>'}
+        <div style="display:flex;gap:8px;align-items:center">
+          ${reco.pepite ? '<span class="badge pepite">✦ Pépite</span>' : ''}
+          <span class="badge">★ ${t.note.toFixed(1)}</span>
+        </div>
+      </div>
+      <p class="etiquette">La proposition du soir</p>
+      <h1 class="nom-propre">${txt(t.titre)}</h1>
+      <p class="fiche">${t.annee} · ${format(t)} · ${classificationLisible(t.classification)}</p>
+      <p class="pourquoi">${txt(reco.pourquoi)}</p>
+      <div class="actions">
+        <button type="button" class="bouton accent" id="heros-ba">
+          ${icone('lecture', 'style="width:19px;height:19px" fill="currentColor" stroke="none"')}
+          Bande-annonce
+        </button>
+        <button type="button" class="rond" id="heros-liste"
+          aria-pressed="${etat.historique.liste.includes(t.id)}"
+          aria-label="Ajouter à ma liste">${icone('liste')}</button>
+        <button type="button" class="rond" id="heros-non" aria-label="Pas pour moi">${icone('croix')}</button>
+      </div>
+    </section>`;
+}
+
+function brancherHeros(reco) {
+  surClic('#heros-ba', () => { signaler(reco.titre, 'bande_annonce'); ouvrirBandeAnnonce(reco.titre); });
+  surClic('#heros-liste', () => {
+    const dedans = etat.historique.liste.includes(reco.titre.id);
+    signaler(reco.titre, dedans ? 'retrait_liste' : 'ajout_liste');
+    accueil();
+  });
+  surClic('#heros-non', () => { signaler(reco.titre, 'pas_pour_moi'); accueil(); });
+}
+
+/* Un carrousel : titre de section, puis des affiches qui défilent. */
+function railSection(titre, sousTitre, recos) {
+  return `<section style="margin-top:34px" aria-label="${txt(titre)}">
+      <div class="tete-section">
+        <h2>${txt(titre)}</h2>
+        <span class="compte">${txt(sousTitre)}</span>
+      </div>
+      <div class="rail cascade">
+        ${recos.map((r, i) => vignette(r, i)).join('')}
+        <div style="width:6px" aria-hidden="true"></div>
+      </div>
+    </section>`;
+}
+
+function vignette(reco, index) {
+  const t = reco.titre;
+  return `<button type="button" class="vignette" data-fiche="${txt(t.id)}" style="--i:${index}">
+      ${affiche(t, { sansTexte: true })}
+      <p class="nom-vignette">${txt(t.titre)}</p>
+      <p class="meta-vignette">${t.annee} · ${format(t)}</p>
+    </button>`;
+}
+
+/** La plateforme par laquelle la personne peut réellement voir ce titre. */
+function plateformeAccessible(t) {
+  const siennes = etat.profil.plateformes.length
+    ? etat.profil.plateformes
+    : ['arte', 'francetv', 'tf1plus', 'm6plus', 'plutotv'];
+  return t.plateformes.find((p) => siennes.includes(p)) ?? t.plateformes[0];
+}
+
+/* Toucher une affiche ouvre sa fiche : le « pourquoi » et les gestes
+   d'apprentissage restent accessibles, ils font le produit. */
+function brancherVignettes(recos) {
+  const parId = new Map(recos.map((r) => [r.titre.id, r]));
+  surClic('[data-fiche]', (e) => ouvrirFiche(parId.get(e.currentTarget.dataset.fiche)));
+}
+
+function ouvrirFiche(reco) {
+  if (!reco) return;
+  const modale = document.getElementById('modale');
+  modale.innerHTML = `<div class="feuille" role="dialog" aria-modal="true" aria-label="${txt(reco.titre.titre)}">
+      <div class="feuille-fond" data-fermer-fiche></div>
+      <div class="feuille-corps">
+        <button type="button" class="rond feuille-fermer" data-fermer-fiche aria-label="Fermer">${icone('croix')}</button>
+        ${carteReco(reco)}
+      </div>
+    </div>`;
+
+  const precedent = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  const fermer = () => { modale.innerHTML = ''; document.body.style.overflow = precedent; };
+  for (const el of modale.querySelectorAll('[data-fermer-fiche]')) el.addEventListener('click', fermer);
+  // Un avis donné referme la fiche ET recalcule la sélection : le geste
+  // doit se voir tout de suite, sinon il paraît sans effet.
+  brancherCartes([reco], { apresSignal: () => { fermer(); accueil(); } });
+}
+
+/* =====================================================================
+   Humeur — l'écran qui repeint l'app.
+   ===================================================================== */
+export function humeur() {
+  appliquerAccent(contexte.humeur);
+
+  rendre(`<header class="pad" style="padding-top:calc(env(safe-area-inset-top) + 26px)">
+      <p class="etiquette">Ce soir</p>
+      <h1 style="font-size:clamp(30px,8.6vw,40px);margin-top:10px">Tu es d’humeur à quoi ?</h1>
+      <p class="cendre" style="margin-top:12px;font-size:15px;line-height:1.55">
+        Chaque humeur change vraiment la sélection — et la couleur de l’app.
+      </p>
+    </header>
+
+    <div class="grille-humeurs cascade" style="margin-top:26px">
+      ${Object.entries(TABLE_HUMEURS).map(([cle, reglage], i) => {
+        const identite = IDENTITE_HUMEUR[cle];
+        const actif = contexte.humeur === cle;
+        return `<button type="button" class="carte-humeur" data-humeur="${cle}" aria-pressed="${actif}"
+            style="--i:${i};--accent:${identite.accent};--second:${identite.second}">
+            ${actif ? `<span class="coche">${icone('coche', 'stroke-width="2.6"')}</span>` : ''}
+            ${iconeHumeur(cle, 'class="icone-humeur"')}
+            <div>
+              <p class="libelle">${txt(reglage.libelle)}</p>
+              <p class="sous">${txt(reglage.genres.slice(0, 2).join(' · '))}</p>
+            </div>
+          </button>`;
+      }).join('')}
+    </div>
+
+    <section class="pad" style="margin-top:34px">
+      <h2 style="font-size:19px">Avec qui ?</h2>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        ${['seul', 'couple', 'potes', 'famille'].map((cle) => {
+          const r = TABLE_COMPAGNIE[cle];
+          return `<button type="button" class="puce" data-compagnie="${cle}"
+            aria-pressed="${contexte.compagnie === cle}"
+            style="flex:1;font-size:13px;padding-inline:6px">${txt(r.libelle)}</button>`;
+        }).join('')}
+      </div>
+      <p class="muet" style="margin-top:12px;${contexte.compagnie === 'famille' ? '' : 'display:none'}" id="note-famille">
+        En famille, CinéMood ne propose que des titres tout public.
+      </p>
+    </section>
+
+    <div class="pad" style="margin-top:32px">
+      <button type="button" class="bouton accent large" id="valider-humeur" style="min-height:54px">
+        ${contexte.humeur ? 'Voir ma sélection' : 'Sans humeur particulière'}
+      </button>
+      ${contexte.humeur ? `<button type="button" class="bouton fantome large" id="effacer-humeur" style="margin-top:8px">
+        Enlever l’humeur</button>` : ''}
+    </div>`, { onglets: false });
+
+  surClic('[data-humeur]', (e) => {
+    const cle = e.currentTarget.dataset.humeur;
+    contexte.humeur = contexte.humeur === cle ? null : cle;
+    humeur();
+  });
+  surClic('[data-compagnie]', (e) => { contexte.compagnie = e.currentTarget.dataset.compagnie; humeur(); });
+  surClic('#valider-humeur', () => aller('/accueil'));
+  surClic('#effacer-humeur', () => { contexte.humeur = null; aller('/accueil'); });
 }
 
 function carteReco(reco) {
@@ -554,7 +717,7 @@ function carteReco(reco) {
         <p>${txt(reco.pourquoi)}</p>
       </div>
       <div style="padding:0 20px 16px">
-        <button type="button" class="bouton or large" data-bande-annonce="${txt(t.id)}" style="min-height:52px;font-size:16px">
+        <button type="button" class="bouton accent large" data-bande-annonce="${txt(t.id)}" style="min-height:52px;font-size:16px">
           <svg viewBox="0 0 24 24" style="width:20px;height:20px" fill="currentColor" aria-hidden="true"><path d="M8 5.2v13.6L19 12 8 5.2Z"/></svg>
           Bande-annonce
         </button>
@@ -576,7 +739,12 @@ function carteReco(reco) {
     </article>`;
 }
 
-function brancherCartes(recos) {
+/**
+ * Branche une fiche ouverte : bande-annonce, quatre gestes
+ * d'apprentissage, et le balayage. `apresSignal` referme la fiche et
+ * recalcule la sélection — un avis donné doit se voir immédiatement.
+ */
+function brancherCartes(recos, { apresSignal }) {
   const parId = new Map(recos.map((r) => [r.titre.id, r.titre]));
 
   surClic('[data-bande-annonce]', (e) => {
@@ -587,13 +755,8 @@ function brancherCartes(recos) {
 
   surClic('[data-signal]', (e) => {
     const t = parId.get(e.currentTarget.dataset.id);
-    const signal = e.currentTarget.dataset.signal;
-    signaler(t, signal);
-    if (signal === 'pas_pour_moi' || signal === 'deja_vu_pas_aime' || signal === 'deja_vu_aime') {
-      retirerCarte(t.id);
-    } else {
-      calculerEtAfficher();
-    }
+    signaler(t, e.currentTarget.dataset.signal);
+    apresSignal();
   });
 
   // Glissement : droite = je garde, gauche = je passe.
@@ -628,19 +791,11 @@ function brancherCartes(recos) {
       if (Math.abs(dx) < 110) return;
       const t = parId.get(carte.dataset.carte);
       signaler(t, dx > 0 ? 'swipe_garde' : 'swipe_passe');
-      if (dx > 0) calculerEtAfficher(); else retirerCarte(t.id);
+      apresSignal();
     };
     carte.addEventListener('touchend', fin);
     carte.addEventListener('touchcancel', fin);
   }
-}
-
-function retirerCarte(id) {
-  const el = document.querySelector(`[data-carte="${CSS.escape(id)}"]`);
-  if (!el) return calculerEtAfficher();
-  el.style.transition = 'opacity .22s ease, transform .22s ease';
-  el.style.opacity = '0'; el.style.transform = 'scale(0.94)';
-  setTimeout(() => el.remove(), 220);
 }
 
 function signaler(titre, signal) {
@@ -724,10 +879,10 @@ export function decouvrir() {
       return;
     }
 
-    hote.innerHTML = `<ul class="grille-2" style="list-style:none">${resultats.map((r) => `
-      <li><button type="button" data-ouvrir="${txt(r.titre.id)}" style="display:block;width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer">
+    hote.innerHTML = `<ul class="grille-2 cascade" style="list-style:none">${resultats.map((r, i) => `
+      <li style="--i:${i % 10}"><button type="button" data-ouvrir="${txt(r.titre.id)}" style="display:block;width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer">
         <div style="position:relative;border-radius:14px;overflow:hidden">
-          ${affiche(r.titre)}
+          ${affiche(r.titre, { sansTexte: true })}
           <div style="position:absolute;left:8px;top:8px">${r.titre.plateformes[0] ? pastille(r.titre.plateformes[0], 'petite') : ''}</div>
         </div>
         <p style="margin-top:8px;font-size:14px;line-height:1.3">${txt(r.titre.titre)}</p>
@@ -772,7 +927,7 @@ export function maListe(onglet = 'a_voir') {
         ${[['a_voir', `À voir${aVoir.length ? ` · ${aVoir.length}` : ''}`], ['vus', `Déjà vus${vus.length ? ` · ${vus.length}` : ''}`]]
           .map(([cle, libelle]) => `<button type="button" role="tab" data-onglet="${cle}" aria-selected="${onglet === cle}"
             style="flex:1;min-height:44px;border-radius:999px;border:none;cursor:pointer;font-size:14px;
-            background:${onglet === cle ? 'var(--voile-or)' : 'transparent'};
+            background:${onglet === cle ? 'linear-gradient(100deg, rgb(var(--accent)), rgb(var(--second)))' : 'transparent'};
             color:${onglet === cle ? 'var(--nuit)' : 'var(--cendre)'};font-weight:${onglet === cle ? 600 : 400}">${libelle}</button>`).join('')}
       </div>
     </div>
@@ -783,14 +938,14 @@ export function maListe(onglet = 'a_voir') {
         onglet === 'a_voir'
           ? 'Ajoute des titres depuis l’accueil : ils t’attendront ici, même hors connexion.'
           : 'Marque un titre comme « déjà vu » et dis si tu as aimé : CinéMood s’en sert pour affiner tes recommandations.')
-      : `<ul class="pile" style="list-style:none">${liste.map((t) => {
+      : `<ul class="pile cascade" style="list-style:none">${liste.map((t, i) => {
           const appreciation = vus.find((v) => v.titre.id === t.id)?.note;
-          return `<li class="verre" style="display:flex;gap:16px;border-radius:20px;padding:12px">
+          return `<li class="verre" style="--i:${i % 10};display:flex;gap:16px;border-radius:20px;padding:12px">
             <button type="button" data-ouvrir="${txt(t.id)}" aria-label="Bande-annonce de ${txt(t.titre)}"
               style="width:86px;flex:0 0 auto;border:none;background:none;padding:0;cursor:pointer;border-radius:14px;overflow:hidden">
               ${affiche(t)}</button>
             <div style="flex:1;min-width:0;padding-block:2px">
-              <p class="serif" style="font-size:19px">${txt(t.titre)}</p>
+              <p  style="font-size:19px">${txt(t.titre)}</p>
               <p class="muet" style="margin-top:4px">${t.annee} · ${txt(t.genres.slice(0, 2).join(', '))}</p>
               <div style="margin-top:8px">${t.plateformes[0] ? pastille(t.plateformes[0], 'petite') : ''}</div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
@@ -835,8 +990,8 @@ export function profil() {
 
     <section class="pad" style="margin-top:24px">
       <div class="verre grain" style="position:relative;border-radius:20px;padding:24px;overflow:hidden">
-        <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(216,189,133,0.75)">Ton profil cinéma</p>
-        <p class="serif" style="margin-top:8px;font-size:32px">${txt(carte.titre)}</p>
+        <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent-texte)">Ton profil cinéma</p>
+        <p  style="margin-top:8px;font-size:32px">${txt(carte.titre)}</p>
         <p class="cendre" style="margin-top:8px;font-size:14px;line-height:1.6">${txt(carte.resume)}</p>
         <p class="muet" style="margin-top:16px">${txt(p.pseudo)} · ${generation(p.anneeNaissance)} · ${ANNEE - p.anneeNaissance} ans</p>
       </div>
@@ -848,9 +1003,9 @@ export function profil() {
         return `<button type="button" data-plateforme="${pl.id}" aria-pressed="${actif}"
           style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:74px;
           border-radius:14px;padding-inline:6px;cursor:pointer;
-          border:1px solid ${actif ? 'rgba(216,189,133,0.6)' : 'rgba(255,255,255,0.07)'};
-          background:${actif ? 'rgba(216,189,133,0.1)' : 'rgba(255,255,255,0.02)'};
-          color:${actif ? 'var(--or-clair)' : 'var(--estompe)'}">
+          border:1px solid ${actif ? 'rgb(var(--accent) / 0.8)' : 'rgba(255,255,255,0.07)'};
+          background:${actif ? 'rgb(var(--accent) / 0.18)' : 'rgba(255,255,255,0.02)'};
+          color:${actif ? 'var(--ivoire)' : 'var(--estompe)'}">
           ${pastille(pl.id, 'petite')}<span style="font-size:11px;line-height:1.2;text-align:center">${txt(pl.nom)}</span></button>`;
       }).join('')}</div>
       ${p.plateformes.length === 0 ? `<p class="cendre" style="margin-top:12px;font-size:13px;line-height:1.6">
@@ -914,7 +1069,7 @@ export function profil() {
 function etatVide(titre, message) {
   return `<div class="centre" style="max-width:24rem;margin-inline:auto;padding:48px 24px">
       <div class="verre" style="width:64px;height:64px;border-radius:999px;margin:0 auto 24px;display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 24 24" style="width:28px;height:28px;color:rgba(216,189,133,0.7)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 5.5h16v13H4zM4 9.5h16M8 5.5v4M16 5.5v4"/></svg>
+        <svg viewBox="0 0 24 24" style="width:28px;height:28px;color:var(--accent-texte)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 5.5h16v13H4zM4 9.5h16M8 5.5v4M16 5.5v4"/></svg>
       </div>
       <h2 style="font-size:26px">${txt(titre)}</h2>
       <p class="cendre" style="margin-top:12px;font-size:15px;line-height:1.6">${txt(message)}</p>

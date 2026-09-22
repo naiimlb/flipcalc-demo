@@ -1,15 +1,18 @@
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { Inter, Oswald } from 'next/font/google';
 
 import { FournisseurApp } from '@/lib/etat/magasin';
 import { ReglagesPWA } from '@/components/ReglagesPWA';
 import './globals.css';
 
-/* Serif fine pour les titres, sans-serif moderne pour le texte. */
-const policeTitre = Cormorant_Garamond({
+/* Condensée grasse pour les titres — le registre de l'affiche de cinéma —
+   et sans-serif moderne pour le texte courant. Oswald a de vraies
+   graisses : si le réseau lâche, la police de repli reste grasse et la
+   mise en page ne s'effondre pas. */
+const policeTitre = Oswald({
   subsets: ['latin'],
-  weight: ['300', '400', '600'],
-  variable: '--police-titre',
+  weight: ['500', '600', '700'],
+  variable: '--police-affiche',
   display: 'swap',
 });
 
@@ -43,7 +46,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#07060A',
+  themeColor: '#06040B',
   width: 'device-width',
   initialScale: 1,
   // Indispensable pour que les zones sûres iOS soient exploitables.

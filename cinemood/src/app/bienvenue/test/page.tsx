@@ -66,6 +66,8 @@ export default function PageTest() {
   const routeur = useRouter();
   const [etape, setEtape] = useState(0);
   const [termine, setTermine] = useState(false);
+  const [enregistrement, setEnregistrement] = useState(false);
+  const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
   const [b, setB] = useState<Brouillon>({
     ...BROUILLON_INITIAL,
     pseudo: profil?.pseudo ?? '',
@@ -95,7 +97,17 @@ export default function PageTest() {
     true,
   ][etape];
 
-  function terminer() {
+  /**
+   * Terminer le test écrit le profil définitif. On attend la
+   * confirmation du serveur : si elle échoue, on reste sur cette
+   * dernière question, réponses intactes, plutôt que de montrer l'écran
+   * « profil cinéma » alors que rien n'a vraiment été sauvegardé.
+   */
+  async function terminer() {
+    if (enregistrement) return;
+    setEnregistrement(true);
+    setErreurEnvoi(null);
+
     const parId = new Map(CATALOGUE_DEMO.map((t) => [t.id, t]));
     const profilFinal = construireProfilDepuisTest({
       pseudo: b.pseudo.trim(),
@@ -116,7 +128,13 @@ export default function PageTest() {
       aEviter: decouper(b.aEviter),
       interets: decouper(b.interets),
     });
-    definirProfil(profilFinal, { testTermine: true, plateformesChoisies: true });
+
+    const resultat = await definirProfil(profilFinal, { testTermine: true, plateformesChoisies: true });
+    setEnregistrement(false);
+    if (!resultat.ok) {
+      setErreurEnvoi(resultat.erreur ?? 'La sauvegarde a échoué. Vérifie ta connexion et réessaie.');
+      return;
+    }
     setTermine(true);
   }
 
@@ -132,17 +150,17 @@ export default function PageTest() {
           transition={{ duration: 0.6 }}
           className="relative mx-auto w-full max-w-md text-center"
         >
-          <p className="text-[11px] uppercase tracking-[0.22em] text-or/70">Ton profil cinéma</p>
-          <h1 className="equilibre mt-4 font-titre text-[3rem] leading-[1.04] text-ivoire">
+          <p className="etiquette">Ton profil cinéma</p>
+          <h1 className="equilibre mt-4 font-affiche text-[2.7rem] font-bold leading-[1.04] text-ivoire">
             {carte.titre}
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-cendre">{carte.resume}</p>
-          <div className="mx-auto mt-8 h-px w-16 bg-voile-or" />
+          <div className="mx-auto mt-8 h-px w-16 bg-voile-accent" />
           <p className="mt-8 text-[14px] leading-relaxed text-estompe">
             Tout reste modifiable dans ton profil. Plus tu utiliseras CinéMood, plus la sélection
             te ressemblera.
           </p>
-          <Bouton variante="or" pleineLargeur className="mt-10" onClick={() => routeur.push('/accueil')}>
+          <Bouton variante="accent" pleineLargeur className="mt-10" onClick={() => routeur.push('/accueil')}>
             Découvrir ma sélection
           </Bouton>
         </motion.div>
@@ -155,7 +173,10 @@ export default function PageTest() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-lueur" aria-hidden="true" />
 
       {/* --- Progression -------------------------------------------------- */}
-      <div className="zone-sure-haut sticky top-0 z-30 bg-nuit/85 px-6 pb-4 pt-5 backdrop-blur">
+      {/* Fond opaque plutôt qu'un `backdrop-blur` : un en-tête collant qui
+          floute ce qui défile dessous est l'effet le plus coûteux sur
+          iPhone, pour un gain visuel nul sur un fond aussi sombre. */}
+      <div className="zone-sure-haut sticky top-0 z-30 border-b border-white/[0.06] bg-nuit px-6 pb-4 pt-5">
         <div className="mx-auto max-w-xl">
           <div className="flex items-center justify-between text-[12px] text-estompe">
             <button
@@ -174,7 +195,7 @@ export default function PageTest() {
           </div>
           <div className="mt-3 h-[3px] overflow-hidden rounded-full bg-white/10">
             <motion.div
-              className="h-full rounded-full bg-voile-or"
+              className="h-full rounded-full bg-voile-accent"
               animate={{ width: `${((etape + 1) / NOMBRE_ECRANS) * 100}%` }}
               transition={{ type: 'spring', stiffness: 220, damping: 30 }}
             />
@@ -277,7 +298,7 @@ export default function PageTest() {
 
             {etape === 4 && (
               <Question titre="Tes genres" sousTitre="Ce que tu adores, et ce qu’il vaut mieux éviter.">
-                <p className="mb-3 text-[13px] uppercase tracking-[0.14em] text-or/70">J’adore</p>
+                <p className="mb-3 text-[13px] uppercase tracking-[0.14em] text-accentTexte">J’adore</p>
                 <div className="flex flex-wrap gap-2">
                   {GENRES_PROPOSES.map((g) => (
                     <Puce
@@ -461,13 +482,21 @@ export default function PageTest() {
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       >
         <div className="mx-auto max-w-xl">
+          {erreurEnvoi && (
+            <p
+              role="alert"
+              className="mb-3 rounded-douce border border-alerte/30 bg-alerte/[0.08] px-4 py-3 text-[13px] text-alerte"
+            >
+              {erreurEnvoi}
+            </p>
+          )}
           <Bouton
-            variante="or"
+            variante="accent"
             pleineLargeur
-            disabled={!valide}
-            onClick={() => (etape === NOMBRE_ECRANS - 1 ? terminer() : setEtape(etape + 1))}
+            disabled={!valide || enregistrement}
+            onClick={() => (etape === NOMBRE_ECRANS - 1 ? void terminer() : setEtape(etape + 1))}
           >
-            {etape === NOMBRE_ECRANS - 1 ? 'Voir mon profil cinéma' : 'Continuer'}
+            {enregistrement ? 'Enregistrement…' : etape === NOMBRE_ECRANS - 1 ? 'Voir mon profil cinéma' : 'Continuer'}
           </Bouton>
         </div>
       </div>
@@ -482,7 +511,7 @@ export default function PageTest() {
 function Question({ titre, sousTitre, children }: { titre: string; sousTitre?: string; children: React.ReactNode }) {
   return (
     <section>
-      <h1 className="equilibre font-titre text-[2.2rem] leading-[1.08] text-ivoire">
+      <h1 className="equilibre font-affiche text-[2.2rem] leading-[1.08] text-ivoire">
         {titre}
       </h1>
       {sousTitre && <p className="mt-3 text-[15px] leading-relaxed text-cendre">{sousTitre}</p>}
@@ -508,7 +537,7 @@ function GrandChoix({ actif, onClick, children }: { actif: boolean; onClick: () 
       onClick={onClick}
       aria-pressed={actif}
       className={`w-full rounded-carte border px-5 py-4 text-left transition-colors ${
-        actif ? 'border-or/60 bg-or/10' : 'border-white/[0.08] bg-white/[0.025]'
+        actif ? 'border-accent/60 bg-accent/10' : 'border-white/[0.08] bg-white/[0.025]'
       }`}
     >
       {children}
@@ -550,8 +579,8 @@ function GrilleAffiches({
               >
                 <Affiche titre={titre} className="aspect-[2/3] w-full" />
                 {actif && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-nuit/55 ring-2 ring-inset ring-or">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-voile-or text-nuit">
+                  <span className="absolute inset-0 flex items-center justify-center bg-nuit/55 ring-2 ring-inset ring-accent">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-voile-accent text-white">
                       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M5 12.5 10 17.5 19 7" />
                       </svg>

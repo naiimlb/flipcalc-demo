@@ -73,8 +73,15 @@ export interface Titre {
   synopsis: string;
   tonalites: Tonalite[];
   rythme: Rythme;
-  /** Chemin d'affiche TMDB (`/abc.jpg`) ou `null` en mode démo. */
+  /** Chemin d'affiche TMDB (`poster_path`, ex. `/abc.jpg`), sinon `null`. */
   affiche: string | null;
+  /**
+   * Chemin de l'image large TMDB (`backdrop_path`), au format paysage.
+   * C'est elle qu'on veut derrière le héros de l'accueil : une affiche
+   * verticale recadrée en bandeau donne un résultat désastreux.
+   * `null` quand TMDB n'en fournit pas, ou en mode démo.
+   */
+  fond: string | null;
   /** Identifiant YouTube de la bande-annonce, si connu. */
   bandeAnnonce: string | null;
   animation: boolean;

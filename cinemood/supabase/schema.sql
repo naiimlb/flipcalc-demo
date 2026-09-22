@@ -92,12 +92,43 @@ create table if not exists public.expositions (
 );
 
 -- ---------------------------------------------------------------------
--- 5. Row Level Security — la protection réelle des données.
+-- 5. Refus : titres explicitement écartés (« pas pour moi », swipe passé).
+--    Table dédiée plutôt qu'une relecture du journal `interactions` :
+--    l'exclusion est définitive et doit se relire d'une seule requête,
+--    aussi bien pour reconstruire l'historique à la connexion que pour
+--    le moteur de recommandation.
 -- ---------------------------------------------------------------------
-alter table public.profils      enable row level security;
-alter table public.liste        enable row level security;
-alter table public.interactions enable row level security;
-alter table public.expositions  enable row level security;
+create table if not exists public.refus (
+  utilisateur_id uuid        not null references auth.users (id) on delete cascade,
+  titre_id       text        not null,
+  cree_le        timestamptz not null default now(),
+  primary key (utilisateur_id, titre_id)
+);
+
+-- ---------------------------------------------------------------------
+-- 6. Humeurs choisies : historique des humeurs et compagnies utilisées
+--    pour demander une sélection. Alimente l'algorithme et permettra,
+--    en V2, d'affiner les suggestions selon les habitudes de la personne.
+-- ---------------------------------------------------------------------
+create table if not exists public.humeurs_choisies (
+  id             bigint generated always as identity primary key,
+  utilisateur_id uuid        not null references auth.users (id) on delete cascade,
+  humeur         text        not null,
+  compagnie      text        not null,
+  cree_le        timestamptz not null default now()
+);
+
+create index if not exists humeurs_par_utilisateur on public.humeurs_choisies (utilisateur_id, cree_le desc);
+
+-- ---------------------------------------------------------------------
+-- 7. Row Level Security — la protection réelle des données.
+-- ---------------------------------------------------------------------
+alter table public.profils          enable row level security;
+alter table public.liste            enable row level security;
+alter table public.interactions     enable row level security;
+alter table public.expositions      enable row level security;
+alter table public.refus            enable row level security;
+alter table public.humeurs_choisies enable row level security;
 
 -- Profils : la ligne appartient à l'utilisateur dont l'id EST la clé.
 drop policy if exists "profil lisible par son propriétaire"   on public.profils;
@@ -114,12 +145,12 @@ create policy "profil modifiable par son propriétaire"
 create policy "profil supprimable par son propriétaire"
   on public.profils for delete using (auth.uid() = id);
 
--- Les trois autres tables suivent exactement la même règle.
+-- Les autres tables suivent exactement la même règle.
 do $$
 declare
   nom_table text;
 begin
-  foreach nom_table in array array['liste', 'interactions', 'expositions'] loop
+  foreach nom_table in array array['liste', 'interactions', 'expositions', 'refus', 'humeurs_choisies'] loop
     execute format('drop policy if exists "lecture par le propriétaire" on public.%I', nom_table);
     execute format('drop policy if exists "écriture par le propriétaire" on public.%I', nom_table);
     execute format('drop policy if exists "mise à jour par le propriétaire" on public.%I', nom_table);
@@ -141,7 +172,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- 6. Création automatique du profil à l'inscription.
+-- 8. Création automatique du profil à l'inscription.
 -- ---------------------------------------------------------------------
 create or replace function public.creer_profil_a_l_inscription()
 returns trigger
@@ -162,7 +193,7 @@ create trigger au_nouvel_utilisateur
   for each row execute function public.creer_profil_a_l_inscription();
 
 -- ---------------------------------------------------------------------
--- 7. Horodatage de modification.
+-- 9. Horodatage de modification.
 -- ---------------------------------------------------------------------
 create or replace function public.touche_modifie_le()
 returns trigger language plpgsql as $$
@@ -177,7 +208,7 @@ create trigger profils_modifie_le
   for each row execute function public.touche_modifie_le();
 
 -- ---------------------------------------------------------------------
--- 8. Suppression du compte, déclenchée depuis l'écran Profil.
+-- 10. Suppression du compte, déclenchée depuis l'écran Profil.
 --    La cascade des clés étrangères efface tout le reste.
 -- ---------------------------------------------------------------------
 create or replace function public.supprimer_mon_compte()
@@ -195,3 +226,35 @@ end $$;
 
 revoke all on function public.supprimer_mon_compte() from public;
 grant execute on function public.supprimer_mon_compte() to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 11. Enregistrement atomique des expositions.
+--     Incrémenter « nb » depuis le client demanderait de lire la ligne
+--     avant de la réécrire : deux onglets ouverts en même temps se
+--     marcheraient dessus. Cette fonction fait l'incrémentation dans la
+--     même instruction SQL, donc sans course possible.
+-- ---------------------------------------------------------------------
+create or replace function public.enregistrer_expositions(p_titre_ids text[])
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_utilisateur uuid := auth.uid();
+  v_titre_id    text;
+begin
+  if v_utilisateur is null then
+    raise exception 'Aucun utilisateur connecté';
+  end if;
+
+  foreach v_titre_id in array p_titre_ids loop
+    insert into public.expositions (utilisateur_id, titre_id, nb, derniere)
+    values (v_utilisateur, v_titre_id, 1, now())
+    on conflict (utilisateur_id, titre_id)
+    do update set nb = public.expositions.nb + 1, derniere = now();
+  end loop;
+end $$;
+
+revoke all on function public.enregistrer_expositions(text[]) from public;
+grant execute on function public.enregistrer_expositions(text[]) to authenticated;

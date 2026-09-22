@@ -49,8 +49,8 @@ export default function PageVitrine() {
         <header className="zone-sure-haut pt-8">
           <div className="flex items-center gap-3">
             <Logo />
-            <span className="font-titre text-[1.4rem] tracking-wide text-ivoire">
-              Ciné<span className="texte-or">Mood</span>
+            <span className="font-affiche text-[1.4rem] tracking-wide text-ivoire">
+              Ciné<span className="texte-accent">Mood</span>
             </span>
           </div>
         </header>
@@ -61,11 +61,11 @@ export default function PageVitrine() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="equilibre font-titre text-[3.2rem] font-light leading-[1.02] text-ivoire"
+            className="equilibre font-affiche text-[2.9rem] font-bold leading-[1.02] text-ivoire"
           >
             Arrête de chercher.
             <br />
-            <span className="texte-or">Commence à regarder.</span>
+            <span className="texte-accent">Commence à regarder.</span>
           </motion.h1>
 
           <motion.p
@@ -86,7 +86,7 @@ export default function PageVitrine() {
           >
             {ARGUMENTS.map((argument) => (
               <li key={argument.titre} className="flex gap-4">
-                <span className="mt-2 h-px w-7 shrink-0 bg-voile-or" aria-hidden="true" />
+                <span className="mt-2 h-px w-7 shrink-0 bg-voile-accent" aria-hidden="true" />
                 <div>
                   <p className="text-[15px] font-medium text-ivoire">{argument.titre}</p>
                   <p className="mt-0.5 text-[14px] leading-relaxed text-estompe">{argument.texte}</p>
@@ -105,7 +105,7 @@ export default function PageVitrine() {
           >
             <Link
               href={SUPABASE_CONFIGURE ? '/connexion' : '/bienvenue/plateformes'}
-              className="flex min-h-[56px] w-full items-center justify-center rounded-douce bg-voile-or text-[17px] font-semibold text-nuit shadow-or"
+              className="flex min-h-[56px] w-full items-center justify-center rounded-douce bg-voile-accent text-[17px] font-semibold text-white shadow-accent"
             >
               Commencer
             </Link>
@@ -125,22 +125,22 @@ function Logo() {
     <svg viewBox="0 0 40 40" className="h-9 w-9" role="img" aria-label="Logo CinéMood">
       <defs>
         <linearGradient id="degrade-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#F0DFBB" />
-          <stop offset="60%" stopColor="#D8BD85" />
-          <stop offset="100%" stopColor="#9C8355" />
+          <stop offset="0%" stopColor="#A46BFF" />
+          <stop offset="55%" stopColor="#7B2CFF" />
+          <stop offset="100%" stopColor="#FF2E93" />
         </linearGradient>
       </defs>
-      <circle cx="20" cy="20" r="18" fill="none" stroke="url(#degrade-logo)" strokeWidth="1.4" />
+      <circle cx="20" cy="20" r="18" fill="none" stroke="url(#degrade-logo)" strokeWidth="1.6" />
       {[0, 60, 120, 180, 240, 300].map((angle) => (
         <path
           key={angle}
           d="M20 20 L20 4 A16 16 0 0 1 33.9 12 Z"
           fill="url(#degrade-logo)"
-          opacity={0.16 + (angle / 360) * 0.5}
+          opacity={0.2 + (angle / 360) * 0.55}
           transform={`rotate(${angle} 20 20)`}
         />
       ))}
-      <circle cx="20" cy="20" r="4.6" fill="#07060A" />
+      <circle cx="20" cy="20" r="4.6" fill="#06040B" />
     </svg>
   );
 }

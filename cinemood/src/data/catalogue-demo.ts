@@ -68,6 +68,10 @@ function parserLigne(ligne: string): Titre {
     animation: c[19] === '1',
     synopsis: c[20] ?? '',
     affiche: null,
+    // Le catalogue local ne porte aucune image TMDB : l’affiche est
+    // composée à l’écran. Avec une clé TMDB, ce catalogue n’est plus
+    // utilisé du tout.
+    fond: null,
     bandeAnnonce: null,
   };
 }

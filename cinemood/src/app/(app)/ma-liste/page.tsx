@@ -8,6 +8,7 @@
    ===================================================================== */
 
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 import { Affiche } from '@/components/Affiche';
@@ -45,7 +46,7 @@ export default function PageMaListe() {
   return (
     <>
       <header className="zone-sure-haut px-5 pb-2 pt-4">
-        <h1 className="font-titre text-[2.2rem] leading-none text-ivoire">Ma liste</h1>
+        <h1 className="font-affiche text-[2.2rem] leading-none text-ivoire">Ma liste</h1>
       </header>
 
       <div className="mt-5 px-5">
@@ -63,7 +64,7 @@ export default function PageMaListe() {
               aria-selected={onglet === cle}
               onClick={() => setOnglet(cle)}
               className={`min-h-[44px] flex-1 rounded-full text-[14px] transition-colors ${
-                onglet === cle ? 'bg-voile-or font-semibold text-nuit' : 'text-cendre'
+                onglet === cle ? 'bg-voile-accent font-semibold text-white' : 'text-cendre'
               }`}
             >
               {libelle}
@@ -86,22 +87,32 @@ export default function PageMaListe() {
           />
         )}
 
-        <ul className="space-y-4">
-          {liste.map((titre) => {
+        <ul className="cascade space-y-4">
+          {liste.map((titre, index) => {
             const appreciation = vus.find((v) => v.titre.id === titre.id)?.note;
             return (
-              <li key={titre.id} className="flex gap-4 rounded-carte verre p-3">
-                <button
+              <li
+                key={titre.id}
+                style={{ '--i': index % 10 } as React.CSSProperties}
+                className="flex gap-4 rounded-carte verre p-3"
+              >
+                <motion.button
                   type="button"
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setTitreEnLecture(titre)}
-                  className="w-[86px] shrink-0 overflow-hidden rounded-douce"
+                  className="group w-[86px] shrink-0"
                   aria-label={`Bande-annonce de ${titre.titre}`}
                 >
-                  <Affiche titre={titre} className="aspect-[2/3] w-full" />
-                </button>
+                  <Affiche
+                    titre={titre}
+                    className="aspect-[2/3] w-full rounded-douce shadow-carte transition-shadow group-active:shadow-halo"
+                  />
+                </motion.button>
 
                 <div className="min-w-0 flex-1 py-0.5">
-                  <p className="font-titre text-[1.15rem] leading-tight text-ivoire">{titre.titre}</p>
+                  <p className="lignes-2 font-affiche text-[1.15rem] font-semibold leading-tight text-ivoire">
+                    {titre.titre}
+                  </p>
                   <p className="mt-1 text-[12px] text-estompe">
                     {titre.annee} · {titre.genres.slice(0, 2).join(', ')}
                   </p>

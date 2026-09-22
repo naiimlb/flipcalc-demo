@@ -37,6 +37,9 @@ const MODULES = [
   ['src/lib/reco/explication.ts', 'explication.js'],
   ['src/lib/reco/moteur.ts', 'moteur.js'],
   ['src/data/catalogue-demo.ts', 'catalogue.js'],
+  // Direction artistique : couleurs et icônes d'humeur, partagées telles
+  // quelles avec la démo pour que les deux ne puissent pas diverger.
+  ['src/lib/ui/humeurs.ts', 'humeurs-ui.js'],
 ];
 
 const ENTETE = `/* Généré par scripts/construire-demo.mjs — NE PAS MODIFIER À LA MAIN.

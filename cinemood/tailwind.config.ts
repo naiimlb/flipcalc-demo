@@ -1,9 +1,15 @@
 import type { Config } from 'tailwindcss';
 
 /* =====================================================================
-   Le système de design de CinéMood tient dans ce fichier.
-   Noir profond, accents dorés, verre dépoli : l'app doit avoir l'air
-   d'un service payant, pas d'un template.
+   Le système de design de CinéMood.
+   ---------------------------------------------------------------------
+   Noir teinté violet, trois couleurs signature (violet électrique, rose
+   néon, cyan), et une couleur d'accent variable : c'est l'humeur choisie
+   qui la fixe, via les variables CSS `--accent` et `--second` posées sur
+   la racine (voir globals.css et src/lib/ui/humeurs.ts).
+
+   Les utilitaires `accent` ci-dessous lisent ces variables : une classe
+   comme `border-accent/40` suit donc automatiquement l'humeur du moment.
    ===================================================================== */
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
@@ -11,25 +17,31 @@ const config: Config = {
     extend: {
       colors: {
         // Fonds, du plus profond au plus clair.
-        nuit: '#07060A',
-        encre: '#0D0C12',
-        ardoise: '#15141C',
-        fumee: '#1E1C26',
-        // Accents champagne / doré.
-        or: '#D8BD85',
-        orClair: '#F0DFBB',
-        orSombre: '#9C8355',
-        // Textes.
-        ivoire: '#F7F5F1',
-        cendre: '#A29C93',
-        estompe: '#6B665F',
+        nuit: '#06040B',
+        encre: '#0C0918',
+        ardoise: '#141126',
+        fumee: '#1D1833',
+        // Palette signature.
+        violet: '#7B2CFF',
+        violetClair: '#A46BFF',
+        rose: '#FF2E93',
+        roseClair: '#FF6FB4',
+        cyan: '#22D9F0',
+        // Accent piloté par l'humeur.
+        accent: 'rgb(var(--accent) / <alpha-value>)',
+        second: 'rgb(var(--second) / <alpha-value>)',
+        accentTexte: 'var(--accent-texte)',
+        // Textes. Contraste sur `nuit` : 18:1, 8,4:1 et 4,8:1.
+        ivoire: '#F6F4FF',
+        cendre: '#A9A3C4',
+        estompe: '#7D76A0',
         // Sémantique.
-        succes: '#6FCF97',
-        alerte: '#E88A6B',
+        succes: '#12C8C0',
+        alerte: '#FF6B4A',
       },
       fontFamily: {
         // Injectées par next/font dans src/app/layout.tsx.
-        titre: ['var(--police-titre)', 'Georgia', 'serif'],
+        affiche: ['var(--police-affiche)', 'Arial Narrow', 'system-ui', 'sans-serif'],
         texte: ['var(--police-texte)', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
@@ -38,33 +50,43 @@ const config: Config = {
         large: '28px',
       },
       boxShadow: {
-        carte: '0 18px 40px -20px rgba(0,0,0,0.9)',
-        flottant: '0 10px 30px -12px rgba(0,0,0,0.8)',
-        or: '0 8px 26px -10px rgba(216,189,133,0.45)',
+        carte: '0 22px 50px -26px rgba(0,0,0,0.95)',
+        flottant: '0 14px 34px -16px rgba(0,0,0,0.85)',
+        // Ombres colorées : ce qui fait « flotter » les éléments actifs.
+        accent: '0 12px 34px -12px rgb(var(--accent) / 0.8)',
+        halo: '0 14px 40px -16px rgb(var(--accent) / 0.9)',
       },
       backgroundImage: {
-        'voile-or': 'linear-gradient(135deg, #F0DFBB 0%, #D8BD85 45%, #9C8355 100%)',
-        'voile-nuit': 'linear-gradient(180deg, rgba(7,6,10,0) 0%, rgba(7,6,10,0.75) 55%, #07060A 100%)',
-        'lueur': 'radial-gradient(120% 90% at 50% 0%, rgba(216,189,133,0.16) 0%, rgba(7,6,10,0) 60%)',
+        'voile-accent': 'linear-gradient(100deg, rgb(var(--accent)) 0%, rgb(var(--second)) 100%)',
+        'voile-nuit': 'linear-gradient(180deg, rgba(6,4,11,0) 0%, rgba(6,4,11,0.75) 55%, #06040B 100%)',
+        // Halo posé en haut d'un écran. Suit l'humeur, comme tout le reste.
+        lueur:
+          'radial-gradient(95% 62% at 50% -8%, rgb(var(--accent) / 0.45) 0%, rgb(var(--accent) / 0.12) 44%, transparent 70%),' +
+          'radial-gradient(60% 40% at 110% 6%, rgb(var(--second) / 0.28) 0%, transparent 62%)',
       },
       keyframes: {
         chatoiement: {
           '0%': { backgroundPosition: '-480px 0' },
           '100%': { backgroundPosition: '480px 0' },
         },
-        apparition: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+        monte: {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'none' },
         },
-        pulsationDouce: {
-          '0%, 100%': { opacity: '0.55' },
-          '50%': { opacity: '1' },
+        entreeEcran: {
+          '0%': { opacity: '0', transform: 'scale(1.012)' },
+          '100%': { opacity: '1', transform: 'none' },
+        },
+        respire: {
+          '0%': { transform: 'scale(1.02)' },
+          '100%': { transform: 'scale(1.1)' },
         },
       },
       animation: {
         chatoiement: 'chatoiement 1.5s linear infinite',
-        apparition: 'apparition 0.4s ease-out both',
-        pulsationDouce: 'pulsationDouce 1.8s ease-in-out infinite',
+        monte: 'monte 0.42s cubic-bezier(0.22,0.61,0.36,1) both',
+        entreeEcran: 'entreeEcran 0.24s ease-out both',
+        respire: 'respire 26s ease-in-out infinite alternate',
       },
       spacing: {
         // Zones sûres iPhone (encoche et barre d'accueil).

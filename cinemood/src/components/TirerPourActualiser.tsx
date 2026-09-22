@@ -68,7 +68,7 @@ export function TirerPourActualiser({
       >
         <motion.span
           style={{ rotate: rotation }}
-          className={`mb-2 inline-block h-6 w-6 rounded-full border-2 border-or/30 border-t-or ${
+          className={`mb-2 inline-block h-6 w-6 rounded-full border-2 border-accent/30 border-t-accent ${
             enCours ? 'animate-spin' : ''
           }`}
         />

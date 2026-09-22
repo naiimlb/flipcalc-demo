@@ -28,7 +28,7 @@ export default function LayoutApplication({ children }: { children: React.ReactN
   if (!pret) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center">
-        <span className="h-7 w-7 animate-spin rounded-full border-2 border-or/25 border-t-or" />
+        <span className="h-7 w-7 animate-spin rounded-full border-2 border-accent/25 border-t-accent" />
         <span className="sr-only">Chargement…</span>
       </div>
     );
