@@ -1,3 +1,7 @@
+/* Généré par scripts/construire-demo.mjs — NE PAS MODIFIER À LA MAIN.
+   Source : cinemood/src/lib/reco/explication.ts
+   Les types TypeScript ont été retirés ; la logique est identique. */
+
 /* =====================================================================
    explication.ts — La phrase « Pourquoi pour toi ».
    ---------------------------------------------------------------------
@@ -8,12 +12,12 @@
    (voir `src/app/api/pourquoi/route.ts`).
    ===================================================================== */
 
-import { ageALaSortie, estNostalgique, generation } from './epoque.ts';
-import { similariteTitres } from './diversite.ts';
-import type { Contexte, DetailScore, Humeur, ProfilUtilisateur, Titre, Tonalite } from './types.ts';
+import { ageALaSortie, estNostalgique, generation } from './epoque.js';
+import { similariteTitres } from './diversite.js';
+                                                                                                    
 
 /** Ce que la personne « cherche » selon l'humeur choisie. */
-const ATTENTE_PAR_HUMEUR: Record<Humeur, string> = {
+const ATTENTE_PAR_HUMEUR                         = {
   fatigue: 'quelque chose de léger et pas trop long',
   joyeux: 'quelque chose de solaire',
   triste: 'quelque chose qui te prend aux tripes',
@@ -26,7 +30,7 @@ const ATTENTE_PAR_HUMEUR: Record<Humeur, string> = {
 };
 
 /** Libellés lisibles des tonalités. */
-export const LIBELLE_TONALITE: Record<Tonalite, string> = {
+export const LIBELLE_TONALITE                           = {
   leger: 'léger',
   intense: 'intense',
   emouvant: 'émouvant',
@@ -34,27 +38,27 @@ export const LIBELLE_TONALITE: Record<Tonalite, string> = {
   flippant: 'flippant',
 };
 
-export interface OptionsExplication {
-  /** Titres que la personne a aimés : sert à citer une référence connue. */
-  titresAimes?: Titre[];
-  /** Le titre a-t-il été injecté au titre de la découverte ? */
-  pepite?: boolean;
-  /** Année de référence, injectable pour des tests déterministes. */
-  anneeCourante?: number;
-  /**
-   * Rang de la carte dans la liste. Sert uniquement à faire tourner les
-   * angles d'attaque : dix cartes qui commencent toutes par la même
-   * formule donnent une impression de robot, pas de conseil.
-   */
-  variante?: number;
-}
+                                     
+                                                                            
+                        
+                                                                
+                   
+                                                                     
+                         
+     
+                                                                        
+                                                                    
+                                                             
+     
+                    
+ 
 
 /**
  * Cherche, parmi les titres aimés, celui qui ressemble le plus à la
  * proposition — c'est la référence la plus convaincante à citer.
  */
-export function referenceLaPlusProche(titre: Titre, titresAimes: Titre[], seuil = 0.22): Titre | null {
-  let meilleur: Titre | null = null;
+export function referenceLaPlusProche(titre       , titresAimes         , seuil = 0.22)               {
+  let meilleur               = null;
   let max = seuil;
   for (const aime of titresAimes) {
     if (aime.id === titre.id) continue;
@@ -68,7 +72,7 @@ export function referenceLaPlusProche(titre: Titre, titresAimes: Titre[], seuil 
 }
 
 /** Adjectif féminin pluriel d'une tonalité : « des ambiances intenses ». */
-const AMBIANCE_PAR_TONALITE: Record<Tonalite, string> = {
+const AMBIANCE_PAR_TONALITE                           = {
   leger: 'légères',
   intense: 'intenses',
   emouvant: 'émouvantes',
@@ -77,10 +81,10 @@ const AMBIANCE_PAR_TONALITE: Record<Tonalite, string> = {
 };
 
 /** Un angle d'attaque possible pour la phrase, avec sa force. */
-interface Ancrage {
-  texte: string;
-  force: number;
-}
+                   
+                
+                
+ 
 
 /**
  * `true` si les deux fragments partagent une racine de mot notable.
@@ -88,8 +92,8 @@ interface Ancrage {
  * linguistique, seulement à éviter les répétitions les plus voyantes,
  * du type « les ambiances intenses … quelque chose d'intense ».
  */
-function seRepete(a: string, b: string): boolean {
-  const racines = (texte: string) =>
+function seRepete(a        , b        )          {
+  const racines = (texte        ) =>
     texte
       .toLowerCase()
       .normalize('NFD')
@@ -102,13 +106,13 @@ function seRepete(a: string, b: string): boolean {
 }
 
 /** « de Dune » mais « d’Inception » : élision devant voyelle ou h muet. */
-function de(nom: string): string {
+function de(nom        )         {
   const premiere = nom.trim().charAt(0).toLowerCase();
   return 'aeiouyàâéèêëîïôöûü'.includes(premiere) ? `d’${nom}` : `de ${nom}`;
 }
 
 /** Empreinte stable d'une chaîne : la variation ne doit pas être aléatoire. */
-function empreinte(texte: string): number {
+function empreinte(texte        )         {
   let h = 0;
   for (let i = 0; i < texte.length; i += 1) h = (h * 31 + texte.charCodeAt(i)) % 100000;
   return h;
@@ -119,11 +123,11 @@ function empreinte(texte: string): number {
  * convaincant. On n'en gardera qu'un.
  */
 function construireAncrages(
-  titre: Titre,
-  detail: DetailScore,
-  reference: Titre | null,
-): Ancrage[] {
-  const ancrages: Ancrage[] = [];
+  titre       ,
+  detail             ,
+  reference              ,
+)            {
+  const ancrages            = [];
 
   if (reference) {
     // Citer un titre que la personne a aimé est l'argument le plus
@@ -161,7 +165,7 @@ function construireAncrages(
         ancrages.push({ texte: `Parce que ${articleGenre(c.libelle)} te réussit`, force: force * 0.999 });
         break;
       case 'tonalites': {
-        const ambiance = AMBIANCE_PAR_TONALITE[c.libelle as Tonalite];
+        const ambiance = AMBIANCE_PAR_TONALITE[c.libelle            ];
         if (ambiance) {
           ancrages.push({ texte: `Parce que tu aimes les ambiances ${ambiance}`, force: force * 0.8 });
           ancrages.push({ texte: `Parce que les ambiances ${ambiance} te parlent`, force: force * 0.799 });
@@ -184,14 +188,14 @@ function construireAncrages(
  * Une à deux phrases courtes, toujours à la deuxième personne.
  */
 export function genererPourquoi(
-  titre: Titre,
-  detail: DetailScore,
-  profil: ProfilUtilisateur,
-  contexte: Contexte,
-  options: OptionsExplication = {},
-): string {
+  titre       ,
+  detail             ,
+  profil                   ,
+  contexte          ,
+  options                     = {},
+)         {
   const anneeCourante = options.anneeCourante ?? new Date().getFullYear();
-  const fragments: string[] = [];
+  const fragments           = [];
 
   // --- 1. L'ancrage principal : pourquoi CE titre plutôt qu'un autre ---
   const reference = options.titresAimes?.length
@@ -212,7 +216,7 @@ export function genererPourquoi(
     // d'intense » se lit mal. Si tous bégaient, on garde quand même :
     // mieux vaut une répétition qu'aucune explication.
     if (contexte.humeur) {
-      const sansRepetition = credibles.filter((a) => !seRepete(a.texte, ATTENTE_PAR_HUMEUR[contexte.humeur!]));
+      const sansRepetition = credibles.filter((a) => !seRepete(a.texte, ATTENTE_PAR_HUMEUR[contexte.humeur ]));
       if (sansRepetition.length > 0) credibles = sansRepetition;
     }
 
@@ -234,7 +238,7 @@ export function genererPourquoi(
   let phrase = `${fragments.join(' ')}.`;
 
   // --- 3. Un second argument, au plus ----------------------------------
-  const bonus: string[] = [];
+  const bonus           = [];
 
   if (estNostalgique(titre, profil)) {
     const ageSortie = ageALaSortie(profil.anneeNaissance, titre.annee);
@@ -252,7 +256,7 @@ export function genererPourquoi(
 }
 
 /** « la science-fiction », « l'horreur », « le thriller »… */
-function articleGenre(genre: string): string {
+function articleGenre(genre        )         {
   const feminins = ['Science-Fiction', 'Comédie', 'Romance', 'Animation', 'Aventure', 'Histoire', 'Guerre', 'Musique'];
   const premiere = genre.charAt(0).toLowerCase();
   const voyelle = 'aeiouyéèê'.includes(premiere);
@@ -265,13 +269,13 @@ function articleGenre(genre: string): string {
  * Le « profil cinéma » affiché à la fin du test : un titre stylé et un
  * résumé des goûts. Purement déterministe, donc testable.
  */
-export function profilCinema(profil: ProfilUtilisateur): { titre: string; resume: string } {
+export function profilCinema(profil                   )                                    {
   const tonalite = profil.tonalitePreferee;
   const genreFort = profil.genresAdores[0] ?? 'cinéma';
 
   // Des intitulés volontairement épicènes : ils qualifient une personne
   // réelle, dont on ne connaît pas le genre (question facultative du test).
-  const noms: Record<Tonalite, string[]> = {
+  const noms                             = {
     leger: ['Canapé optimiste', 'Soirées douces', 'Feel-good assumé'],
     intense: ['Nuits intenses', 'Plein régime', 'Adrénaline en boucle'],
     emouvant: ['Cœur à vif', 'Collection d’émotions', 'Grand écran, grandes larmes'],

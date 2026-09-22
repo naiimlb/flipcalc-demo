@@ -74,6 +74,21 @@ describe('phrase « Pourquoi pour toi »', () => {
     assert.match(phrase, /famille/);
   });
 
+  test('s’ouvre toujours par une subordonnée, pour que l’humeur s’y enchaîne', () => {
+    // « Pour élargir ton horizon ET QUE tu cherches… » ne se dit pas.
+    // La règle : l'ancrage est une subordonnée en « parce que », quelle
+    // que soit la matière disponible — y compris aucune.
+    const vierge = profil({ gouts: vecteurVide() });
+    for (const humeur of [null, 'fatigue', 'adrenaline', 'reflexion'] as const) {
+      const ctx = contexte({ humeur });
+      const t = titre({ genres: ['Western'], annee: 1966, motsCles: [], acteurs: [], realisateurs: [] });
+      const { detail } = scorerTitre(t, vierge, historique(), ctx, 2026);
+      const phrase = genererPourquoi(t, detail, vierge, ctx, { anneeCourante: 2026 });
+      assert.match(phrase, /^Parce qu/, `ouverture incorrecte : « ${phrase} »`);
+      assert.ok(!/ et que tu cherches/.test(phrase) || /^Parce qu/.test(phrase));
+    }
+  });
+
   test('reste une phrase propre en toutes circonstances', () => {
     for (const humeur of [null, 'fatigue', 'frisson', 'reflexion'] as const) {
       for (const annee of [1966, 1995, 2004, 2026]) {

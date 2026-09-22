@@ -25,6 +25,11 @@ Application web mobile-first, installable sur l'écran d'accueil d'un iPhone.
 Pour **créer les comptes, obtenir les clés et mettre en ligne**, tout est dans
 [`DEPLOIEMENT.md`](DEPLOIEMENT.md) — écrit pas à pas, sans rien supposer connu.
 
+> **Envie de voir l'app tout de suite ?**
+> [`../cinemood-demo/`](../cinemood-demo/) en est une version statique, publiée
+> sur GitHub Pages, ouvrable sans compte ni clé d'API — et faisant tourner
+> **exactement le même moteur**, porté automatiquement depuis `src/lib/reco/`.
+
 ---
 
 ## 1. Démarrer en deux minutes
@@ -50,6 +55,8 @@ Autres commandes :
 | `npm run demo:profils` | Affiche les sélections de trois profils fictifs |
 | `npm run valider` | Campagne de validation : 6 profils × 6 contextes, rapport complet |
 | `npm run audit:mobile` | Contrôle statique des règles Safari iOS |
+| `npm run construire:demo` | Régénère la version statique (`../cinemood-demo/`) |
+| `npm run tester:iphone` | Parcours complet dans Chromium en 390 × 844 |
 | `node scripts/generer-icones.mjs` | Régénère les icônes et écrans de lancement |
 
 ---

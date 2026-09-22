@@ -1,3 +1,7 @@
+/* Généré par scripts/construire-demo.mjs — NE PAS MODIFIER À LA MAIN.
+   Source : cinemood/src/lib/reco/poids.ts
+   Les types TypeScript ont été retirés ; la logique est identique. */
+
 /* =====================================================================
    poids.ts — TOUTES les constantes de pondération de l'algorithme.
    ---------------------------------------------------------------------
@@ -6,7 +10,7 @@
    sévères sur la qualité… Chaque valeur est commentée avec son effet.
    ===================================================================== */
 
-import type { Classification, Humeur, Rythme, Tonalite } from './types.ts';
+                                                                           
 
 /* ---------------------------------------------------------------------
    1. Poids des cinq composantes du score final.
@@ -29,7 +33,7 @@ export const POIDS_SCORE = {
   qualite: 0.12,
   /** Fraîcheur et tendance : évite un catalogue figé dans le passé. */
   fraicheur: 0.06,
-} as const;
+}         ;
 
 /**
  * Répartition appliquée quand la personne a EXPLICITEMENT choisi une
@@ -48,7 +52,7 @@ export const POIDS_SCORE_HUMEUR_CHOISIE = {
   humeur: 0.36,
   qualite: 0.10,
   fraicheur: 0.05,
-} as const;
+}         ;
 
 /* ---------------------------------------------------------------------
    2. Poids internes de l'affinité de goûts.
@@ -63,7 +67,7 @@ export const POIDS_FACETTES = {
   tonalites: 0.14,
   decennies: 0.06,
   pays: 0.04,
-} as const;
+}         ;
 
 /* ---------------------------------------------------------------------
    3. Pénalités. Elles se soustraient au score final (échelle 0-1).
@@ -97,7 +101,7 @@ export const PENALITES = {
    * n'en a, la pénalité serait alors universelle donc inutile.
    */
   sansBandeAnnonce: 0.3,
-} as const;
+}         ;
 
 /** Durée pendant laquelle un titre déjà proposé reste pénalisé (7 jours). */
 export const FENETRE_ROTATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -124,7 +128,7 @@ export const EPOQUE = {
   /** Multiplicateur appliqué si la personne a déclaré préférer le récent. */
   multiPreferenceRecent: 1.35,
   multiPreferenceClassique: 1.35,
-} as const;
+}         ;
 
 /* ---------------------------------------------------------------------
    5. Qualité et fraîcheur.
@@ -137,14 +141,14 @@ export const QUALITE = {
   notePrior: 6.3,
   /** En dessous, la note ne rapporte rien (échelle 0-10). */
   notePlancher: 4.5,
-} as const;
+}         ;
 
 export const FRAICHEUR = {
   /** Demi-vie de la fraîcheur, en années. */
   demiVieAnnees: 4,
   /** Part de la popularité brute dans la note de fraîcheur. */
   partPopularite: 0.4,
-} as const;
+}         ;
 
 /* ---------------------------------------------------------------------
    6. Diversité et découverte (re-classement de type MMR).
@@ -205,7 +209,7 @@ export const DIVERSITE = {
    * charges interdit.
    */
   plancherActualite: 0.2,
-} as const;
+}         ;
 
 /* ---------------------------------------------------------------------
    7. Apprentissage continu : de combien chaque signal déplace les poids.
@@ -224,7 +228,7 @@ export const APPRENTISSAGE = {
     pas_pour_moi: -0.12,
     swipe_garde: 0.08,
     swipe_passe: -0.08,
-  } as Record<string, number>,
+  }                          ,
   /** Part de l'amplitude reçue par chaque facette. */
   partFacette: {
     genres: 1,
@@ -234,33 +238,33 @@ export const APPRENTISSAGE = {
     tonalites: 0.7,
     decennies: 0.35,
     pays: 0.25,
-  } as Record<string, number>,
+  }                          ,
   /** Bornes dures du vecteur de goûts. */
   poidsMin: -1,
   poidsMax: 1,
   /** Nombre maximal de mots-clés d'un titre pris en compte par signal. */
   motsClesParSignal: 6,
-} as const;
+}         ;
 
 /* ---------------------------------------------------------------------
    8. Humeur → genres, tonalités, rythme et durée.
    `genres` liste les genres bonifiés ; `genresMalus` ceux qui cassent
    l'ambiance recherchée.
    --------------------------------------------------------------------- */
-export interface ReglageHumeur {
-  libelle: string;
-  emoji: string;
-  genres: string[];
-  genresMalus: string[];
-  tonalites: Tonalite[];
-  rythmes: Rythme[];
-  /** Durée idéale en minutes ; le score décroît en s'en éloignant. */
-  dureeIdeale: number;
-  /** Tolérance autour de la durée idéale, en minutes. */
-  toleranceDuree: number;
-}
+                                
+                  
+                
+                   
+                        
+                        
+                    
+                                                                      
+                      
+                                                         
+                         
+ 
 
-export const TABLE_HUMEURS: Record<Humeur, ReglageHumeur> = {
+export const TABLE_HUMEURS                                = {
   fatigue: {
     libelle: 'Fatigué',
     emoji: '🥱',
@@ -368,19 +372,19 @@ export const CONTEXTE = {
   bonusWeekendFormatLong: 0.1,
   /** Minutes à partir desquelles un film est « long ». */
   seuilFilmLong: 140,
-} as const;
+}         ;
 
 /** Réglages par compagnie. */
-export interface ReglageCompagnie {
-  libelle: string;
-  emoji: string;
-  /** Classification maximale autorisée. `null` = pas de plafond propre. */
-  classificationMax: Classification | null;
-  genresBonus: string[];
-  tonalitesBonus: Tonalite[];
-}
+                                   
+                  
+                
+                                                                           
+                                           
+                        
+                             
+ 
 
-export const TABLE_COMPAGNIE: Record<string, ReglageCompagnie> = {
+export const TABLE_COMPAGNIE                                   = {
   seul: { libelle: 'Seul', emoji: '🧘', classificationMax: null, genresBonus: [], tonalitesBonus: [] },
   couple: {
     libelle: 'En couple',
@@ -410,10 +414,10 @@ export const TABLE_COMPAGNIE: Record<string, ReglageCompagnie> = {
    10. Âge et classification.
    --------------------------------------------------------------------- */
 /** Échelle ordonnée du plus permissif au plus restrictif. */
-export const ECHELLE_AGE: Classification[] = ['TP', '10', '12', '16', '18'];
+export const ECHELLE_AGE                   = ['TP', '10', '12', '16', '18'];
 
 /** Âge minimum requis pour chaque classification. */
-export const AGE_MINIMUM: Record<Classification, number> = {
+export const AGE_MINIMUM                                 = {
   TP: 0,
   '10': 10,
   '12': 12,
