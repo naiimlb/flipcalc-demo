@@ -39,6 +39,7 @@ export default function PageAccueil() {
   const [titreEnLecture, setTitreEnLecture] = useState<Titre | null>(null);
   const [fiche, setFiche] = useState<Recommandation | null>(null);
   const [demo, setDemo] = useState(false);
+  const [humeurRelachee, setHumeurRelachee] = useState(false);
 
   // Profil et historique changent à CHAQUE interaction (un pouce levé
   // déplace le vecteur de goûts). On les lit donc via des références :
@@ -63,6 +64,7 @@ export default function PageAccueil() {
       setRecos(reponse.recommandations);
       setRaisonVide(reponse.raisonVide);
       setDemo(reponse.modeDemo);
+      setHumeurRelachee(reponse.humeurRelachee);
       noterExpositions(reponse.recommandations.map((r) => r.titre));
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Une erreur est survenue.');
@@ -172,6 +174,15 @@ export default function PageAccueil() {
         <p className="mx-5 mt-6 rounded-douce border border-accent/25 bg-accent/[0.08] px-4 py-3 text-[13px] leading-relaxed text-ivoire/90">
           Mode démo : les titres viennent d’un catalogue local. Ajoute une clé TMDB pour
           basculer sur les vraies disponibilités de tes plateformes.
+        </p>
+      )}
+
+      {/* La sélection ne correspond pas à l'humeur demandée : le dire,
+          plutôt que de laisser croire que le moteur l'a ignorée. */}
+      {humeurRelachee && reglageHumeur && (
+        <p className="mx-5 mt-6 rounded-douce border border-accent/25 bg-accent/[0.08] px-4 py-3 text-[13px] leading-relaxed text-ivoire/90">
+          Rien ne collait vraiment à « {reglageHumeur.libelle} » sur tes plateformes ce soir.
+          Voici une sélection élargie, qui respecte tous tes autres critères.
         </p>
       )}
 

@@ -19,7 +19,6 @@ import { enrichirTous, vivierTmdb } from '@/lib/tmdb/catalogue';
 import { modeDemo } from '@/lib/tmdb/client';
 import { idDepuisGenre } from '@/lib/tmdb/genres';
 import { contexteValide, historiqueValide, profilValide } from '@/lib/validation';
-import type { Titre } from '@/lib/reco/types';
 
 /** Le rendu dépend du corps de la requête : jamais de page statique. */
 export const dynamic = 'force-dynamic';
@@ -40,12 +39,7 @@ export async function POST(requete: Request) {
   const anneeCourante = new Date().getFullYear();
 
   try {
-    let catalogue: Titre[];
-    let enrichissementNecessaire = false;
-
-    if (modeDemo()) {
-      catalogue = CATALOGUE_DEMO;
-    } else {
+    if (!modeDemo()) {
       // Plafond d'âge : le plus strict entre l'âge réel et la compagnie.
       const ageUtilisateur = calculerAge(profil.anneeNaissance, anneeCourante);
       const plafondCompagnie = TABLE_COMPAGNIE[contexte.compagnie]?.classificationMax ?? null;
@@ -60,44 +54,66 @@ export async function POST(requete: Request) {
             .filter((x): x is number => x !== null)
         : [];
 
-      catalogue = await vivierTmdb({
-        plateformes: profil.plateformes,
-        typesSouhaites: profil.typesSouhaites,
-        classificationMax,
-        genresPrioritaires: genresHumeur,
-        pages: 3,
-      });
-      enrichissementNecessaire = true;
-    }
+      // Une sélection en deux passes, et un repli si l'humeur étrangle
+      // le vivier : quelqu'un qui a passé le test doit TOUJOURS repartir
+      // avec des propositions. Seule l'humeur est relâchée — les règles
+      // dures (plateformes, âge, genres détestés) restent intactes.
+      const construire = async (genres: number[]) => {
+        const vivier = await vivierTmdb({
+          plateformes: profil.plateformes,
+          typesSouhaites: profil.typesSouhaites,
+          classificationMax,
+          genresPrioritaires: genres,
+          pages: 3,
+        });
 
-    // --- Première passe : classement sur le vivier ---------------------
-    const premierTri = recommander(catalogue, profil, historique, contexte, {
-      taille: enrichissementNecessaire ? Math.min(20, taille + 8) : taille,
-      anneeCourante,
-    });
+        // Passe 1 : le vivier ne porte pas encore ses plateformes, elles
+        // n'arrivent qu'à l'enrichissement. TMDB les a déjà filtrées via
+        // `with_watch_providers`, d'où le drapeau — sans lui, le filtre
+        // strict viderait tout le vivier ici même.
+        const tri = recommander(vivier, profil, historique, contexte, {
+          taille: Math.min(20, taille + 8),
+          anneeCourante,
+          plateformesDejaFiltrees: true,
+        });
 
-    if (!enrichissementNecessaire) {
+        // Passe 2 : seuls les présélectionnés sont détaillés — une
+        // vingtaine d'appels TMDB au lieu de plusieurs centaines. Cette
+        // fois les plateformes sont connues, donc filtrées pour de bon.
+        const enrichis = await enrichirTous(tri.recommandations.map((r) => r.titre));
+        const abouti = recommander(enrichis, profil, historique, contexte, { taille, anneeCourante });
+        return { tri, abouti };
+      };
+
+      let { tri, abouti } = await construire(genresHumeur);
+      let humeurRelachee = false;
+
+      if (abouti.recommandations.length === 0 && genresHumeur.length > 0) {
+        ({ tri, abouti } = await construire([]));
+        humeurRelachee = abouti.recommandations.length > 0;
+      }
+
       return NextResponse.json({
-        recommandations: premierTri.recommandations,
-        candidatsRetenus: premierTri.candidatsRetenus,
-        catalogueTotal: premierTri.catalogueTotal,
-        raisonVide: premierTri.raisonVide,
-        modeDemo: true,
+        recommandations: abouti.recommandations,
+        candidatsRetenus: tri.candidatsRetenus,
+        catalogueTotal: tri.catalogueTotal,
+        raisonVide: abouti.raisonVide,
+        humeurRelachee,
+        modeDemo: false,
       });
     }
 
-    // --- Seconde passe : on détaille, puis on reclasse -----------------
-    // Seuls les titres présélectionnés sont détaillés : une vingtaine
-    // d'appels TMDB au lieu de plusieurs centaines.
-    const enrichis = await enrichirTous(premierTri.recommandations.map((r) => r.titre));
-    const final = recommander(enrichis, profil, historique, contexte, { taille, anneeCourante });
+    // --- Mode démo : catalogue local, une seule passe -------------------
+    // Ses titres portent déjà leurs plateformes : aucun enrichissement.
+    const premierTri = recommander(CATALOGUE_DEMO, profil, historique, contexte, { taille, anneeCourante });
 
     return NextResponse.json({
-      recommandations: final.recommandations,
+      recommandations: premierTri.recommandations,
       candidatsRetenus: premierTri.candidatsRetenus,
       catalogueTotal: premierTri.catalogueTotal,
-      raisonVide: final.raisonVide,
-      modeDemo: false,
+      raisonVide: premierTri.raisonVide,
+      humeurRelachee: false,
+      modeDemo: true,
     });
   } catch (erreur) {
     console.error('[recommandations]', erreur);

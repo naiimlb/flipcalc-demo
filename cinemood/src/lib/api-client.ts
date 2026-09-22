@@ -12,6 +12,13 @@ export interface ReponseRecommandations {
   candidatsRetenus: number;
   catalogueTotal: number;
   raisonVide: 'aucune_plateforme' | 'filtres_trop_stricts' | 'catalogue_vide' | null;
+  /**
+   * `true` quand l'humeur demandée ne laissait rien passer et que la
+   * sélection a été élargie au-delà d'elle. L'écran doit le dire :
+   * proposer autre chose que ce qui a été demandé, sans le signaler,
+   * ferait passer le moteur pour défaillant.
+   */
+  humeurRelachee: boolean;
   modeDemo: boolean;
 }
 
