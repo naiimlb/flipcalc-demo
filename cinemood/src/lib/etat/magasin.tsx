@@ -125,6 +125,23 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
   const premierRendu = useRef(true);
   const minuterieErreur = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * Compteur incrémenté à chaque écriture locale (fin du test, signal,
+   * modification de profil…). `chargerDepuisLeCompte` s'en sert pour
+   * savoir si une écriture plus récente que lui a eu lieu PENDANT son
+   * propre aller-retour réseau.
+   *
+   * Sans ça : la personne termine le test, l'écran affiche son profil
+   * cinéma — mais le chargement initial du compte, lancé à la connexion
+   * et pas encore résolu, finit par répondre APRÈS coup avec les
+   * anciennes données (test non terminé). Il écrase alors l'état qui
+   * vient d'être écrit, et le clic sur « Découvrir ma sélection »
+   * retombe sur le garde-fou du layout, qui renvoie vers le test — lequel
+   * remonte à zéro. Le bug n'est pas le bouton : c'est une réponse
+   * devenue obsolète qui arrive après une écriture plus récente.
+   */
+  const generationEcritureRef = useRef(0);
+
   /* --- Mode invité : lecture/écriture sur l'appareil ------------------ */
   const chargerDepuisLocalStorage = useCallback(() => {
     try {
@@ -152,15 +169,23 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
     const supabase = clientNavigateur();
     if (!supabase) return;
     utilisateurIdRef.current = utilisateurId;
+    const generationAuDepart = generationEcritureRef.current;
     try {
       const charge = await chargerEtatCompte(supabase, utilisateurId);
-      setEtat({
-        profil: charge.profil,
-        historique: charge.historique,
-        titresConnus: charge.titresConnus,
-        testTermine: charge.testTermine,
-        plateformesChoisies: charge.plateformesChoisies,
-      });
+      // Une écriture locale (fin du test, signal…) peut s'être produite
+      // PENDANT cet aller-retour, et donc être plus récente que ce que ce
+      // chargement renvoie. L'appliquer quand même écraserait un état à
+      // jour avec un état obsolète — exactement le bug du test qui
+      // « recommence » après son propre écran de fin.
+      if (generationEcritureRef.current === generationAuDepart) {
+        setEtat({
+          profil: charge.profil,
+          historique: charge.historique,
+          titresConnus: charge.titresConnus,
+          testTermine: charge.testTermine,
+          plateformesChoisies: charge.plateformesChoisies,
+        });
+      }
       setErreurCompte(null);
     } catch (erreur) {
       console.error('[magasin] chargement du compte', erreur);
@@ -267,6 +292,7 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
 
   const definirProfil = useCallback<ValeurContexte['definirProfil']>(
     async (profil, options) => {
+      generationEcritureRef.current += 1;
       const suivant: EtatApp = {
         ...etatRef.current,
         profil,
@@ -306,6 +332,7 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
       const precedent = etatRef.current;
       if (!precedent.profil) return;
 
+      generationEcritureRef.current += 1;
       const profilMisAJour = appliquerSignal(precedent.profil, titre, signal);
       const suivant: EtatApp = {
         ...precedent,
@@ -336,6 +363,7 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
   const noterExpositions = useCallback<ValeurContexte['noterExpositions']>(
     (titres) => {
       if (titres.length === 0) return;
+      generationEcritureRef.current += 1;
       const ids = titres.map((t) => t.id);
       setEtat((precedent) => ({
         ...precedent,
@@ -374,6 +402,7 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
 
   const reinitialiser = useCallback(() => {
     utilisateurIdRef.current = null;
+    generationEcritureRef.current += 1;
     setEtat(ETAT_INITIAL);
     setErreurCompte(null);
     setErreurEcriture(null);
