@@ -18,6 +18,31 @@ describe('filtrage strict — les règles non négociables', () => {
     }
   });
 
+  test('le vivier TMDB, dont les plateformes ne sont pas encore connues, n’est pas vidé', () => {
+    // Reproduit la passe 1 réelle : /discover a déjà filtré par
+    // `with_watch_providers`, mais les plateformes de chaque titre
+    // n'arrivent qu'à l'enrichissement. Les traiter comme « disponible
+    // nulle part » éliminait 100 % du vivier, et l'accueil restait vide
+    // pour tout le monde dès que TMDB était configuré.
+    const vivier = [titre({ id: 'film:1', plateformes: [] }), titre({ id: 'film:2', plateformes: [] })];
+    const p = profil({ plateformes: ['netflix'] });
+
+    const sansDrapeau = filtrerStrict(vivier, p, historiqueVide(), contexte(), ANNEE);
+    assert.equal(sansDrapeau.length, 0, 'sur un catalogue complet, « aucune plateforme » exclut bien');
+
+    const avecDrapeau = filtrerStrict(vivier, p, historiqueVide(), contexte(), ANNEE, true);
+    assert.equal(avecDrapeau.length, 2, 'le vivier TMDB doit traverser la passe 1 intact');
+  });
+
+  test('un titre du vivier réellement hors plateformes reste exclu, drapeau ou non', () => {
+    // Le drapeau ne doit dispenser QUE les plateformes inconnues : une
+    // liste renseignée mais sans correspondance reste une exclusion.
+    const enrichi = [titre({ id: 'film:3', plateformes: ['disney'] })];
+    const p = profil({ plateformes: ['netflix'] });
+
+    assert.equal(filtrerStrict(enrichi, p, historiqueVide(), contexte(), ANNEE, true).length, 0);
+  });
+
   test('« aucun abonnement » bascule sur les seules offres gratuites', () => {
     const p = profil({ plateformes: [] });
     const retenus = filtrerStrict(CATALOGUE_DEMO, p, historiqueVide(), contexte(), ANNEE);

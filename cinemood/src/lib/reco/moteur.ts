@@ -37,6 +37,8 @@ export interface OptionsRecommandation {
   anneeCourante?: number;
   /** Titres aimés, cités en référence dans « Pourquoi pour toi ». */
   titresAimes?: Titre[];
+  /** Voir le paramètre de même nom sur `filtrerStrict`. */
+  plateformesDejaFiltrees?: boolean;
 }
 
 /** Motifs possibles d'un écran vide, pour proposer la bonne action. */
@@ -79,8 +81,11 @@ export function contraintesLimitantes(
   historique: Historique,
   contexte: Contexte,
   anneeCourante: number,
+  plateformesDejaFiltrees = false,
 ): ContrainteLimitante[] {
-  const reference = filtrerStrict(catalogue, profil, historique, contexte, anneeCourante).length;
+  const reference = filtrerStrict(
+    catalogue, profil, historique, contexte, anneeCourante, plateformesDejaFiltrees,
+  ).length;
 
   const essais: Array<{ cle: ContrainteLimitante['cle']; libelle: string; profil: ProfilUtilisateur; contexte: Contexte }> = [
     {
@@ -111,7 +116,9 @@ export function contraintesLimitantes(
     .map(({ cle, libelle, profil: p, contexte: c }) => ({
       cle,
       libelle,
-      gain: filtrerStrict(catalogue, p, historique, c, anneeCourante).length - reference,
+      gain:
+        filtrerStrict(catalogue, p, historique, c, anneeCourante, plateformesDejaFiltrees).length
+        - reference,
     }))
     .filter((x) => x.gain > 0)
     .sort((a, b) => b.gain - a.gain);
@@ -136,6 +143,12 @@ export function filtrerStrict(
   historique: Historique,
   contexte: Contexte,
   anneeCourante: number,
+  /**
+   * `true` quand la source a DÉJÀ restreint le catalogue aux plateformes
+   * de la personne — c'est le cas du vivier TMDB, obtenu via
+   * `with_watch_providers`. Voir la règle (a) pour ce que cela change.
+   */
+  plateformesDejaFiltrees = false,
 ): Titre[] {
   const autorisees = new Set(plateformesEffectives(profil.plateformes));
   const ageUtilisateur = calculerAge(profil.anneeNaissance, anneeCourante);
@@ -150,7 +163,13 @@ export function filtrerStrict(
 
   return catalogue.filter((titre) => {
     // a. Disponibilité sur au moins une plateforme de la personne.
-    if (!titre.plateformes.some((p) => autorisees.has(p))) return false;
+    //    Une liste vide ne veut pas dire la même chose partout : sur un
+    //    catalogue complet elle signifie « disponible nulle part », mais
+    //    sur le vivier TMDB elle signifie « pas encore renseigné » — les
+    //    plateformes n'y arrivent qu'à l'enrichissement. Confondre les
+    //    deux élimine l'intégralité du vivier avant même de l'enrichir.
+    const plateformesInconnues = titre.plateformes.length === 0 && plateformesDejaFiltrees;
+    if (!plateformesInconnues && !titre.plateformes.some((p) => autorisees.has(p))) return false;
 
     // b. Classification d'âge : âge réel ET contrainte de compagnie.
     if (!autoriseParAge(titre, ageUtilisateur)) return false;
@@ -200,6 +219,7 @@ export function recommander(
 ): ResultatRecommandation {
   const taille = Math.max(1, Math.min(20, options.taille ?? 15));
   const anneeCourante = options.anneeCourante ?? new Date(contexte.maintenant).getFullYear();
+  const plateformesDejaFiltrees = options.plateformesDejaFiltrees ?? false;
 
   if (catalogue.length === 0) {
     return {
@@ -216,14 +236,18 @@ export function recommander(
   const avecBandesAnnonces = catalogue.some((t) => t.bandeAnnonce !== null);
 
   // --- Étape 1 : filtrage strict --------------------------------------
-  const eligibles = filtrerStrict(catalogue, profil, historique, contexte, anneeCourante);
+  const eligibles = filtrerStrict(
+    catalogue, profil, historique, contexte, anneeCourante, plateformesDejaFiltrees,
+  );
   if (eligibles.length === 0) {
     return {
       recommandations: [],
       candidatsRetenus: 0,
       catalogueTotal: catalogue.length,
       raisonVide: profil.plateformes.length === 0 ? 'aucune_plateforme' : 'filtres_trop_stricts',
-      contraintesLimitantes: contraintesLimitantes(catalogue, profil, historique, contexte, anneeCourante),
+      contraintesLimitantes: contraintesLimitantes(
+        catalogue, profil, historique, contexte, anneeCourante, plateformesDejaFiltrees,
+      ),
     };
   }
 
@@ -302,7 +326,9 @@ export function recommander(
     // Sélection plus courte que demandé : on dit pourquoi, et quoi faire.
     contraintesLimitantes:
       recommandations.length < taille
-        ? contraintesLimitantes(catalogue, profil, historique, contexte, anneeCourante)
+        ? contraintesLimitantes(
+            catalogue, profil, historique, contexte, anneeCourante, plateformesDejaFiltrees,
+          )
         : [],
   };
 }
