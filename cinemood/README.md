@@ -53,6 +53,7 @@ Autres commandes :
 | `npm test` | Les 180 tests unitaires du moteur et du compte (lanceur natif de Node) |
 | `npm run typecheck` | Vérification TypeScript, sans génération |
 | `npm run demo:profils` | Affiche les sélections de trois profils fictifs |
+| `npm run verifier:rls` | Vérifie les règles de sécurité sur un vrai PostgreSQL jetable |
 | `npm run valider` | Campagne de validation : 6 profils × 6 contextes, rapport complet |
 | `npm run audit:mobile` | Contrôle statique des règles Safari iOS |
 | `npm run construire:demo` | Régénère la version statique (`../cinemood-demo/`) |
@@ -304,15 +305,42 @@ leur passé faute de plancher d'actualité. Tous corrigés.
   liste, réponse au test, déconnexion, reconnexion avec vérification que
   tout est bien là — et l'isolation stricte entre deux comptes distincts.
 
-> **Ce que ces tests ne prouvent pas** : ils n'exécutent ni un vrai Postgres,
-> ni les politiques RLS réelles de `supabase/schema.sql`, ni aucun appel
-> réseau à un projet Supabase. Ils valident que la logique applicative
+> **Ce que ces tests ne prouvent pas** : ils n'exécutent aucun appel réseau
+> vers un projet Supabase. Ils valident que la logique applicative
 > (`compte.ts`) se comporte correctement face à un client qui respecte le
-> même contrat de sécurité que les vraies règles RLS — pas que ces règles
-> SQL sont elles-mêmes correctes une fois déployées. La checklist « Comptes »
-> de [`DEPLOIEMENT.md`](DEPLOIEMENT.md#checklist-de-test-sur-iphone) referme
-> cette boucle en vérifiant le comportement réel, une fois le projet
-> Supabase en ligne.
+> même contrat de sécurité que les vraies règles RLS. La commande
+> ci-dessous, elle, vérifie les règles SQL elles-mêmes.
+
+### La sécurité des données, vérifiée sur un vrai PostgreSQL
+
+```bash
+npm run verifier:rls      # nécessite PostgreSQL installé localement
+```
+
+Les tests précédents ne peuvent rien dire des politiques Row Level
+Security : c'est du SQL, il faut une vraie base pour le vérifier. Ce
+script démarre une base jetable, y reproduit le strict minimum que
+Supabase fournit d'office (schéma `auth`, fonction `auth.uid()`, rôle
+`authenticated`), applique **`schema.sql` sans le modifier**, puis déroule
+le parcours complet : inscription, ajout d'un film, déconnexion,
+reconnexion, et tentatives d'accès par un second compte.
+
+Douze constats sont rendus par le SQL lui-même — pas par une lecture à
+l'œil — et la commande sort en erreur si l'un d'eux tombe :
+
+| Vérifié | Attendu |
+|---|---|
+| Profil créé automatiquement à l'inscription | oui, par le trigger |
+| Déconnecté, lignes visibles | aucune |
+| Après reconnexion : film, plateformes, vecteur de goûts | retrouvés à l'identique |
+| Un autre compte voit les films / interactions / le pseudo | rien |
+| Un autre compte écrit ou supprime dans les données du premier | refusé par la politique |
+
+Reste hors de portée de cette vérification, et **seulement vérifiable sur
+un vrai projet Supabase** : le service d'authentification lui-même
+(inscription, e-mail de confirmation, émission des jetons) et l'aller-retour
+réseau de l'application. C'est l'objet de la checklist « Comptes » de
+[`DEPLOIEMENT.md`](DEPLOIEMENT.md).
 
 ```bash
 npm run valider        # le rapport lisible, profil par profil
