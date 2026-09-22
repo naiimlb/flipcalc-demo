@@ -44,7 +44,16 @@
 
   --hauteur-onglets: calc(64px + env(safe-area-inset-bottom));
 
+  /* L'accent pur sur fond noir tombe sous le seuil de contraste pour du
+     texte. Cette variante éclaircie est celle à utiliser dès qu'on écrit
+     en couleur d'accent. Repli pour Safari < 16.2 juste en dessous. */
+  --accent-texte: rgb(var(--accent));
+
   color-scheme: dark;
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+  :root { --accent-texte: color-mix(in srgb, rgb(var(--accent)) 58%, #ffffff); }
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -87,11 +96,7 @@ h1, h2, h3, .affiche-titre {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   white-space: nowrap;
-  /* Sur un fond très sombre, l'accent pur manque de contraste : on
-     l'éclaircit. La première déclaration sert de repli aux navigateurs
-     sans `color-mix` (Safari < 16.2), la seconde prend le dessus ailleurs. */
-  color: rgb(var(--accent));
-  color: color-mix(in srgb, rgb(var(--accent)) 58%, #ffffff);
+  color: var(--accent-texte);
 }
 
 /* RÈGLE IPHONE : sous 16 px, Safari zoome à la saisie. */
@@ -314,6 +319,13 @@ button, a[role='button'], .tactile { min-height: 44px; }
   line-height: 1.04;
   color: var(--ivoire);
   text-wrap: balance;
+  /* Un titre long dans une petite affiche débordait sur les côtés. On
+     coupe proprement plutôt que de laisser le texte sortir du cadre. */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .affiche .meta {
   margin-top: 6px;

@@ -88,7 +88,7 @@ export function LecteurBandeAnnonce({ titre, onFermer }: Props) {
             className="flex items-center justify-between px-4 pb-2"
             style={{ paddingTop: 'max(env(safe-area-inset-top), 14px)' }}
           >
-            <p className="truncate pr-4 font-titre text-lg text-ivoire">{titre.titre}</p>
+            <p className="truncate pr-4 font-affiche text-lg text-ivoire">{titre.titre}</p>
             <button
               type="button"
               onClick={onFermer}
@@ -120,7 +120,7 @@ export function LecteurBandeAnnonce({ titre, onFermer }: Props) {
 
             {!chargement && !cle && (
               <div className="px-8 text-center">
-                <p className="font-titre text-2xl text-ivoire">Bande-annonce indisponible ici</p>
+                <p className="font-affiche text-2xl text-ivoire">Bande-annonce indisponible ici</p>
                 <p className="mx-auto mt-3 max-w-sm text-[15px] leading-relaxed text-cendre">
                   En mode démo, CinéMood ne connaît pas encore les vidéos TMDB. Tu peux l’ouvrir
                   directement sur YouTube.
@@ -131,7 +131,7 @@ export function LecteurBandeAnnonce({ titre, onFermer }: Props) {
                   )}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="mt-6 inline-flex min-h-[48px] items-center rounded-douce bg-voile-or px-6 font-semibold text-nuit"
+                  className="mt-6 inline-flex min-h-[48px] items-center rounded-douce bg-voile-accent px-6 font-semibold text-white"
                 >
                   Chercher sur YouTube
                 </a>

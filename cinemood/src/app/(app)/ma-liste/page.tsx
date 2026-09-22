@@ -45,7 +45,7 @@ export default function PageMaListe() {
   return (
     <>
       <header className="zone-sure-haut px-5 pb-2 pt-4">
-        <h1 className="font-titre text-[2.2rem] leading-none text-ivoire">Ma liste</h1>
+        <h1 className="font-affiche text-[2.2rem] leading-none text-ivoire">Ma liste</h1>
       </header>
 
       <div className="mt-5 px-5">
@@ -63,7 +63,7 @@ export default function PageMaListe() {
               aria-selected={onglet === cle}
               onClick={() => setOnglet(cle)}
               className={`min-h-[44px] flex-1 rounded-full text-[14px] transition-colors ${
-                onglet === cle ? 'bg-voile-or font-semibold text-nuit' : 'text-cendre'
+                onglet === cle ? 'bg-voile-accent font-semibold text-white' : 'text-cendre'
               }`}
             >
               {libelle}
@@ -101,7 +101,7 @@ export default function PageMaListe() {
                 </button>
 
                 <div className="min-w-0 flex-1 py-0.5">
-                  <p className="font-titre text-[1.15rem] leading-tight text-ivoire">{titre.titre}</p>
+                  <p className="font-affiche text-[1.15rem] leading-tight text-ivoire">{titre.titre}</p>
                   <p className="mt-1 text-[12px] text-estompe">
                     {titre.annee} · {titre.genres.slice(0, 2).join(', ')}
                   </p>

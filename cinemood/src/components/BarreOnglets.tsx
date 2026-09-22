@@ -63,13 +63,13 @@ export function BarreOnglets() {
                 {actif && (
                   <motion.span
                     layoutId="onglet-actif"
-                    className="absolute inset-x-5 top-0 h-[2px] rounded-full bg-voile-or"
+                    className="absolute inset-x-5 top-0 h-[2px] rounded-full bg-voile-accent"
                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                   />
                 )}
                 <svg
                   viewBox="0 0 24 24"
-                  className={`h-[22px] w-[22px] transition-colors ${actif ? 'text-orClair' : 'text-estompe'}`}
+                  className={`h-[22px] w-[22px] transition-colors ${actif ? 'text-ivoire' : 'text-estompe'}`}
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.6"
@@ -81,7 +81,7 @@ export function BarreOnglets() {
                 </svg>
                 <span
                   className={`text-[10.5px] tracking-wide transition-colors ${
-                    actif ? 'text-orClair' : 'text-estompe'
+                    actif ? 'text-ivoire' : 'text-estompe'
                   }`}
                 >
                   {onglet.libelle}

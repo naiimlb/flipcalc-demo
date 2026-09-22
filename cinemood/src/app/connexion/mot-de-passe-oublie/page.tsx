@@ -51,11 +51,11 @@ export default function PageMotDePasseOublie() {
         {envoye ? (
           <div className="text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full verre">
-              <svg viewBox="0 0 24 24" className="h-7 w-7 text-or" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" className="h-7 w-7 text-accentTexte" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 6.5h16v11H4zM4 7l8 6 8-6" />
               </svg>
             </div>
-            <h1 className="mt-7 font-titre text-[2rem] leading-tight text-ivoire">Vérifie ta boîte mail</h1>
+            <h1 className="mt-7 font-affiche text-[2rem] leading-tight text-ivoire">Vérifie ta boîte mail</h1>
             <p className="mt-3 text-[15px] leading-relaxed text-cendre">
               Si un compte existe avec l’adresse <span className="text-ivoire">{email}</span>, un lien pour
               choisir un nouveau mot de passe vient de lui être envoyé.
@@ -63,7 +63,7 @@ export default function PageMotDePasseOublie() {
           </div>
         ) : (
           <>
-            <h1 className="font-titre text-[2.4rem] leading-tight text-ivoire">Mot de passe oublié ?</h1>
+            <h1 className="font-affiche text-[2.4rem] leading-tight text-ivoire">Mot de passe oublié ?</h1>
             <p className="mt-3 text-[15px] leading-relaxed text-cendre">
               Indique ton adresse e-mail : on t’envoie un lien pour en choisir un nouveau.
             </p>
@@ -82,7 +82,7 @@ export default function PageMotDePasseOublie() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="ton@email.fr"
-                  className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+                  className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                 />
               </div>
 
@@ -92,7 +92,7 @@ export default function PageMotDePasseOublie() {
                 </p>
               )}
 
-              <Bouton variante="or" pleineLargeur type="submit" disabled={enCours}>
+              <Bouton variante="accent" pleineLargeur type="submit" disabled={enCours}>
                 {enCours ? 'Envoi…' : 'Envoyer le lien'}
               </Bouton>
             </form>

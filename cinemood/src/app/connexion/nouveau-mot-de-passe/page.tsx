@@ -95,14 +95,14 @@ export default function PageNouveauMotDePasse() {
       <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center py-16">
         {etat === 'verification' && (
           <div className="text-center">
-            <h1 className="font-titre text-[2rem] leading-tight text-ivoire">Vérification du lien…</h1>
+            <h1 className="font-affiche text-[2rem] leading-tight text-ivoire">Vérification du lien…</h1>
             <p className="mt-3 text-[15px] leading-relaxed text-cendre">Un instant.</p>
           </div>
         )}
 
         {etat === 'invalide' && (
           <div className="text-center">
-            <h1 className="font-titre text-[2rem] leading-tight text-ivoire">Lien invalide ou expiré</h1>
+            <h1 className="font-affiche text-[2rem] leading-tight text-ivoire">Lien invalide ou expiré</h1>
             <p className="mt-3 text-[15px] leading-relaxed text-cendre">
               Ce lien de réinitialisation n’est plus valable. Demande-en un nouveau.
             </p>
@@ -118,15 +118,15 @@ export default function PageNouveauMotDePasse() {
         {etat === 'succes' && (
           <div className="text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full verre">
-              <svg viewBox="0 0 24 24" className="h-7 w-7 text-or" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" className="h-7 w-7 text-accentTexte" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="mt-7 font-titre text-[2rem] leading-tight text-ivoire">Mot de passe mis à jour</h1>
+            <h1 className="mt-7 font-affiche text-[2rem] leading-tight text-ivoire">Mot de passe mis à jour</h1>
             <p className="mt-3 text-[15px] leading-relaxed text-cendre">
               Tu peux continuer directement, tu es déjà connecté·e.
             </p>
-            <Bouton variante="or" pleineLargeur className="mt-8" onClick={() => routeur.push('/accueil')}>
+            <Bouton variante="accent" pleineLargeur className="mt-8" onClick={() => routeur.push('/accueil')}>
               Continuer
             </Bouton>
           </div>
@@ -134,7 +134,7 @@ export default function PageNouveauMotDePasse() {
 
         {etat === 'pret' && (
           <>
-            <h1 className="font-titre text-[2.4rem] leading-tight text-ivoire">Choisis un nouveau mot de passe</h1>
+            <h1 className="font-affiche text-[2.4rem] leading-tight text-ivoire">Choisis un nouveau mot de passe</h1>
             <p className="mt-3 text-[15px] leading-relaxed text-cendre">
               Il te sera demandé à chaque nouvelle connexion.
             </p>
@@ -153,7 +153,7 @@ export default function PageNouveauMotDePasse() {
                   value={motDePasse}
                   onChange={(e) => setMotDePasse(e.target.value)}
                   placeholder="Nouveau mot de passe (8 caractères minimum)"
-                  className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+                  className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                 />
               </div>
 
@@ -170,7 +170,7 @@ export default function PageNouveauMotDePasse() {
                   value={confirmation}
                   onChange={(e) => setConfirmation(e.target.value)}
                   placeholder="Confirme le mot de passe"
-                  className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+                  className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export default function PageNouveauMotDePasse() {
                 </p>
               )}
 
-              <Bouton variante="or" pleineLargeur type="submit" disabled={enCours}>
+              <Bouton variante="accent" pleineLargeur type="submit" disabled={enCours}>
                 {enCours ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
               </Bouton>
             </form>

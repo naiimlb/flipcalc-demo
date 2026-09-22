@@ -4,31 +4,55 @@
 
 /* =====================================================================
    Bases globales — pensées pour Safari iOS avant tout.
+   ---------------------------------------------------------------------
+   La direction artistique tient sur deux variables : `--accent` et
+   `--second`, posées sur la racine et repeintes par l'humeur choisie
+   (voir src/lib/ui/humeurs.ts). Tout le reste — halos, boutons, ombres,
+   bordures, barre d'onglets — en découle.
+
+   Règle de performance tenue partout : on n'anime que `transform` et
+   `opacity`, et `backdrop-filter` reste réservé aux surfaces fixes.
    ===================================================================== */
 
 @layer base {
   :root {
     color-scheme: dark;
     /* Hauteur de la barre d'onglets + zone sûre du bas. */
-    --hauteur-onglets: calc(62px + env(safe-area-inset-bottom));
+    --hauteur-onglets: calc(64px + env(safe-area-inset-bottom));
+
+    /* Accent par défaut : celui de la marque, avant tout choix d'humeur. */
+    --accent: 123 44 255;
+    --second: 255 46 147;
+
+    /* L'accent pur sur fond noir passe sous le seuil de contraste pour du
+       texte : cette variante éclaircie est celle à utiliser dès qu'on
+       écrit en couleur d'accent. */
+    --accent-texte: rgb(var(--accent));
+  }
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    :root { --accent-texte: color-mix(in srgb, rgb(var(--accent)) 58%, #ffffff); }
   }
 
   html {
     -webkit-text-size-adjust: 100%;
     /* Évite le « rubber band » blanc en haut et en bas sur iOS. */
-    background-color: #07060a;
+    background-color: #06040b;
   }
 
   body {
     @apply bg-nuit font-texte text-ivoire antialiased;
-    /* Empêche le zoom horizontal accidentel. */
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Titres : condensée, lourde, capitales — le registre de l'affiche. */
   h1, h2, h3 {
-    @apply font-titre;
-    letter-spacing: -0.01em;
+    @apply font-affiche;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    line-height: 1.02;
+    text-transform: uppercase;
   }
 
   /* RÈGLE IMPORTANTE POUR IPHONE :
@@ -50,46 +74,69 @@
   }
 
   ::selection {
-    background: rgba(216, 189, 133, 0.28);
+    background: rgb(var(--accent) / 0.4);
   }
 }
 
 @layer components {
-  /* Surface en verre dépoli, signature visuelle de l'app. */
+  /* Surface « verre ». Elle ne floute plus l'arrière-plan : sur une liste
+     qui défile, `backdrop-filter` est la première cause de saccade sur
+     iPhone. Le même effet de profondeur vient d'un dégradé et d'un liseré,
+     pour un coût de rendu nul. */
   .verre {
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
-    border: 1px solid rgba(255, 255, 255, 0.075);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    background:
+      linear-gradient(158deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.018)),
+      rgb(var(--accent) / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.09);
   }
 
+  /* Réservé aux surfaces FIXES (barre d'onglets, en-têtes collants) :
+     une seule couche floutée à l'écran, jamais dans le flux. */
   .verre-fort {
-    background: rgba(13, 12, 18, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(26px) saturate(150%);
-    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    background: rgb(8 6 16 / 0.82);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
   }
 
-  /* Texte doré, réservé aux accents. */
-  .texte-or {
-    @apply bg-voile-or bg-clip-text text-transparent;
+  /* Texte en dégradé de marque, réservé aux accents. */
+  .texte-accent {
+    @apply bg-voile-accent bg-clip-text text-transparent;
+  }
+
+  /* Sur-titre en capitales espacées. */
+  .etiquette {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--accent-texte);
+  }
+
+  /* Le titre d'un film garde sa casse d'origine : crié en capitales, il
+     devient illisible et perd son identité. */
+  .nom-propre {
+    text-transform: none;
+    letter-spacing: -0.015em;
   }
 
   /* Squelette de chargement : jamais d'écran vide. */
   .squelette {
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.035) 0%,
-      rgba(255, 255, 255, 0.09) 50%,
-      rgba(255, 255, 255, 0.035) 100%
+      rgb(255 255 255 / 0.035) 0%,
+      rgb(255 255 255 / 0.1) 50%,
+      rgb(255 255 255 / 0.035) 100%
     );
     background-size: 480px 100%;
-    @apply animate-chatoiement rounded-douce;
+    @apply animate-chatoiement rounded-carte;
   }
 
   /* Défilement horizontal sans barre visible. */
   .rail {
-    @apply flex snap-x snap-mandatory gap-3 overflow-x-auto;
+    @apply flex gap-3 overflow-x-auto;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     scroll-padding-left: 20px;
@@ -97,21 +144,46 @@
   .rail::-webkit-scrollbar {
     display: none;
   }
+  .rail > * {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+  }
 
   /* Contenu principal : marge basse pour ne pas passer sous les onglets. */
   .page {
-    padding-bottom: calc(var(--hauteur-onglets) + 22px);
-    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(var(--hauteur-onglets) + 24px);
+    animation: entree-ecran 0.24s ease-out both;
   }
 
-  /* Grain cinéma, très léger, posé sur les grands aplats. */
+  /* Halo global : le fond « vivant ». Deux taches de couleur fixes qui
+     suivent l'humeur. Statiques, donc gratuites. */
+  .lueur {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(95% 58% at 50% -6%, rgb(var(--accent) / 0.42) 0%, rgb(var(--accent) / 0.1) 42%, transparent 68%),
+      radial-gradient(70% 40% at 108% 12%, rgb(var(--second) / 0.26) 0%, transparent 60%),
+      radial-gradient(90% 50% at -12% 38%, rgb(var(--accent) / 0.16) 0%, transparent 62%);
+    transition: background 0.5s ease;
+  }
+
+  /* Grain argentique, posé sur les grands aplats. */
   .grain::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.32;
+    opacity: 0.26;
+    mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23b)' opacity='0.42'/%3E%3C/svg%3E");
+  }
+
+  /* Apparition en cascade : l'index est posé par le composant via --i. */
+  .cascade > * {
+    @apply animate-monte;
+    animation-delay: calc(var(--i, 0) * 40ms);
   }
 }
 
@@ -126,6 +198,19 @@
   .equilibre {
     text-wrap: balance;
   }
+  /* Coupe proprement un texte trop long plutôt que de le laisser déborder. */
+  .lignes-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .lignes-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
   /* Désactive la sélection sur les éléments qu'on fait glisser. */
   .insaisissable {
@@ -133,6 +218,11 @@
     user-select: none;
     -webkit-touch-callout: none;
   }
+}
+
+@keyframes entree-ecran {
+  from { opacity: 0; transform: scale(1.012); }
+  to { opacity: 1; transform: none; }
 }
 
 /* Respecte le réglage « Réduire les animations » d'iOS. */

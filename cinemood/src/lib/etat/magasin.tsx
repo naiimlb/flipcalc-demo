@@ -38,6 +38,7 @@ import {
   enregistrerSignalCloud,
 } from '@/lib/cloud/compte';
 import type { ResultatEcriture } from '@/lib/cloud/compte';
+import { accentDe } from '@/lib/ui/humeurs';
 import { clientNavigateur } from '@/lib/supabase/navigateur';
 import { SUPABASE_CONFIGURE } from '@/lib/supabase/config';
 import type { Compagnie, Contexte, Historique, Humeur, ProfilUtilisateur, Signal, Titre } from '@/lib/reco/types';
@@ -225,6 +226,17 @@ export function FournisseurApp({ children }: { children: React.ReactNode }) {
     // Ces deux callbacks sont stables (`useCallback` sans dépendance
     // variable) : les inclure ne relance pas l'effet à chaque rendu.
   }, [chargerDepuisLocalStorage, chargerDepuisLeCompte]);
+
+  /* --- La couleur de l'app suit l'humeur ------------------------------ */
+  // Toute la direction artistique découle de ces deux variables : halo,
+  // boutons, bordures, ombres, barre d'onglets. Les poser sur la racine
+  // suffit à repeindre l'écran entier.
+  useEffect(() => {
+    const { accent, second } = accentDe(contexte.humeur);
+    const racine = document.documentElement;
+    racine.style.setProperty('--accent', accent);
+    racine.style.setProperty('--second', second);
+  }, [contexte.humeur]);
 
   /* --- Sauvegarde sur l'appareil, UNIQUEMENT en mode invité ----------- */
   useEffect(() => {

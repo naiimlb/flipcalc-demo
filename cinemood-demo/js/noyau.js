@@ -270,19 +270,19 @@ export function ouvrirBandeAnnonce(titre) {
            allowfullscreen></iframe>
        </div>`
     : `<div class="centre" style="padding-inline:32px">
-         <p class="serif" style="font-size:26px">Bande-annonce indisponible ici</p>
+         <p  style="font-size:26px">Bande-annonce indisponible ici</p>
          <p class="cendre" style="margin-top:12px;font-size:15px;line-height:1.6;max-width:24rem;margin-inline:auto">
            Cette démonstration tourne sur un catalogue local : elle ne connaît pas les vidéos TMDB.
            Un seul appui pour l’ouvrir sur YouTube.
          </p>
-         <a class="bouton or" style="margin-top:24px;text-decoration:none" href="${recherche}" target="_blank" rel="noreferrer noopener">
+         <a class="bouton accent" style="margin-top:24px;text-decoration:none" href="${recherche}" target="_blank" rel="noreferrer noopener">
            Chercher sur YouTube
          </a>
        </div>`;
 
   modale.innerHTML = `<div class="lecteur" role="dialog" aria-modal="true" aria-label="Bande-annonce de ${txt(titre.titre)}">
       <header>
-        <p class="serif" style="font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:16px">${txt(titre.titre)}</p>
+        <p  style="font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:16px">${txt(titre.titre)}</p>
         <button type="button" class="rond" id="fermer-lecteur" aria-label="Fermer la bande-annonce">${icone('croix', 'stroke-width="1.8"')}</button>
       </header>
       <div class="corps">${corps}</div>

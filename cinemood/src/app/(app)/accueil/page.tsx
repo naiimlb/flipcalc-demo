@@ -92,8 +92,8 @@ export default function PageAccueil() {
   return (
     <TirerPourActualiser onActualiser={charger}>
       <header className="zone-sure-haut px-5 pb-1 pt-4">
-        <p className="text-[13px] tracking-[0.2em] text-or/70">{salutation()}</p>
-        <h1 className="mt-1 font-titre text-[2.4rem] leading-none text-ivoire">{prenom}</h1>
+        <p className="text-[13px] tracking-[0.2em] text-accentTexte">{salutation()}</p>
+        <h1 className="mt-1 font-affiche text-[2.4rem] leading-none text-ivoire">{prenom}</h1>
       </header>
 
       <div className="mt-6">
@@ -107,14 +107,14 @@ export default function PageAccueil() {
 
       <section className="mt-8 px-5" aria-label="Ta sélection">
         <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="font-titre text-[1.55rem] text-ivoire">Ta sélection</h2>
+          <h2 className="font-affiche text-[1.55rem] text-ivoire">Ta sélection</h2>
           {recos && recos.length > 0 && (
             <span className="text-[12px] text-estompe">{recos.length} titres</span>
           )}
         </div>
 
         {demo && (
-          <p className="mb-5 rounded-douce border border-or/25 bg-or/[0.06] px-4 py-3 text-[13px] leading-relaxed text-orClair/90">
+          <p className="mb-5 rounded-douce border border-accent/25 bg-accent/[0.06] px-4 py-3 text-[13px] leading-relaxed text-ivoire/90">
             Mode démo : les titres viennent d’un catalogue local. Ajoute une clé TMDB pour
             basculer sur les vraies disponibilités de tes plateformes.
           </p>

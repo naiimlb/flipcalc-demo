@@ -134,14 +134,14 @@ export default function PageProfil() {
   return (
     <>
       <header className="zone-sure-haut px-5 pb-2 pt-4">
-        <h1 className="font-titre text-[2.2rem] leading-none text-ivoire">Profil</h1>
+        <h1 className="font-affiche text-[2.2rem] leading-none text-ivoire">Profil</h1>
       </header>
 
       {/* --- Carte d'identité cinéma ------------------------------------ */}
       <section className="mt-6 px-5">
         <div className="grain relative overflow-hidden rounded-carte verre p-6">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-or/75">Ton profil cinéma</p>
-          <p className="mt-2 font-titre text-[2rem] leading-tight text-ivoire">{carte.titre}</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-accentTexte">Ton profil cinéma</p>
+          <p className="mt-2 font-affiche text-[2rem] leading-tight text-ivoire">{carte.titre}</p>
           <p className="mt-2 text-[14px] leading-relaxed text-cendre">{carte.resume}</p>
           <p className="mt-4 text-[12px] text-estompe">
             {profil.pseudo} · {generation(profil.anneeNaissance)} ·{' '}
@@ -162,11 +162,11 @@ export default function PageProfil() {
                 onClick={() => basculerPlateforme(p.id)}
                 aria-pressed={actif}
                 className={`flex min-h-[74px] flex-col items-center justify-center gap-2 rounded-douce border px-1.5 transition-colors ${
-                  actif ? 'border-or/60 bg-or/10' : 'border-white/[0.07] bg-white/[0.02]'
+                  actif ? 'border-accent/60 bg-accent/10' : 'border-white/[0.07] bg-white/[0.02]'
                 }`}
               >
                 <PastillePlateforme id={p.id} taille="petite" />
-                <span className={`text-center text-[11px] leading-tight ${actif ? 'text-orClair' : 'text-estompe'}`}>
+                <span className={`text-center text-[11px] leading-tight ${actif ? 'text-ivoire' : 'text-estompe'}`}>
                   {p.nom}
                 </span>
               </button>
@@ -297,7 +297,7 @@ export default function PageProfil() {
                     value={nouvelEmail}
                     onChange={(e) => setNouvelEmail(e.target.value)}
                     placeholder="ton@email.fr"
-                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                   />
                   {messageEmail && <p className="mt-3 text-[13px] leading-relaxed text-cendre">{messageEmail}</p>}
                   <div className="mt-4 flex gap-3">
@@ -312,7 +312,7 @@ export default function PageProfil() {
                     >
                       Annuler
                     </Bouton>
-                    <Bouton variante="or" type="submit" className="flex-1" disabled={enCoursEmail}>
+                    <Bouton variante="accent" type="submit" className="flex-1" disabled={enCoursEmail}>
                       {enCoursEmail ? 'Envoi…' : 'Valider'}
                     </Bouton>
                   </div>
@@ -349,7 +349,7 @@ export default function PageProfil() {
                     value={nouveauMotDePasse}
                     onChange={(e) => setNouveauMotDePasse(e.target.value)}
                     placeholder="8 caractères minimum"
-                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                   />
                   <label htmlFor="confirmation-mdp" className="mb-2 mt-3 block text-[13px] text-cendre">
                     Confirme-le
@@ -363,7 +363,7 @@ export default function PageProfil() {
                     value={confirmationMotDePasse}
                     onChange={(e) => setConfirmationMotDePasse(e.target.value)}
                     placeholder="Confirme le mot de passe"
-                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                   />
                   {messageMotDePasse && (
                     <p className="mt-3 text-[13px] leading-relaxed text-cendre">{messageMotDePasse}</p>
@@ -380,7 +380,7 @@ export default function PageProfil() {
                     >
                       Annuler
                     </Bouton>
-                    <Bouton variante="or" type="submit" className="flex-1" disabled={enCoursMotDePasse}>
+                    <Bouton variante="accent" type="submit" className="flex-1" disabled={enCoursMotDePasse}>
                       {enCoursMotDePasse ? 'Enregistrement…' : 'Valider'}
                     </Bouton>
                   </div>
@@ -394,7 +394,7 @@ export default function PageProfil() {
               Refaire le test de personnalité
             </Bouton>
           ) : (
-            <div className="rounded-douce border border-or/30 bg-or/[0.06] p-4">
+            <div className="rounded-douce border border-accent/30 bg-accent/[0.06] p-4">
               <p className="text-[14px] leading-relaxed text-ivoire">
                 Refaire le test remplacera ton profil de goûts actuel par les nouvelles réponses.
               </p>
@@ -403,7 +403,7 @@ export default function PageProfil() {
                   Annuler
                 </Bouton>
                 <Bouton
-                  variante="or"
+                  variante="accent"
                   className="flex-1"
                   onClick={() => routeur.push('/bienvenue/test')}
                 >
@@ -436,7 +436,7 @@ export default function PageProfil() {
                 <button
                   type="button"
                   onClick={() => void supprimerLeCompte()}
-                  className="flex-1 rounded-douce bg-alerte/90 px-4 font-semibold text-nuit"
+                  className="flex-1 rounded-douce bg-alerte/90 px-4 font-semibold text-white"
                 >
                   Supprimer
                 </button>
@@ -466,7 +466,7 @@ function Bloc({
 }) {
   return (
     <section className="mt-9 px-5">
-      <h2 className="font-titre text-[1.4rem] text-ivoire">{titre}</h2>
+      <h2 className="font-affiche text-[1.4rem] text-ivoire">{titre}</h2>
       {sousTitre && <p className="mb-4 mt-1 text-[13px] leading-relaxed text-estompe">{sousTitre}</p>}
       <div className={sousTitre ? '' : 'mt-4'}>{children}</div>
     </section>

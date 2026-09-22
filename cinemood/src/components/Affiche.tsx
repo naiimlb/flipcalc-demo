@@ -87,7 +87,7 @@ export function Affiche({ titre, variante = 'vignette', priorite = false, classN
         />
         <div>
           <p
-            className={`equilibre font-titre leading-[1.05] text-ivoire ${grand ? 'text-[2rem]' : 'text-[1.05rem]'}`}
+            className={`equilibre font-affiche leading-[1.05] text-ivoire ${grand ? 'text-[2rem]' : 'text-[1.05rem]'}`}
           >
             {titre.titre}
           </p>

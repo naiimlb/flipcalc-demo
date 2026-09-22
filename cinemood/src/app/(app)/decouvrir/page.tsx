@@ -75,7 +75,7 @@ export default function PageDecouvrir() {
   return (
     <>
       <header className="zone-sure-haut px-5 pb-2 pt-4">
-        <h1 className="font-titre text-[2.2rem] leading-none text-ivoire">Découvrir</h1>
+        <h1 className="font-affiche text-[2.2rem] leading-none text-ivoire">Découvrir</h1>
       </header>
 
       <div className="px-5 pt-5">

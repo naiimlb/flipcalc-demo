@@ -49,8 +49,8 @@ export default function PageVitrine() {
         <header className="zone-sure-haut pt-8">
           <div className="flex items-center gap-3">
             <Logo />
-            <span className="font-titre text-[1.4rem] tracking-wide text-ivoire">
-              Ciné<span className="texte-or">Mood</span>
+            <span className="font-affiche text-[1.4rem] tracking-wide text-ivoire">
+              Ciné<span className="texte-accent">Mood</span>
             </span>
           </div>
         </header>
@@ -61,11 +61,11 @@ export default function PageVitrine() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="equilibre font-titre text-[3.2rem] font-light leading-[1.02] text-ivoire"
+            className="equilibre font-affiche text-[3.2rem] font-light leading-[1.02] text-ivoire"
           >
             Arrête de chercher.
             <br />
-            <span className="texte-or">Commence à regarder.</span>
+            <span className="texte-accent">Commence à regarder.</span>
           </motion.h1>
 
           <motion.p
@@ -86,7 +86,7 @@ export default function PageVitrine() {
           >
             {ARGUMENTS.map((argument) => (
               <li key={argument.titre} className="flex gap-4">
-                <span className="mt-2 h-px w-7 shrink-0 bg-voile-or" aria-hidden="true" />
+                <span className="mt-2 h-px w-7 shrink-0 bg-voile-accent" aria-hidden="true" />
                 <div>
                   <p className="text-[15px] font-medium text-ivoire">{argument.titre}</p>
                   <p className="mt-0.5 text-[14px] leading-relaxed text-estompe">{argument.texte}</p>
@@ -105,7 +105,7 @@ export default function PageVitrine() {
           >
             <Link
               href={SUPABASE_CONFIGURE ? '/connexion' : '/bienvenue/plateformes'}
-              className="flex min-h-[56px] w-full items-center justify-center rounded-douce bg-voile-or text-[17px] font-semibold text-nuit shadow-or"
+              className="flex min-h-[56px] w-full items-center justify-center rounded-douce bg-voile-accent text-[17px] font-semibold text-white shadow-accent"
             >
               Commencer
             </Link>

@@ -106,8 +106,8 @@ export default function PagePlateformes() {
 
       <div className="relative mx-auto max-w-xl px-6 pb-44">
         <header className="zone-sure-haut pt-10">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-or/70">Étape 1 sur 2</p>
-          <h1 className="equilibre mt-3 font-titre text-[2.5rem] leading-[1.05] text-ivoire">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-accentTexte">Étape 1 sur 2</p>
+          <h1 className="equilibre mt-3 font-affiche text-[2.5rem] leading-[1.05] text-ivoire">
             Quelles plateformes as-tu ?
           </h1>
           <p className="mt-3 text-[15px] leading-relaxed text-cendre">
@@ -152,12 +152,12 @@ export default function PagePlateformes() {
           }}
           aria-pressed={sansAbonnement}
           className={`mt-7 flex min-h-[58px] w-full items-center gap-3 rounded-douce border px-5 text-left transition-colors ${
-            sansAbonnement ? 'border-or/60 bg-or/10' : 'border-white/[0.08] bg-white/[0.02]'
+            sansAbonnement ? 'border-accent/60 bg-accent/10' : 'border-white/[0.08] bg-white/[0.02]'
           }`}
         >
           <span
             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${
-              sansAbonnement ? 'border-or bg-or text-nuit' : 'border-white/20'
+              sansAbonnement ? 'border-accent bg-accent text-white' : 'border-white/20'
             }`}
             aria-hidden="true"
           >
@@ -167,7 +167,7 @@ export default function PagePlateformes() {
               </svg>
             )}
           </span>
-          <span className={sansAbonnement ? 'text-orClair' : 'text-cendre'}>
+          <span className={sansAbonnement ? 'text-ivoire' : 'text-cendre'}>
             Je n’ai aucun abonnement
             <span className="mt-0.5 block text-[13px] text-estompe">
               Recommandations sur les offres gratuites uniquement
@@ -184,7 +184,7 @@ export default function PagePlateformes() {
                 onClick={() => setPays(p.code)}
                 aria-pressed={pays === p.code}
                 className={`min-h-[44px] rounded-full border px-4 text-[15px] transition-colors ${
-                  pays === p.code ? 'border-or/60 bg-or/12 text-orClair' : 'border-white/10 text-cendre'
+                  pays === p.code ? 'border-accent/60 bg-accent/12 text-ivoire' : 'border-white/10 text-cendre'
                 }`}
               >
                 {p.nom}
@@ -209,7 +209,7 @@ export default function PagePlateformes() {
             </p>
           )}
           <motion.div animate={{ opacity: peutContinuer ? 1 : 0.45 }}>
-            <Bouton variante="or" pleineLargeur onClick={() => void continuer()} disabled={!peutContinuer || enregistrement}>
+            <Bouton variante="accent" pleineLargeur onClick={() => void continuer()} disabled={!peutContinuer || enregistrement}>
               {enregistrement ? 'Enregistrement…' : 'Continuer'}
             </Bouton>
           </motion.div>
@@ -248,11 +248,11 @@ function Vignette({ id, nom, actif, onClick }: { id: string; nom: string; actif:
       onClick={onClick}
       aria-pressed={actif}
       className={`flex min-h-[88px] flex-col items-center justify-center gap-2.5 rounded-carte border px-2 transition-colors ${
-        actif ? 'border-or/60 bg-or/10' : 'border-white/[0.07] bg-white/[0.025]'
+        actif ? 'border-accent/60 bg-accent/10' : 'border-white/[0.07] bg-white/[0.025]'
       }`}
     >
       <PastillePlateforme id={id} taille="grande" />
-      <span className={`text-center text-[11.5px] leading-tight ${actif ? 'text-orClair' : 'text-estompe'}`}>
+      <span className={`text-center text-[11.5px] leading-tight ${actif ? 'text-ivoire' : 'text-estompe'}`}>
         {nom}
       </span>
     </motion.button>

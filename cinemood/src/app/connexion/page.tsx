@@ -84,11 +84,11 @@ export default function PageConnexion() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-lueur" aria-hidden="true" />
         <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col items-center justify-center py-16 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full verre">
-            <svg viewBox="0 0 24 24" className="h-7 w-7 text-or" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className="h-7 w-7 text-accentTexte" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 6.5h16v11H4zM4 7l8 6 8-6" />
             </svg>
           </div>
-          <h1 className="mt-7 font-titre text-[2rem] leading-tight text-ivoire">Vérifie ta boîte mail</h1>
+          <h1 className="mt-7 font-affiche text-[2rem] leading-tight text-ivoire">Vérifie ta boîte mail</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-cendre">
             On a envoyé un lien de confirmation à <span className="text-ivoire">{email}</span>. Clique dessus
             pour activer ton compte — tu reviendras directement ici, connecté·e.
@@ -114,7 +114,7 @@ export default function PageConnexion() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-lueur" aria-hidden="true" />
 
       <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center py-16">
-        <h1 className="font-titre text-[2.6rem] leading-tight text-ivoire">
+        <h1 className="font-affiche text-[2.6rem] leading-tight text-ivoire">
           {mode === 'inscription' ? 'Créer ton compte' : 'Content de te revoir'}
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-cendre">
@@ -137,7 +137,7 @@ export default function PageConnexion() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ton@email.fr"
-              className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+              className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
             />
           </div>
 
@@ -154,7 +154,7 @@ export default function PageConnexion() {
               value={motDePasse}
               onChange={(e) => setMotDePasse(e.target.value)}
               placeholder="Mot de passe (8 caractères minimum)"
-              className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-or/50 focus:outline-none"
+              className="min-h-[54px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
             />
           </div>
 
@@ -172,7 +172,7 @@ export default function PageConnexion() {
             </p>
           )}
 
-          <Bouton variante="or" pleineLargeur type="submit" disabled={enCours}>
+          <Bouton variante="accent" pleineLargeur type="submit" disabled={enCours}>
             {enCours ? 'Un instant…' : mode === 'inscription' ? 'Créer mon compte' : 'Se connecter'}
           </Bouton>
         </form>
