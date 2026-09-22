@@ -32,9 +32,25 @@ export interface ConfigTmdb {
   langue: string;
 }
 
+/**
+ * TMDB délivre DEUX identifiants, et les confondre est l'erreur la plus
+ * courante de toute intégration :
+ *   • « API Key (v3) » — 32 caractères hexadécimaux, qui se passe en
+ *     paramètre `?api_key=` ;
+ *   • « API Read Access Token (v4) » — un JWT `eyJ…`, qui se passe en
+ *     en-tête `Authorization: Bearer`.
+ * Envoyer l'un à la place de l'autre donne un 401 sur CHAQUE appel, donc
+ * un catalogue entièrement vide. Plutôt que d'exiger le bon, on
+ * reconnaît celui qu'on a reçu.
+ */
+function formatDeJeton(jeton: string): 'v4' | 'v3' {
+  return jeton.split('.').length === 3 ? 'v4' : 'v3';
+}
+
 /** Lit la configuration TMDB dans l'environnement, sans jamais la logger. */
 export function configTmdb(): ConfigTmdb | null {
-  const jeton = process.env.TMDB_ACCESS_TOKEN?.trim();
+  // Un « Bearer » collé par mégarde avec le jeton ferait échouer l'en-tête.
+  const jeton = process.env.TMDB_ACCESS_TOKEN?.trim().replace(/^Bearer\s+/i, '');
   if (!jeton) return null;
   return {
     jeton,
@@ -77,18 +93,22 @@ export async function tmdb<T>(
     if (valeur !== undefined && valeur !== '') url.searchParams.set(cle, String(valeur));
   }
 
-  const reponse = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${config.jeton}`,
-      accept: 'application/json',
-    },
-    next: { revalidate },
-  });
+  const entetes: Record<string, string> = { accept: 'application/json' };
+  if (formatDeJeton(config.jeton) === 'v4') {
+    entetes.Authorization = `Bearer ${config.jeton}`;
+  } else {
+    url.searchParams.set('api_key', config.jeton);
+  }
+
+  const reponse = await fetch(url, { headers: entetes, next: { revalidate } });
 
   if (!reponse.ok) {
     // On ne renvoie jamais le corps brut de TMDB au client : il peut
     // contenir des détails inutiles. Un message et un statut suffisent.
-    throw new ErreurTmdb(`TMDB a répondu ${reponse.status} sur ${chemin}`, reponse.status);
+    // Le format du jeton est précisé sur un 401 : c'est LA cause la plus
+    // fréquente, et sans elle on cherche du côté des filtres pour rien.
+    const indice = reponse.status === 401 ? ` (jeton reconnu comme ${formatDeJeton(config.jeton)})` : '';
+    throw new ErreurTmdb(`TMDB a répondu ${reponse.status} sur ${chemin}${indice}`, reponse.status);
   }
 
   return (await reponse.json()) as T;
