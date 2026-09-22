@@ -47,6 +47,35 @@ function formatDeJeton(jeton: string): 'v4' | 'v3' {
   return jeton.split('.').length === 3 ? 'v4' : 'v3';
 }
 
+export interface CaractereInvalide {
+  /** Position 1-based, telle qu'on la compte en relisant le jeton. */
+  position: number;
+  caractere: string;
+  codePoint: number;
+}
+
+/**
+ * Un jeton TMDB, quel que soit son format, ne contient que des lettres,
+ * chiffres, `-`, `_` et `.` — donc rien au-delà du code 255. `fetch` lève
+ * une exception aussi cryptique qu'inexploitable si on lui passe un
+ * caractère hors de cette plage dans un en-tête (`ByteString`).
+ *
+ * La cause la plus probable d'un tel caractère : une copie par OCR
+ * (Live Text sur une capture d'écran) plutôt qu'une sélection de texte,
+ * qui confond parfois une lettre latine avec son homologue visuellement
+ * identique d'un autre alphabet — un « M » cyrillique pour un « M »
+ * latin, par exemple. Le repérer précisément, plutôt que de laisser
+ * l'exception remonter telle quelle, transforme une heure de doute en
+ * une correction d'une minute.
+ */
+function premierCaractereInvalide(jeton: string): CaractereInvalide | null {
+  for (let i = 0; i < jeton.length; i += 1) {
+    const codePoint = jeton.charCodeAt(i);
+    if (codePoint > 255) return { position: i + 1, caractere: jeton[i], codePoint };
+  }
+  return null;
+}
+
 /** Lit la configuration TMDB dans l'environnement, sans jamais la logger. */
 export function configTmdb(): ConfigTmdb | null {
   // Un « Bearer » ou des guillemets collés par mégarde avec le jeton — le
@@ -91,6 +120,18 @@ export async function tmdb<T>(
   const config = configTmdb();
   if (!config) throw new ErreurTmdb('TMDB_ACCESS_TOKEN absent', 500);
 
+  const invalide = premierCaractereInvalide(config.jeton);
+  if (invalide) {
+    throw new ErreurTmdb(
+      `Le jeton TMDB contient un caractère non valide à la position ${invalide.position} ` +
+        `(« ${invalide.caractere} », code Unicode ${invalide.codePoint}) — probablement une lettre ` +
+        `d'un autre alphabet visuellement identique à une lettre latine, introduite par une copie ` +
+        `via OCR plutôt qu'une sélection de texte. Recopie le jeton en sélectionnant le texte ` +
+        `directement sur themoviedb.org/settings/api, pas depuis une capture d'écran.`,
+      422,
+    );
+  }
+
   const url = new URL(BASE + chemin);
   url.searchParams.set('language', config.langue);
   for (const [cle, valeur] of Object.entries(params)) {
@@ -123,6 +164,8 @@ export interface DiagnosticTmdb {
   /** Longueur seule : jamais le contenu, même en diagnostic. */
   jetonLongueur: number;
   formatDetecte: 'v4' | 'v3' | null;
+  /** Renseigné si un caractère du jeton n'est pas un ASCII étendu valide. */
+  caractereInvalide: CaractereInvalide | null;
   appelReussi: boolean;
   statutHttp: number | null;
   messageErreur: string | null;
@@ -140,7 +183,7 @@ export async function diagnostiquerTmdb(): Promise<DiagnosticTmdb> {
   const config = configTmdb();
   if (!config) {
     return {
-      jetonPresent: false, jetonLongueur: 0, formatDetecte: null,
+      jetonPresent: false, jetonLongueur: 0, formatDetecte: null, caractereInvalide: null,
       appelReussi: false, statutHttp: null,
       messageErreur: 'TMDB_ACCESS_TOKEN absent ou vide sur Vercel.',
       exempleTitre: null,
@@ -148,17 +191,18 @@ export async function diagnostiquerTmdb(): Promise<DiagnosticTmdb> {
   }
 
   const format = formatDeJeton(config.jeton);
+  const caractereInvalide = premierCaractereInvalide(config.jeton);
   try {
     const fiche = await tmdb<{ title?: string }>('/movie/550', {}, 60);
     return {
-      jetonPresent: true, jetonLongueur: config.jeton.length, formatDetecte: format,
+      jetonPresent: true, jetonLongueur: config.jeton.length, formatDetecte: format, caractereInvalide,
       appelReussi: true, statutHttp: 200, messageErreur: null,
       exempleTitre: fiche.title ?? null,
     };
   } catch (erreur) {
     const statut = erreur instanceof ErreurTmdb ? erreur.statut : null;
     return {
-      jetonPresent: true, jetonLongueur: config.jeton.length, formatDetecte: format,
+      jetonPresent: true, jetonLongueur: config.jeton.length, formatDetecte: format, caractereInvalide,
       appelReussi: false, statutHttp: statut,
       messageErreur: erreur instanceof Error ? erreur.message : String(erreur),
       exempleTitre: null,
