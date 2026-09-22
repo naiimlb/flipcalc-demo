@@ -225,12 +225,15 @@ export default function PageAccueil() {
               onChoisir={setFiche}
             />
           )}
-
-          <p className="mt-12 px-8 text-center text-[12px] leading-relaxed text-estompe">
-            Ce produit utilise l’API TMDB mais n’est pas approuvé ni certifié par TMDB.
-          </p>
         </>
       )}
+
+      {/* Attribution TMDB : exigée par leurs conditions d'utilisation, donc
+          affichée quel que soit l'état de l'écran — y compris quand la
+          sélection est vide ou en erreur. */}
+      <p className="mt-12 px-8 text-center text-[12px] leading-relaxed text-estompe">
+        Ce produit utilise l’API TMDB mais n’est pas approuvé ni certifié par TMDB.
+      </p>
 
       <FicheTitre
         reco={fiche}

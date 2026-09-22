@@ -35,6 +35,7 @@ export function titre(partiel: Partial<Titre> = {}): Titre {
     tonalites: ['reflechi'],
     rythme: 'modere',
     affiche: null,
+    fond: null,
     bandeAnnonce: null,
     animation: false,
   };

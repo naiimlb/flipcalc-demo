@@ -19,11 +19,20 @@ import type { Titre } from '@/lib/reco/types';
 
 interface Props {
   titre: Titre;
-  /** `couverture` = grande carte, `vignette` = liste ou grille. */
-  variante?: 'couverture' | 'vignette';
+  /**
+   * `vignette`   — liste ou grille, affiche verticale en w342 ;
+   * `couverture` — grande carte, affiche verticale en w780 ;
+   * `fond`       — bandeau plein cadre : on prend l'image paysage
+   *                (`backdrop_path`) en w1280, car une affiche verticale
+   *                recadrée en bandeau est illisible.
+   */
+  variante?: 'couverture' | 'vignette' | 'fond';
   priorite?: boolean;
   className?: string;
 }
+
+/** Les tailles TMDB retenues par usage : jamais plus lourd que nécessaire. */
+const LARGEURS = { vignette: 'w342', couverture: 'w780', fond: 'w1280' } as const;
 
 /** Empreinte stable : le même titre donne toujours la même couleur. */
 function empreinte(texte: string): number {
@@ -37,9 +46,13 @@ function empreinte(texte: string): number {
 
 export function Affiche({ titre, variante = 'vignette', priorite = false, className = '' }: Props) {
   const [enEchec, setEnEchec] = useState(false);
-  const url = titre.affiche
-    ? `https://image.tmdb.org/t/p/${variante === 'couverture' ? 'w780' : 'w342'}${titre.affiche}`
-    : null;
+
+  // Repli en cascade, dans cet ordre : l'image demandée, puis l'autre
+  // image TMDB si elle existe, puis — et seulement alors — la composition
+  // typographique. Un titre sans backdrop garde donc une vraie image.
+  const chemin = variante === 'fond' ? (titre.fond ?? titre.affiche) : (titre.affiche ?? titre.fond);
+  const largeur = variante === 'fond' && !titre.fond ? LARGEURS.couverture : LARGEURS[variante];
+  const url = chemin ? `https://image.tmdb.org/t/p/${largeur}${chemin}` : null;
 
   const composition = useMemo(() => {
     const graine = empreinte(titre.id + titre.titre);
@@ -58,7 +71,7 @@ export function Affiche({ titre, variante = 'vignette', priorite = false, classN
     };
   }, [titre.id, titre.titre]);
 
-  const grand = variante === 'couverture';
+  const grand = variante !== 'vignette';
 
   if (url && !enEchec) {
     return (
@@ -67,9 +80,17 @@ export function Affiche({ titre, variante = 'vignette', priorite = false, classN
           src={url}
           alt={`Affiche de ${titre.titre}`}
           fill
-          sizes={grand ? '(max-width: 640px) 92vw, 420px' : '(max-width: 640px) 40vw, 200px'}
+          sizes={
+            variante === 'fond'
+              ? '100vw'
+              : grand
+                ? '(max-width: 640px) 92vw, 420px'
+                : '(max-width: 640px) 40vw, 200px'
+          }
           className="object-cover"
           priority={priorite}
+          // Si TMDB renvoie une image cassée, on bascule sur la
+          // composition plutôt que de laisser un rectangle vide.
           onError={() => setEnEchec(true)}
         />
       </div>

@@ -68,6 +68,7 @@ function titre(partiel: Partial<Titre> = {}): Titre {
     tonalites: ['intense'],
     rythme: 'modere',
     affiche: null,
+    fond: null,
     bandeAnnonce: null,
     animation: false,
     ...partiel,

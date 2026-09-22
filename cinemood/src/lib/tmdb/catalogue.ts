@@ -44,6 +44,7 @@ interface ResultatDecouverte {
   popularity?: number;
   overview?: string;
   poster_path?: string | null;
+  backdrop_path?: string | null;
   original_language?: string;
 }
 
@@ -178,6 +179,7 @@ function versTitreLeger(brut: ResultatDecouverte, type: TypeContenu, plafond: Cl
     tonalites: infererTonalites(genres, []),
     rythme: infererRythme(genres, null),
     affiche: brut.poster_path ?? null,
+    fond: brut.backdrop_path ?? null,
     bandeAnnonce: null,
     animation: genres.includes('Animation'),
   };
@@ -191,6 +193,8 @@ interface FicheDetaillee {
   id: number;
   title?: string;
   name?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
   runtime?: number;
   episode_run_time?: number[];
   number_of_seasons?: number;
@@ -260,6 +264,11 @@ export async function enrichirTitre(titre: Titre, region = process.env.TMDB_REGI
     motsCles,
     realisateurs,
     acteurs,
+    // La fiche détaillée donne parfois des images que la passe de
+    // découverte n'avait pas : on ne garde l'ancienne valeur que si la
+    // nouvelle est absente.
+    affiche: fiche.poster_path ?? titre.affiche,
+    fond: fiche.backdrop_path ?? titre.fond,
     pays: fiche.production_countries?.map((p) => p.iso_3166_1) ?? fiche.origin_country ?? [],
     duree,
     saisons: fiche.number_of_seasons ?? null,

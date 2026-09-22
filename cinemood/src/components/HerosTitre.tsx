@@ -47,7 +47,7 @@ export function HerosTitre({ reco, plateformesUtilisateur, dansLaListe, onBandeA
           donc l'animation vit sur le compositeur et ne coûte rien au
           défilement. */}
       <div className="absolute inset-0 -z-20 animate-respire">
-        <Affiche titre={titre} variante="couverture" priorite className="h-full w-full" />
+        <Affiche titre={titre} variante="fond" priorite className="h-full w-full" />
       </div>
       <div
         aria-hidden="true"
