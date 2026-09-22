@@ -110,19 +110,22 @@ export function CarteRecommandation({
         <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
           {plateformePrincipale && <PastillePlateforme id={plateformePrincipale} />}
           <div className="flex flex-col items-end gap-2">
+            {/* Pas de `backdrop-blur` ici : ces pastilles vivent dans une
+                liste qui défile, et c'est l'effet le plus coûteux sur
+                iPhone. Un fond opaque rend le même service. */}
             {reco.pepite && (
-              <span className="rounded-full border border-accent/50 bg-nuit/70 px-3 py-1 text-[11px] font-medium tracking-wide text-ivoire backdrop-blur">
+              <span className="rounded-full bg-voile-accent px-3 py-1 text-[11px] font-semibold tracking-wide text-white shadow-accent">
                 ✦ Pépite
               </span>
             )}
-            <span className="rounded-full bg-nuit/70 px-3 py-1 text-[12px] font-semibold text-ivoire backdrop-blur">
-              {titre.note.toFixed(1)}
+            <span className="rounded-full border border-white/10 bg-nuit/80 px-3 py-1 text-[12px] font-semibold text-ivoire">
+              ★ {titre.note.toFixed(1)}
             </span>
           </div>
         </div>
 
         <div className="absolute inset-x-0 bottom-0 p-5">
-          <h2 className="equilibre font-affiche text-[2rem] leading-[1.06] text-ivoire">
+          <h2 className="nom-propre equilibre font-affiche text-[2rem] font-bold leading-[1.06] text-ivoire">
             {titre.titre}
           </h2>
           <p className="mt-2 text-[13px] text-cendre">
@@ -134,9 +137,7 @@ export function CarteRecommandation({
 
       {/* --- Pourquoi pour toi ----------------------------------------- */}
       <div className="border-t border-white/[0.06] px-5 py-4">
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-accentTexte">
-          Pourquoi pour toi
-        </p>
+        <p className="etiquette mb-1.5">Pourquoi pour toi</p>
         <p className="text-[15px] leading-relaxed text-ivoire/85">{reco.pourquoi}</p>
       </div>
 

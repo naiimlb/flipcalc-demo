@@ -150,8 +150,8 @@ export default function PageTest() {
           transition={{ duration: 0.6 }}
           className="relative mx-auto w-full max-w-md text-center"
         >
-          <p className="text-[11px] uppercase tracking-[0.22em] text-accentTexte">Ton profil cinéma</p>
-          <h1 className="equilibre mt-4 font-affiche text-[3rem] leading-[1.04] text-ivoire">
+          <p className="etiquette">Ton profil cinéma</p>
+          <h1 className="equilibre mt-4 font-affiche text-[2.7rem] font-bold leading-[1.04] text-ivoire">
             {carte.titre}
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-cendre">{carte.resume}</p>
@@ -173,7 +173,10 @@ export default function PageTest() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-lueur" aria-hidden="true" />
 
       {/* --- Progression -------------------------------------------------- */}
-      <div className="zone-sure-haut sticky top-0 z-30 bg-nuit/85 px-6 pb-4 pt-5 backdrop-blur">
+      {/* Fond opaque plutôt qu'un `backdrop-blur` : un en-tête collant qui
+          floute ce qui défile dessous est l'effet le plus coûteux sur
+          iPhone, pour un gain visuel nul sur un fond aussi sombre. */}
+      <div className="zone-sure-haut sticky top-0 z-30 border-b border-white/[0.06] bg-nuit px-6 pb-4 pt-5">
         <div className="mx-auto max-w-xl">
           <div className="flex items-center justify-between text-[12px] text-estompe">
             <button

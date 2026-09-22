@@ -879,10 +879,10 @@ export function decouvrir() {
       return;
     }
 
-    hote.innerHTML = `<ul class="grille-2" style="list-style:none">${resultats.map((r) => `
-      <li><button type="button" data-ouvrir="${txt(r.titre.id)}" style="display:block;width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer">
+    hote.innerHTML = `<ul class="grille-2 cascade" style="list-style:none">${resultats.map((r, i) => `
+      <li style="--i:${i % 10}"><button type="button" data-ouvrir="${txt(r.titre.id)}" style="display:block;width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer">
         <div style="position:relative;border-radius:14px;overflow:hidden">
-          ${affiche(r.titre)}
+          ${affiche(r.titre, { sansTexte: true })}
           <div style="position:absolute;left:8px;top:8px">${r.titre.plateformes[0] ? pastille(r.titre.plateformes[0], 'petite') : ''}</div>
         </div>
         <p style="margin-top:8px;font-size:14px;line-height:1.3">${txt(r.titre.titre)}</p>
@@ -938,9 +938,9 @@ export function maListe(onglet = 'a_voir') {
         onglet === 'a_voir'
           ? 'Ajoute des titres depuis l’accueil : ils t’attendront ici, même hors connexion.'
           : 'Marque un titre comme « déjà vu » et dis si tu as aimé : CinéMood s’en sert pour affiner tes recommandations.')
-      : `<ul class="pile" style="list-style:none">${liste.map((t) => {
+      : `<ul class="pile cascade" style="list-style:none">${liste.map((t, i) => {
           const appreciation = vus.find((v) => v.titre.id === t.id)?.note;
-          return `<li class="verre" style="display:flex;gap:16px;border-radius:20px;padding:12px">
+          return `<li class="verre" style="--i:${i % 10};display:flex;gap:16px;border-radius:20px;padding:12px">
             <button type="button" data-ouvrir="${txt(t.id)}" aria-label="Bande-annonce de ${txt(t.titre)}"
               style="width:86px;flex:0 0 auto;border:none;background:none;padding:0;cursor:pointer;border-radius:14px;overflow:hidden">
               ${affiche(t)}</button>

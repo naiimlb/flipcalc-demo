@@ -79,20 +79,35 @@ export function LecteurBandeAnnonce({ titre, onFermer }: Props) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.22 }}
-          className="fixed inset-0 z-50 flex flex-col bg-black"
+          className="fixed inset-0 z-50 flex flex-col bg-nuit"
           role="dialog"
           aria-modal="true"
           aria-label={`Bande-annonce de ${titre.titre}`}
         >
+          {/* Salle obscure : deux nappes d'accent derrière l'écran, comme
+              la lueur d'un projecteur. Statiques, donc sans coût. */}
           <div
-            className="flex items-center justify-between px-4 pb-2"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(70% 45% at 50% 42%, rgb(var(--accent) / 0.30) 0%, transparent 70%),' +
+                'radial-gradient(60% 40% at 50% 100%, rgb(var(--second) / 0.22) 0%, transparent 72%)',
+            }}
+          />
+
+          <div
+            className="relative flex items-center justify-between px-4 pb-2"
             style={{ paddingTop: 'max(env(safe-area-inset-top), 14px)' }}
           >
-            <p className="truncate pr-4 font-affiche text-lg text-ivoire">{titre.titre}</p>
+            <div className="min-w-0 pr-4">
+              <p className="etiquette">Bande-annonce</p>
+              <p className="nom-propre truncate font-affiche text-lg font-semibold text-ivoire">{titre.titre}</p>
+            </div>
             <button
               type="button"
               onClick={onFermer}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-ivoire"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-ivoire"
               aria-label="Fermer la bande-annonce"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -101,13 +116,13 @@ export function LecteurBandeAnnonce({ titre, onFermer }: Props) {
             </button>
           </div>
 
-          <div className="flex flex-1 items-center justify-center px-1">
+          <div className="relative flex flex-1 items-center justify-center px-1">
             {chargement && (
               <div className="squelette aspect-video w-full max-w-3xl" aria-label="Chargement de la bande-annonce" />
             )}
 
             {!chargement && cle && (
-              <div className="aspect-video w-full max-w-3xl overflow-hidden rounded-douce bg-black">
+              <div className="aspect-video w-full max-w-3xl overflow-hidden rounded-carte bg-black shadow-halo">
                 <iframe
                   className="h-full w-full"
                   src={`https://www.youtube-nocookie.com/embed/${cle}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}

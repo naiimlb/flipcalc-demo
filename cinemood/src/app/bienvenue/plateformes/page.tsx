@@ -106,7 +106,7 @@ export default function PagePlateformes() {
 
       <div className="relative mx-auto max-w-xl px-6 pb-44">
         <header className="zone-sure-haut pt-10">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-accentTexte">Étape 1 sur 2</p>
+          <p className="etiquette">Étape 1 sur 2</p>
           <h1 className="equilibre mt-3 font-affiche text-[2.5rem] leading-[1.05] text-ivoire">
             Quelles plateformes as-tu ?
           </h1>

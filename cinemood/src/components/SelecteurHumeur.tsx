@@ -23,17 +23,21 @@ interface Props {
   compagnie: Compagnie;
   onHumeur: (humeur: Humeur | null) => void;
   onCompagnie: (compagnie: Compagnie) => void;
+  /** L'écran dédié pose déjà son propre titre : on évite le doublon. */
+  sansEntete?: boolean;
 }
 
-export function SelecteurHumeur({ humeur, compagnie, onHumeur, onCompagnie }: Props) {
+export function SelecteurHumeur({ humeur, compagnie, onHumeur, onCompagnie, sansEntete = false }: Props) {
   return (
     <section aria-label="Humeur et contexte">
-      <div className="px-5">
-        <p className="etiquette">Ce soir</p>
-        <h2 className="mt-2 text-[1.6rem] leading-tight text-ivoire">Tu es d’humeur à quoi ?</h2>
-      </div>
+      {!sansEntete && (
+        <div className="px-5">
+          <p className="etiquette">Ce soir</p>
+          <h2 className="mt-2 text-[1.6rem] leading-tight text-ivoire">Tu es d’humeur à quoi ?</h2>
+        </div>
+      )}
 
-      <div className="cascade mt-5 grid grid-cols-2 gap-3 px-5">
+      <div className={`cascade grid grid-cols-2 gap-3 px-5 ${sansEntete ? '' : 'mt-5'}`}>
         {HUMEURS.map((cle, index) => {
           const reglage = TABLE_HUMEURS[cle];
           const identite = IDENTITE_HUMEUR[cle];

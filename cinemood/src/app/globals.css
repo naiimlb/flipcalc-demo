@@ -121,13 +121,16 @@
     letter-spacing: -0.015em;
   }
 
-  /* Squelette de chargement : jamais d'écran vide. */
+  /* Squelette de chargement : jamais d'écran vide. Le reflet qui balaie
+     est teinté de l'accent courant — l'attente reste dans la charte, et
+     l'écran ne paraît pas éteint. */
   .squelette {
     background: linear-gradient(
       90deg,
-      rgb(255 255 255 / 0.035) 0%,
-      rgb(255 255 255 / 0.1) 50%,
-      rgb(255 255 255 / 0.035) 100%
+      rgb(var(--accent) / 0.06) 0%,
+      rgb(var(--accent) / 0.22) 45%,
+      rgb(var(--second) / 0.16) 55%,
+      rgb(var(--accent) / 0.06) 100%
     );
     background-size: 480px 100%;
     @apply animate-chatoiement rounded-carte;

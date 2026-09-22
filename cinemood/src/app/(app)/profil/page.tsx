@@ -140,7 +140,7 @@ export default function PageProfil() {
       {/* --- Carte d'identité cinéma ------------------------------------ */}
       <section className="mt-6 px-5">
         <div className="grain relative overflow-hidden rounded-carte verre p-6">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-accentTexte">Ton profil cinéma</p>
+          <p className="etiquette">Ton profil cinéma</p>
           <p className="mt-2 font-affiche text-[2rem] leading-tight text-ivoire">{carte.titre}</p>
           <p className="mt-2 text-[14px] leading-relaxed text-cendre">{carte.resume}</p>
           <p className="mt-4 text-[12px] text-estompe">
@@ -297,7 +297,7 @@ export default function PageProfil() {
                     value={nouvelEmail}
                     onChange={(e) => setNouvelEmail(e.target.value)}
                     placeholder="ton@email.fr"
-                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                   />
                   {messageEmail && <p className="mt-3 text-[13px] leading-relaxed text-cendre">{messageEmail}</p>}
                   <div className="mt-4 flex gap-3">
@@ -349,7 +349,7 @@ export default function PageProfil() {
                     value={nouveauMotDePasse}
                     onChange={(e) => setNouveauMotDePasse(e.target.value)}
                     placeholder="8 caractères minimum"
-                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                   />
                   <label htmlFor="confirmation-mdp" className="mb-2 mt-3 block text-[13px] text-cendre">
                     Confirme-le
@@ -363,7 +363,7 @@ export default function PageProfil() {
                     value={confirmationMotDePasse}
                     onChange={(e) => setConfirmationMotDePasse(e.target.value)}
                     placeholder="Confirme le mot de passe"
-                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[15px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
+                    className="min-h-[48px] w-full rounded-douce verre px-4 text-[16px] text-ivoire placeholder:text-estompe focus:border-accent/50 focus:outline-none"
                   />
                   {messageMotDePasse && (
                     <p className="mt-3 text-[13px] leading-relaxed text-cendre">{messageMotDePasse}</p>

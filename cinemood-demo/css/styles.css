@@ -712,9 +712,17 @@ button, a[role='button'], .tactile { min-height: 44px; }
 .onglets span { font-size: 10.5px; letter-spacing: 0.02em; }
 
 /* --- Squelettes : jamais d'écran vide --------------------------------- */
+/* Le reflet qui balaie est teinté de l'accent courant : l'attente reste
+   dans la charte, et l'écran ne paraît pas éteint. */
 .squelette {
   border-radius: 16px;
-  background: linear-gradient(90deg, rgb(255 255 255 / 0.035) 0%, rgb(255 255 255 / 0.1) 50%, rgb(255 255 255 / 0.035) 100%);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--accent) / 0.06) 0%,
+    rgb(var(--accent) / 0.22) 45%,
+    rgb(var(--second) / 0.16) 55%,
+    rgb(var(--accent) / 0.06) 100%
+  );
   background-size: 480px 100%;
   animation: chatoiement 1.5s linear infinite;
 }
@@ -722,13 +730,25 @@ button, a[role='button'], .tactile { min-height: 44px; }
 
 /* --- Lecteur de bande-annonce ----------------------------------------- */
 .lecteur {
-  position: fixed; inset: 0; z-index: 60; background: #000;
+  position: fixed; inset: 0; z-index: 60; background: var(--nuit);
   display: flex; flex-direction: column;
   padding-top: max(env(safe-area-inset-top), 14px);
   padding-bottom: max(env(safe-area-inset-bottom), 16px);
 }
-.lecteur header { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 10px; }
-.lecteur .corps { flex: 1; display: flex; align-items: center; justify-content: center; padding-inline: 4px; }
+/* Salle obscure : deux nappes d'accent derrière l'écran, comme la lueur
+   d'un projecteur. Statiques, donc sans coût. */
+.lecteur::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 45% at 50% 42%, rgb(var(--accent) / 0.3) 0%, transparent 70%),
+    radial-gradient(60% 40% at 50% 100%, rgb(var(--second) / 0.22) 0%, transparent 72%);
+}
+.lecteur header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 0 16px 10px; }
+.lecteur .corps { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; padding-inline: 4px; }
+.lecteur .corps iframe { border-radius: 20px; box-shadow: 0 14px 40px -16px rgb(var(--accent) / 0.9); }
 
 /* --- Divers ----------------------------------------------------------- */
 .grille-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }

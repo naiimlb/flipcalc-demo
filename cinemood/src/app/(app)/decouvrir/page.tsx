@@ -7,6 +7,7 @@
    un titre que la personne ne peut pas regarder.
    ===================================================================== */
 
+import { motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Affiche } from '@/components/Affiche';
@@ -163,28 +164,36 @@ export default function PageDecouvrir() {
           />
         )}
 
+        {/* Même langage visuel que les carrousels de l'accueil : apparition
+            en cascade, enfoncement et ombre colorée au toucher. */}
         {resultats && resultats.length > 0 && (
-          <ul className="grid grid-cols-2 gap-4">
-            {resultats.map((reco) => (
-              <li key={reco.titre.id}>
-                <button
+          <ul className="cascade grid grid-cols-2 gap-4">
+            {resultats.map((reco, index) => (
+              <li key={reco.titre.id} style={{ '--i': index % 10 } as React.CSSProperties}>
+                <motion.button
                   type="button"
+                  whileTap={{ scale: 0.955 }}
                   onClick={() => setTitreEnLecture(reco.titre)}
-                  className="block w-full text-left"
+                  className="group block w-full text-left"
                 >
-                  <div className="relative overflow-hidden rounded-douce">
-                    <Affiche titre={reco.titre} className="aspect-[2/3] w-full" />
+                  <div className="relative">
+                    <Affiche
+                      titre={reco.titre}
+                      className="aspect-[2/3] w-full rounded-carte shadow-carte transition-shadow group-active:shadow-halo"
+                    />
                     <div className="absolute left-2 top-2">
                       {reco.titre.plateformes[0] && (
                         <PastillePlateforme id={reco.titre.plateformes[0]} taille="petite" />
                       )}
                     </div>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-[14px] leading-snug text-ivoire">{reco.titre.titre}</p>
-                  <p className="text-[12px] text-estompe">
-                    {reco.titre.annee} · {reco.titre.note.toFixed(1)}
+                  <p className="lignes-2 mt-2.5 text-[14px] font-medium leading-snug text-ivoire">
+                    {reco.titre.titre}
                   </p>
-                </button>
+                  <p className="mt-0.5 text-[12px] text-estompe">
+                    {reco.titre.annee} · ★ {reco.titre.note.toFixed(1)}
+                  </p>
+                </motion.button>
               </li>
             ))}
           </ul>

@@ -63,7 +63,7 @@ export function BarreOnglets() {
                 {actif && (
                   <motion.span
                     layoutId="onglet-actif"
-                    className="absolute inset-x-5 top-0 h-[2px] rounded-full bg-voile-accent"
+                    className="absolute inset-x-5 top-0 h-[2.5px] rounded-full bg-voile-accent shadow-[0_0_16px_rgb(var(--accent))]"
                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                   />
                 )}

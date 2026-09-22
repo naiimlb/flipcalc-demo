@@ -59,6 +59,10 @@ const config: Config = {
       backgroundImage: {
         'voile-accent': 'linear-gradient(100deg, rgb(var(--accent)) 0%, rgb(var(--second)) 100%)',
         'voile-nuit': 'linear-gradient(180deg, rgba(6,4,11,0) 0%, rgba(6,4,11,0.75) 55%, #06040B 100%)',
+        // Halo posé en haut d'un écran. Suit l'humeur, comme tout le reste.
+        lueur:
+          'radial-gradient(95% 62% at 50% -8%, rgb(var(--accent) / 0.45) 0%, rgb(var(--accent) / 0.12) 44%, transparent 70%),' +
+          'radial-gradient(60% 40% at 110% 6%, rgb(var(--second) / 0.28) 0%, transparent 62%)',
       },
       keyframes: {
         chatoiement: {
