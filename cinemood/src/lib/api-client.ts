@@ -38,6 +38,8 @@ export interface ReponseRecommandations {
     pagesDemandees: number;
     erreurTmdb: string | null;
     exclusions: Record<string, number> | null;
+    /** Titres proposés sans `poster_path` : le symptôme « carte noire ». */
+    sansAffiche: number;
   };
   modeDemo: boolean;
 }
