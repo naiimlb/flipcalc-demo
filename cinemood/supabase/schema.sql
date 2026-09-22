@@ -192,11 +192,21 @@ create trigger au_nouvel_utilisateur
   after insert on auth.users
   for each row execute function public.creer_profil_a_l_inscription();
 
+-- Une fonction de trigger n'a de sens que déclenchée par Postgres : elle
+-- ne doit être appelable par personne via /rest/v1/rpc. Il faut révoquer
+-- `anon` et `authenticated` NOMMÉMENT — Supabase leur accorde EXECUTE
+-- par défaut sur toute nouvelle fonction du schéma public, et un revoke
+-- sur le seul rôle `public` ne l'annule pas.
+revoke all on function public.creer_profil_a_l_inscription() from public, anon, authenticated;
+
 -- ---------------------------------------------------------------------
 -- 9. Horodatage de modification.
 -- ---------------------------------------------------------------------
 create or replace function public.touche_modifie_le()
-returns trigger language plpgsql as $$
+returns trigger
+language plpgsql
+set search_path = public
+as $$
 begin
   new.modifie_le = now();
   return new;
@@ -206,6 +216,8 @@ drop trigger if exists profils_modifie_le on public.profils;
 create trigger profils_modifie_le
   before update on public.profils
   for each row execute function public.touche_modifie_le();
+
+revoke all on function public.touche_modifie_le() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------
 -- 10. Suppression du compte, déclenchée depuis l'écran Profil.
@@ -224,7 +236,7 @@ begin
   delete from auth.users where id = auth.uid();
 end $$;
 
-revoke all on function public.supprimer_mon_compte() from public;
+revoke all on function public.supprimer_mon_compte() from public, anon, authenticated;
 grant execute on function public.supprimer_mon_compte() to authenticated;
 
 -- ---------------------------------------------------------------------
@@ -256,5 +268,5 @@ begin
   end loop;
 end $$;
 
-revoke all on function public.enregistrer_expositions(text[]) from public;
+revoke all on function public.enregistrer_expositions(text[]) from public, anon, authenticated;
 grant execute on function public.enregistrer_expositions(text[]) to authenticated;
