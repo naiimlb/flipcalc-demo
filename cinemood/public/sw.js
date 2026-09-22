@@ -9,7 +9,11 @@
        dans un cache.
    ===================================================================== */
 
-const VERSION = 'cinemood-v1';
+// Change à chaque publication qui touche ce fichier : c'est ce qui force
+// les navigateurs déjà installés à jeter l'ancien cache plutôt que de le
+// garder indéfiniment. Un simple horodatage suffit, aucune signification
+// particulière n'est attachée à la valeur.
+const VERSION = 'cinemood-v2-20260922';
 const COQUILLE = [
   '/',
   '/manifest.webmanifest',
@@ -41,8 +45,22 @@ self.addEventListener('fetch', (evenement) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  // Navigation : réseau d'abord, cache en secours.
-  if (requete.mode === 'navigate') {
+  // Seuls les fichiers de `/_next/static/` portent un hash de leur
+  // contenu dans leur URL : si le fichier change, l'URL change aussi.
+  // C'est la SEULE catégorie où « cache d'abord » ne peut jamais servir
+  // du périmé — pour tout le reste, la même URL peut légitimement
+  // changer de contenu d'un déploiement à l'autre.
+  const immuable = url.pathname.startsWith('/_next/static/');
+
+  // Navigation ET transitions internes du routeur (les fetch RSC que
+  // `router.push` déclenche vers une page comme `/accueil` ne sont PAS
+  // des navigations au sens du Service Worker — leur `mode` n'est pas
+  // `navigate`, mais elles portent vers la même sorte d'URL non versionnée
+  // qu'une navigation classique). Sans ce cas, la bascule « cache d'abord »
+  // ci-dessous s'appliquait à elles : une transition vers `/accueil` mise
+  // en cache une fois pouvait resservir cette même réponse indéfiniment,
+  // y compris après un déploiement qui change le comportement de la page.
+  if (!immuable) {
     evenement.respondWith(
       fetch(requete)
         .then((reponse) => {
@@ -55,7 +73,7 @@ self.addEventListener('fetch', (evenement) => {
     return;
   }
 
-  // Ressources statiques : cache d'abord, puis réseau.
+  // Fichiers hashés : cache d'abord, puis réseau — sûr par construction.
   evenement.respondWith(
     caches.match(requete).then(
       (enCache) =>
