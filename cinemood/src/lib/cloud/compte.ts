@@ -72,7 +72,30 @@ export function traduireErreurAuth(message: string): string {
   if (m.includes('same_password') || m.includes('should be different')) {
     return 'Ton nouveau mot de passe doit être différent de l’ancien.';
   }
-  return 'Quelque chose a échoué. Réessaie dans un instant.';
+
+  // Pannes de configuration du projet Supabase. Elles ne viennent pas de
+  // la personne mais de l'installation : le message doit dire quoi aller
+  // corriger, sinon on cherche à l'aveugle.
+  if (m.includes('signups not allowed') || m.includes('signup is disabled')) {
+    return 'Les inscriptions sont désactivées côté serveur (Supabase → Authentication → Providers → Email).';
+  }
+  if (m.includes('error sending') || (m.includes('email') && m.includes('smtp'))) {
+    return 'L’e-mail de confirmation n’a pas pu être envoyé : quota Supabase atteint ou SMTP non configuré.';
+  }
+  if (m.includes('database error') || m.includes('relation') || m.includes('does not exist')) {
+    return 'Le serveur n’a pas pu créer ton profil : le schéma SQL n’est pas appliqué (supabase/schema.sql).';
+  }
+  if (m.includes('api key') || m.includes('jwt') || m.includes('unauthorized')) {
+    return 'La clé Supabase configurée est invalide : vérifie NEXT_PUBLIC_SUPABASE_ANON_KEY.';
+  }
+  if (m.includes('failed to fetch') || m.includes('load failed') || m.includes('networkerror')) {
+    return 'Impossible de joindre le serveur : vérifie NEXT_PUBLIC_SUPABASE_URL et ta connexion.';
+  }
+
+  // Dernier recours : on garde le message d'origine entre parenthèses.
+  // Un message générique seul rend toute panne indiagnosticable, y compris
+  // pour la personne qui pourrait la signaler.
+  return `Quelque chose a échoué. Réessaie dans un instant. (${message})`;
 }
 
 /**
