@@ -9,8 +9,9 @@
 import { CATALOGUE_DEMO } from '../moteur/catalogue.js';
 import { PLATEFORME_PAR_ID } from '../moteur/plateformes.js';
 import { historiqueVide, vecteurVide } from '../moteur/profil.js';
+import { IDENTITE_HUMEUR, accentDe } from '../moteur/humeurs-ui.js';
 
-export { CATALOGUE_DEMO, PLATEFORME_PAR_ID };
+export { CATALOGUE_DEMO, PLATEFORME_PAR_ID, IDENTITE_HUMEUR };
 
 const CLE = 'cinemood.demo.v1';
 
@@ -131,15 +132,21 @@ function empreinte(texte) {
 export function affiche(titre, { grande = false, sansTexte = false } = {}) {
   const graine = empreinte(titre.id + titre.titre);
   const teinte = graine % 360;
-  const fond = `linear-gradient(155deg, hsl(${teinte} 34% 17%) 0%, hsl(${(teinte + 28) % 360} 26% 10%) 52%, hsl(${(teinte + 55) % 360} 30% 7%) 100%)`;
-  const trait = `hsl(${teinte} 45% 62%)`;
+  // Duotone franc plutôt qu'un gris teinté : sans vraie affiche TMDB,
+  // c'est la couleur qui doit porter l'écran. Deux teintes voisines,
+  // une tache lumineuse en haut, et le noir qui reprend le dessous.
+  const fond = `radial-gradient(90% 60% at 22% 8%, hsl(${teinte} 85% 46% / 0.95) 0%, transparent 62%),`
+    + `linear-gradient(152deg, hsl(${teinte} 72% 30%) 0%, hsl(${(teinte + 38) % 360} 68% 17%) 52%, hsl(${(teinte + 66) % 360} 60% 8%) 100%)`;
+  const trait = `hsl(${teinte} 90% 70%)`;
   // Dans une carte, le titre est déjà écrit par-dessus le dégradé : une
   // seconde fois dans l'affiche, il se dédoublait et passait sous la
   // pastille de plateforme. L'affiche devient alors un aplat travaillé,
-  // avec l'emblème de l'app en filigrane.
+  // signé de l'initiale du titre et de l'emblème de l'app.
   if (sansTexte) {
+    const initiale = (titre.titre.match(/\p{L}/u)?.[0] ?? '?').toUpperCase();
     return `<div class="affiche grain" style="background:${fond}" role="img" aria-label="Affiche de ${txt(titre.titre)}">
         <div class="trait" style="background:${trait}"></div>
+        <span class="initiale" aria-hidden="true">${txt(initiale)}</span>
         <svg viewBox="0 0 40 40" class="filigrane" aria-hidden="true">
           <circle cx="20" cy="20" r="18" fill="none" stroke="${trait}" stroke-width="0.8"/>
           ${[0, 60, 120, 180, 240, 300].map((a) =>
@@ -186,11 +193,41 @@ export const ICONES = {
   croix: 'M6 6l12 12M18 6L6 18',
   pouce: 'M7 10.5V20H4V10.5h3Zm3 0 3.2-6.6a1.8 1.8 0 0 1 3.4 1.1L16 9h3.6a1.8 1.8 0 0 1 1.75 2.25l-1.7 6.6A2.4 2.4 0 0 1 17.3 20H10V10.5Z',
   fleche: 'M14.5 5 8 12l6.5 7',
+  chevron: 'M9.5 5 16 12l-6.5 7',
+  coche: 'M5 12.5 10 17.5 19 7',
+  lecture: 'M8 5.2v13.6L19 12 8 5.2Z',
+  plus: 'M12 5v14M5 12h14',
 };
 
 export function icone(nom, extra = '') {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${ICONES[nom]}"/></svg>`;
+}
+
+/* ---------------------------------------------------------------------
+   3 bis. Couleur d'humeur.
+   ---------------------------------------------------------------------
+   Toute la direction artistique tient sur deux variables CSS. Les poser
+   sur <html> suffit à repeindre l'app entière : halo, boutons, bordures,
+   ombres, barre d'onglets. Les valeurs viennent du module partagé avec
+   l'app Next.js — aucune couleur n'est écrite en dur ici.
+   --------------------------------------------------------------------- */
+export function appliquerAccent(humeur) {
+  const { accent, second } = accentDe(humeur ?? null);
+  const racine = document.documentElement;
+  racine.style.setProperty('--accent', accent);
+  racine.style.setProperty('--second', second);
+  // La barre d'état d'iOS se met au diapason quand l'app est installée.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', '#06040B');
+}
+
+/** L'icône dessinée d'une humeur, sur la même grille 24 × 24. */
+export function iconeHumeur(cle, extra = '') {
+  const identite = IDENTITE_HUMEUR[cle];
+  if (!identite) return '';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${identite.icone}"/></svg>`;
 }
 
 /* ---------------------------------------------------------------------

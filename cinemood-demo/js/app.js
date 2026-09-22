@@ -6,7 +6,7 @@
    ===================================================================== */
 
 import { charger, etat, rendre } from './noyau.js';
-import { accueil, decouvrir, maListe, plateformes, profil, test, vitrine } from './ecrans.js';
+import { accueil, decouvrir, humeur, maListe, plateformes, profil, test, vitrine } from './ecrans.js';
 
 charger();
 
@@ -15,6 +15,7 @@ const ROUTES = {
   '/plateformes': plateformes,
   '/test': test,
   '/accueil': accueil,
+  '/humeur': humeur,
   '/decouvrir': decouvrir,
   '/ma-liste': () => maListe(),
   '/profil': profil,
