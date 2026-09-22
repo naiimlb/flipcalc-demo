@@ -123,6 +123,9 @@ export async function POST(requete: Request) {
           pagesDemandees: vivier.pagesDemandees,
           erreurTmdb: vivier.premiereErreur,
           exclusions: abouti.exclusions ?? tri.exclusions,
+          // Des titres sans affiche alors que TMDB répond : le symptôme
+          // « cartes noires » se lit ici, et nulle part ailleurs.
+          sansAffiche: abouti.recommandations.filter((r) => r.titre.affiche === null).length,
         },
         modeDemo: false,
       });
@@ -149,6 +152,7 @@ export async function POST(requete: Request) {
         pagesDemandees: 0,
         erreurTmdb: null,
         exclusions: premierTri.exclusions,
+        sansAffiche: premierTri.recommandations.length,
       },
       modeDemo: true,
     });

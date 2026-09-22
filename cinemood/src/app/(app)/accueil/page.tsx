@@ -71,6 +71,11 @@ export default function PageAccueil() {
       // passé : un écran vide ne doit jamais rester inexplicable.
       if (reponse.recommandations.length === 0) {
         console.warn('[CinéMood] sélection vide', reponse.raisonVide, reponse.diagnostic);
+      } else if (reponse.diagnostic.sansAffiche > 0) {
+        console.warn(
+          `[CinéMood] ${reponse.diagnostic.sansAffiche}/${reponse.recommandations.length}`,
+          'titres sans affiche TMDB', reponse.diagnostic,
+        );
       }
       noterExpositions(reponse.recommandations.map((r) => r.titre));
     } catch (e) {
