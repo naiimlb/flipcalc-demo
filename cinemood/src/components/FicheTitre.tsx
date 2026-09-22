@@ -11,7 +11,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect } from 'react';
 
-import { CarteRecommandation } from './CarteRecommandation';
+import { FicheDetail } from './FicheDetail';
 import type { Recommandation, Signal } from '@/lib/reco/types';
 
 interface Props {
@@ -71,24 +71,14 @@ export function FicheTitre({
             animate={{ y: 0 }}
             exit={{ y: 26 }}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="relative max-h-[92svh] w-full max-w-xl overflow-y-auto px-3"
+            className="relative max-h-[92svh] w-full max-w-xl overflow-y-auto px-3 pt-3"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
           >
-            <button
-              type="button"
-              onClick={onFermer}
-              aria-label="Fermer"
-              className="sticky top-2.5 z-10 mb-2.5 ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-nuit/80 text-ivoire"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-
-            <CarteRecommandation
+            <FicheDetail
               reco={reco}
               plateformesUtilisateur={plateformesUtilisateur}
               dansLaListe={dansLaListe}
+              onFermer={onFermer}
               onBandeAnnonce={onBandeAnnonce}
               onSignal={onSignal}
             />
