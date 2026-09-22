@@ -78,19 +78,37 @@ export interface OptionsVivier {
 }
 
 /**
+ * Ce que la découverte a produit, ET ce qui s'est mal passé.
+ *
+ * Un vivier vide a deux causes radicalement différentes : TMDB n'a rien
+ * à proposer, ou TMDB n'a pas répondu. Les confondre fait accuser les
+ * critères de la personne d'une panne de serveur — c'est précisément ce
+ * qui rendait le diagnostic impossible.
+ */
+export interface ResultatVivier {
+  titres: Titre[];
+  pagesDemandees: number;
+  pagesEnEchec: number;
+  /** Message de la première erreur rencontrée, pour le diagnostic. */
+  premiereErreur: string | null;
+}
+
+/**
  * Construit le vivier de candidats. Les titres renvoyés sont « légers » :
  * ils n'ont ni casting, ni mots-clés, ni durée. Voir `enrichir()`.
  */
-export async function vivierTmdb(options: OptionsVivier): Promise<Titre[]> {
+export async function vivierTmdb(options: OptionsVivier): Promise<ResultatVivier> {
   const region = options.region ?? process.env.TMDB_REGION ?? 'FR';
   const pages = options.pages ?? 3;
   const fournisseurs = plateformesEffectives(options.plateformes)
     .map((id) => PLATEFORME_PAR_ID[id]?.idTmdb)
     .filter((x): x is number => typeof x === 'number');
 
-  if (fournisseurs.length === 0) return [];
+  if (fournisseurs.length === 0) {
+    return { titres: [], pagesDemandees: 0, pagesEnEchec: 0, premiereErreur: null };
+  }
 
-  const travaux: Array<Promise<Titre[]>> = [];
+  const travaux: Array<Promise<{ titres: Titre[]; erreur: string | null }>> = [];
   for (const type of options.typesSouhaites) {
     for (let page = 1; page <= pages; page += 1) {
       travaux.push(unePageDeDecouverte(type, page, fournisseurs, region, options));
@@ -100,10 +118,17 @@ export async function vivierTmdb(options: OptionsVivier): Promise<Titre[]> {
   const lots = await Promise.all(travaux);
   // Dédoublonnage : un même titre peut remonter sur plusieurs pages.
   const parId = new Map<string, Titre>();
+  let pagesEnEchec = 0;
+  let premiereErreur: string | null = null;
   for (const lot of lots) {
-    for (const titre of lot) if (!parId.has(titre.id)) parId.set(titre.id, titre);
+    if (lot.erreur) {
+      pagesEnEchec += 1;
+      premiereErreur ??= lot.erreur;
+    }
+    for (const titre of lot.titres) if (!parId.has(titre.id)) parId.set(titre.id, titre);
   }
-  return [...parId.values()];
+
+  return { titres: [...parId.values()], pagesDemandees: travaux.length, pagesEnEchec, premiereErreur };
 }
 
 async function unePageDeDecouverte(
@@ -112,7 +137,7 @@ async function unePageDeDecouverte(
   fournisseurs: number[],
   region: string,
   options: OptionsVivier,
-): Promise<Titre[]> {
+): Promise<{ titres: Titre[]; erreur: string | null }> {
   const chemin = type === 'film' ? '/discover/movie' : '/discover/tv';
   const params: Record<string, string | number | undefined> = {
     page,
@@ -140,10 +165,16 @@ async function unePageDeDecouverte(
 
   try {
     const reponse = await tmdb<PageDecouverte>(chemin, params, DUREES_CACHE.listes);
-    return reponse.results.map((brut) => versTitreLeger(brut, type, options.classificationMax));
-  } catch {
-    // Une page qui échoue ne doit pas faire tomber toute la sélection.
-    return [];
+    return {
+      titres: reponse.results.map((brut) => versTitreLeger(brut, type, options.classificationMax)),
+      erreur: null,
+    };
+  } catch (erreur) {
+    // Une page qui échoue ne doit pas faire tomber toute la sélection —
+    // mais elle ne doit pas disparaître sans laisser de trace non plus.
+    const message = erreur instanceof Error ? erreur.message : String(erreur);
+    console.error('[tmdb/decouverte]', chemin, message);
+    return { titres: [], erreur: message };
   }
 }
 

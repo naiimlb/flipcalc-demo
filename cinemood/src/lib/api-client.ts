@@ -11,7 +11,13 @@ export interface ReponseRecommandations {
   recommandations: Recommandation[];
   candidatsRetenus: number;
   catalogueTotal: number;
-  raisonVide: 'aucune_plateforme' | 'filtres_trop_stricts' | 'catalogue_vide' | null;
+  raisonVide:
+    | 'aucune_plateforme'
+    | 'filtres_trop_stricts'
+    | 'catalogue_vide'
+    /** TMDB n'a pas répondu : la panne est chez nous, pas dans les critères. */
+    | 'tmdb_injoignable'
+    | null;
   /**
    * `true` quand l'humeur demandée ne laissait rien passer et que la
    * sélection a été élargie au-delà d'elle. L'écran doit le dire :
@@ -19,6 +25,20 @@ export interface ReponseRecommandations {
    * ferait passer le moteur pour défaillant.
    */
   humeurRelachee: boolean;
+  /**
+   * `true` si rien ne passait le filtrage complet et que seules les
+   * règles non négociables (plateformes, âge, refus) ont été gardées.
+   * Ces titres ne respectent donc pas toutes les préférences déclarées.
+   */
+  preferencesRelachees: boolean;
+  /** De quoi comprendre un écran vide sans accès aux logs serveur. */
+  diagnostic: {
+    vivier: number;
+    pagesEnEchec: number;
+    pagesDemandees: number;
+    erreurTmdb: string | null;
+    exclusions: Record<string, number> | null;
+  };
   modeDemo: boolean;
 }
 

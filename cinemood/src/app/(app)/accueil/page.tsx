@@ -40,6 +40,7 @@ export default function PageAccueil() {
   const [fiche, setFiche] = useState<Recommandation | null>(null);
   const [demo, setDemo] = useState(false);
   const [humeurRelachee, setHumeurRelachee] = useState(false);
+  const [preferencesRelachees, setPreferencesRelachees] = useState(false);
 
   // Profil et historique changent à CHAQUE interaction (un pouce levé
   // déplace le vecteur de goûts). On les lit donc via des références :
@@ -65,6 +66,12 @@ export default function PageAccueil() {
       setRaisonVide(reponse.raisonVide);
       setDemo(reponse.modeDemo);
       setHumeurRelachee(reponse.humeurRelachee);
+      setPreferencesRelachees(reponse.preferencesRelachees);
+      // Sans accès aux logs serveur, c'est ici qu'on voit ce qui s'est
+      // passé : un écran vide ne doit jamais rester inexplicable.
+      if (reponse.recommandations.length === 0) {
+        console.warn('[CinéMood] sélection vide', reponse.raisonVide, reponse.diagnostic);
+      }
       noterExpositions(reponse.recommandations.map((r) => r.titre));
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Une erreur est survenue.');
@@ -186,6 +193,13 @@ export default function PageAccueil() {
         </p>
       )}
 
+      {preferencesRelachees && (
+        <p className="mx-5 mt-6 rounded-douce border border-accent/25 bg-accent/[0.08] px-4 py-3 text-[13px] leading-relaxed text-ivoire/90">
+          Aucun titre ne cochait toutes tes préférences ce soir. Ces propositions restent sur tes
+          plateformes et adaptées à ton âge, mais elles sortent de ce que tu avais déclaré aimer.
+        </p>
+      )}
+
       {erreur && (
         <EtatVide
           titre="Connexion difficile"
@@ -195,13 +209,25 @@ export default function PageAccueil() {
         />
       )}
 
-      {!erreur && recos?.length === 0 && (
+      {/* Un écran vide doit nommer SA cause. Accuser les critères de la
+          personne quand c'est le catalogue qui n'a pas répondu l'envoie
+          desserrer des filtres qui n'y sont pour rien. */}
+      {!erreur && recos?.length === 0 && raisonVide === 'tmdb_injoignable' && (
+        <EtatVide
+          titre="Le catalogue ne répond pas"
+          message="Impossible de joindre le service de films pour le moment. Ce n’est pas lié à tes critères — réessaie dans un instant."
+          actionLibelle="Réessayer"
+          onAction={() => void charger()}
+        />
+      )}
+
+      {!erreur && recos?.length === 0 && raisonVide !== 'tmdb_injoignable' && (
         <EtatVide
           titre={raisonVide === 'aucune_plateforme' ? 'Aucune plateforme sélectionnée' : 'Rien ne passe les filtres'}
           message={
             raisonVide === 'aucune_plateforme'
               ? 'Choisis au moins un service de streaming pour que CinéMood puisse te proposer quelque chose.'
-              : 'Tes critères sont un peu trop serrés pour ce soir. Essaie une autre humeur, ou élargis tes plateformes et ta durée maximale.'
+              : 'Même en relâchant tes préférences, rien de disponible sur tes plateformes ne convient ce soir. Ajoute une plateforme pour élargir le catalogue.'
           }
           actionLibelle="Modifier mes plateformes"
           onAction={() => routeur.push('/profil')}

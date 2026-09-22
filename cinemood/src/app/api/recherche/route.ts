@@ -50,12 +50,18 @@ export async function POST(requete: Request) {
       catalogue = await enrichirTous((await rechercherTmdb(requeteTexte)).slice(0, 20));
     } else {
       const ageUtilisateur = calculerAge(profil.anneeNaissance, anneeCourante);
-      catalogue = await vivierTmdb({
-        plateformes: profil.plateformes,
-        typesSouhaites: profil.typesSouhaites,
-        classificationMax: classificationMaximale(ageUtilisateur, null),
-        pages: 2,
-      });
+      // Le vivier n'est pas encore enrichi : ses plateformes sont vides,
+      // mais TMDB les a déjà filtrées via `with_watch_providers`.
+      catalogue = await enrichirTous(
+        (
+          await vivierTmdb({
+            plateformes: profil.plateformes,
+            typesSouhaites: profil.typesSouhaites,
+            classificationMax: classificationMaximale(ageUtilisateur, null),
+            pages: 2,
+          })
+        ).titres.slice(0, 20),
+      );
     }
 
     // --- Recherche textuelle sur le catalogue local --------------------

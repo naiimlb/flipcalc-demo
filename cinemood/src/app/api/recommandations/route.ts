@@ -71,41 +71,70 @@ export async function POST(requete: Request) {
         // n'arrivent qu'à l'enrichissement. TMDB les a déjà filtrées via
         // `with_watch_providers`, d'où le drapeau — sans lui, le filtre
         // strict viderait tout le vivier ici même.
-        const tri = recommander(vivier, profil, historique, contexte, {
+        const tri = recommander(vivier.titres, profil, historique, contexte, {
           taille: Math.min(20, taille + 8),
           anneeCourante,
           plateformesDejaFiltrees: true,
+          replierSiVide: true,
         });
 
         // Passe 2 : seuls les présélectionnés sont détaillés — une
         // vingtaine d'appels TMDB au lieu de plusieurs centaines. Cette
         // fois les plateformes sont connues, donc filtrées pour de bon.
         const enrichis = await enrichirTous(tri.recommandations.map((r) => r.titre));
-        const abouti = recommander(enrichis, profil, historique, contexte, { taille, anneeCourante });
-        return { tri, abouti };
+        const abouti = recommander(enrichis, profil, historique, contexte, {
+          taille,
+          anneeCourante,
+          replierSiVide: true,
+        });
+        return { vivier, tri, abouti };
       };
 
-      let { tri, abouti } = await construire(genresHumeur);
+      let { vivier, tri, abouti } = await construire(genresHumeur);
       let humeurRelachee = false;
 
       if (abouti.recommandations.length === 0 && genresHumeur.length > 0) {
-        ({ tri, abouti } = await construire([]));
+        ({ vivier, tri, abouti } = await construire([]));
         humeurRelachee = abouti.recommandations.length > 0;
+      }
+
+      // Un vivier vide parce que TMDB n'a pas répondu n'est PAS un
+      // problème de critères : le dire franchement plutôt que d'envoyer
+      // la personne desserrer des filtres qui n'y sont pour rien.
+      const tmdbInjoignable = vivier.titres.length === 0 && vivier.pagesEnEchec > 0;
+      if (tmdbInjoignable) {
+        console.error(
+          '[recommandations] vivier vide,',
+          `${vivier.pagesEnEchec}/${vivier.pagesDemandees} appels TMDB en échec :`,
+          vivier.premiereErreur,
+        );
       }
 
       return NextResponse.json({
         recommandations: abouti.recommandations,
         candidatsRetenus: tri.candidatsRetenus,
         catalogueTotal: tri.catalogueTotal,
-        raisonVide: abouti.raisonVide,
+        raisonVide: tmdbInjoignable ? 'tmdb_injoignable' : abouti.raisonVide,
         humeurRelachee,
+        preferencesRelachees: abouti.preferencesRelachees,
+        diagnostic: {
+          vivier: vivier.titres.length,
+          pagesEnEchec: vivier.pagesEnEchec,
+          pagesDemandees: vivier.pagesDemandees,
+          erreurTmdb: vivier.premiereErreur,
+          exclusions: abouti.exclusions ?? tri.exclusions,
+        },
         modeDemo: false,
       });
     }
 
     // --- Mode démo : catalogue local, une seule passe -------------------
     // Ses titres portent déjà leurs plateformes : aucun enrichissement.
-    const premierTri = recommander(CATALOGUE_DEMO, profil, historique, contexte, { taille, anneeCourante });
+    const premierTri = recommander(CATALOGUE_DEMO, profil, historique, contexte, {
+      taille,
+      anneeCourante,
+      replierSiVide: true,
+    });
 
     return NextResponse.json({
       recommandations: premierTri.recommandations,
@@ -113,6 +142,14 @@ export async function POST(requete: Request) {
       catalogueTotal: premierTri.catalogueTotal,
       raisonVide: premierTri.raisonVide,
       humeurRelachee: false,
+      preferencesRelachees: premierTri.preferencesRelachees,
+      diagnostic: {
+        vivier: CATALOGUE_DEMO.length,
+        pagesEnEchec: 0,
+        pagesDemandees: 0,
+        erreurTmdb: null,
+        exclusions: premierTri.exclusions,
+      },
       modeDemo: true,
     });
   } catch (erreur) {
