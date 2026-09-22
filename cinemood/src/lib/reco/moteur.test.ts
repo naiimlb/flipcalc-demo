@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { classerPourDecouverte, filtrerStrict, recommander } from './moteur.ts';
+import { classerPourDecouverte, diagnostiquerFiltrage, filtrerStrict, recommander } from './moteur.ts';
 import { PLATEFORMES_GRATUITES } from './plateformes.ts';
 import { enregistrerExpositions, historiqueVide } from './profil.ts';
 import { CATALOGUE_DEMO } from '../../data/catalogue-demo.ts';
@@ -41,6 +41,62 @@ describe('filtrage strict — les règles non négociables', () => {
     const p = profil({ plateformes: ['netflix'] });
 
     assert.equal(filtrerStrict(enrichi, p, historiqueVide(), contexte(), ANNEE, true).length, 0);
+  });
+
+  test('le repli sauve un profil que ses préférences vident, sans céder sur l’essentiel', () => {
+    // Des préférences qui, ensemble, n'épargnent rien : le repli doit
+    // fournir quelque chose plutôt qu'un écran vide.
+    const etouffe = profil({
+      plateformes: ['netflix'],
+      genresDetestes: [...new Set(CATALOGUE_DEMO.flatMap((t) => t.genres))],
+      animationOk: false,
+    });
+    const strict = recommander(CATALOGUE_DEMO, etouffe, historiqueVide(), contexte(), { anneeCourante: ANNEE });
+    assert.equal(strict.recommandations.length, 0, 'sans repli, ce profil ne laisse rien passer');
+
+    const avecRepli = recommander(CATALOGUE_DEMO, etouffe, historiqueVide(), contexte(), {
+      anneeCourante: ANNEE,
+      replierSiVide: true,
+    });
+    assert.ok(avecRepli.recommandations.length > 0, 'le repli doit proposer quelque chose');
+    assert.equal(avecRepli.preferencesRelachees, true, 'et le signaler, pour ne pas mentir');
+
+    // Ce que le repli ne doit JAMAIS céder : plateformes et âge.
+    for (const r of avecRepli.recommandations) {
+      assert.ok(r.titre.plateformes.includes('netflix'), `${r.titre.titre} n’est pas sur Netflix`);
+    }
+  });
+
+  test('le repli ne sert jamais du contenu au-dessus de l’âge de la personne', () => {
+    const enfant = profil({
+      anneeNaissance: ANNEE - 9,
+      plateformes: [],
+      genresDetestes: [...new Set(CATALOGUE_DEMO.flatMap((t) => t.genres))],
+    });
+    const avecRepli = recommander(CATALOGUE_DEMO, enfant, historiqueVide(), contexte(), {
+      anneeCourante: ANNEE,
+      replierSiVide: true,
+    });
+    assert.ok(
+      avecRepli.recommandations.length > 0,
+      'sans quoi la vérification suivante ne prouverait rien',
+    );
+    for (const r of avecRepli.recommandations) {
+      assert.ok(
+        ['TP', '10'].includes(r.titre.classification),
+        `${r.titre.titre} (${r.titre.classification}) ne convient pas à un enfant de 9 ans`,
+      );
+    }
+  });
+
+  test('le diagnostic nomme la règle qui a écarté chaque titre', () => {
+    const p = profil({ plateformes: ['netflix'], typesSouhaites: ['film'] });
+    const exclusions = diagnostiquerFiltrage(
+      [titre({ id: 'a', plateformes: ['disney'] }), titre({ id: 'b', plateformes: ['netflix'], type: 'serie' })],
+      p, historiqueVide(), contexte(), ANNEE,
+    );
+    assert.equal(exclusions.plateformes, 1, 'le titre hors plateforme doit être imputé aux plateformes');
+    assert.equal(exclusions.type, 1, 'la série doit être imputée au type souhaité');
   });
 
   test('« aucun abonnement » bascule sur les seules offres gratuites', () => {
