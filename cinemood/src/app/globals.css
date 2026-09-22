@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   Bases globales — pensées pour Safari iOS avant tout.
+   ===================================================================== */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    /* Hauteur de la barre d'onglets + zone sûre du bas. */
+    --hauteur-onglets: calc(62px + env(safe-area-inset-bottom));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Évite le « rubber band » blanc en haut et en bas sur iOS. */
+    background-color: #07060a;
+  }
+
+  body {
+    @apply bg-nuit font-texte text-ivoire antialiased;
+    /* Empêche le zoom horizontal accidentel. */
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3 {
+    @apply font-titre;
+    letter-spacing: -0.01em;
+  }
+
+  /* RÈGLE IMPORTANTE POUR IPHONE :
+     Safari zoome automatiquement dès qu'un champ a une police < 16 px.
+     On impose donc 16 px minimum sur TOUS les champs de saisie. */
+  input,
+  textarea,
+  select,
+  button {
+    font-size: max(16px, 1rem);
+    font-family: inherit;
+  }
+
+  /* Cibles tactiles : 44 px minimum, recommandation Apple. */
+  button,
+  a[role='button'],
+  [data-tactile] {
+    min-height: 44px;
+  }
+
+  ::selection {
+    background: rgba(216, 189, 133, 0.28);
+  }
+}
+
+@layer components {
+  /* Surface en verre dépoli, signature visuelle de l'app. */
+  .verre {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  .verre-fort {
+    background: rgba(13, 12, 18, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(26px) saturate(150%);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+  }
+
+  /* Texte doré, réservé aux accents. */
+  .texte-or {
+    @apply bg-voile-or bg-clip-text text-transparent;
+  }
+
+  /* Squelette de chargement : jamais d'écran vide. */
+  .squelette {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035) 0%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.035) 100%
+    );
+    background-size: 480px 100%;
+    @apply animate-chatoiement rounded-douce;
+  }
+
+  /* Défilement horizontal sans barre visible. */
+  .rail {
+    @apply flex snap-x snap-mandatory gap-3 overflow-x-auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-left: 20px;
+  }
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Contenu principal : marge basse pour ne pas passer sous les onglets. */
+  .page {
+    padding-bottom: calc(var(--hauteur-onglets) + 22px);
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Grain cinéma, très léger, posé sur les grands aplats. */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.32;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23b)' opacity='0.42'/%3E%3C/svg%3E");
+  }
+}
+
+@layer utilities {
+  .zone-sure-haut {
+    padding-top: max(env(safe-area-inset-top), 12px);
+  }
+  .zone-sure-bas {
+    padding-bottom: max(env(safe-area-inset-bottom), 12px);
+  }
+  /* Équilibre les retours à la ligne des titres sur deux ou trois lignes. */
+  .equilibre {
+    text-wrap: balance;
+  }
+
+  /* Désactive la sélection sur les éléments qu'on fait glisser. */
+  .insaisissable {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Respecte le réglage « Réduire les animations » d'iOS. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
