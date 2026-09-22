@@ -6,11 +6,12 @@
    ===================================================================== */
 
 import { motion } from 'framer-motion';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { HTMLMotionProps } from 'framer-motion';
+import type { ReactNode } from 'react';
 
 type Variante = 'accent' | 'verre' | 'fantome';
 
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface Props extends HTMLMotionProps<'button'> {
   variante?: Variante;
   pleineLargeur?: boolean;
   children: ReactNode;
@@ -51,7 +52,7 @@ export function BoutonRond({
   className = '',
   children,
   ...reste
-}: ButtonHTMLAttributes<HTMLButtonElement> & { libelle: string; actif?: boolean; children: ReactNode }) {
+}: HTMLMotionProps<'button'> & { libelle: string; actif?: boolean; children: ReactNode }) {
   return (
     <motion.button
       whileTap={{ scale: 0.9 }}
@@ -74,7 +75,7 @@ export function Puce({
   className = '',
   children,
   ...reste
-}: ButtonHTMLAttributes<HTMLButtonElement> & { actif?: boolean; children: ReactNode }) {
+}: HTMLMotionProps<'button'> & { actif?: boolean; children: ReactNode }) {
   return (
     <motion.button
       whileTap={{ scale: 0.95 }}
