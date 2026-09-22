@@ -49,8 +49,12 @@ function formatDeJeton(jeton: string): 'v4' | 'v3' {
 
 /** Lit la configuration TMDB dans l'environnement, sans jamais la logger. */
 export function configTmdb(): ConfigTmdb | null {
-  // Un « Bearer » collé par mégarde avec le jeton ferait échouer l'en-tête.
-  const jeton = process.env.TMDB_ACCESS_TOKEN?.trim().replace(/^Bearer\s+/i, '');
+  // Un « Bearer » ou des guillemets collés par mégarde avec le jeton — le
+  // champ Vercel n'en retire aucun lui-même — feraient échouer chaque appel.
+  const jeton = process.env.TMDB_ACCESS_TOKEN?.trim()
+    .replace(/^Bearer\s+/i, '')
+    .replace(/^['"]|['"]$/g, '')
+    .trim();
   if (!jeton) return null;
   return {
     jeton,
@@ -112,6 +116,54 @@ export async function tmdb<T>(
   }
 
   return (await reponse.json()) as T;
+}
+
+export interface DiagnosticTmdb {
+  jetonPresent: boolean;
+  /** Longueur seule : jamais le contenu, même en diagnostic. */
+  jetonLongueur: number;
+  formatDetecte: 'v4' | 'v3' | null;
+  appelReussi: boolean;
+  statutHttp: number | null;
+  messageErreur: string | null;
+  /** Un vrai titre TMDB si l'appel a réussi : la preuve la plus lisible. */
+  exempleTitre: string | null;
+}
+
+/**
+ * Interroge TMDB une seule fois, minimalement, et rend un verdict complet
+ * — SANS jamais exposer le jeton lui-même. Conçu pour être appelé depuis
+ * une route accessible au navigateur : quand les logs serveur restent
+ * hors de portée, c'est la seule vérité qu'on puisse encore vérifier.
+ */
+export async function diagnostiquerTmdb(): Promise<DiagnosticTmdb> {
+  const config = configTmdb();
+  if (!config) {
+    return {
+      jetonPresent: false, jetonLongueur: 0, formatDetecte: null,
+      appelReussi: false, statutHttp: null,
+      messageErreur: 'TMDB_ACCESS_TOKEN absent ou vide sur Vercel.',
+      exempleTitre: null,
+    };
+  }
+
+  const format = formatDeJeton(config.jeton);
+  try {
+    const fiche = await tmdb<{ title?: string }>('/movie/550', {}, 60);
+    return {
+      jetonPresent: true, jetonLongueur: config.jeton.length, formatDetecte: format,
+      appelReussi: true, statutHttp: 200, messageErreur: null,
+      exempleTitre: fiche.title ?? null,
+    };
+  } catch (erreur) {
+    const statut = erreur instanceof ErreurTmdb ? erreur.statut : null;
+    return {
+      jetonPresent: true, jetonLongueur: config.jeton.length, formatDetecte: format,
+      appelReussi: false, statutHttp: statut,
+      messageErreur: erreur instanceof Error ? erreur.message : String(erreur),
+      exempleTitre: null,
+    };
+  }
 }
 
 /** URL d'une affiche TMDB. `w500` est le bon compromis pour un iPhone. */
