@@ -51,7 +51,7 @@ export function FicheDetail({
         : 'Série';
 
   return (
-    <article className="overflow-hidden rounded-carte verre shadow-carte">
+    <article className="overflow-hidden verre">
       {/* --- Image de fond, plein cadre ---------------------------------- */}
       <div className="relative aspect-[16/10] w-full">
         <Affiche titre={titre} variante="fond" priorite className="h-full w-full" />
@@ -64,22 +64,26 @@ export function FicheDetail({
           }}
         />
 
-        {/* Retour : la seule commande de fermeture de l'écran. Pas de
-            décalage pour l'encoche ici — contrairement à un écran plein
-            cadre, cette feuille glisse depuis le bas et n'atteint jamais
-            le haut réel de l'appareil. */}
+        {/* Retour : la seule commande de fermeture de l'écran. La fiche
+            remplit maintenant l'écran depuis le haut réel de l'appareil,
+            donc ce bouton doit être décalé sous l'encoche / la Dynamic
+            Island plutôt que collé au bord. */}
         <button
           type="button"
           onClick={onFermer}
           aria-label="Retour"
-          className="absolute left-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-nuit/80 text-ivoire"
+          className="absolute left-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-nuit/80 text-ivoire"
+          style={{ top: 'max(env(safe-area-inset-top), 16px)' }}
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 5 8 12l7 7" />
           </svg>
         </button>
 
-        <span className="absolute right-4 top-[18px] z-10 rounded-full border border-white/10 bg-nuit/80 px-3 py-1 text-[12px] font-semibold text-ivoire">
+        <span
+          className="absolute right-4 z-10 rounded-full border border-white/10 bg-nuit/80 px-3 py-1 text-[12px] font-semibold text-ivoire"
+          style={{ top: 'calc(max(env(safe-area-inset-top), 16px) + 2px)' }}
+        >
           ★ {titre.note.toFixed(1)}
         </span>
       </div>

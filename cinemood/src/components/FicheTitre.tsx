@@ -85,7 +85,7 @@ export function FicheTitre({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[55] flex items-end justify-center"
+          className="fixed inset-0 z-[55]"
           role="dialog"
           aria-modal="true"
           aria-label={reco.titre.titre}
@@ -97,12 +97,16 @@ export function FicheTitre({
             className="absolute inset-0 bg-[rgb(3_2_7_/_0.78)]"
           />
 
+          {/* La fiche remplit l'écran depuis le haut, comme un vrai écran
+              de détail — pas une feuille ancrée en bas. Le contenu
+              (image de fond, titre, synopsis, boutons) s'enchaîne donc
+              normalement du haut vers le bas, sans espace vide au-dessus. */}
           <motion.div
-            initial={{ y: 26 }}
+            initial={{ y: 24 }}
             animate={{ y: 0 }}
-            exit={{ y: 26 }}
+            exit={{ y: 24 }}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="relative max-h-[92svh] w-full max-w-xl overflow-y-auto overscroll-contain px-3 pt-3"
+            className="relative mx-auto h-[100dvh] w-full max-w-xl overflow-y-auto overscroll-contain"
             style={{
               paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
               WebkitOverflowScrolling: 'touch',
