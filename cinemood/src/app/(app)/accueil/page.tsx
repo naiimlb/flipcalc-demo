@@ -138,7 +138,15 @@ export default function PageAccueil() {
   const reglageHumeur = contexte.humeur ? TABLE_HUMEURS[contexte.humeur] : null;
   const identiteHumeur = contexte.humeur ? IDENTITE_HUMEUR[contexte.humeur] : null;
 
+  // `FicheTitre` et `LecteurBandeAnnonce` sont des recouvrements en
+  // `position: fixed` : ils vivent HORS de `TirerPourActualiser`, à
+  // dessein. Ce dernier applique un `transform` à son contenu pendant le
+  // geste de tirage — et un ancêtre transformé devient le référentiel
+  // d'un `fixed` descendant, au lieu de l'écran. À l'intérieur, la fiche
+  // se positionnait alors n'importe où, ou se voyait rognée en plein
+  // geste, un « position: fixed » qui n'a plus de sens.
   return (
+    <>
     <TirerPourActualiser onActualiser={charger}>
       {recos === null && <SqueletteAccueil />}
 
@@ -277,6 +285,8 @@ export default function PageAccueil() {
         Ce produit utilise l’API TMDB mais n’est pas approuvé ni certifié par TMDB.
       </p>
 
+    </TirerPourActualiser>
+
       <FicheTitre
         reco={fiche}
         plateformesUtilisateur={profil.plateformes}
@@ -290,7 +300,7 @@ export default function PageAccueil() {
       />
 
       <LecteurBandeAnnonce titre={titreEnLecture} onFermer={() => setTitreEnLecture(null)} />
-    </TirerPourActualiser>
+    </>
   );
 }
 
