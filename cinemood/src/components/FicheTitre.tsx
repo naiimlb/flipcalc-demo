@@ -32,16 +32,47 @@ export function FicheTitre({
   onSignal,
 }: Props) {
   // Le fond ne doit pas défiler derrière la fiche, et Échap doit fermer.
+  //
+  // `overflow: hidden` sur `body` ne suffit PAS sur Safari iOS : il ne
+  // bloque pas fiablement le défilement de la page en dessous, et le
+  // geste de balayage démarré sur la fiche peut alors être capté par la
+  // page de fond au lieu de faire défiler la fiche elle-même — elle
+  // semble alors coincée, figée sur ce qui était visible à l'ouverture.
+  // La technique fiable, standard sur iOS : figer le corps en
+  // `position: fixed` à son décalage de scroll actuel, et le restaurer
+  // à la fermeture.
   useEffect(() => {
     if (!reco) return;
-    const precedent = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const decalage = window.scrollY;
+    const { style } = document.body;
+    const precedent = {
+      position: style.position,
+      top: style.top,
+      left: style.left,
+      right: style.right,
+      width: style.width,
+      overflow: style.overflow,
+    };
+    style.position = 'fixed';
+    style.top = `-${decalage}px`;
+    style.left = '0';
+    style.right = '0';
+    style.width = '100%';
+    style.overflow = 'hidden';
+
     const auClavier = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onFermer();
     };
     window.addEventListener('keydown', auClavier);
+
     return () => {
-      document.body.style.overflow = precedent;
+      style.position = precedent.position;
+      style.top = precedent.top;
+      style.left = precedent.left;
+      style.right = precedent.right;
+      style.width = precedent.width;
+      style.overflow = precedent.overflow;
+      window.scrollTo(0, decalage);
       window.removeEventListener('keydown', auClavier);
     };
   }, [reco, onFermer]);
@@ -71,8 +102,11 @@ export function FicheTitre({
             animate={{ y: 0 }}
             exit={{ y: 26 }}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="relative max-h-[92svh] w-full max-w-xl overflow-y-auto px-3 pt-3"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
+            className="relative max-h-[92svh] w-full max-w-xl overflow-y-auto overscroll-contain px-3 pt-3"
+            style={{
+              paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+              WebkitOverflowScrolling: 'touch',
+            }}
           >
             <FicheDetail
               reco={reco}
