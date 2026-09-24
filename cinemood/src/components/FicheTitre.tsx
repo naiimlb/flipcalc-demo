@@ -85,37 +85,41 @@ export function FicheTitre({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[55]"
+          // Le fond et le défilement vivent directement sur cet élément
+          // `fixed inset-0`, pas sur un enfant dimensionné en `h-[100dvh]`.
+          // `100dvh` est censé suivre la barre d'adresse de Safari qui se
+          // réduit en pilule pendant le défilement, mais ce suivi est connu
+          // pour être défaillant sur `position: fixed` : la hauteur figée
+          // du panneau restait alors plus courte que le vrai viewport une
+          // fois la barre repliée, laissant un vide en bas où l'accueil
+          // (son propre rail, sa propre barre d'onglets) redevenait visible
+          // sans aucun voile. `inset: 0` reste toujours exactement calé sur
+          // les bords réels du viewport, sans dépendre d'une unité de
+          // hauteur calculée à part.
+          className="fixed inset-0 z-[55] overflow-y-auto overscroll-contain bg-nuit"
           role="dialog"
           aria-modal="true"
           aria-label={reco.titre.titre}
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <button
             type="button"
             onClick={onFermer}
             aria-label="Fermer la fiche"
-            className="absolute inset-0 bg-[rgb(3_2_7_/_0.78)]"
+            className="absolute inset-0"
           />
 
           {/* La fiche remplit l'écran depuis le haut, comme un vrai écran
               de détail — pas une feuille ancrée en bas. Le contenu
               (image de fond, titre, synopsis, boutons) s'enchaîne donc
-              normalement du haut vers le bas, sans espace vide au-dessus.
-              `bg-nuit` est indispensable ici : `.verre`, utilisé par
-              `FicheDetail`, est volontairement quasi transparent (pensé
-              pour une carte posée sur un fond déjà opaque) — sans un fond
-              plein sous elle, la page d'accueil figée derrière continue
-              de se voir *au travers* du contenu de la fiche. */}
+              normalement du haut vers le bas, sans espace vide au-dessus. */}
           <motion.div
             initial={{ y: 24 }}
             animate={{ y: 0 }}
             exit={{ y: 24 }}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="relative mx-auto h-[100dvh] w-full max-w-xl overflow-y-auto overscroll-contain bg-nuit"
-            style={{
-              paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
-              WebkitOverflowScrolling: 'touch',
-            }}
+            className="relative mx-auto w-full max-w-xl"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
           >
             <FicheDetail
               reco={reco}
