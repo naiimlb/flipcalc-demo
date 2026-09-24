@@ -100,13 +100,18 @@ export function FicheTitre({
           {/* La fiche remplit l'écran depuis le haut, comme un vrai écran
               de détail — pas une feuille ancrée en bas. Le contenu
               (image de fond, titre, synopsis, boutons) s'enchaîne donc
-              normalement du haut vers le bas, sans espace vide au-dessus. */}
+              normalement du haut vers le bas, sans espace vide au-dessus.
+              `bg-nuit` est indispensable ici : `.verre`, utilisé par
+              `FicheDetail`, est volontairement quasi transparent (pensé
+              pour une carte posée sur un fond déjà opaque) — sans un fond
+              plein sous elle, la page d'accueil figée derrière continue
+              de se voir *au travers* du contenu de la fiche. */}
           <motion.div
             initial={{ y: 24 }}
             animate={{ y: 0 }}
             exit={{ y: 24 }}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="relative mx-auto h-[100dvh] w-full max-w-xl overflow-y-auto overscroll-contain"
+            className="relative mx-auto h-[100dvh] w-full max-w-xl overflow-y-auto overscroll-contain bg-nuit"
             style={{
               paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
               WebkitOverflowScrolling: 'touch',
