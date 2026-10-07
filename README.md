@@ -5,3 +5,4 @@
 - [`commande/`](commande/) — **Commande Express**, inventaire et commandes fournisseurs pour fast-food, snacks et traiteurs (voir [commande/README.md](commande/README.md)).
 - [`cinemood/`](cinemood/) — **CinéMood**, recommandations de films et séries selon l'humeur, la génération et les plateformes de streaming (voir [cinemood/README.md](cinemood/README.md) et [cinemood/DEPLOIEMENT.md](cinemood/DEPLOIEMENT.md)).
 - [`cinemood-demo/`](cinemood-demo/) — **CinéMood, version de démonstration** : même moteur, ouvrable sans installation ni clé d'API sur <https://naiimlb.github.io/flipcalc-demo/cinemood-demo/>.
+- [`hashtagbangers/`](hashtagbangers/) — **#HASHTAG BANGERS**, prototype 3D du burger Bangers (Vite + Three.js + GSAP, voir [hashtagbangers/README.md](hashtagbangers/README.md)).
