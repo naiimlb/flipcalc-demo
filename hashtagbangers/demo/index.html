@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff8cc6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>BANGERS — #HASHTAG BANGERS</title>
+<link rel="icon" href="./logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<div id="app" class="is-loading">
+
+  <!-- décor : rose halftone, bandes diagonales, palmiers et skyline en filigrane -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg__band bg__band--a"></div>
+    <div class="bg__band bg__band--b"></div>
+    <svg class="bg__deco" viewBox="0 0 390 844" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <symbol id="palm" viewBox="0 0 200 420">
+          <path d="M92 420c-3-90 2-190 26-292l9 2c-20 100-24 200-20 290z"/>
+          <path d="M122 120c-30-34-76-38-118-8 40-14 80-8 112 16z"/>
+          <path d="M124 118c-14-46-50-74-98-78 42 14 74 42 90 84z"/>
+          <path d="M126 116c10-46 44-76 92-80-40 16-70 44-82 84z"/>
+          <path d="M128 120c34-26 76-22 108 10-36-18-72-18-102 0z"/>
+          <path d="M124 124c-36 6-62 36-70 78 16-32 40-56 72-70z"/>
+          <path d="M130 124c34 10 56 40 58 82-12-32-34-58-64-74z"/>
+        </symbol>
+      </defs>
+      <g class="bg__skyline">
+        <path d="M0 844V700h26v-38h22v38h14V640h30v60h12v-90h34v90h10v-52h28v52h18V600h18l6-22 6 22h18v100h12v-70h30v70h16v-40h22v40h14V650h34v50h20v144z"/>
+      </g>
+      <use href="#palm" x="-60" y="420" width="190" height="420"/>
+      <g transform="translate(460 360) scale(-1 1)"><use href="#palm" width="200" height="460"/></g>
+      <use href="#palm" x="250" y="520" width="140" height="320" opacity=".7"/>
+    </svg>
+    <div class="bg__dots"></div>
+  </div>
+
+  <canvas id="gl" aria-label="Le burger BANGERS en 3D. Glisse pour le faire tourner."></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <header class="top">
+    <img class="logo" src="./logo.png" alt="#HASHTAG BANGERS." width="721" height="405" draggable="false">
+  </header>
+
+  <!-- écran principal -->
+  <section class="panel" aria-label="Le Bangers">
+    <div class="panel__title">
+      <h1 class="tag">BANGERS</h1>
+      <span class="marker panel__accent">le boss de la carte</span>
+    </div>
+    <p class="panel__desc">Double smash, double cheddar US qui coule, œuf au plat, lardons fumés et crispy onions, noyés de sauce Bangers&nbsp;&amp;&nbsp;BBQ. T'as faim&nbsp;? Normal.</p>
+    <ul class="chips" aria-label="Ingrédients"></ul>
+    <div class="actions">
+      <button class="btn btn--main" id="open" type="button">OUVRE-MOI</button>
+      <button class="btn btn--bang" id="bang" type="button" hidden>BANG!</button>
+    </div>
+  </section>
+
+  <!-- visite guidée -->
+  <div class="story" aria-hidden="true"></div>
+  <svg class="leader" aria-hidden="true">
+    <path class="leader__under" pathLength="1"/>
+    <path class="leader__line" pathLength="1"/>
+    <circle class="leader__dot" r="6"/>
+  </svg>
+  <div class="label" aria-live="polite">
+    <span class="label__idx marker"></span>
+    <strong class="label__name"></strong>
+    <span class="label__note marker"></span>
+    <p class="label__desc"></p>
+  </div>
+  <nav class="tourbar" aria-label="Visite du burger">
+    <button class="btn btn--icon" id="prev" type="button" aria-label="Ingrédient précédent">‹</button>
+    <button class="btn btn--close" id="close" type="button">REFERME-LE</button>
+    <button class="btn btn--icon" id="next" type="button" aria-label="Ingrédient suivant">›</button>
+  </nav>
+  <div class="zip" role="slider" aria-label="Ouvrir ou refermer le burger" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+    <div class="zip__track"></div>
+    <div class="zip__fill"></div>
+    <div class="zip__thumb"><span></span></div>
+    <span class="zip__hint marker">zip</span>
+  </div>
+
+  <!-- moment signature -->
+  <div class="sticker" aria-hidden="true">
+    <svg class="sticker__burst" viewBox="-100 -100 200 200"><polygon points=""/></svg>
+    <span class="sticker__text">BANG!</span>
+  </div>
+  <div class="flash" aria-hidden="true"></div>
+
+  <div class="preloader" aria-hidden="true"><img src="./logo.png" alt="" draggable="false"></div>
+  <p class="nogl" hidden>Ton navigateur ne sait pas afficher la 3D… mais le Bangers t'attend en vrai, à Roubaix.</p>
+</div>
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","gsap":"./vendor/gsap/index.js"}}</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
