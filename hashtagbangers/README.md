@@ -13,6 +13,11 @@ npm run dev        # puis ouvre l'URL "Network" affichée sur ton iPhone (même 
 
 `npm run build` produit `dist/` (chemins relatifs, publiable tel quel sur GitHub Pages).
 
+## Version en ligne (sans compilation)
+
+`demo/` est une copie statique prête à servir (Three.js et GSAP inclus, import map) : <https://naiimlb.github.io/flipcalc-demo/hashtagbangers/demo/>.
+Après une modification de `src/`, la régénérer avec `sh scripts/make-demo.sh` (après `npm install`).
+
 ## Ce qu'on peut faire
 
 - **Glisser horizontalement** : faire tourner le burger (avec inertie), léger parallaxe au toucher.
