@@ -1,0 +1,39 @@
+name: Grat'Coran
+
+on:
+  push:
+    paths:
+      - "gratcoran/**"
+      - ".github/workflows/gratcoran.yml"
+  pull_request:
+    paths:
+      - "gratcoran/**"
+      - ".github/workflows/gratcoran.yml"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gratcoran
+    env:
+      # Valeurs factices : le build n'appelle pas Supabase.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm ls next react quran-json @supabase/ssr framer-motion --depth=0
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build

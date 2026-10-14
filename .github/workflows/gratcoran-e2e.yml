@@ -1,0 +1,74 @@
+name: Grat'Coran E2E
+
+# Tests de bout en bout contre le déploiement de production.
+# Le mot de passe du compte de test est généré ici et ne quitte jamais le runner :
+# seule son empreinte bcrypt est publiée (branche claude/grat-coran-e2e) pour que
+# le compte soit créé en base, puis le job attend que la connexion fonctionne.
+
+on:
+  push:
+    branches: [claude/grat-coran]
+    paths:
+      - "gratcoran/e2e/**"
+      - ".github/workflows/gratcoran-e2e.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: gratcoran/e2e
+    env:
+      E2E_BASE_URL: https://grat-coran.vercel.app
+      SUPABASE_URL: https://mvbrqdgobbcajfpjdsdv.supabase.co
+      SUPABASE_KEY: sb_publishable_7oJHFB3dZspZ0xbT5YDKKw_ABcu2P9L
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund && npm install --no-save bcryptjs@2.4.3
+      - run: npx playwright install --with-deps chromium webkit
+
+      - name: Identifiants de test (mot de passe masqué)
+        run: |
+          PASSWORD=$(node -e 'console.log(require("crypto").randomBytes(18).toString("base64url"))')
+          echo "::add-mask::$PASSWORD"
+          EMAIL="e2e-${GITHUB_RUN_ID}@grat-coran.test"
+          HASH=$(PASSWORD="$PASSWORD" node -e 'console.log(require("bcryptjs").hashSync(process.env.PASSWORD, 10))')
+          echo "E2E_EMAIL=$EMAIL" >> "$GITHUB_ENV"
+          echo "E2E_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
+          mkdir -p /tmp/req && cd /tmp/req
+          printf '{"email":"%s","hash":"%s","run":"%s"}\n' "$EMAIL" "$HASH" "$GITHUB_RUN_ID" > request.json
+          git init -q && git checkout -q -b claude/grat-coran-e2e
+          git add request.json
+          git -c user.name=github-actions -c user.email=actions@github.com commit -qm "E2E: demande de compte de test (run $GITHUB_RUN_ID)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/grat-coran-e2e
+
+      - name: Attente de la création du compte (15 min max)
+        run: |
+          for i in $(seq 1 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+              -H "apikey: $SUPABASE_KEY" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$E2E_EMAIL\",\"password\":\"$E2E_PASSWORD\"}")
+            if [ "$code" = "200" ]; then echo "Compte prêt"; exit 0; fi
+            sleep 10
+          done
+          echo "Compte de test non créé à temps"; exit 1
+
+      - name: Playwright (WebKit iPhone + Chromium micro simulé)
+        run: npx playwright test
+        env:
+          E2E_SCREENSHOTS: ${{ runner.temp }}/screens
+
+      - name: Publication des captures
+        if: always()
+        run: |
+          cd "${{ runner.temp }}/screens" 2>/dev/null || exit 0
+          git init -q && git checkout -q -b claude/grat-coran-screens
+          git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures E2E (run $GITHUB_RUN_ID)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/grat-coran-screens
