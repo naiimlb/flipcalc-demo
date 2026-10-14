@@ -17,16 +17,11 @@ export default function LoginPage() {
 
   return (
     <div>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 22 }}
-        className="flex flex-col items-center text-center"
-      >
+      <div className="flex animate-pop flex-col items-center text-center">
         <Logo size={96} />
         <h1 className="mt-5 text-3xl font-bold tracking-tight">Grat&apos;Coran</h1>
         <p className="mt-1.5 text-[15px] text-muted">Fais écouter une récitation, retrouve la sourate.</p>
-      </motion.div>
+      </div>
 
       <div className="mt-8 grid grid-cols-2 rounded-2xl bg-line/50 p-1" role="tablist">
         {(["signin", "signup"] as const).map((m) => (

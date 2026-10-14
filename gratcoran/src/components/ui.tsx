@@ -63,9 +63,11 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
   return (
-    <label htmlFor={id} className="block">
-      <span className="mb-1.5 block text-sm font-medium text-muted">{label}</span>
-      <span className="relative block">
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-muted">
+        {label}
+      </label>
+      <div className="relative">
         <input
           ref={ref}
           id={id}
@@ -83,8 +85,8 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
             {visible ? "Masquer" : "Afficher"}
           </button>
         )}
-      </span>
-    </label>
+      </div>
+    </div>
   );
 });
 

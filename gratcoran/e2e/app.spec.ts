@@ -11,6 +11,7 @@ const SHOTS = process.env.E2E_SCREENSHOTS ?? "screenshots";
 mkdirSync(SHOTS, { recursive: true });
 
 async function shot(page: Page, name: string) {
+  await page.waitForTimeout(700); // fin des animations
   const project = test.info().project.name;
   const scheme = await page.evaluate(() =>
     matchMedia("(prefers-color-scheme: dark)").matches ? "sombre" : "clair",

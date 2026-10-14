@@ -27,6 +27,14 @@ const config: Config = {
         ],
         quran: ["var(--font-quran)", "serif"],
       },
+      keyframes: {
+        rise: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
+        pop: { from: { opacity: "0", transform: "scale(0.92)" }, to: { opacity: "1", transform: "none" } },
+      },
+      animation: {
+        rise: "rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
+        pop: "pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+      },
       backgroundImage: {
         brand: "linear-gradient(135deg, #10b981 0%, #0ea5a4 45%, #2563eb 100%)",
       },

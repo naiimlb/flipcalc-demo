@@ -230,11 +230,7 @@ function Detail({ entry, onDelete }: { entry: HistoryEntry; onDelete: () => void
 
 function EmptyState() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center rounded-3xl bg-surface px-6 py-12 text-center"
-    >
+    <div className="flex animate-rise flex-col items-center rounded-3xl bg-surface px-6 py-12 text-center">
       <div className="flex h-16 items-end gap-1.5" aria-hidden>
         {[28, 46, 62, 40, 54, 30].map((h, i) => (
           <motion.span
@@ -256,7 +252,7 @@ function EmptyState() {
       >
         Reconnaître une récitation
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
