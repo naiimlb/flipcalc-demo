@@ -121,8 +121,12 @@ test("connexion, session persistante, onglets, historique, déconnexion", async 
     await expect(dialog.getByText("Verset 255").first()).toBeVisible();
     await expect(dialog.locator('blockquote[lang="ar"]')).toContainText("ٱللَّهُ لَآ إِلَٰهَ إِلَّا هُوَ");
     await shot(page, "04-detail");
+    const deleted = page.waitForResponse(
+      (r) => r.request().method() === "POST" && r.url().includes("/historique"),
+    );
     await dialog.getByRole("button", { name: "Supprimer de l'historique" }).click();
     await expect(page.getByText("Aucune reconnaissance")).toBeVisible();
+    expect((await deleted).ok()).toBe(true);
     await page.reload();
     await expect(page.getByText("Aucune reconnaissance")).toBeVisible();
   } else {

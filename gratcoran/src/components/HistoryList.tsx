@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getBrowserSupabase } from "@/lib/supabase/client";
+import { deleteRecognition } from "@/app/(app)/historique/actions";
 import type { Confidence } from "@/lib/quran/matcher";
 import type { SurahInfo, VerseInfo } from "@/lib/quran/present";
 import { ConfidenceBadge, SurahHeader, VerseBlock, verseRangeLabel } from "./quran";
@@ -67,8 +67,8 @@ export function HistoryList({ initialEntries }: { initialEntries: HistoryEntry[]
     setSelected(null);
     setError(null);
     setEntries((list) => list.filter((e) => e.id !== entry.id));
-    const { error } = await getBrowserSupabase().from("recognitions").delete().eq("id", entry.id);
-    if (error) {
+    const { ok } = await deleteRecognition(entry.id).catch(() => ({ ok: false }));
+    if (!ok) {
       setError("Suppression impossible. Vérifie ta connexion et réessaie.");
       setEntries((list) =>
         [...list, entry].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
