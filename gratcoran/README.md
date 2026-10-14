@@ -36,6 +36,14 @@ Le micro exige HTTPS sauf sur `localhost`. Pour tester sur iPhone, utiliser le d
 
 `npm run typecheck` · `npm run lint` · `npm test` (Vitest, dont 1 600 extraits bruités) · `npm run build`
 
+## Tests de bout en bout
+
+`e2e/` (Playwright, WebKit iPhone + Chromium avec micro simulé) tourne sur GitHub Actions
+contre la production (`.github/workflows/gratcoran-e2e.yml`). Le workflow génère un mot de
+passe aléatoire qui ne quitte jamais le runner, publie seulement son empreinte bcrypt sur la
+branche `claude/grat-coran-e2e`, puis attend (15 min max) que le compte de test soit créé en
+base. Captures publiées sur la branche `claude/grat-coran-screens`.
+
 ## Base de données
 
 Migrations SQL dans `supabase/migrations/` : table `recognitions` (historique, RLS par
