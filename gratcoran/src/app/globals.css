@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 246 248 247;
+  --surface: 255 255 255;
+  --elevated: 255 255 255;
+  --ink: 15 23 22;
+  --muted: 100 116 112;
+  --line: 226 232 230;
+  --tabbar-h: 56px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 6 10 10;
+    --surface: 17 22 22;
+    --elevated: 26 32 32;
+    --ink: 236 242 240;
+    --muted: 140 156 152;
+    --line: 38 46 46;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* Champs ≥ 16 px : pas de zoom automatique sur iOS. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Texte coranique : affichage RTL, jamais de césure ni de transformation. */
+.quran {
+  font-family: var(--font-quran), "Amiri Quran", "Scheherazade New", serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+  text-align: right;
+  line-height: 2.1;
+  font-feature-settings: normal;
+  hyphens: none;
+  word-break: normal;
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pb-tabbar {
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
