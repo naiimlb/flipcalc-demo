@@ -139,8 +139,12 @@ test("connexion, session persistante, onglets, historique, déconnexion", async 
   await shot(page, "06-compte");
   await page.getByRole("button", { name: "Se déconnecter" }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login$/);
+  // Nouvel onglet, mêmes cookies : la session est bien fermée.
+  // (WebKit Linux de Playwright plante en renaviguant dans le même onglet ici.)
+  const after = await page.context().newPage();
+  await after.goto("/historique");
+  await expect(after).toHaveURL(/\/login$/);
+  await after.close();
 });
 
 test("enregistrement : écoute, arrêt, analyse", async ({ page }, info) => {
