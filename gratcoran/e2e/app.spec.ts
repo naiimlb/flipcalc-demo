@@ -89,6 +89,9 @@ test("erreurs d'authentification en français", async ({ page }) => {
 test("connexion, session persistante, onglets, historique, déconnexion", async ({ page, browser }, info) => {
   await login(page);
   await shot(page, "02-accueil");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await shot(page, "02-accueil");
+  await page.emulateMedia({ colorScheme: "light" });
 
   // Cookies de session posés par le serveur pour ~400 jours.
   const cookies = (await page.context().cookies()).filter((c) => c.name.startsWith("sb-"));
@@ -109,7 +112,8 @@ test("connexion, session persistante, onglets, historique, déconnexion", async 
   await page.getByRole("link", { name: "Historique" }).click();
   await expect(page).toHaveURL(/\/historique$/);
   const row = page.getByRole("button", { name: /Al-Baqarah/ }).first();
-  if (await row.isVisible().catch(() => false)) {
+  await expect(row.or(page.getByText("Aucune reconnaissance"))).toBeVisible({ timeout: 15_000 });
+  if (await row.isVisible()) {
     await expect(page.getByText("Aujourd'hui")).toBeVisible();
     await shot(page, "03-historique");
     await row.click();
