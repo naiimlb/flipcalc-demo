@@ -73,13 +73,13 @@ test("erreurs d'authentification en français", async ({ page }) => {
   await page.getByLabel("Email").fill(EMAIL);
   await page.getByLabel("Mot de passe", { exact: true }).fill("mauvais-mot-de-passe");
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Email ou mot de passe incorrect.");
+  await expect(page.locator('p[role="alert"]')).toHaveText("Email ou mot de passe incorrect.");
 
   await page.getByRole("tab", { name: "Inscription" }).click();
   await page.getByLabel("Email").fill("quelquun@example.com");
   await page.getByLabel(/Mot de passe/).fill("court");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Le mot de passe doit contenir au moins 8 caractères.");
+  await expect(page.locator('p[role="alert"]')).toHaveText("Le mot de passe doit contenir au moins 8 caractères.");
 
   await page.getByRole("tab", { name: "Connexion" }).click();
   await page.getByRole("link", { name: "Mot de passe oublié ?" }).click();
