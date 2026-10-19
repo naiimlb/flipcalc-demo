@@ -15,7 +15,7 @@ export function TabBar() {
   const pathname = usePathname();
   return (
     <nav aria-label="Navigation principale" className="pb-safe fixed inset-x-0 bottom-0 z-40">
-      <div className="glass mx-auto max-w-md rounded-t-[26px] border-b-0">
+      <div className="glass mx-auto max-w-md rounded-t-[26px] border-b-0 bg-[rgb(var(--glass)/0.92)]">
         <ul className="flex h-[var(--tabbar-h)] items-stretch px-2">
           {TABS.map(({ href, label, icon: Icon }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
