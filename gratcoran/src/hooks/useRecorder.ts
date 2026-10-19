@@ -36,9 +36,11 @@ type Session = {
 type Options = {
   onComplete: (recording: Recording) => void;
   onError: (error: RecorderError) => void;
+  /** Durée maximale d'écoute (15 s par défaut). */
+  maxMs?: number;
 };
 
-export function useRecorder({ onComplete, onError }: Options) {
+export function useRecorder({ onComplete, onError, maxMs = MAX_MS }: Options) {
   const session = useRef<Session | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -112,7 +114,7 @@ export function useRecorder({ onComplete, onError }: Options) {
         recorder,
         chunks,
         startedAt: begun,
-        timer: setTimeout(finish, MAX_MS),
+        timer: setTimeout(finish, maxMs),
         cancelled: false,
       };
       session.current = s;
@@ -137,7 +139,7 @@ export function useRecorder({ onComplete, onError }: Options) {
       session.current = null;
       callbacks.current.onError("unsupported");
     }
-  }, [finish, teardown]);
+  }, [finish, teardown, maxMs]);
 
   /** Arrête l'écoute ; avant 3 s, l'arrêt est différé jusqu'au minimum. */
   const stop = useCallback(() => {

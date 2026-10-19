@@ -34,7 +34,8 @@ Le micro exige HTTPS sauf sur `localhost`. Pour tester sur iPhone, utiliser le d
 
 ## Scripts
 
-`npm run typecheck` · `npm run lint` · `npm test` (Vitest, dont 1 600 extraits bruités) · `npm run build`
+`npm run typecheck` · `npm run lint` · `npm test` (Vitest : 1 600 extraits bruités pour la
+reconnaissance, détecteur de règles, alignement et 300 passages pour le Tajweed) · `npm run build`
 
 ## Tests de bout en bout
 
@@ -47,7 +48,8 @@ base. Captures publiées sur la branche `claude/grat-coran-screens`.
 ## Base de données
 
 Migrations SQL dans `supabase/migrations/` : table `recognitions` (historique, RLS par
-utilisateur) et fonction `consume_recognize_quota` (6 requêtes/minute, 150/jour).
+utilisateur), fonction `consume_recognize_quota` (6 requêtes/minute, 150/jour), tables
+`user_settings` et `tajweed_sessions` et fonction `consume_tajweed_quota`.
 L'audio n'est jamais stocké.
 
 ## Matching
@@ -56,6 +58,29 @@ Texte normalisé (sans voyelles, lettres unifiées, alifs et espaces retirés), 
 trigrammes sur des fenêtres de 1 à 3 versets consécutifs, score
 `0,7 × couverture de la requête + 0,3 × Dice`. La confiance (haute / moyenne / faible)
 dépend du score et de l'écart avec la meilleure autre sourate.
+
+## Correcteur de Tajweed
+
+Onglet « Tajweed » : choix d'un passage (1 à 3 versets, segments pour les longs versets),
+préparation (texte voyellé, traduction, règles du passage en pastilles), récitation (30 s
+maximum), analyse mot à mot, comparaison avec l'essai précédent et historique dédié
+(« Mon parcours »). Un avertissement doit être accepté au premier accès (`user_settings`).
+
+- Transcription : Groq `whisper-large-v3`, langue `ar`, `verbose_json` avec horodatage par mot,
+  côté serveur (`/api/tajweed`, authentification, 5 Mo maximum, 6 requêtes/minute et
+  120/jour). **Aucun texte attendu n'est passé dans le paramètre `prompt`** : il biaiserait la
+  transcription et masquerait les erreurs.
+- Comparaison : squelettes normalisés, alignement Needleman-Wunsch (avec mots collés, coupés et
+  inversés), puis différences lettre à lettre (lettre confondue, mot manquant ou ajouté).
+- Règles : détecteur maison (`src/lib/tajweed/rules.ts`) qui lit les signes du texte uthmani
+  de `quran-json` (convention KFGQPC : soukoun, tanwin décalé, petit mim d'iqlab, maddah,
+  chadda, signes de pause). Les règles de durée, de nasalisation, de rebond et de timbre sont
+  présentées comme « points d'attention », jamais comme des fautes.
+- Source d'annotations envisagée : [cpfair/quran-tajweed](https://github.com/cpfair/quran-tajweed)
+  (CC BY 4.0). Non utilisée : ses positions renvoient au texte Tanzil de 2017, pas au texte
+  affiché ici ; les appliquer risquerait de colorer les mauvaises lettres.
+- Tables `tajweed_sessions` (essais, erreurs en jsonb) et `user_settings`, RLS par
+  utilisateur. L'audio n'est jamais stocké : la réécoute se fait en mémoire sur le téléphone.
 
 ## Logo et icônes
 

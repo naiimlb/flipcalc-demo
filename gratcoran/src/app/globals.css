@@ -3,31 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --bg: 246 248 247;
+  --bg: 244 248 246;
   --surface: 255 255 255;
   --elevated: 255 255 255;
-  --ink: 15 23 22;
-  --muted: 100 116 112;
-  --line: 226 232 230;
-  --tabbar-h: 56px;
+  --ink: 13 27 24;
+  --muted: 88 106 101;
+  --line: 222 231 228;
+  --glass: 255 255 255;
+  --glass-alpha: 0.72;
+  --glass-border: 255 255 255;
+  --glow-a: 16 185 129;
+  --glow-b: 37 99 235;
+  --pattern-opacity: 0.07;
+  --tabbar-h: 60px;
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: 6 10 10;
-    --surface: 17 22 22;
-    --elevated: 26 32 32;
-    --ink: 236 242 240;
-    --muted: 140 156 152;
-    --line: 38 46 46;
+    --bg: 5 11 12;
+    --surface: 15 23 24;
+    --elevated: 22 31 33;
+    --ink: 234 243 240;
+    --muted: 148 166 161;
+    --line: 36 48 50;
+    --glass: 20 30 32;
+    --glass-alpha: 0.62;
+    --glass-border: 255 255 255;
+    --pattern-opacity: 0.06;
   }
 }
 
+html {
+  background: rgb(var(--bg));
+}
+
+/* Le fond (dégradés + motif) est dessiné par <Backdrop />, sous le contenu. */
 html,
 body {
   height: 100%;
-  background: rgb(var(--bg));
   color: rgb(var(--ink));
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
@@ -55,6 +69,48 @@ textarea {
   font-feature-settings: normal;
   hyphens: none;
   word-break: normal;
+}
+
+@layer components {
+  /* Carte en verre dépoli : fond translucide, flou, bordure fine, ombre douce. */
+  .glass {
+    background: rgb(var(--glass) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--glass-border) / 0.55);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.5) inset,
+      0 12px 32px -16px rgb(6 78 59 / 0.28);
+  }
+  @media (prefers-color-scheme: dark) {
+    .glass {
+      border-color: rgb(var(--glass-border) / 0.08);
+      box-shadow:
+        0 1px 0 rgb(255 255 255 / 0.04) inset,
+        0 16px 40px -20px rgb(0 0 0 / 0.7);
+    }
+  }
+  /* Retour tactile : léger enfoncement au toucher. */
+  .pressable {
+    transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .pressable:active {
+    transform: scale(0.97);
+    opacity: 0.92;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid rgb(16 185 129 / 0.6);
+  outline-offset: 2px;
 }
 
 .pt-safe {

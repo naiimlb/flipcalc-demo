@@ -2,9 +2,10 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useState, type ReactNode } from "react";
 import type { RecognizeResponse } from "@/app/api/recognize/route";
 import { MAX_MS, MIN_MS, useRecorder, type RecorderError, type Recording } from "@/hooks/useRecorder";
+import { MIC_ERRORS } from "@/lib/mic-errors";
 import { MicButton } from "./MicButton";
 import { ResultCard, ResultSkeleton } from "./ResultCard";
 import { Sheet } from "./Sheet";
@@ -47,29 +48,14 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-const MIC_ERRORS: Record<RecorderError, { title: string; message: string }> = {
-  denied: {
-    title: "Accès au micro refusé",
-    message:
-      "Grat'Coran a besoin du micro pour écouter la récitation. Sur iPhone : Réglages › Safari › Micro › Autoriser, ou touche « aA » dans la barre d'adresse › Réglages du site web › Micro. Dans l'app installée, réessaie et accepte la demande.",
-  },
-  "no-mic": { title: "Aucun micro détecté", message: "Branche ou active un micro, puis réessaie." },
-  busy: {
-    title: "Micro indisponible",
-    message: "Le micro est utilisé par une autre app (appel, mémo vocal…). Ferme-la puis réessaie.",
-  },
-  insecure: {
-    title: "Connexion non sécurisée",
-    message: "Le micro n'est disponible qu'en HTTPS. Ouvre l'app depuis son adresse https://.",
-  },
-  unsupported: {
-    title: "Enregistrement non pris en charge",
-    message: "Ce navigateur ne permet pas d'enregistrer. Sur iPhone, utilise Safari (iOS 14.3 ou plus récent).",
-  },
-  unknown: { title: "Micro inaccessible", message: "Impossible de démarrer l'enregistrement. Réessaie." },
+type Props = {
+  /** En-tête personnalisé (salutation, statistiques). */
+  header?: ReactNode;
+  /** Contenu sous le micro ; reçoit de quoi lancer l'écoute depuis une carte. */
+  footer?: (controls: { start: () => void }) => ReactNode;
 };
 
-export function RecognizeScreen() {
+export function RecognizeScreen({ header, footer }: Props = {}) {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, { phase: "idle" });
   const [seconds, setSeconds] = useState(0);
@@ -149,18 +135,27 @@ export function RecognizeScreen() {
   const sheetOpen = state.phase === "analyzing" || state.phase === "result" || state.phase === "error";
 
   return (
-    <main className="pb-tabbar flex min-h-[100dvh] flex-col items-center px-6">
-      <header className="flex w-full max-w-md items-center justify-center pt-4">
-        <span className="bg-brand bg-clip-text text-lg font-bold tracking-tight text-transparent">
-          Grat&apos;Coran
-        </span>
-      </header>
+    <main className={`pb-tabbar mx-auto flex w-full max-w-md flex-col items-center px-5 ${footer ? "" : "min-h-[100dvh]"}`}>
+      {header ?? (
+        <header className="flex w-full items-center justify-center pt-4">
+          <span className="bg-brand bg-clip-text text-lg font-bold tracking-tight text-transparent">
+            Grat&apos;Coran
+          </span>
+        </header>
+      )}
 
-      <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6">
+      <div className={`flex w-full flex-col items-center gap-5 ${footer ? "py-4" : "flex-1 justify-center"}`}>
         <StatusText phase={state.phase} stopQueued={recorder.stopQueued} seconds={seconds} />
         <MicButton phase={micPhase} maxSeconds={MAX_MS / 1000} onPress={onPress} />
         <Waveform analyser={recorder.analyser} active={state.phase === "listening"} />
       </div>
+
+      {footer?.({
+        start: () => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          onPress();
+        },
+      })}
 
       <Sheet
         open={sheetOpen}

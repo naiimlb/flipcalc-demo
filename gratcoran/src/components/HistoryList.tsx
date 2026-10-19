@@ -89,7 +89,7 @@ export function HistoryList({ initialEntries }: { initialEntries: HistoryEntry[]
             <h2 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">
               {group.label}
             </h2>
-            <ul className="overflow-hidden rounded-2xl bg-surface">
+            <ul className="glass overflow-hidden rounded-3xl">
               <AnimatePresence initial={false}>
                 {group.items.map((entry, i) => (
                   <motion.li
@@ -230,7 +230,7 @@ function Detail({ entry, onDelete }: { entry: HistoryEntry; onDelete: () => void
 
 function EmptyState() {
   return (
-    <div className="flex animate-rise flex-col items-center rounded-3xl bg-surface px-6 py-12 text-center">
+    <div className="glass flex animate-rise flex-col items-center rounded-[28px] px-6 py-12 text-center">
       <div className="flex h-16 items-end gap-1.5" aria-hidden>
         {[28, 46, 62, 40, 54, 30].map((h, i) => (
           <motion.span
@@ -258,7 +258,7 @@ function EmptyState() {
 
 function ListSkeleton() {
   return (
-    <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface" aria-busy="true">
+    <div className="glass divide-y divide-line overflow-hidden rounded-3xl" aria-busy="true">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="flex items-center gap-4 px-4 py-3.5">
           <div className="h-11 w-11 animate-pulse rounded-2xl bg-line" />

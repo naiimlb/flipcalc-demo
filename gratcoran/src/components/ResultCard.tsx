@@ -1,9 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { pratiqueHref } from "@/lib/tajweed/links";
 import type { Recognition } from "@/lib/quran/present";
 import { ConfidenceBadge, SurahHeader, VerseBlock, verseRangeLabel } from "./quran";
 import { Button } from "./ui";
+
+/** Passage à travailler dans l'onglet Tajweed : les versets reconnus, sinon le début de la sourate. */
+function practiceHref(r: Recognition): string {
+  const surah = r.surah!;
+  if (r.showVerse && r.verseStart) {
+    const to = Math.min(r.verseEnd ?? r.verseStart, r.verseStart + 2);
+    return pratiqueHref({ surah: surah.number, verseStart: r.verseStart, verseEnd: to });
+  }
+  return pratiqueHref({ surah: surah.number, verseStart: 1, verseEnd: Math.min(3, surah.totalVerses) });
+}
 
 const TIPS = [
   "Rapproche-toi de la source sonore.",
@@ -115,8 +127,16 @@ export function ResultCard({ recognition: r, transcript, saved, onRetry }: Props
         </motion.p>
       )}
 
-      <motion.div variants={item}>
-        <Button onClick={onRetry}>Nouvelle écoute</Button>
+      <motion.div variants={item} className="grid gap-3">
+        <Link
+          href={practiceHref(r)}
+          className="pressable flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sea to-emerald-deep font-semibold text-white shadow-lg shadow-sea/20"
+        >
+          Corriger ma récitation
+        </Link>
+        <Button variant="secondary" onClick={onRetry}>
+          Nouvelle écoute
+        </Button>
       </motion.div>
       <Transcript text={transcript} />
     </motion.div>

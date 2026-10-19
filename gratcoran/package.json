@@ -1,6 +1,6 @@
 {
   "name": "grat-coran",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Grat'Coran — écoute une récitation et retrouve la sourate et le verset.",
   "engines": {
