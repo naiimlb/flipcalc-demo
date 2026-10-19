@@ -50,11 +50,27 @@ function provider(): Provider {
   return p;
 }
 
+export type DetailedTranscript = {
+  text: string;
+  words: { word: string; start: number; end: number }[];
+  /** Vrai si Whisper estime qu'il n'y a presque pas de parole dans l'audio. */
+  noSpeech: boolean;
+};
+
+type WhisperVerbose = {
+  text?: string;
+  words?: { word: string; start: number; end: number }[];
+  segments?: { no_speech_prob?: number; avg_logprob?: number }[];
+};
+
 /**
- * Transcrit un enregistrement en arabe. La clé d'API n'est lue que côté serveur
- * et n'apparaît jamais dans les messages d'erreur ni dans les journaux.
+ * Appel à l'API de transcription. La clé d'API n'est lue que côté serveur et
+ * n'apparaît jamais dans les messages d'erreur ni dans les journaux.
+ *
+ * Aucun « prompt » n'est envoyé : donner le texte attendu à Whisper biaiserait la
+ * transcription vers le texte correct et masquerait les erreurs de récitation.
  */
-export async function transcribeArabic(audio: Blob, filename: string): Promise<string> {
+async function requestTranscription(audio: Blob, filename: string, verbose: boolean): Promise<WhisperVerbose> {
   const p = provider();
   const apiKey = process.env[p.envKey]?.trim();
   if (!apiKey) {
@@ -68,8 +84,14 @@ export async function transcribeArabic(audio: Blob, filename: string): Promise<s
   form.append("file", audio, filename);
   form.append("model", process.env.TRANSCRIPTION_MODEL?.trim() || p.defaultModel);
   form.append("language", "ar");
-  form.append("response_format", "json");
   form.append("temperature", "0");
+  if (verbose) {
+    form.append("response_format", "verbose_json");
+    form.append("timestamp_granularities[]", "word");
+    form.append("timestamp_granularities[]", "segment");
+  } else {
+    form.append("response_format", "json");
+  }
 
   let res: Response;
   try {
@@ -107,7 +129,31 @@ export async function transcribeArabic(audio: Blob, filename: string): Promise<s
       `Erreur du service de transcription (${p.name}, code ${res.status}). Réessaie.`,
     );
   }
+  return (await res.json()) as WhisperVerbose;
+}
 
-  const data = (await res.json()) as { text?: string };
+/** Transcription simple (reconnaissance de sourate). */
+export async function transcribeArabic(audio: Blob, filename: string): Promise<string> {
+  const data = await requestTranscription(audio, filename, false);
   return (data.text ?? "").trim();
+}
+
+/** Transcription détaillée (correcteur de tajweed) : mots horodatés et indice de non-parole. */
+export async function transcribeArabicDetailed(audio: Blob, filename: string): Promise<DetailedTranscript> {
+  const data = await requestTranscription(audio, filename, true);
+  const segments = data.segments ?? [];
+  const noSpeech =
+    segments.length > 0 &&
+    segments.every((s) => (s.no_speech_prob ?? 0) > 0.6 || (s.avg_logprob ?? 0) < -1.5);
+  return { text: (data.text ?? "").trim(), words: data.words ?? [], noSpeech };
+}
+
+/** Code HTTP et message à renvoyer pour une erreur de transcription. */
+export function transcriptionFailure(err: unknown): { status: number; code: string; message: string } {
+  if (err instanceof TranscriptionError) {
+    const status =
+      err.code === "quota" ? 429 : err.code === "bad_audio" ? 422 : err.code === "missing_key" ? 503 : 502;
+    return { status, code: err.code, message: err.message };
+  }
+  return { status: 502, code: "provider", message: "Erreur de transcription : réessaie." };
 }

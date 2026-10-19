@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Amiri_Quran } from "next/font/google";
+import { Amiri_Quran, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
 const quranFont = Amiri_Quran({
@@ -7,6 +7,12 @@ const quranFont = Amiri_Quran({
   subsets: ["arabic"],
   display: "swap",
   variable: "--font-quran",
+});
+
+const uiFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +49,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={quranFont.variable}>
+    <html lang="fr" className={`${quranFont.variable} ${uiFont.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );
