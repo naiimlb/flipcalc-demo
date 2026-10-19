@@ -23,8 +23,7 @@ export function NoticeGate() {
   }
 
   return (
-    <main className="fixed inset-0 z-50 overflow-y-auto bg-bg/80 backdrop-blur-xl">
-      <div className="pt-safe pb-safe mx-auto flex min-h-full max-w-md flex-col px-5 py-6">
+    <main className="notice-gate pb-safe mx-auto flex min-h-[100dvh] max-w-md flex-col px-5 pt-6">
       <div className="glass animate-rise flex flex-1 flex-col rounded-[28px] p-6">
         <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-brand text-white shadow-lg shadow-emerald/25" aria-hidden>
           <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -54,7 +53,7 @@ export function NoticeGate() {
           Continuer
         </Button>
       </div>
-      </div>
+      <div className="h-6 shrink-0" aria-hidden />
     </main>
   );
 }

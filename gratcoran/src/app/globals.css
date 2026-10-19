@@ -119,6 +119,10 @@ textarea {
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+/* L'avertissement Tajweed occupe tout l'écran : la barre d'onglets s'efface tant qu'il est affiché. */
+body:has(.notice-gate) nav[aria-label="Navigation principale"] {
+  display: none;
+}
 .pb-tabbar {
   padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
 }
