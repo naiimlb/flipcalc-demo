@@ -3,7 +3,8 @@ import { mkdirSync } from "node:fs";
 
 /**
  * Parcours de bout en bout contre le déploiement.
- * Compte de test fourni par E2E_EMAIL / E2E_PASSWORD (jamais écrit dans les journaux).
+ * Compte de test fourni par E2E_EMAIL / E2E_PASSWORD (jamais écrit dans les journaux),
+ * créé pour chaque exécution : seul le premier projet voit l'avertissement Tajweed.
  */
 const EMAIL = process.env.E2E_EMAIL ?? "";
 const PASSWORD = process.env.E2E_PASSWORD ?? "";
