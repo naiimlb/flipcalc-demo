@@ -196,7 +196,9 @@ test("Tajweed : avertissement au premier accès, puis plus jamais", async ({ pag
   await expect(page.getByRole("heading", { name: "Avant de commencer" })).toBeVisible();
 });
 
-test("Tajweed : parcours dédié, progression et suppression", async ({ page }) => {
+test("Tajweed : parcours dédié, progression et suppression", async ({ page }, info) => {
+  // Les deux essais de test ne sont présents qu'au premier projet : il en supprime un.
+  test.skip(info.project.name !== "webkit-iphone", "données de test consommées par le premier projet");
   await login(page);
   await page.goto("/tajweed/parcours");
   await expect(page.getByRole("heading", { name: "Mon parcours" })).toBeVisible();

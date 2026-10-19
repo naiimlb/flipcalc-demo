@@ -35,9 +35,11 @@ export function MicButton({ phase, maxSeconds, onPress }: Props) {
           ))}
       </AnimatePresence>
       {!listening && (
+        // Dégradé radial plutôt qu'un filtre flou animé : WebKit le compose mal sous les cartes en verre.
         <motion.span
-          className="absolute inset-4 rounded-full bg-brand blur-2xl"
-          animate={{ opacity: busy ? 0.25 : [0.25, 0.45, 0.25], scale: [1, 1.05, 1] }}
+          className="absolute inset-0 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(16,185,129,0.55) 0%, rgba(37,99,235,0.28) 45%, transparent 70%)" }}
+          animate={{ opacity: busy ? 0.45 : [0.6, 1, 0.6], scale: [1, 1.06, 1] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         />
       )}

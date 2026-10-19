@@ -52,8 +52,7 @@ export function HomeScreen({ name, recognitionCount, activityDates, recent, resu
       <div className="mt-3 flex flex-wrap gap-2">
         <span className="glass inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-[14px] font-semibold">
           <FlameIcon />
-          <StreakValue dates={activityDates} />
-          <span className="font-medium text-muted">jour(s) d&apos;affilée</span>
+          <StreakValue dates={activityDates} unit />
         </span>
         <span className="glass inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-[14px] font-semibold">
           <span className="tabular-nums">{recognitionCount}</span>
