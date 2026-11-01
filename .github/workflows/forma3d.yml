@@ -82,36 +82,48 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund && npm install --no-save --no-audit --no-fund bcryptjs@2.4.3 playwright@1.56.1
       - run: npm run build
-      - name: Identifiants de test (mot de passe masqué)
+      - name: Identifiants de test (mots de passe masqués)
         run: |
-          PASSWORD=$(node -e 'console.log(require("crypto").randomBytes(18).toString("base64url"))')
-          echo "::add-mask::$PASSWORD"
-          EMAIL="e2e-${GITHUB_RUN_ID}@forma3d.test"
-          HASH=$(PASSWORD="$PASSWORD" node -e 'console.log(require("bcryptjs").hashSync(process.env.PASSWORD, 10))')
-          echo "E2E_EMAIL=$EMAIL" >> "$GITHUB_ENV"
-          echo "E2E_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
-          mkdir -p /tmp/req && cd /tmp/req
-          printf '{"email":"%s","hash":"%s","run":"%s"}\n' "$EMAIL" "$HASH" "$GITHUB_RUN_ID" > request.json
+          mkdir -p /tmp/req "$RUNNER_TEMP/e2e" && cd /tmp/req
+          node -e '
+            const crypto = require("crypto"), bcrypt = require("bcryptjs"), fs = require("fs");
+            const run = process.env.GITHUB_RUN_ID;
+            const env = [];
+            const accounts = ["BROWSER", "A", "B"].map((name) => {
+              const password = crypto.randomBytes(18).toString("base64url");
+              const email = `e2e-${name.toLowerCase()}-${run}@forma3d.test`;
+              console.log(`::add-mask::${password}`);
+              env.push(`E2E_EMAIL_${name}=${email}`, `E2E_PASSWORD_${name}=${password}`);
+              return { name, email, hash: bcrypt.hashSync(password, 10) };
+            });
+            fs.appendFileSync(process.env.GITHUB_ENV, env.join("\n") + "\n");
+            fs.writeFileSync("request.json", JSON.stringify({ run, accounts }) + "\n");
+          '
           git init -q && git checkout -q -b claude/forma3d-e2e
           git add request.json
-          git -c user.name=github-actions -c user.email=actions@github.com commit -qm "E2E Forma3D : compte de test (run $GITHUB_RUN_ID)"
+          git -c user.name=github-actions -c user.email=actions@github.com commit -qm "E2E Forma3D : comptes de test (run $GITHUB_RUN_ID)"
           git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e
-      - name: Attente de la création du compte (15 min max)
+      - name: Attente de la création des comptes (15 min max)
         run: |
-          for i in $(seq 1 90); do
+          ready() {
             code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/token?grant_type=password" \
               -H "apikey: $NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" -H "Content-Type: application/json" \
-              -d "{\"email\":\"$E2E_EMAIL\",\"password\":\"$E2E_PASSWORD\"}")
-            if [ "$code" = "200" ]; then echo "Compte prêt"; exit 0; fi
+              -d "{\"email\":\"$1\",\"password\":\"$2\"}")
+            [ "$code" = "200" ]
+          }
+          for i in $(seq 1 90); do
+            if ready "$E2E_EMAIL_BROWSER" "$E2E_PASSWORD_BROWSER" && ready "$E2E_EMAIL_A" "$E2E_PASSWORD_A" && ready "$E2E_EMAIL_B" "$E2E_PASSWORD_B"; then echo "Comptes prêts"; exit 0; fi
             sleep 10
           done
-          echo "Compte de test non créé à temps"; exit 1
+          echo "Comptes de test non créés à temps"; exit 1
+      - name: Isolation entre comptes (API publique)
+        run: node scripts/e2e-isolation.mjs "$RUNNER_TEMP/e2e"
       - name: Parcours connecté
         run: |
           npx playwright install --with-deps chromium
           npm start -- -p 3200 > /tmp/forma3d-e2e.log 2>&1 &
           for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:3200 && break; sleep 1; done
-          node scripts/e2e-account.mjs http://localhost:3200 "$RUNNER_TEMP/e2e" || (tail -50 /tmp/forma3d-e2e.log; exit 1)
+          E2E_EMAIL="$E2E_EMAIL_BROWSER" E2E_PASSWORD="$E2E_PASSWORD_BROWSER" node scripts/e2e-account.mjs http://localhost:3200 "$RUNNER_TEMP/e2e" || (tail -50 /tmp/forma3d-e2e.log; exit 1)
       - name: Publication des captures E2E
         if: always()
         run: |
