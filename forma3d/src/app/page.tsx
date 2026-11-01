@@ -41,7 +41,7 @@ export default async function HomePage() {
     <main className="relative min-h-dvh overflow-x-clip">
       <Backdrop />
       <div className="mx-auto max-w-[1320px] px-3 pb-12 pt-3 sm:px-6 sm:pt-8 xl:pb-80">
-        <div className="relative rounded-card bg-paper/95 px-3 pb-6 pt-4 shadow-card backdrop-blur sm:px-8 sm:pb-12 sm:pt-6 lg:px-12">
+        <div className="relative rounded-card bg-paper px-3 pb-6 pt-4 shadow-card sm:px-8 sm:pb-12 sm:pt-6 lg:px-12">
           <SiteHeader
             siteName={site.siteName}
             logoDataUrl={site.logoDataUrl}

@@ -59,6 +59,9 @@ export function ViewerPanel({
   const parts = design?.model.parts ?? [];
   const focusIndex = focusId ? parts.findIndex((p) => p.id === focusId) : -1;
   const meshReady = item?.asset?.status === "succeeded" && !item.sample;
+  // Fond clair en mode réaliste : boutons et pastilles foncés pour rester lisibles.
+  const light = Boolean(design) && settings.mode === "real";
+  const chip = light ? "bg-ink/10 text-ink" : "bg-white/20 text-white";
 
   useEffect(() => {
     setFocusId(null);
@@ -117,7 +120,7 @@ export function ViewerPanel({
   return (
     <div
       className="relative h-[340px] overflow-hidden rounded-[20px] sm:h-[440px] lg:h-full"
-      style={{ background: viewerBackgroundCss(settings.mode) }}
+      style={{ background: viewerBackgroundCss(design ? settings.mode : "neon") }}
     >
       {/* Halo décoratif */}
       <div className="pointer-events-none absolute -left-1/4 top-1/3 h-2/3 w-[150%] rounded-[100%] border border-white/15" />
@@ -136,28 +139,29 @@ export function ViewerPanel({
       {/* Barre d'outils verticale */}
       {design && (
         <div className="absolute right-3 top-3 flex flex-col gap-1.5">
-          <ToolButton label="Zoom avant" onClick={() => handle.current?.zoomIn()}>
+          <ToolButton light={light} label="Zoom avant" onClick={() => handle.current?.zoomIn()}>
             <IconPlus size={15} />
           </ToolButton>
-          <ToolButton label="Zoom arrière" onClick={() => handle.current?.zoomOut()}>
+          <ToolButton light={light} label="Zoom arrière" onClick={() => handle.current?.zoomOut()}>
             <IconMinus size={15} />
           </ToolButton>
-          <ToolButton label="Recentrer" onClick={() => handle.current?.resetView()}>
+          <ToolButton light={light} label="Recentrer" onClick={() => handle.current?.resetView()}>
             <IconRefocus size={15} />
           </ToolButton>
           <ToolButton
+            light={light}
             label={settings.autoRotate ? "Arrêter la rotation" : "Rotation automatique"}
             active={settings.autoRotate}
             onClick={() => onSettings({ autoRotate: !settings.autoRotate })}
           >
             <IconRotate size={15} />
           </ToolButton>
-          <ToolButton label="Grille" active={settings.showGrid} onClick={() => onSettings({ showGrid: !settings.showGrid })}>
+          <ToolButton light={light} label="Grille" active={settings.showGrid} onClick={() => onSettings({ showGrid: !settings.showGrid })}>
             <IconGrid size={15} />
           </ToolButton>
           {exportItems.length > 0 && (
             <div className="relative">
-              <ToolButton label="Exporter" onClick={() => setExportOpen((o) => !o)} active={exportOpen}>
+              <ToolButton light={light} label="Exporter" onClick={() => setExportOpen((o) => !o)} active={exportOpen}>
                 {busy ? <Spinner size={14} /> : <IconDownload size={15} />}
               </ToolButton>
               <AnimatePresence>
@@ -190,7 +194,7 @@ export function ViewerPanel({
       {/* Infos en haut à gauche */}
       {design && (
         <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
-          <span className="chip bg-white/20 text-white backdrop-blur">
+          <span className={`chip backdrop-blur ${chip}`}>
             <IconCube size={12} /> {parts.length} pièces
           </span>
           {meshReady && (
@@ -199,7 +203,7 @@ export function ViewerPanel({
             </button>
           )}
           {item?.asset && !meshReady && item.asset.status !== "failed" && (
-            <span className="chip bg-white/20 text-white">
+            <span className={`chip ${chip}`}>
               <Spinner size={11} /> Maillage {item.asset.progress}%
             </span>
           )}
@@ -261,11 +265,13 @@ function ToolButton({
   label,
   onClick,
   active,
+  light,
   children,
 }: {
   label: string;
   onClick(): void;
   active?: boolean;
+  light?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -276,7 +282,13 @@ function ToolButton({
       aria-pressed={active}
       onClick={onClick}
       className={`flex h-8 w-8 items-center justify-center rounded-full backdrop-blur transition ${
-        active ? "bg-white text-brand-accent" : "bg-white/25 text-white hover:bg-white/40"
+        active
+          ? light
+            ? "bg-brand-accent text-white"
+            : "bg-white text-brand-accent"
+          : light
+            ? "bg-ink/[0.07] text-ink-soft hover:bg-ink/15"
+            : "bg-white/25 text-white hover:bg-white/40"
       }`}
     >
       {children}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { IconImage, IconSparkles, IconX } from "../icons";
+import { Portal } from "../Portal";
 
 const EXAMPLES = [
   "Une solution pour ranger mes câbles de charge",
@@ -76,6 +77,7 @@ export function NewRequestDialog({
   };
 
   return (
+    <Portal>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -216,5 +218,6 @@ export function NewRequestDialog({
         </motion.div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

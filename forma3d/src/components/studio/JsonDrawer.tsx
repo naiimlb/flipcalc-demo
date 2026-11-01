@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { RequestItem } from "@/lib/requests";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { IconX, Spinner } from "../icons";
+import { Portal } from "../Portal";
 
 interface DebugRow {
   raw_response: string | null;
@@ -54,6 +55,7 @@ export function JsonDrawer({
   const content = view === "raw" ? pretty || "(aucune réponse brute enregistrée)" : JSON.stringify(item?.design ?? null, null, 2);
 
   return (
+    <Portal>
     <AnimatePresence>
       {item && (
         <motion.div
@@ -122,5 +124,6 @@ export function JsonDrawer({
         </motion.div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

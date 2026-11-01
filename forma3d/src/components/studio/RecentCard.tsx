@@ -56,8 +56,7 @@ export function RecentCard({
           created.setHours(0, 0, 0, 0);
           const dayIndex = today === null ? 0 : Math.max(0, Math.min(6, 6 - Math.round((today - created.getTime()) / DAY)));
           // Décalage horizontal selon le jour, limité pour garder la pastille lisible.
-          const offset = Math.min(dayIndex, 3.4) / 7;
-          const dims = item.design?.dimensions;
+          const offset = Math.min(dayIndex, 2.4) / 7;
           return (
             <motion.li
               key={item.id}
@@ -82,11 +81,6 @@ export function RecentCard({
                   <IconCube size={13} />
                 </span>
                 <span className="min-w-0 truncate text-[13px] font-medium">{item.title ?? item.prompt}</span>
-                {dims && (
-                  <span className="hidden shrink-0 text-[10.5px] text-ink-mute sm:inline">
-                    {Math.round(Math.max(dims.width, dims.depth, dims.height))} mm
-                  </span>
-                )}
                 <StatusPill item={item} />
               </button>
             </motion.li>

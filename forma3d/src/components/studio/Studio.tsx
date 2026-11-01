@@ -8,6 +8,7 @@ import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { DEFAULT_VIEWER_SETTINGS, type ViewerSettings } from "../viewer/settings";
 import { IconChevronLeft, IconChevronRight } from "../icons";
+import { Portal } from "../Portal";
 import { HistoryTab } from "./HistoryTab";
 import { JsonDrawer } from "./JsonDrawer";
 import { LeftColumn } from "./LeftColumn";
@@ -332,6 +333,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, site
       />
       <JsonDrawer item={jsonOpen ? selected : null} localRaw={selected ? rawById[selected.id] ?? null : null} onClose={() => setJsonOpen(false)} />
 
+      <Portal>
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -345,6 +347,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, site
           </motion.div>
         )}
       </AnimatePresence>
+      </Portal>
     </>
   );
 }
