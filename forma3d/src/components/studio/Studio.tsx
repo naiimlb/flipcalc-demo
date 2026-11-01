@@ -313,14 +313,14 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, site
           </div>
         </motion.div>
         <NavArrow dir="right" onClick={() => step(1)} disabled={items.length < 2} />
+        {/* Carte flottante : chevauche le bas du cadre (jamais l'écran de la tablette) sur grand écran. */}
+        <RecentCard
+          items={items}
+          selectedId={selected?.id ?? null}
+          onSelect={select}
+          className="mt-6 xl:absolute xl:-right-32 xl:top-full xl:z-20 xl:mt-[-1.5rem] xl:w-[440px]"
+        />
       </div>
-
-      <RecentCard
-        items={items}
-        selectedId={selected?.id ?? null}
-        onSelect={select}
-        className="mt-6 xl:absolute xl:-bottom-32 xl:-right-5 xl:mt-0 xl:w-[460px] 2xl:-right-14"
-      />
 
       <NewRequestDialog
         open={dialogOpen}

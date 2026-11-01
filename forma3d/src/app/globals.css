@@ -98,11 +98,13 @@ body {
   border-radius: inherit;
 }
 .cell-sphere::before {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0 28%, rgba(255, 255, 255, 0) 31%) 0 0 / 9% 9%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.42) 0 26%, rgba(255, 255, 255, 0) 32%) 0 0 / 8% 8%,
+    radial-gradient(circle, rgba(255, 255, 255, 0.25) 0 22%, rgba(255, 255, 255, 0) 30%) 3% 5% / 11% 11%;
   mix-blend-mode: overlay;
   -webkit-mask-image: radial-gradient(circle at 42% 40%, #000 30%, transparent 75%);
   mask-image: radial-gradient(circle at 42% 40%, #000 30%, transparent 75%);
-  opacity: 0.85;
+  opacity: 0.7;
 }
 .cell-sphere::after {
   background: radial-gradient(circle, rgba(255, 140, 210, 0.6) 0 30%, transparent 34%) 4% 4% / 13% 13%;

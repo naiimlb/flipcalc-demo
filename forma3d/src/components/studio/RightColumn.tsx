@@ -25,7 +25,7 @@ export function RightColumn({
   const maxItem = Math.max(1, ...(design?.cost.items.map((i) => i.amount) ?? [1]));
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin lg:h-full lg:overflow-y-auto lg:pl-0.5">
+    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin lg:h-full lg:overflow-y-auto lg:pl-0.5 [&>*]:shrink-0">
       {/* Modes d'affichage (grille 2×2) */}
       <section className="panel grid grid-cols-2 gap-1.5 p-1.5" aria-label="Modes d'affichage">
         <ModeButton active={settings.mode === "neon"} onClick={() => onSettings({ mode: "neon" })} icon={<IconSparkles size={14} />}>

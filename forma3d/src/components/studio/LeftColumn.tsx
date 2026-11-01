@@ -19,7 +19,7 @@ export function LeftColumn({
   const design = item?.design ?? null;
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin lg:h-full lg:overflow-y-auto lg:pr-0.5">
+    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin lg:h-full lg:overflow-y-auto lg:pr-0.5 [&>*]:shrink-0">
       {/* Fiche de la demande */}
       <section className="panel p-3">
         <div className="flex items-start gap-2.5">

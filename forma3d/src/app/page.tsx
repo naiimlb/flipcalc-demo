@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Backdrop } from "@/components/landing/Backdrop";
+import { Backdrop, FrontSpheres } from "@/components/landing/Backdrop";
 import { Hero } from "@/components/landing/Hero";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { Studio } from "@/components/studio/Studio";
@@ -40,7 +40,7 @@ export default async function HomePage() {
   return (
     <main className="relative min-h-dvh overflow-x-clip">
       <Backdrop />
-      <div className="mx-auto max-w-[1320px] px-3 pb-12 pt-3 sm:px-6 sm:pt-8 xl:pb-48">
+      <div className="mx-auto max-w-[1320px] px-3 pb-12 pt-3 sm:px-6 sm:pt-8 xl:pb-80">
         <div className="relative rounded-card bg-paper/95 px-3 pb-6 pt-4 shadow-card backdrop-blur sm:px-8 sm:pb-12 sm:pt-6 lg:px-12">
           <SiteHeader
             siteName={site.siteName}
@@ -68,6 +68,7 @@ export default async function HomePage() {
               devMode: demoMode || (viewer?.role === "admin" && features.devMode),
             }}
           />
+          <FrontSpheres />
         </div>
         <footer className="mt-6 text-center text-xs text-white/80 xl:mt-0 xl:max-w-[60%] xl:pt-6 xl:text-left">
           {site.footerText}

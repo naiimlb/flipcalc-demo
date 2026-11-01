@@ -57,6 +57,13 @@ await session("desktop", { width: 1440, height: 1000 }, async (page) => {
   await page.screenshot({ path: join(out, "desktop-historique.png") });
 });
 
+await session("xl-1280", { width: 1280, height: 900 }, async (page) => {
+  await page.goto(base, { waitUntil: "networkidle" });
+  await page.waitForSelector("canvas", { timeout: 20000 });
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: join(out, "xl-1280.png"), fullPage: true });
+});
+
 await session("mobile", { width: 390, height: 844 }, async (page) => {
   await page.goto(base, { waitUntil: "networkidle" });
   await page.waitForSelector("canvas", { timeout: 20000 });

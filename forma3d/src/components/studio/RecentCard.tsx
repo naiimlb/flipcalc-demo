@@ -73,7 +73,7 @@ export function RecentCard({
                 className={`relative flex max-w-full items-center gap-2 rounded-xl py-1.5 pl-2 pr-1.5 text-left transition ${
                   selectedId === item.id ? "bg-brand-accent/10 ring-1 ring-brand-accent/30" : "bg-paper hover:bg-brand-accent/5"
                 }`}
-                style={{ marginLeft: `${offset * 100}%` }}
+                style={{ marginLeft: `${offset * 100}%`, maxWidth: `${100 - offset * 100}%` }}
               >
                 <span
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white"
