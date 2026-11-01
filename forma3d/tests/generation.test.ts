@@ -34,7 +34,7 @@ describe("repli quand l'IA est indisponible", () => {
     expect(outcome.ok).toBe(true);
     expect(outcome.provider).toBe("demo");
     expect(outcome.design?.title).toBe(SAMPLE_DESIGNS[1].design.title);
-    expect(outcome.design?.analysis.assumptions[0]).toContain("indisponible");
+    expect(outcome.design?.analysis.assumptions[0]).toContain("n'a pas pu répondre");
   });
 
   it("garde l'erreur quand le repli est désactivé", async () => {

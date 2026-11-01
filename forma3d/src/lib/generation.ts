@@ -84,7 +84,7 @@ export async function generateDesign(params: {
   if (!result.ok && result.unavailable && params.allowDemo) {
     // Crédit épuisé, clé refusée… : on sert le modèle d'exemple le plus proche plutôt qu'une erreur.
     console.warn(`IA indisponible, repli sur les exemples : ${result.detail}`);
-    const design = demoDesign(params.prompt, "L'IA est momentanément indisponible (clé ou crédit) : modèle d'exemple le plus proche de la demande.");
+    const design = demoDesign(params.prompt, "L'IA n'a pas pu répondre (clé, crédit ou réglage) : modèle d'exemple le plus proche de la demande.");
     return {
       ok: true,
       design,

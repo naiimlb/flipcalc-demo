@@ -63,17 +63,25 @@ function userContent(input: ClaudeInput): Anthropic.Beta.BetaContentBlockParam[]
   return blocks;
 }
 
-/**
- * Appelle Claude avec sortie JSON structurée (schéma DESIGN_JSON_SCHEMA), puis valide
- * et normalise le résultat avec Zod. Diffusion en continu (stream) pour éviter les
- * délais d'attente HTTP sur les réponses longues.
- */
-export async function generateDesignWithClaude(input: ClaudeInput): Promise<ClaudeResult> {
-  const client = new Anthropic({ apiKey: input.apiKey, maxRetries: 2, timeout: 280_000 });
+/** Consigne de format ajoutée au prompt : le schéma JSON est décrit en texte (la sortie contrainte, trop lourde ici, n'est pas utilisée). */
+function schemaInstruction(): string {
+  return (
+    "Réponds UNIQUEMENT avec un objet JSON valide : pas de texte avant ou après, pas de bloc de code Markdown. " +
+    "Il doit respecter ce schéma JSON (tous les champs sont obligatoires, aucun champ supplémentaire) :\n" +
+    JSON.stringify(DESIGN_JSON_SCHEMA)
+  );
+}
+
+type Attempt = ClaudeResult & { retryable?: boolean };
+
+async function attemptOnce(client: Anthropic, input: ClaudeInput, hint: string | null): Promise<Attempt> {
   // Repli serveur en cas de refus des classifieurs de sécurité (pas disponible sur Haiku).
   const fallback = input.model.startsWith("claude-haiku")
     ? {}
     : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const };
+
+  const content = userContent(input);
+  if (hint) content.push({ type: "text", text: hint });
 
   let message: Anthropic.Beta.BetaMessage;
   try {
@@ -82,12 +90,12 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
       max_tokens: input.maxTokens,
       ...fallback,
       thinking: { type: "adaptive" },
-      output_config: {
-        effort: input.effort,
-        format: { type: "json_schema", schema: DESIGN_JSON_SCHEMA },
-      },
-      system: [{ type: "text", text: input.systemPrompt, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: userContent(input) }],
+      output_config: { effort: input.effort },
+      system: [
+        { type: "text", text: input.systemPrompt },
+        { type: "text", text: schemaInstruction(), cache_control: { type: "ephemeral" } },
+      ],
+      messages: [{ role: "user", content }],
     });
     message = await stream.finalMessage();
   } catch (err) {
@@ -130,6 +138,7 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
   } catch (err) {
     return {
       ok: false,
+      retryable: true,
       ...base,
       error: "La réponse de l'IA est illisible. Réessayez.",
       detail: err instanceof Error ? err.message : String(err),
@@ -139,6 +148,7 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
   if (!validated.ok) {
     return {
       ok: false,
+      retryable: true,
       ...base,
       error: "La conception renvoyée par l'IA est incomplète. Réessayez.",
       detail: "Validation du schéma échouée.",
@@ -148,9 +158,44 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
   return { ok: true, design: validated.design, ...base };
 }
 
+/**
+ * Appelle Claude, puis valide et normalise le JSON avec Zod. Une seconde tentative est faite
+ * (avec la liste des erreurs) si la réponse est illisible ou invalide. Diffusion en continu
+ * (stream) pour éviter les délais d'attente HTTP sur les réponses longues.
+ */
+export async function generateDesignWithClaude(input: ClaudeInput): Promise<ClaudeResult> {
+  const client = new Anthropic({ apiKey: input.apiKey, maxRetries: 2, timeout: 280_000 });
+  const first = await attemptOnce(client, input, null);
+  if (first.ok || !first.retryable) return first;
+
+  const problems = first.validationErrors?.join(" ; ") ?? first.detail;
+  const second = await attemptOnce(
+    client,
+    input,
+    `Ta réponse précédente était invalide (${problems.slice(0, 600)}). Renvoie l'objet JSON complet et corrigé, en respectant strictement le schéma.`,
+  );
+  if (second.ok) return second;
+  // On garde le détail de la dernière tentative, et le total des jetons consommés.
+  const usage =
+    first.usage && second.usage
+      ? {
+          input_tokens: first.usage.input_tokens + second.usage.input_tokens,
+          output_tokens: first.usage.output_tokens + second.usage.output_tokens,
+          cache_read_input_tokens: null,
+          cache_creation_input_tokens: null,
+        }
+      : (second.usage ?? first.usage);
+  return { ...second, usage };
+}
+
 /** Erreurs durables côté compte : inutile de réessayer, le repli sur les exemples est préférable. */
 export function isProviderUnavailable(err: unknown): boolean {
-  if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError || err instanceof Anthropic.NotFoundError) {
+  if (
+    err instanceof Anthropic.AuthenticationError ||
+    err instanceof Anthropic.PermissionDeniedError ||
+    err instanceof Anthropic.NotFoundError ||
+    err instanceof Anthropic.BadRequestError
+  ) {
     return true;
   }
   if (err instanceof Anthropic.APIError) {
@@ -179,7 +224,7 @@ function describeApiErrorText(err: unknown): { error: string; detail: string } {
     return { error: "L'IA est très sollicitée. Réessayez dans une minute.", detail: err.message };
   }
   if (err instanceof Anthropic.BadRequestError) {
-    return { error: "Requête refusée par l'API (format ou image invalide).", detail: err.message };
+    return { error: "Demande refusée par l'API Anthropic (réglage à corriger).", detail: err.message };
   }
   if (err instanceof Anthropic.APIConnectionError) {
     return { error: "Impossible de joindre l'API Anthropic. Réessayez.", detail: err.message };
