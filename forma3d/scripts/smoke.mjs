@@ -38,6 +38,12 @@ const body = await res.json();
 assert(body.request?.status === "ready", "la demande est prête");
 assert(body.request.design?.model?.parts?.length > 0, `le modèle 3D contient ${body.request.design.model.parts.length} pièces`);
 assert(typeof body.request.design.analysis.summary === "string", "l'analyse du problème est présente");
+assert(body.request.design.materiaux_conseilles?.length >= 3, "des matières conseillées sont renvoyées");
+
+const version = await fetch(`${base}/api/version`);
+const versionBody = await version.json();
+assert(version.ok && typeof versionBody.version === "string", `/api/version répond (${versionBody.version})`);
+assert((version.headers.get("cache-control") ?? "").includes("no-store"), "/api/version n'est jamais mis en cache");
 
 const bad = await fetch(`${base}/api/generate`, {
   method: "POST",

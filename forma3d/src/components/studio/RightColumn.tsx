@@ -1,9 +1,9 @@
 "use client";
 
-import type { Design, MaterialKind } from "@/lib/design/schema";
+import type { Design, MaterialKind, RecommendedMaterial } from "@/lib/design/schema";
 import { MATERIAL_LABELS } from "@/lib/three/geometry";
 import type { ViewerSettings } from "../viewer/settings";
-import { IconBulb, IconCoin, IconExplode, IconLayers, IconRuler, IconSparkles, IconSteps, IconWire, IconCube } from "../icons";
+import { IconBulb, IconCheck, IconCoin, IconExplode, IconHeart, IconLayers, IconRuler, IconSparkles, IconSteps, IconWire, IconCube } from "../icons";
 import { formatDuration, formatLength, formatMoney, formatWeight, type LengthUnit } from "./format";
 import { BulletList, Panel } from "./ui";
 
@@ -15,17 +15,21 @@ export function RightColumn({
   settings,
   onSettings,
   unit,
+  favoriteMaterials,
+  onToggleFavoriteMaterial,
 }: {
   design: Design | null;
   settings: ViewerSettings;
   onSettings(patch: Partial<ViewerSettings>): void;
   unit: LengthUnit;
+  favoriteMaterials: string[];
+  onToggleFavoriteMaterial(name: string): void;
 }) {
   const totalMinutes = design?.fabrication.reduce((s, f) => s + f.durationMin, 0) ?? 0;
   const maxItem = Math.max(1, ...(design?.cost.items.map((i) => i.amount) ?? [1]));
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin lg:h-full lg:overflow-y-auto lg:pl-0.5 [&>*]:shrink-0">
+    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin md:h-full md:overflow-y-auto lg:pl-0.5 [&>*]:shrink-0">
       {/* Modes d'affichage (grille 2×2) */}
       <section className="panel grid grid-cols-2 gap-1.5 p-1.5" aria-label="Modes d'affichage">
         <ModeButton active={settings.mode === "neon"} onClick={() => onSettings({ mode: "neon" })} icon={<IconSparkles size={14} />}>
@@ -77,6 +81,16 @@ export function RightColumn({
       <Panel icon={<IconLayers size={15} />} title="Matériaux">
         {design ? (
           <>
+            {design.materiaux_conseilles.length > 0 && (
+              <RecommendedMaterials
+                design={design}
+                settings={settings}
+                onSettings={onSettings}
+                favoriteMaterials={favoriteMaterials}
+                onToggleFavorite={onToggleFavoriteMaterial}
+              />
+            )}
+            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">Nomenclature du modèle</p>
             <ul className="space-y-2">
               {design.materials.map((m, i) => (
                 <li key={i} className="rounded-xl border border-line/80 p-2.5">
@@ -209,6 +223,107 @@ export function RightColumn({
           <Empty />
         )}
       </Panel>
+    </div>
+  );
+}
+
+/** Matières conseillées par l'IA, de la plus à la moins recommandée ; un clic les applique au modèle 3D. */
+function RecommendedMaterials({
+  design,
+  settings,
+  onSettings,
+  favoriteMaterials,
+  onToggleFavorite,
+}: {
+  design: Design;
+  settings: ViewerSettings;
+  onSettings(patch: Partial<ViewerSettings>): void;
+  favoriteMaterials: string[];
+  onToggleFavorite(name: string): void;
+}) {
+  const criteria = design.criteres_materiaux;
+  const isActive = (m: RecommendedMaterial) => settings.colorOverride === m.couleur && settings.materialOverride === m.aspect;
+  return (
+    <div>
+      <p className="mb-1.5 text-[10.5px] font-medium text-ink-mute">Matières conseillées pour votre demande</p>
+      {criteria && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {[criteria.usage, criteria.charge, criteria.chaleur, criteria.contact_alimentaire ? "Contact alimentaire" : "", criteria.budget, criteria.fabrication]
+            .filter(Boolean)
+            .map((c) => (
+              <span key={c} className="rounded-full bg-paper px-2 py-0.5 text-[10px] text-ink-soft">
+                {c}
+              </span>
+            ))}
+        </div>
+      )}
+      <ol className="space-y-2">
+        {design.materiaux_conseilles.map((m, i) => {
+          const active = isActive(m);
+          const favorite = favoriteMaterials.includes(m.nom);
+          return (
+            <li key={`${m.nom}-${i}`}>
+              <div
+                className={`rounded-xl border p-2.5 transition ${
+                  active ? "border-brand-accent bg-brand-accent/[0.06] ring-2 ring-brand-accent/20" : "border-line/80 hover:border-brand-accent/40"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSettings(
+                        active
+                          ? { colorOverride: null, materialOverride: null }
+                          : { colorOverride: m.couleur, materialOverride: m.aspect, mode: "real" },
+                      )
+                    }
+                    aria-pressed={active}
+                    className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                    title="Appliquer cette matière au modèle 3D"
+                  >
+                    <span
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10"
+                      style={{ background: m.couleur }}
+                    >
+                      {active && <IconCheck size={11} strokeWidth={3} className="text-white mix-blend-difference" />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-1">
+                        <span className="text-[12.5px] font-semibold">
+                          {i + 1}. {m.nom}
+                        </span>
+                        {i === 0 && <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-brand-accent text-white">Recommandé</span>}
+                        {m.alternative_economique && (
+                          <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-emerald-100 text-emerald-700">Économique</span>
+                        )}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">{m.pourquoi}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleFavorite(m.nom)}
+                    aria-pressed={favorite}
+                    aria-label={favorite ? `Retirer ${m.nom} des matières préférées` : `Ajouter ${m.nom} aux matières préférées`}
+                    className={`shrink-0 rounded-full p-1 transition ${favorite ? "text-rose-500" : "text-ink-mute hover:text-rose-500"}`}
+                  >
+                    <IconHeart size={14} fill={favorite ? "currentColor" : "none"} />
+                  </button>
+                </div>
+                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 pl-7 text-[10.5px] leading-snug">
+                  <dt className="text-ink-mute">Limites</dt>
+                  <dd className="text-ink-soft">{m.limites}</dd>
+                  <dt className="text-ink-mute">Coût</dt>
+                  <dd className="font-semibold text-ink">{m.cout_approx}</dd>
+                  <dt className="text-ink-mute">Procédé</dt>
+                  <dd className="text-brand-accent">{m.procede}</dd>
+                </dl>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

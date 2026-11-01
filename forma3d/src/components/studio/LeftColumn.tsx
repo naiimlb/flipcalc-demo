@@ -1,21 +1,32 @@
 "use client";
 
+import Link from "next/link";
 import type { RequestItem } from "@/lib/requests";
-import { IconAlert, IconCube, IconMicroscope, IconPin, IconPlus, IconSparkles } from "../icons";
+import { IconAlert, IconCube, IconMicroscope, IconPin, IconPlus, IconSparkles, IconStar } from "../icons";
+import { RecentCard } from "./RecentCard";
 import { formatDate, formatDuration, formatRelative } from "./format";
 import { BulletList, Field, Panel, StatusChip } from "./ui";
 
 export function LeftColumn({
   item,
+  items,
+  onSelect,
   onNew,
+  onToggleFavorite,
+  onSignupPrompt,
   demoMode,
   signedIn,
 }: {
   item: RequestItem | null;
+  items: RequestItem[];
+  onSelect(id: string): void;
   onNew(): void;
+  onToggleFavorite(item: RequestItem): void;
+  onSignupPrompt(): void;
   demoMode: boolean;
   signedIn: boolean;
 }) {
+  const canFavorite = Boolean(item && signedIn && !item.sample && !item.guest && !item.id.startsWith("tmp-"));
   const design = item?.design ?? null;
 
   return (
@@ -31,7 +42,20 @@ export function LeftColumn({
               <h2 className="line-clamp-2 text-[13.5px] font-semibold leading-tight">
                 {item ? item.title ?? "Nouvelle demande" : "Aucun projet"}
               </h2>
-              {item && <StatusChip status={item.status} compact />}
+              <span className="flex shrink-0 items-center gap-1">
+                {canFavorite && item && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleFavorite(item)}
+                    aria-pressed={item.isFavorite}
+                    aria-label={item.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    className={`rounded-full p-1 transition ${item.isFavorite ? "text-amber-500" : "text-ink-mute hover:text-amber-500"}`}
+                  >
+                    <IconStar size={15} fill={item.isFavorite ? "currentColor" : "none"} />
+                  </button>
+                )}
+                {item && <StatusChip status={item.status} compact />}
+              </span>
             </div>
             {design && (
               <p className="mt-0.5 text-[11px] text-ink-mute">
@@ -99,15 +123,52 @@ export function LeftColumn({
       </Panel>
 
       {/* Alerte contextuelle */}
-      <Notice item={item} demoMode={demoMode} signedIn={signedIn} />
+      <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />
+
+      {item && signedIn && !item.sample && (
+        <p className="px-1 text-[11px] text-white/85">
+          {item.modelPath ? "✓ Modèle 3D sauvegardé dans votre espace · " : ""}
+          <Link href="/espace" className="font-semibold underline-offset-2 hover:underline">
+            Mon espace
+          </Link>
+        </p>
+      )}
+
+      <RecentCard items={items} selectedId={item?.id ?? null} onSelect={onSelect} />
     </div>
   );
 }
 
-function Notice({ item, demoMode, signedIn }: { item: RequestItem | null; demoMode: boolean; signedIn: boolean }) {
+function Notice({
+  item,
+  demoMode,
+  signedIn,
+  onSignupPrompt,
+}: {
+  item: RequestItem | null;
+  demoMode: boolean;
+  signedIn: boolean;
+  onSignupPrompt(): void;
+}) {
   let title: string | null = null;
   let body: string | null = null;
   let meta: string | null = null;
+
+  if (item?.guest) {
+    return (
+      <div className="rounded-2xl bg-white p-3 shadow-soft ring-2 ring-brand-accent/40">
+        <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-brand-accent">
+          <IconSparkles size={14} /> Résultat non sauvegardé
+        </p>
+        <p className="mt-1 text-[11.5px] leading-snug text-ink-soft">
+          Cet essai est gardé dans ce navigateur. Créez un compte gratuit : il sera ajouté à votre espace et vous le retrouverez partout.
+        </p>
+        <button type="button" onClick={onSignupPrompt} className="btn-dark mt-2.5 w-full !py-2 !text-xs">
+          Sauvegarder dans mon espace
+        </button>
+      </div>
+    );
+  }
 
   if (item?.status === "error") {
     title = "Génération interrompue";
@@ -118,7 +179,7 @@ function Notice({ item, demoMode, signedIn }: { item: RequestItem | null; demoMo
     body = "Supabase n'est pas configuré : rien n'est sauvegardé. Voir le README pour brancher la base.";
   } else if (item?.sample && !signedIn) {
     title = "Projet d'exemple";
-    body = "Connectez-vous pour décrire votre propre problème et obtenir votre modèle 3D.";
+    body = "Décrivez votre propre problème dans la barre du haut : un essai est offert, sans compte.";
   } else if (item?.sample) {
     title = "Projet d'exemple";
     body = "Créez votre première demande : elle apparaîtra ici et dans l'historique.";

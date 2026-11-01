@@ -2,7 +2,25 @@
 
 import { useActionState } from "react";
 import { Spinner } from "@/components/icons";
-import { completeSetup, type SetupState } from "./actions";
+import { claimAdmin, completeSetup, type SetupState } from "./actions";
+
+export function ClaimForm() {
+  const [state, action, pending] = useActionState<SetupState, FormData>(claimAdmin, {});
+  return (
+    <form action={action} className="space-y-4">
+      <div>
+        <label htmlFor="token" className="label">
+          Jeton d&apos;installation (SETUP_TOKEN)
+        </label>
+        <input id="token" name="token" type="password" required autoComplete="off" className="input" />
+      </div>
+      {state.error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{state.error}</p>}
+      <button type="submit" disabled={pending} className="btn-dark w-full !py-3">
+        {pending && <Spinner />} Devenir administrateur
+      </button>
+    </form>
+  );
+}
 
 export function SetupForm({ needsToken }: { needsToken: boolean }) {
   const [state, action, pending] = useActionState<SetupState, FormData>(completeSetup, {});
@@ -35,6 +53,7 @@ export function SetupForm({ needsToken }: { needsToken: boolean }) {
         <input id="password" name="password" type="password" required minLength={10} maxLength={72} autoComplete="new-password" className="input" />
       </div>
       {state.error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{state.error}</p>}
+      {state.info && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{state.info}</p>}
       <button type="submit" disabled={pending} className="btn-dark w-full !py-3">
         {pending && <Spinner />} Créer le compte administrateur
       </button>

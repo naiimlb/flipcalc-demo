@@ -88,6 +88,9 @@ export function SettingsTab({
               </span>
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/espace" className="btn-accent !text-xs">
+                Mon espace
+              </Link>
               {viewer.role === "admin" && (
                 <Link href="/admin" className="btn-dark !text-xs">
                   <IconShield size={14} /> Administration

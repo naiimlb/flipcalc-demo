@@ -177,6 +177,25 @@ export const IconUser = make(
   </>,
 );
 
+export const IconStar = make(<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z" />);
+export const IconHeart = make(<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z" />);
+export const IconFolder = make(<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" />);
+export const IconCopy = make(
+  <>
+    <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+    <path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5" />
+  </>,
+);
+export const IconPencil = make(<path d="m4 20 1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19Z M14.5 6.5l3 3" />);
+export const IconExternal = make(<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />);
+export const IconRefresh = make(
+  <>
+    <path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5" />
+    <path d="M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.7L4 15.5" />
+    <path d="M4 20v-4.5h4.5" />
+  </>,
+);
+
 export function Spinner({ size = 16, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={`animate-spin ${className}`} aria-hidden="true">

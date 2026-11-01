@@ -6,7 +6,6 @@ import { requireAdminAction } from "@/lib/admin";
 import { logEvent } from "@/lib/logs";
 import { KNOWN_SECRETS, canStoreSecrets, deleteSecret, storeSecret, type SecretName } from "@/lib/secrets";
 import { AiSettingsSchema, FeatureFlagsSchema, SiteSettingsSchema } from "@/lib/settings";
-import { getServiceSupabase } from "@/lib/supabase/admin";
 
 export interface ActionResult {
   ok: boolean;
@@ -20,10 +19,10 @@ async function saveSetting(key: "site" | "features" | "ai", value: unknown): Pro
     .from("app_settings")
     .upsert({ key, value, updated_at: new Date().toISOString(), updated_by: session.user.id });
   if (error) {
-    await logEvent("error", "admin:settings", `Enregistrement de « ${key} » impossible.`, { details: error, userId: session.user.id });
+    await logEvent("error", "admin:settings", `Enregistrement de « ${key} » impossible.`, { details: error, supabase: session.supabase });
     return { ok: false, message: "Enregistrement impossible." };
   }
-  await logEvent("info", "admin:settings", `Réglages « ${key} » mis à jour.`, { userId: session.user.id });
+  await logEvent("info", "admin:settings", `Réglages « ${key} » mis à jour.`, { supabase: session.supabase });
   revalidatePath("/", "layout");
   return { ok: true, message: "Enregistré." };
 }
@@ -58,10 +57,10 @@ export async function setSecret(name: string, value: string): Promise<ActionResu
   try {
     await storeSecret(parsedName.data, trimmed, session.user.id);
   } catch (err) {
-    await logEvent("error", "admin:secrets", "Enregistrement de clé impossible.", { details: String(err), userId: session.user.id });
+    await logEvent("error", "admin:secrets", "Enregistrement de clé impossible.", { details: String(err), supabase: session.supabase });
     return { ok: false, message: "Enregistrement impossible." };
   }
-  await logEvent("info", "admin:secrets", `Clé ${parsedName.data} mise à jour.`, { userId: session.user.id });
+  await logEvent("info", "admin:secrets", `Clé ${parsedName.data} mise à jour.`, { supabase: session.supabase });
   revalidatePath("/admin/cles");
   return { ok: true, message: "Clé enregistrée (chiffrée)." };
 }
@@ -75,7 +74,7 @@ export async function removeSecret(name: string): Promise<ActionResult> {
   } catch {
     return { ok: false, message: "Suppression impossible." };
   }
-  await logEvent("info", "admin:secrets", `Clé ${parsedName.data} supprimée.`, { userId: session.user.id });
+  await logEvent("info", "admin:secrets", `Clé ${parsedName.data} supprimée.`, { supabase: session.supabase });
   revalidatePath("/admin/cles");
   return { ok: true, message: "Clé supprimée : la variable d'environnement reprend le relais si elle existe." };
 }
@@ -86,11 +85,9 @@ export async function setUserRole(userId: string, role: "admin" | "user"): Promi
     return { ok: false, message: "Requête invalide." };
   }
   if (userId === session.user.id && role !== "admin") return { ok: false, message: "Vous ne pouvez pas retirer votre propre rôle." };
-  const service = getServiceSupabase();
-  if (!service) return { ok: false, message: "SUPABASE_SECRET_KEY manquante." };
-  const { error } = await service.from("profiles").update({ role }).eq("id", userId);
+  const { error } = await session.supabase.rpc("set_user_role", { p_user_id: userId, p_role: role });
   if (error) return { ok: false, message: "Mise à jour impossible." };
-  await logEvent("info", "admin:users", `Rôle « ${role} » attribué.`, { details: { target: userId }, userId: session.user.id });
+  await logEvent("info", "admin:users", `Rôle « ${role} » attribué.`, { details: { target: userId }, supabase: session.supabase });
   revalidatePath("/admin/utilisateurs");
   return { ok: true, message: "Rôle mis à jour." };
 }

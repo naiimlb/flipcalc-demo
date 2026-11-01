@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   });
   await logEvent(outcome.ok ? "info" : "warn", "admin:test-prompt", outcome.ok ? "Test réussi." : outcome.detail ?? "Test échoué.", {
     details: { model: outcome.model, durationMs: outcome.durationMs, usage: outcome.usage, validationErrors: outcome.validationErrors },
-    userId: session.user.id,
+    supabase: session.supabase,
   });
   return NextResponse.json(outcome);
 }

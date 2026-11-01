@@ -78,24 +78,3 @@ function Sphere({
     </motion.div>
   );
 }
-
-/** Deux sphères au premier plan, à cheval sur le bord de la carte (grands écrans uniquement). */
-export function FrontSpheres() {
-  const { scrollY } = useScroll();
-  const slow = useTransform(scrollY, (v) => v * -0.12);
-  const fast = useTransform(scrollY, (v) => v * -0.22);
-  const float = (distance: number, duration: number) => ({
-    animate: { y: [0, -distance, 0] },
-    transition: { duration, repeat: Infinity, ease: "easeInOut" as const },
-  });
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 hidden xl:block">
-      <motion.div className="absolute -left-36 top-16 h-[300px] w-[300px]" style={{ y: slow }}>
-        <motion.div className="cell-sphere h-full w-full" {...float(14, 7)} />
-      </motion.div>
-      <motion.div className="absolute -right-10 top-[420px] h-24 w-24" style={{ y: fast }}>
-        <motion.div className="cell-sphere h-full w-full" {...float(8, 5)} />
-      </motion.div>
-    </div>
-  );
-}

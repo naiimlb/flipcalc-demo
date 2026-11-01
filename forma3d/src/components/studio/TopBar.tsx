@@ -8,19 +8,18 @@ import { signOut } from "@/app/actions";
 import {
   IconBell,
   IconChevronDown,
-  IconClock,
   IconLogout,
   IconSearch,
   IconSettings,
   IconShield,
+  IconUser,
   IconX,
-  LogoMark,
 } from "../icons";
 import { formatRelative } from "./format";
 import { StatusChip } from "./ui";
 import type { StudioTab, StudioViewer } from "./types";
 
-const TABS: { id: StudioTab; label: string }[] = [
+export const TABS: { id: StudioTab; label: string }[] = [
   { id: "overview", label: "Aperçu" },
   { id: "history", label: "Historique" },
   { id: "settings", label: "Paramètres" },
@@ -53,86 +52,7 @@ const dropdown = {
   transition: { duration: 0.16 },
 };
 
-export function TopBar({
-  siteName,
-  logoDataUrl,
-  tab,
-  onTab,
-  items,
-  onSelect,
-  viewer,
-  demoMode,
-}: {
-  siteName: string;
-  logoDataUrl: string | null;
-  tab: StudioTab;
-  onTab(tab: StudioTab): void;
-  items: RequestItem[];
-  onSelect(id: string): void;
-  viewer: StudioViewer | null;
-  demoMode: boolean;
-}) {
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
-  }, []);
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 px-3 pt-3 sm:gap-3 sm:px-5 sm:pt-4">
-      <div className="flex min-w-0 items-center gap-2 pr-1">
-        {logoDataUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoDataUrl} alt="" className="h-6 w-6 rounded-md object-contain" />
-        ) : (
-          <LogoMark size={22} />
-        )}
-        <span className="truncate text-[15px] font-semibold tracking-tight">{siteName}</span>
-      </div>
-
-      <nav
-        aria-label="Sections"
-        className="order-last flex w-full justify-center gap-1 rounded-full bg-paper p-1 sm:order-none sm:mx-auto sm:w-auto"
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onTab(t.id)}
-            aria-current={tab === t.id ? "page" : undefined}
-            className={`relative rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-              tab === t.id ? "text-white" : "text-ink-soft hover:text-ink"
-            }`}
-          >
-            {tab === t.id && (
-              <motion.span
-                layoutId="studio-tab"
-                className="absolute inset-0 rounded-full bg-brand-accent"
-                transition={{ type: "spring", stiffness: 420, damping: 34 }}
-              />
-            )}
-            <span className="relative">{t.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
-        <span className="hidden items-center gap-1.5 whitespace-nowrap px-1 text-[11px] font-medium text-ink-soft lg:inline-flex">
-          <IconClock size={14} />
-          {now
-            ? now.toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
-            : " "}
-        </span>
-        <SearchBox items={items} onSelect={onSelect} />
-        <Notifications items={items} onSelect={onSelect} />
-        <AccountMenu viewer={viewer} demoMode={demoMode} onSettings={() => onTab("settings")} />
-      </div>
-    </div>
-  );
-}
-
-function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(id: string): void }) {
+export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(id: string): void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useOutsideClose(open, () => setOpen(false));
@@ -196,7 +116,7 @@ function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(id: str
   );
 }
 
-function Notifications({ items, onSelect }: { items: RequestItem[]; onSelect(id: string): void }) {
+export function Notifications({ items, onSelect }: { items: RequestItem[]; onSelect(id: string): void }) {
   const [open, setOpen] = useState(false);
   const [seenAt, setSeenAt] = useState<number>(Date.now());
   const ref = useOutsideClose(open, () => setOpen(false));
@@ -275,24 +195,29 @@ function Notifications({ items, onSelect }: { items: RequestItem[]; onSelect(id:
   );
 }
 
-function AccountMenu({
+export function AccountMenu({
   viewer,
   demoMode,
   onSettings,
 }: {
   viewer: StudioViewer | null;
   demoMode: boolean;
-  onSettings(): void;
+  onSettings?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, () => setOpen(false));
 
   if (!viewer) {
-    if (demoMode) return <span className="chip bg-amber-100 text-amber-800">Démo</span>;
+    if (demoMode) return <span className="chip bg-amber-100 text-amber-800">Mode démo</span>;
     return (
-      <Link href="/connexion" className="btn-dark !px-3 !py-1.5 !text-xs">
-        Connexion
-      </Link>
+      <div className="flex items-center gap-1.5">
+        <Link href="/connexion" className="btn !px-3 !py-1.5 !text-xs text-white hover:bg-white/15">
+          Connexion
+        </Link>
+        <Link href="/connexion?mode=inscription" className="btn-dark !px-3 !py-1.5 !text-xs">
+          Créer un compte
+        </Link>
+      </div>
     );
   }
   const name = viewer.displayName || viewer.email;
@@ -308,14 +233,19 @@ function AccountMenu({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-0.5 text-ink-soft hover:text-ink"
+        className="flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-0.5 text-white/80 hover:text-white"
         aria-label="Menu du compte"
         aria-expanded={open}
       >
         <IconChevronDown size={14} />
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-[11px] font-bold text-white ring-2 ring-white">
-          {initials || "?"}
-        </span>
+        {viewer.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={viewer.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-white" />
+        ) : (
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-[11px] font-bold text-white ring-2 ring-white">
+            {initials || "?"}
+          </span>
+        )}
       </button>
       <AnimatePresence>
         {open && (
@@ -326,21 +256,26 @@ function AccountMenu({
               {viewer.role === "admin" && <span className="chip mt-1.5 bg-ink text-white">Administrateur</span>}
             </div>
             <div className="my-1 h-px bg-line" />
+            <Link href="/espace" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-paper">
+              <IconUser size={15} /> Mon espace
+            </Link>
             {viewer.role === "admin" && (
               <Link href="/admin" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-paper">
                 <IconShield size={15} /> Administration
               </Link>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                onSettings();
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-paper"
-            >
-              <IconSettings size={15} /> Paramètres
-            </button>
+            {onSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSettings();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-paper"
+              >
+                <IconSettings size={15} /> Paramètres d&apos;affichage
+              </button>
+            )}
             <form action={signOut}>
               <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50">
                 <IconLogout size={15} /> Se déconnecter

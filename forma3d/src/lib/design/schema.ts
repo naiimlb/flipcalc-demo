@@ -51,6 +51,29 @@ const color = z
   .transform((s) => s.trim())
   .transform((s) => (HEX.test(s) ? s.toLowerCase() : "#8b8bf5"));
 
+/** Matière conseillée pour fabriquer la solution (classées de la plus à la moins recommandée). */
+export const RecommendedMaterialSchema = z.object({
+  nom: text(60),
+  pourquoi: text(400),
+  limites: text(400),
+  cout_approx: text(80),
+  cout_indicatif: clamp(0, 1_000_000),
+  procede: text(120),
+  couleur: color,
+  aspect: z.enum(MATERIALS),
+  alternative_economique: z.boolean(),
+});
+export type RecommendedMaterial = z.output<typeof RecommendedMaterialSchema>;
+
+export const MaterialCriteriaSchema = z.object({
+  usage: text(80),
+  charge: text(120),
+  chaleur: text(120),
+  contact_alimentaire: z.boolean(),
+  budget: text(80),
+  fabrication: text(120),
+});
+
 export const PartSchema = z.object({
   id: text(40),
   name: text(80),
@@ -120,6 +143,12 @@ export const DesignSchema = z.object({
     notes: text(400),
   }),
   recommendations: list(),
+  // Ajoutés en v2 : valeurs par défaut pour relire les anciennes conceptions.
+  criteres_materiaux: MaterialCriteriaSchema.nullable().default(null),
+  materiaux_conseilles: z
+    .array(RecommendedMaterialSchema)
+    .transform((m) => m.filter((x) => x.nom).slice(0, 6))
+    .default([]),
   model: z.object({
     parts: z
       .array(PartSchema)
@@ -160,8 +189,27 @@ export function validateDesign(value: unknown): ValidationResult {
     }
   });
   if (design.cost.max < design.cost.min) design.cost.max = design.cost.min;
+  normalizeRecommendedMaterials(design.materiaux_conseilles);
   if (!design.cost.currency) design.cost.currency = "EUR";
   return { ok: true, design };
+}
+
+/**
+ * Une seule « alternative économique » : la première signalée, sinon la moins chère
+ * après la matière recommandée (jamais la recommandée elle-même s'il y a un choix).
+ */
+export function normalizeRecommendedMaterials(list: RecommendedMaterial[]) {
+  if (list.length === 0) return;
+  let found = false;
+  for (const m of list) {
+    if (m.alternative_economique && !found) found = true;
+    else m.alternative_economique = false;
+  }
+  if (!found && list.length > 1) {
+    const rest = list.slice(1);
+    const cheapest = rest.reduce((a, b) => (b.cout_indicatif < a.cout_indicatif ? b : a));
+    if (cheapest.cout_indicatif < list[0].cout_indicatif) cheapest.alternative_economique = true;
+  }
 }
 
 /** Extrait le premier objet JSON d'un texte (au cas où le modèle ajoute du texte autour). */
@@ -251,6 +299,31 @@ export const DESIGN_JSON_SCHEMA = S.obj({
     notes: S.str(),
   }),
   recommendations: S.arr(S.str(), "Conseils d'utilisation, variantes, sécurité."),
+  criteres_materiaux: S.obj(
+    {
+      usage: S.str("Intérieur, extérieur, humide, UV…"),
+      charge: S.str("Efforts et poids supportés."),
+      chaleur: S.str("Températures rencontrées."),
+      contact_alimentaire: { type: "boolean" },
+      budget: S.str("Niveau de budget déduit de la demande."),
+      fabrication: S.str("Impression 3D, bois, métal… selon la demande et les moyens supposés."),
+    },
+    "Critères déduits de la demande pour choisir les matières.",
+  ),
+  materiaux_conseilles: S.arr(
+    S.obj({
+      nom: S.str("Ex. : PLA, PETG, ABS, ASA, TPU, nylon, contreplaqué, chêne, aluminium, acier inoxydable…"),
+      pourquoi: S.str("Pourquoi elle convient à CETTE demande."),
+      limites: S.str("Limites et précautions."),
+      cout_approx: S.str("Coût approximatif lisible, ex. « ≈ 4 € la pièce (85 g) »."),
+      cout_indicatif: S.num("Coût estimé en euros pour fabriquer cet objet avec cette matière."),
+      procede: S.str("Procédé adapté (impression FDM, découpe laser, usinage, pliage…)."),
+      couleur: S.str("Couleur hexadécimale #rrggbb typique de la matière."),
+      aspect: S.enumOf(MATERIALS, "Rendu 3D le plus proche."),
+      alternative_economique: { type: "boolean", description: "true pour UNE seule matière : l'alternative moins chère." },
+    }),
+    "3 à 5 matières classées de la plus recommandée à la moins recommandée.",
+  ),
   model: S.obj({
     parts: S.arr(
       S.obj({

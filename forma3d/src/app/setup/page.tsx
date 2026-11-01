@@ -5,8 +5,8 @@ import { IconCheck, IconX } from "@/components/icons";
 import { getPublicSettings } from "@/lib/settings.server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/supabase/env";
-import { getServerSupabase } from "@/lib/supabase/server";
-import { SetupForm } from "./SetupForm";
+import { getServerSupabase, getSession } from "@/lib/supabase/server";
+import { ClaimForm, SetupForm } from "./SetupForm";
 
 export const metadata: Metadata = { title: "Installation" };
 export const dynamic = "force-dynamic";
@@ -42,13 +42,17 @@ export default async function SetupPage() {
     <ul className="mb-6 space-y-2 rounded-2xl bg-white p-4 ring-1 ring-line">
       <Check ok={!demo} label="Supabase configuré" hint={demo ? "NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" : undefined} />
       <Check ok={dbReady} label="Schéma SQL installé" hint={dbReady ? undefined : "Exécutez supabase/migrations/*.sql"} />
-      <Check ok={Boolean(service)} label="Clé secrète Supabase (serveur)" hint={service ? undefined : "SUPABASE_SECRET_KEY"} />
+      <Check
+        ok={Boolean(service)}
+        label="Clé secrète Supabase (facultative)"
+        hint={service ? undefined : "SUPABASE_SECRET_KEY : sans elle, l'admin se crée par inscription + jeton"}
+      />
       <Check ok={Boolean(process.env.SECRETS_ENCRYPTION_KEY)} label="Chiffrement des clés d'API" hint="SECRETS_ENCRYPTION_KEY (recommandé)" />
       <Check ok={Boolean(process.env.SETUP_TOKEN)} label="Installation protégée par jeton" hint="SETUP_TOKEN (recommandé en production)" />
     </ul>
   );
 
-  if (demo || !dbReady || !service) {
+  if (demo || !dbReady) {
     return (
       <AuthShell siteName={site.siteName} logoDataUrl={site.logoDataUrl} title="Installation" subtitle="Quelques réglages manquent encore.">
         {checks}
@@ -69,6 +73,20 @@ export default async function SetupPage() {
     );
   }
 
+  const session = await getSession();
+  if (session) {
+    return (
+      <AuthShell
+        siteName={site.siteName}
+        logoDataUrl={site.logoDataUrl}
+        title="Devenir administrateur"
+        subtitle={`Connecté en tant que ${session.user.email}. Saisissez le jeton d'installation pour terminer.`}
+      >
+        <ClaimForm />
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell
       siteName={site.siteName}
@@ -77,7 +95,7 @@ export default async function SetupPage() {
       subtitle="Créez le compte administrateur. Ensuite, cette page se verrouille."
     >
       {checks}
-      <SetupForm needsToken={Boolean(process.env.SETUP_TOKEN)} />
+      <SetupForm needsToken={Boolean(process.env.SETUP_TOKEN) || !service} />
     </AuthShell>
   );
 }

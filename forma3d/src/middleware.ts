@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  if (!user && pathname.startsWith("/admin")) {
+  if (!user && (pathname.startsWith("/admin") || pathname.startsWith("/espace"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/connexion";
     url.search = `?next=${encodeURIComponent(pathname)}`;

@@ -35,14 +35,14 @@ export function RecentCard({
 
   return (
     <motion.aside
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`rounded-[28px] bg-white p-5 shadow-float ring-1 ring-black/5 ${className}`}
+      transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={`panel p-3.5 ${className}`}
       aria-label="Dernières demandes"
     >
-      <h2 className="text-xl font-semibold tracking-tight">Dernières demandes</h2>
-      <div className="mt-3 grid grid-cols-7 text-[11px] text-ink-mute">
+      <h2 className="text-[13px] font-semibold">Dernières demandes</h2>
+      <div className="mt-2 grid grid-cols-7 text-[9.5px] text-ink-mute">
         {days.map((d) => (
           <span key={d.getTime()} className="truncate">
             {d.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "")} {d.getDate()}
@@ -56,7 +56,7 @@ export function RecentCard({
           created.setHours(0, 0, 0, 0);
           const dayIndex = today === null ? 0 : Math.max(0, Math.min(6, 6 - Math.round((today - created.getTime()) / DAY)));
           // Décalage horizontal selon le jour, limité pour garder la pastille lisible.
-          const offset = Math.min(dayIndex, 2.4) / 7;
+          const offset = Math.min(dayIndex, 1.6) / 7;
           return (
             <motion.li
               key={item.id}
@@ -80,7 +80,7 @@ export function RecentCard({
                 >
                   <IconCube size={13} />
                 </span>
-                <span className="min-w-0 truncate text-[13px] font-medium">{item.title ?? item.prompt}</span>
+                <span className="min-w-0 truncate text-[12px] font-medium">{item.title ?? item.prompt}</span>
                 <StatusPill item={item} />
               </button>
             </motion.li>

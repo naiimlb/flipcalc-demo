@@ -4,7 +4,6 @@ import { logEvent } from "@/lib/logs";
 import { getModelProvider, type ModelAsset } from "@/lib/providers";
 import { toRequestItem, REQUEST_COLUMNS } from "@/lib/requests";
 import { getSecret } from "@/lib/secrets";
-import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -28,18 +27,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
   const provider = getModelProvider(asset.provider);
   const key = provider?.secretName ? await getSecret(provider.secretName) : null;
-  const service = getServiceSupabase();
-  if (!provider || !key || !service) return NextResponse.json({ request: toRequestItem(row) });
+  if (!provider || !key) return NextResponse.json({ request: toRequestItem(row) });
 
   try {
     const next = await provider.poll(asset, key);
-    await service.from("design_requests").update({ model_asset: next, updated_at: new Date().toISOString() }).eq("id", id);
+    await session.supabase.from("design_requests").update({ model_asset: next, updated_at: new Date().toISOString() }).eq("id", id);
     return NextResponse.json({ request: toRequestItem({ ...row, model_asset: next }) });
   } catch (err) {
     await logEvent("warn", `provider:${provider.id}`, "Sondage du maillage impossible.", {
       details: String(err),
       requestId: id,
-      userId: session.user.id,
+      supabase: session.supabase,
     });
     return NextResponse.json({ request: toRequestItem(row) });
   }

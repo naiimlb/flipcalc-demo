@@ -31,10 +31,10 @@ export const getPublicSettings = cache(async (): Promise<{ site: SiteSettings; f
   };
 });
 
-/** Réglages IA (réservés au serveur : lus avec la clé secrète). */
+/** Réglages IA (lus côté serveur, avec la clé secrète si présente, sinon la session). */
 export async function getAiSettings(): Promise<AiSettings> {
-  const service = getServiceSupabase();
-  if (!service) return DEFAULT_AI;
-  const { data } = await service.from("app_settings").select("value").eq("key", "ai").maybeSingle();
+  const client = getServiceSupabase() ?? (await getServerSupabase());
+  if (!client) return DEFAULT_AI;
+  const { data } = await client.from("app_settings").select("value").eq("key", "ai").maybeSingle();
   return mergeWithDefaults(AiSettingsSchema, DEFAULT_AI, data?.value);
 }

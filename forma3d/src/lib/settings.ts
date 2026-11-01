@@ -50,6 +50,9 @@ export const FeatureFlagsSchema = z.object({
   devMode: z.boolean(),
   hourlyLimit: z.number().int().min(0).max(1000),
   dailyLimit: z.number().int().min(0).max(10000),
+  guestTrial: z.boolean(),
+  guestDailyLimit: z.number().int().min(0).max(100),
+  guestGlobalDailyLimit: z.number().int().min(0).max(100000),
 });
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>;
 
@@ -64,6 +67,9 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   devMode: false,
   hourlyLimit: 10,
   dailyLimit: 30,
+  guestTrial: true,
+  guestDailyLimit: 2,
+  guestGlobalDailyLimit: 200,
 };
 
 export const CLAUDE_MODELS = [

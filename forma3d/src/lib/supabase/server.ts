@@ -31,10 +31,19 @@ export async function getServerSupabase(): Promise<SupabaseClient | null> {
 
 export type Role = "admin" | "user";
 
+export interface Profile {
+  displayName: string | null;
+  avatarUrl: string | null;
+  language: "fr" | "en";
+  units: "mm" | "cm" | "in";
+  favoriteMaterials: string[];
+}
+
 export interface Session {
   user: User;
   role: Role;
   displayName: string | null;
+  profile: Profile;
   supabase: SupabaseClient;
 }
 
@@ -48,13 +57,20 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!user) return null;
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, display_name")
+    .select("role, display_name, avatar_url, language, units, favorite_materials")
     .eq("id", user.id)
     .maybeSingle();
   return {
     user,
     role: profile?.role === "admin" ? "admin" : "user",
     displayName: profile?.display_name ?? null,
+    profile: {
+      displayName: profile?.display_name ?? null,
+      avatarUrl: profile?.avatar_url ?? null,
+      language: profile?.language === "en" ? "en" : "fr",
+      units: profile?.units === "cm" || profile?.units === "in" ? profile.units : "mm",
+      favoriteMaterials: Array.isArray(profile?.favorite_materials) ? profile.favorite_materials : [],
+    },
     supabase,
   };
 });

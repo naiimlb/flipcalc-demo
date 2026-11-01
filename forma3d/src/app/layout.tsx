@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { UpdateNotifier } from "@/components/app/UpdateNotifier";
 import { hexToRgbTriplet } from "@/lib/settings";
 import { getPublicSettings } from "@/lib/settings.server";
 import "./globals.css";
@@ -38,7 +39,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="fr" className={uiFont.variable} style={brandVars}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <UpdateNotifier />
+      </body>
     </html>
   );
 }

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { IMAGE_MEDIA_TYPES } from "@/lib/ai/claude";
@@ -9,9 +10,8 @@ import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests
 import { getSecret } from "@/lib/secrets";
 import { DEFAULT_AI } from "@/lib/settings";
 import { getAiSettings, getPublicSettings } from "@/lib/settings.server";
-import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/supabase/env";
-import { getSession } from "@/lib/supabase/server";
+import { getServerSupabase, getSession } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -43,6 +43,39 @@ const QUOTA_MESSAGES: Record<string, [number, string]> = {
   AUTH_REQUIRED: [401, "Connectez-vous pour créer une demande."],
 };
 
+function localItem(
+  body: z.infer<typeof BodySchema>,
+  outcome: Awaited<ReturnType<typeof generateDesign>>,
+  extra: Partial<RequestItem>,
+): RequestItem {
+  return {
+    id: crypto.randomUUID(),
+    prompt: body.prompt,
+    status: outcome.ok ? "ready" : "error",
+    title: outcome.design?.title ?? null,
+    design: outcome.design,
+    error: outcome.error,
+    provider: outcome.provider,
+    model: outcome.model,
+    hasImage: Boolean(body.image),
+    createdAt: new Date().toISOString(),
+    durationMs: outcome.durationMs,
+    asset: null,
+    folderId: null,
+    isFavorite: false,
+    modelPath: null,
+    source: "generated",
+    ...extra,
+  };
+}
+
+/** Empreinte salée de l'IP du visiteur (l'IP elle-même n'est jamais stockée). */
+function guestHash(request: Request): string {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "inconnu";
+  const salt = process.env.SECRETS_ENCRYPTION_KEY || process.env.NEXT_PUBLIC_SUPABASE_URL || "forma3d";
+  return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
+}
+
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.", "forbidden");
 
@@ -66,38 +99,42 @@ export async function POST(request: Request) {
       allowDemo: true,
       forceDemo: !allowClaude,
     });
-    const item: RequestItem = {
-      id: crypto.randomUUID(),
-      prompt: body.prompt,
-      status: outcome.ok ? "ready" : "error",
-      title: outcome.design?.title ?? null,
-      design: outcome.design,
-      error: outcome.error,
-      provider: outcome.provider,
-      model: outcome.model,
-      hasImage: Boolean(body.image),
-      createdAt: new Date().toISOString(),
-      durationMs: outcome.durationMs,
-      asset: null,
-    };
-    return NextResponse.json({ request: item, raw: outcome.raw });
-  }
-
-  /* ---------- Mode normal ---------- */
-  const session = await getSession();
-  if (!session) return jsonError(401, "Connectez-vous pour créer une demande.", "unauthorized");
-  const service = getServiceSupabase();
-  if (!service) {
-    await logEvent("error", "generate", "SUPABASE_SECRET_KEY manquante : impossible d'enregistrer le résultat.");
-    return jsonError(503, "Le serveur n'est pas complètement configuré.", "misconfigured");
+    return NextResponse.json({ request: localItem(body, outcome, {}), raw: outcome.raw });
   }
 
   const { features } = await getPublicSettings();
   if (body.image && !features.imageUpload) {
     return jsonError(400, "L'ajout d'image est désactivé.", "image_disabled");
   }
+  const session = await getSession();
 
-  // Quotas, pause globale et insertion : atomiques côté base (fonction SQL).
+  /* ---------- Essai sans compte : résultat renvoyé, non enregistré ---------- */
+  if (!session) {
+    if (!features.guestTrial || !features.newRequests) {
+      return jsonError(401, "Connectez-vous pour créer une demande.", "unauthorized");
+    }
+    const anon = await getServerSupabase();
+    const { data: allowed, error } = (await anon?.rpc("consume_guest_quota", { p_ip_hash: guestHash(request) })) ?? {
+      data: false,
+      error: null,
+    };
+    if (error) {
+      console.error("Quota invité :", error.message);
+      return jsonError(503, "Essai indisponible pour le moment : créez un compte pour continuer.", "guest_unavailable");
+    }
+    if (allowed !== true) {
+      return jsonError(429, "Votre essai gratuit est utilisé : créez un compte (gratuit) pour continuer.", "guest_quota");
+    }
+    const outcome = await generateDesign({
+      prompt: body.prompt,
+      image: body.image,
+      ai: await getAiSettings(),
+      allowDemo: features.demoFallback,
+    });
+    return NextResponse.json({ request: localItem(body, outcome, { guest: true }) });
+  }
+
+  /* ---------- Utilisateur connecté : quota, génération, enregistrement ---------- */
   const { data: created, error: createError } = await session.supabase
     .rpc("create_design_request", { p_prompt: body.prompt, p_has_image: Boolean(body.image) })
     .single<{ id: string }>();
@@ -110,6 +147,7 @@ export async function POST(request: Request) {
     await logEvent("error", "generate", "Création de la demande impossible.", {
       details: createError,
       userId: session.user.id,
+      supabase: session.supabase,
     });
     return jsonError(500, "Impossible d'enregistrer la demande.", "db_error");
   }
@@ -121,6 +159,7 @@ export async function POST(request: Request) {
     image: body.image,
     ai,
     allowDemo: features.demoFallback,
+    language: session.profile.language,
   });
 
   // Fournisseur 3D externe (expérimental) : lance la tâche, la suite se fait par sondage.
@@ -135,47 +174,40 @@ export async function POST(request: Request) {
         await logEvent("warn", `provider:${provider.id}`, "Lancement du maillage impossible.", {
           details: String(err),
           requestId,
-          userId: session.user.id,
+          supabase: session.supabase,
         });
       }
     }
   }
 
-  const { error: updateError } = await service
-    .from("design_requests")
-    .update({
-      status: outcome.ok ? "ready" : "error",
-      title: outcome.design?.title?.slice(0, 200) ?? null,
-      design: outcome.design,
-      error: outcome.error,
-      provider: outcome.provider,
-      model: outcome.model,
-      model_asset: modelAsset,
-      duration_ms: outcome.durationMs,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", requestId);
-  if (updateError) {
+  // Écriture du résultat avec la session de l'utilisateur (fonction SQL : sa propre demande uniquement).
+  const { error: completeError } = await session.supabase.rpc("complete_design_request", {
+    p_id: requestId,
+    p_status: outcome.ok ? "ready" : "error",
+    p_title: outcome.design?.title ?? null,
+    p_design: outcome.design,
+    p_error: outcome.error,
+    p_provider: outcome.provider,
+    p_model: outcome.model,
+    p_duration_ms: outcome.durationMs,
+    p_model_asset: modelAsset,
+    p_raw: outcome.raw?.slice(0, 500_000) ?? null,
+    p_stop_reason: outcome.stopReason,
+    p_usage: outcome.usage,
+    p_validation_errors: outcome.validationErrors,
+  });
+  if (completeError) {
     await logEvent("error", "generate", "Écriture du résultat impossible.", {
-      details: updateError,
+      details: completeError,
       requestId,
-      userId: session.user.id,
+      supabase: session.supabase,
     });
   }
-
-  await service.from("request_debug").upsert({
-    request_id: requestId,
-    raw_response: outcome.raw?.slice(0, 500_000) ?? null,
-    stop_reason: outcome.stopReason,
-    usage: outcome.usage,
-    validation_errors: outcome.validationErrors,
-  });
-
   if (!outcome.ok) {
     await logEvent("error", "generate", outcome.detail ?? outcome.error ?? "Génération échouée.", {
       details: { validationErrors: outcome.validationErrors, stopReason: outcome.stopReason, model: outcome.model },
       requestId,
-      userId: session.user.id,
+      supabase: session.supabase,
     });
   }
 

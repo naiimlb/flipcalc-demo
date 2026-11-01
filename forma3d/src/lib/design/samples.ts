@@ -1,4 +1,4 @@
-import type { Design, MaterialKind, Part, Shape } from "./schema";
+import type { Design, MaterialKind, Part, RecommendedMaterial, Shape } from "./schema";
 
 /**
  * Conceptions d'exemple, écrites à la main.
@@ -41,6 +41,20 @@ function part(
     color: opts.color ?? "#7b5ce6",
     material: opts.material ?? "plastic",
   };
+}
+
+function mat(
+  nom: string,
+  pourquoi: string,
+  limites: string,
+  cout_approx: string,
+  cout_indicatif: number,
+  procede: string,
+  couleur: string,
+  aspect: MaterialKind,
+  alternative_economique = false,
+): RecommendedMaterial {
+  return { nom, pourquoi, limites, cout_approx, cout_indicatif, procede, couleur, aspect, alternative_economique };
 }
 
 /* ----------------------------- Câbles ----------------------------- */
@@ -94,6 +108,20 @@ export const CABLE_ORGANIZER: Design = {
     "Imprimer en PETG si le bureau est exposé au soleil.",
     "Ajouter des étiquettes sur la face avant pour repérer chaque câble.",
     "Version murale : ajouter deux trous fraisés dans la base.",
+  ],
+  criteres_materiaux: {
+    usage: "Intérieur, bureau",
+    charge: "Très faible (câbles)",
+    chaleur: "Ambiante, près d'un chargeur tiède",
+    contact_alimentaire: false,
+    budget: "Minimal",
+    fabrication: "Impression 3D FDM",
+  },
+  materiaux_conseilles: [
+    mat("PETG", "Légèrement souple : les dents ne cassent pas quand on clipse un câble ; bonne tenue près d'un chargeur.", "Un peu plus délicat à imprimer que le PLA (fils, ponts).", "≈ 2,50 € (85 g)", 2.5, "Impression 3D FDM", "#5b6ee1", "plastic"),
+    mat("PLA", "Le plus simple à imprimer, finition propre, large choix de couleurs.", "Cassant si les dents sont fines ; se déforme au-delà de 55 °C.", "≈ 1,90 € (85 g)", 1.9, "Impression 3D FDM", "#6c63ff", "plastic", true),
+    mat("TPU 95A", "Peigne entièrement souple, se tord sans casser, antidérapant naturel.", "Impression lente, aspect moins net.", "≈ 3,50 € (85 g)", 3.5, "Impression 3D FDM (extrudeur direct)", "#2b2b33", "rubber"),
+    mat("Contreplaqué 6 mm", "Rendu naturel, se découpe en série au laser.", "Bords à poncer, fentes moins précises.", "≈ 3 € la planchette", 3, "Découpe laser", "#c99a6a", "wood"),
   ],
   model: {
     parts: [
@@ -167,6 +195,20 @@ export const PHONE_STAND: Design = {
   recommendations: [
     "Pour une tablette, multiplier toutes les cotes par 1,6.",
     "Vérifier que le connecteur de charge coudé passe dans l'espace central.",
+  ],
+  criteres_materiaux: {
+    usage: "Intérieur, bureau",
+    charge: "Téléphone de 150 à 250 g, appuis répétés",
+    chaleur: "Téléphone tiède en charge",
+    contact_alimentaire: false,
+    budget: "Faible",
+    fabrication: "Impression 3D FDM",
+  },
+  materiaux_conseilles: [
+    mat("PETG", "Rigide et résilient : supporte les appuis pendant la saisie sans fissurer, tolère la chaleur d'un téléphone en charge.", "Surface un peu brillante, réglages plus fins que le PLA.", "≈ 3,10 € (120 g)", 3.1, "Impression 3D FDM", "#7b5ce6", "plastic"),
+    mat("PLA", "Facile à imprimer, très bonne précision pour la gorge de 6 mm.", "Peut fluer s'il reste au soleil derrière une vitre.", "≈ 2,40 € (120 g)", 2.4, "Impression 3D FDM", "#8f7cf0", "plastic", true),
+    mat("Aluminium 3 mm", "Très stable et haut de gamme, dissipe la chaleur du téléphone.", "Nécessite découpe et pliage, coût plus élevé.", "≈ 18 € la pièce", 18, "Découpe laser + pliage", "#b8bfca", "metal"),
+    mat("Hêtre massif", "Aspect chaleureux, lourd donc très stable.", "Usinage plus long, sensible à l'humidité.", "≈ 12 €", 12, "Défonceuse / CNC", "#d2a679", "wood"),
   ],
   model: {
     parts: [
@@ -261,6 +303,20 @@ export const WALL_KEY_SHELF: Design = {
     "Sur placo, utiliser des chevilles métalliques à expansion.",
     "Ajouter un petit rebord sur la tablette pour retenir les objets ronds.",
   ],
+  criteres_materiaux: {
+    usage: "Intérieur, entrée (passages fréquents)",
+    charge: "Jusqu'à 3 kg (trousseaux, courrier)",
+    chaleur: "Ambiante",
+    contact_alimentaire: false,
+    budget: "Moyen",
+    fabrication: "Bois et quincaillerie",
+  },
+  materiaux_conseilles: [
+    mat("Chêne massif", "Robuste, les vis tiennent bien, vieillit joliment avec une huile dure.", "Plus cher et plus lourd que le pin.", "≈ 18 € la planche", 18, "Scie + perçage", "#b98a5a", "wood"),
+    mat("Pin raboté", "Léger, facile à travailler, peut se peindre.", "Plus tendre : marques et écrasement des vis.", "≈ 7 € la planche", 7, "Scie + perçage", "#e3c08d", "wood", true),
+    mat("Acier thermolaqué", "Très fin et très solide, look industriel.", "Demande pliage et soudure ou un atelier.", "≈ 35 €", 35, "Découpe laser + pliage", "#2e3138", "metal"),
+    mat("PETG imprimé", "Possible en plusieurs morceaux pour une version légère.", "Charge limitée, sensible au fluage sur la durée.", "≈ 9 € (350 g)", 9, "Impression 3D FDM", "#5b6ee1", "plastic"),
+  ],
   model: {
     parts: [
       part("dosseret", "Dosseret", "Support principal fixé au mur", "box", [300, 180, 15], [0, 90, 0], {
@@ -322,6 +378,19 @@ export const DESK_ORGANIZER: Design = {
   ],
   cost: { currency: "EUR", min: 4, max: 7, items: [{ label: "Filament PLA (200 g)", amount: 4.4 }], notes: "" },
   recommendations: ["Ajouter des pastilles antidérapantes sous le plateau."],
+  criteres_materiaux: {
+    usage: "Intérieur, bureau",
+    charge: "Faible",
+    chaleur: "Ambiante",
+    contact_alimentaire: false,
+    budget: "Faible",
+    fabrication: "Impression 3D FDM",
+  },
+  materiaux_conseilles: [
+    mat("PLA", "Idéal pour un objet de bureau : précis, rigide, nombreuses couleurs.", "Craint la chaleur (> 55 °C).", "≈ 4,40 € (200 g)", 4.4, "Impression 3D FDM", "#5b6ee1", "plastic"),
+    mat("PLA recyclé", "Même usage, empreinte carbone réduite.", "Couleurs moins régulières.", "≈ 3,20 € (200 g)", 3.2, "Impression 3D FDM", "#7a7f99", "plastic", true),
+    mat("PETG", "Plus résistant aux chocs et aux chutes.", "Impression un peu plus délicate.", "≈ 5,20 € (200 g)", 5.2, "Impression 3D FDM", "#7b5ce6", "plastic"),
+  ],
   model: {
     parts: [
       part("plateau", "Plateau", "Base commune des modules", "box", [220, 8, 120], [0, 4, 0], { cornerRadius: 10, color: "#5b6ee1" }),

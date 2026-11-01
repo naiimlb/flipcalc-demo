@@ -119,7 +119,7 @@ export function ViewerPanel({
 
   return (
     <div
-      className="relative h-[340px] overflow-hidden rounded-[20px] sm:h-[440px] lg:h-full"
+      className="relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"
       style={{ background: viewerBackgroundCss(design ? settings.mode : "neon") }}
     >
       {/* Halo décoratif */}

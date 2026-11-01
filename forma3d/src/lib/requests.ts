@@ -24,12 +24,19 @@ export interface RequestItem {
   createdAt: string;
   durationMs: number | null;
   asset: PublicAsset | null;
+  folderId: string | null;
+  isFavorite: boolean;
+  /** Chemin du GLB dans Supabase Storage (bucket « models »). */
+  modelPath: string | null;
+  source: "generated" | "duplicate" | "import";
   /** Exemple de vitrine (visiteur non connecté ou mode démo). */
   sample?: boolean;
+  /** Essai sans compte : gardé dans ce navigateur jusqu'à la création du compte. */
+  guest?: boolean;
 }
 
 export const REQUEST_COLUMNS =
-  "id, prompt, has_image, status, title, design, error, provider, model, model_asset, duration_ms, created_at";
+  "id, prompt, has_image, status, title, design, error, provider, model, model_asset, duration_ms, created_at, folder_id, is_favorite, model_path, source";
 
 interface RequestRow {
   id: string;
@@ -44,6 +51,10 @@ interface RequestRow {
   model_asset: unknown;
   duration_ms: number | null;
   created_at: string;
+  folder_id?: string | null;
+  is_favorite?: boolean | null;
+  model_path?: string | null;
+  source?: string | null;
 }
 
 function toPublicAsset(value: unknown): PublicAsset | null {
@@ -75,6 +86,10 @@ export function toRequestItem(row: RequestRow): RequestItem {
     createdAt: row.created_at,
     durationMs: row.duration_ms,
     asset: toPublicAsset(row.model_asset),
+    folderId: row.folder_id ?? null,
+    isFavorite: Boolean(row.is_favorite),
+    modelPath: row.model_path ?? null,
+    source: row.source === "duplicate" || row.source === "import" ? row.source : "generated",
   };
 }
 
@@ -92,6 +107,10 @@ export function sampleRequests(now = Date.now()): RequestItem[] {
     createdAt: new Date(now - s.daysAgo * 86_400_000 - i * 3_600_000).toISOString(),
     durationMs: null,
     asset: null,
+    folderId: null,
+    isFavorite: false,
+    modelPath: null,
+    source: "generated",
     sample: true,
   }));
 }

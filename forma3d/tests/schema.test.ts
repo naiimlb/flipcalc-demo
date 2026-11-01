@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- objets volontairement malformés */
 import { describe, expect, it } from "vitest";
-import { DESIGN_JSON_SCHEMA, extractJson, validateDesign } from "@/lib/design/schema";
+import { DESIGN_JSON_SCHEMA, extractJson, normalizeRecommendedMaterials, validateDesign, type RecommendedMaterial } from "@/lib/design/schema";
 import { SAMPLE_DESIGNS } from "@/lib/design/samples";
 import { demoDesign } from "@/lib/design/demo";
 
@@ -94,5 +94,47 @@ describe("générateur de démonstration", () => {
     expect(other.analysis.assumptions[0]).toContain("démonstration");
     // Les exemples d'origine ne sont pas modifiés.
     expect(SAMPLE_DESIGNS[3].design.analysis.assumptions[0]).not.toContain("démonstration");
+  });
+});
+
+describe("matières conseillées", () => {
+  it("chaque exemple propose au moins 3 matières, dont une alternative économique moins chère que la recommandée", () => {
+    for (const { id, design } of SAMPLE_DESIGNS) {
+      const list = design.materiaux_conseilles;
+      expect(list.length, id).toBeGreaterThanOrEqual(3);
+      const eco = list.filter((m) => m.alternative_economique);
+      expect(eco.length, id).toBe(1);
+      expect(eco[0].cout_indicatif, id).toBeLessThan(list[0].cout_indicatif);
+      expect(design.criteres_materiaux, id).not.toBeNull();
+    }
+  });
+
+  it("une conception sans matières conseillées (ancien format) reste valide", () => {
+    const old = structuredClone(SAMPLE_DESIGNS[0].design) as unknown as Record<string, any>;
+    delete old.materiaux_conseilles;
+    delete old.criteres_materiaux;
+    const result = validateDesign(old);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.design.materiaux_conseilles).toEqual([]);
+      expect(result.design.criteres_materiaux).toBeNull();
+    }
+  });
+
+  it("garde une seule alternative économique, ou désigne la moins chère", () => {
+    const base = SAMPLE_DESIGNS[0].design.materiaux_conseilles[0];
+    const mk = (nom: string, cout: number, eco = false): RecommendedMaterial => ({ ...base, nom, cout_indicatif: cout, alternative_economique: eco });
+    const twoFlags = [mk("A", 10), mk("B", 5, true), mk("C", 3, true)];
+    normalizeRecommendedMaterials(twoFlags);
+    expect(twoFlags.map((m) => m.alternative_economique)).toEqual([false, true, false]);
+    const none = [mk("A", 10), mk("B", 8), mk("C", 4)];
+    normalizeRecommendedMaterials(none);
+    expect(none.map((m) => m.alternative_economique)).toEqual([false, false, true]);
+  });
+
+  it("le schéma JSON envoyé à Claude exige les matières conseillées", () => {
+    const root = DESIGN_JSON_SCHEMA as { required: string[] };
+    expect(root.required).toContain("materiaux_conseilles");
+    expect(root.required).toContain("criteres_materiaux");
   });
 });

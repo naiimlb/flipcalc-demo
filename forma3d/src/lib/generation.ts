@@ -1,6 +1,7 @@
 import "server-only";
 import { generateDesignWithClaude, type ClaudeUsage, type ImageMediaType } from "./ai/claude";
 import { demoDesign } from "./design/demo";
+import { languageInstruction } from "./design/prompt";
 import type { Design } from "./design/schema";
 import { getSecret } from "./secrets";
 import type { AiSettings } from "./settings";
@@ -30,6 +31,8 @@ export async function generateDesign(params: {
   allowDemo: boolean;
   /** Force le générateur de démonstration (aucun appel payant). */
   forceDemo?: boolean;
+  /** Langue de rédaction préférée de l'utilisateur. */
+  language?: "fr" | "en";
 }): Promise<GenerationOutcome> {
   const started = Date.now();
   const apiKey = params.forceDemo ? null : await getSecret("ANTHROPIC_API_KEY");
@@ -70,7 +73,7 @@ export async function generateDesign(params: {
 
   const result = await generateDesignWithClaude({
     apiKey,
-    systemPrompt: params.ai.systemPrompt,
+    systemPrompt: params.ai.systemPrompt + languageInstruction(params.language),
     model: params.ai.model,
     effort: params.ai.effort,
     maxTokens: params.ai.maxTokens,
