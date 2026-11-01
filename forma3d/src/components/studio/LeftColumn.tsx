@@ -54,7 +54,12 @@ export function LeftColumn({
             <Field label="Créée le :" tone="accent">
               {formatDate(item.createdAt)}
               {item.durationMs ? (
-                <span className="ml-1 font-normal text-ink-mute">· {formatDuration(Math.max(1, Math.round(item.durationMs / 60000)))}</span>
+                <span className="ml-1 font-normal text-ink-mute">
+                  · générée en{" "}
+                  {item.durationMs < 60_000
+                    ? `${(item.durationMs / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} s`
+                    : formatDuration(Math.round(item.durationMs / 60_000))}
+                </span>
               ) : null}
             </Field>
           </div>

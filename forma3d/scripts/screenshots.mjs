@@ -48,7 +48,8 @@ await session("desktop", { width: 1440, height: 1000 }, async (page) => {
   await page.getByRole("button", { name: "Générer" }).click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: join(out, "desktop-generation.png") });
-  await page.getByText("Conception prête").waitFor({ timeout: 20000 });
+  // Le titre de la nouvelle conception remplace celui de l'exemple dans la fiche.
+  await page.locator("h2", { hasText: "Peigne range-câbles lesté" }).waitFor({ timeout: 30000 });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: join(out, "desktop-resultat.png") });
 

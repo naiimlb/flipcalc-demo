@@ -334,19 +334,22 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, site
       <JsonDrawer item={jsonOpen ? selected : null} localRaw={selected ? rawById[selected.id] ?? null : null} onClose={() => setJsonOpen(false)} />
 
       <Portal>
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-5 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-white shadow-float"
-          >
-            {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Conteneur fixe centré : l'animation (transform) reste sur l'enfant. */}
+        <div className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
+          <AnimatePresence>
+            {toast && (
+              <motion.div
+                role="status"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="pointer-events-auto max-w-full rounded-full bg-ink px-5 py-3 text-sm font-medium text-white shadow-float"
+              >
+                {toast}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </Portal>
     </>
   );
