@@ -26,7 +26,16 @@ const shot = (page, name) => page.screenshot({ path: join(out, `${name}.png`) })
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 
 async function newPage(name) {
-  const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
+  // Chaque exécution a sa propre adresse (serveur local : aucun en-tête réel), sinon le quota d'essais invités
+  // (2 par jour et par adresse) est partagé entre toutes les exécutions de la CI.
+  const octet = (max) => 1 + Math.floor(Math.random() * max);
+  const fakeIp = `198.${octet(250)}.${octet(250)}.${octet(250)}`;
+  const context = await browser.newContext({
+    viewport: { width: 1366, height: 900 },
+    acceptDownloads: true,
+    extraHTTPHeaders: { "x-forwarded-for": fakeIp },
+  });
+
   const page = await context.newPage();
   page.on("pageerror", (err) => errors.push(`[${name}] page : ${err.message}`));
   page.on("console", (msg) => msg.type() === "error" && errors.push(`[${name}] console : ${msg.text()}`));
