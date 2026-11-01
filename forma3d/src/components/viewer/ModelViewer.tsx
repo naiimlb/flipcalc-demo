@@ -277,7 +277,7 @@ function PartMesh({ part, index, offset, explode, settings, focused, dimmed, onS
   return (
     <group ref={group} position={base} rotation={rotation}>
       <mesh
-        key={neon ? "neon" : "real"}
+        key={`${neon ? "neon" : "real"}-${geometry.uuid}`}
         geometry={geometry}
         onClick={(e) => {
           e.stopPropagation();

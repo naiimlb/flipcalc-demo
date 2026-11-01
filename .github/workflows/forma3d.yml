@@ -11,6 +11,9 @@ on:
       - ".github/workflows/forma3d.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -39,3 +42,17 @@ jobs:
         run: |
           npm start -- -p 3100 > /tmp/forma3d.log 2>&1 &
           node scripts/smoke.mjs http://localhost:3100 || (cat /tmp/forma3d.log; exit 1)
+      # Captures d'écran (mode démo) publiées sur la branche claude/forma3d-screens.
+      - name: Captures d'écran
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node scripts/screenshots.mjs http://localhost:3100 "$RUNNER_TEMP/screens"
+      - name: Publication des captures
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+        working-directory: ${{ runner.temp }}/screens
+        run: |
+          git init -q && git checkout -q -b claude/forma3d-screens
+          git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures Forma3D (run $GITHUB_RUN_ID)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-screens

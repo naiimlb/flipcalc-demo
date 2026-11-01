@@ -7,7 +7,7 @@ import { logEvent } from "@/lib/logs";
 import { getModelProvider } from "@/lib/providers";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getSecret } from "@/lib/secrets";
-import { DEFAULT_AI, DEFAULT_FEATURES } from "@/lib/settings";
+import { DEFAULT_AI } from "@/lib/settings";
 import { getAiSettings, getPublicSettings } from "@/lib/settings.server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/supabase/env";
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     prompt: body.prompt,
     image: body.image,
     ai,
-    allowDemo: features.demoFallback ?? DEFAULT_FEATURES.demoFallback,
+    allowDemo: features.demoFallback,
   });
 
   // Fournisseur 3D externe (expérimental) : lance la tâche, la suite se fait par sondage.
