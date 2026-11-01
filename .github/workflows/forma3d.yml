@@ -1,0 +1,136 @@
+name: Forma3D
+
+on:
+  push:
+    paths:
+      - "forma3d/**"
+      - ".github/workflows/forma3d.yml"
+  pull_request:
+    paths:
+      - "forma3d/**"
+      - ".github/workflows/forma3d.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forma3d
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm ls next react three @react-three/fiber @react-three/drei @anthropic-ai/sdk @supabase/ssr --depth=0
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+      # Sans variables Supabase, l'app démarre en mode démo : 1 demande → 1 modèle 3D.
+      - name: Test de fumée (mode démo)
+        run: |
+          npm start -- -p 3100 > /tmp/forma3d.log 2>&1 &
+          node scripts/smoke.mjs http://localhost:3100 || (cat /tmp/forma3d.log; exit 1)
+      # Captures d'écran (mode démo) publiées sur la branche claude/forma3d-screens.
+      - name: Captures d'écran
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node scripts/screenshots.mjs http://localhost:3100 "$RUNNER_TEMP/screens"
+      - name: Publication des captures
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+        working-directory: ${{ runner.temp }}/screens
+        run: |
+          git init -q && git checkout -q -b claude/forma3d-screens
+          git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures Forma3D (run $GITHUB_RUN_ID)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-screens
+
+  # Parcours complet contre le vrai projet Supabase (essai invité, compte, Storage, export, suppression).
+  # Le mot de passe du compte de test est généré ici et ne quitte jamais le runner : seule son empreinte
+  # bcrypt est publiée (branche claude/forma3d-e2e) pour que le compte soit créé en base, puis le job
+  # attend (15 min max) que la connexion fonctionne. Le test supprime ensuite le compte lui-même.
+  e2e-supabase:
+    needs: check
+    # Un message de commit contenant [skip e2e] saute ce test (nécessite la création de comptes de test à la main).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d' && !contains(github.event.head_commit.message, '[skip e2e]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: forma3d
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Valeurs publiques (clé « publishable », protégée par la RLS).
+      NEXT_PUBLIC_SUPABASE_URL: https://vshiumnrivoemoaxihiv.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_rgW7dL4OCykUqP5nBcaX1w_ShK_X-AK
+      NEXT_PUBLIC_SITE_URL: http://localhost:3200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund && npm install --no-save --no-audit --no-fund bcryptjs@2.4.3 playwright@1.56.1
+      - run: npm run build
+      - name: Identifiants de test (mots de passe masqués)
+        run: |
+          mkdir -p /tmp/req "$RUNNER_TEMP/e2e"
+          node -e '
+            const crypto = require("crypto"), bcrypt = require("bcryptjs"), fs = require("fs");
+            const run = process.env.GITHUB_RUN_ID;
+            const env = [];
+            const accounts = ["BROWSER", "A", "B"].map((name) => {
+              const password = crypto.randomBytes(18).toString("base64url");
+              const email = `e2e-${name.toLowerCase()}-${run}@forma3d.test`;
+              console.log(`::add-mask::${password}`);
+              env.push(`E2E_EMAIL_${name}=${email}`, `E2E_PASSWORD_${name}=${password}`);
+              return { name, email, hash: bcrypt.hashSync(password, 10) };
+            });
+            fs.appendFileSync(process.env.GITHUB_ENV, env.join("\n") + "\n");
+            fs.writeFileSync("/tmp/req/request.json", JSON.stringify({ run, accounts }) + "\n");
+          '
+          cd /tmp/req
+          git init -q && git checkout -q -b claude/forma3d-e2e
+          git add request.json
+          git -c user.name=github-actions -c user.email=actions@github.com commit -qm "E2E Forma3D : comptes de test (run $GITHUB_RUN_ID)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e
+      - name: Attente de la création des comptes (15 min max)
+        run: |
+          ready() {
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/token?grant_type=password" \
+              -H "apikey: $NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$1\",\"password\":\"$2\"}")
+            [ "$code" = "200" ]
+          }
+          for i in $(seq 1 90); do
+            if ready "$E2E_EMAIL_BROWSER" "$E2E_PASSWORD_BROWSER" && ready "$E2E_EMAIL_A" "$E2E_PASSWORD_A" && ready "$E2E_EMAIL_B" "$E2E_PASSWORD_B"; then echo "Comptes prêts"; exit 0; fi
+            sleep 10
+          done
+          echo "Comptes de test non créés à temps"; exit 1
+      - name: Isolation entre comptes (API publique)
+        run: node scripts/e2e-isolation.mjs "$RUNNER_TEMP/e2e"
+      - name: Parcours connecté
+        run: |
+          npx playwright install --with-deps chromium
+          npm start -- -p 3200 > /tmp/forma3d-e2e.log 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:3200 && break; sleep 1; done
+          E2E_EMAIL="$E2E_EMAIL_BROWSER" E2E_PASSWORD="$E2E_PASSWORD_BROWSER" node scripts/e2e-account.mjs http://localhost:3200 "$RUNNER_TEMP/e2e" || (tail -50 /tmp/forma3d-e2e.log; exit 1)
+      - name: Publication des captures E2E
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/e2e" 2>/dev/null || exit 0
+          [ -n "$(ls -A .)" ] || exit 0
+          git init -q && git checkout -q -b claude/forma3d-e2e-screens
+          git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures E2E Forma3D (run $GITHUB_RUN_ID)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e-screens
