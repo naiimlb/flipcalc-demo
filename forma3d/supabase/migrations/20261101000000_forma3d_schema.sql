@@ -361,3 +361,15 @@ create policy "logs_select_admin" on public.app_logs for select to authenticated
 create policy "logs_delete_admin" on public.app_logs for delete to authenticated
   using ((select public.is_admin()));
 grant select, delete on public.app_logs to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 7. Droits explicites du serveur (clé secrète / service_role)
+--    Selon l'âge du projet, les droits par défaut du schéma public varient :
+--    on les pose explicitement pour ne pas en dépendre.
+-- ---------------------------------------------------------------------
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.profiles, public.app_settings, public.app_secrets,
+  public.design_requests, public.request_debug, public.usage_events, public.app_logs to service_role;
+grant usage, select on all sequences in schema public to service_role;
+grant execute on function public.setup_required() to service_role;
+grant execute on function public.is_admin() to service_role;
