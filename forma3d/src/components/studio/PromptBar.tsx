@@ -80,6 +80,9 @@ export function PromptBar({
     onSubmit(text, image);
     setPrompt("");
     setImage(null);
+    // La barre se referme : sinon la liste de suggestions masquerait le projet en cours de génération.
+    setFocused(false);
+    area.current?.blur();
   };
 
   return (
