@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Remplacées par les couleurs choisies dans /admin/apparence (layout racine). */
+  --brand-from: 91 110 225;
+  --brand-to: 123 92 230;
+  --brand-accent: 91 110 225;
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  @apply bg-brand-from font-sans text-ink antialiased;
+  background-image: linear-gradient(135deg, rgb(var(--brand-from)) 0%, rgb(var(--brand-to)) 100%);
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: rgb(var(--brand-accent) / 0.25);
+}
+
+@layer components {
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none;
+  }
+  .panel {
+    @apply rounded-2xl border border-line/70 bg-white shadow-soft;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition
+      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-dark {
+    @apply btn bg-ink text-white hover:bg-ink-soft;
+  }
+  .btn-accent {
+    @apply btn bg-brand-accent text-white hover:brightness-110;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-white text-ink hover:border-brand-accent/40 hover:text-brand-accent;
+  }
+  .btn-outline-accent {
+    @apply btn border-[1.5px] border-brand-accent/70 bg-white text-brand-accent hover:bg-brand-accent/5;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition
+      placeholder:text-ink-mute focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-mute;
+  }
+  .icon-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-soft transition
+      hover:border-brand-accent/40 hover:text-brand-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-accent;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(17 17 20 / 0.15) transparent;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Sphères « cellulaires » translucides de l'arrière-plan. */
+.cell-sphere {
+  position: absolute;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.6), transparent 34%),
+    radial-gradient(circle at 72% 78%, rgba(255, 112, 196, 0.75), transparent 58%),
+    radial-gradient(circle at 50% 50%, #c39bff 0%, #9b78f4 42%, #7a64e6 68%, #5a4fd0 100%);
+  box-shadow:
+    inset -18px -26px 60px rgba(58, 30, 140, 0.55),
+    inset 18px 18px 46px rgba(255, 255, 255, 0.28),
+    0 40px 90px -20px rgba(70, 30, 170, 0.45);
+  overflow: hidden;
+}
+.cell-sphere::before,
+.cell-sphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.cell-sphere::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0 28%, rgba(255, 255, 255, 0) 31%) 0 0 / 9% 9%;
+  mix-blend-mode: overlay;
+  -webkit-mask-image: radial-gradient(circle at 42% 40%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(circle at 42% 40%, #000 30%, transparent 75%);
+  opacity: 0.85;
+}
+.cell-sphere::after {
+  background: radial-gradient(circle, rgba(255, 140, 210, 0.6) 0 30%, transparent 34%) 4% 4% / 13% 13%;
+  mix-blend-mode: soft-light;
+  -webkit-mask-image: radial-gradient(circle at 60% 70%, #000 25%, transparent 70%);
+  mask-image: radial-gradient(circle at 60% 70%, #000 25%, transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

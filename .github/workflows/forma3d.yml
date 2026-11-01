@@ -1,0 +1,41 @@
+name: Forma3D
+
+on:
+  push:
+    paths:
+      - "forma3d/**"
+      - ".github/workflows/forma3d.yml"
+  pull_request:
+    paths:
+      - "forma3d/**"
+      - ".github/workflows/forma3d.yml"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forma3d
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm ls next react three @react-three/fiber @react-three/drei @anthropic-ai/sdk @supabase/ssr --depth=0
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+      # Sans variables Supabase, l'app démarre en mode démo : 1 demande → 1 modèle 3D.
+      - name: Test de fumée (mode démo)
+        run: |
+          npm start -- -p 3100 > /tmp/forma3d.log 2>&1 &
+          node scripts/smoke.mjs http://localhost:3100 || (cat /tmp/forma3d.log; exit 1)

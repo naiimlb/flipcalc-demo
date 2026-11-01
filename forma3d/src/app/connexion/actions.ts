@@ -1,0 +1,61 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { authErrorMessage } from "@/lib/auth-errors";
+import { siteOrigin } from "@/lib/origin";
+import { getPublicSettings } from "@/lib/settings.server";
+import { getServerSupabase } from "@/lib/supabase/server";
+
+export interface AuthState {
+  error?: string;
+  info?: string;
+}
+
+const Credentials = z.object({
+  email: z.string().trim().toLowerCase().email("Adresse email invalide.").max(254),
+  password: z.string().min(8, "8 caractères minimum.").max(72, "72 caractères maximum."),
+});
+
+function safeNext(value: FormDataEntryValue | null): string {
+  const next = typeof value === "string" ? value : "/";
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
+export async function signIn(_prev: AuthState, form: FormData): Promise<AuthState> {
+  const parsed = Credentials.safeParse({ email: form.get("email"), password: form.get("password") });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  const supabase = await getServerSupabase();
+  if (!supabase) return { error: "Supabase n'est pas configuré (mode démo)." };
+  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  if (error) return { error: authErrorMessage(error.message) };
+  redirect(safeNext(form.get("next")));
+}
+
+export async function signUp(_prev: AuthState, form: FormData): Promise<AuthState> {
+  const parsed = Credentials.extend({
+    displayName: z.string().trim().max(80).optional(),
+  }).safeParse({
+    email: form.get("email"),
+    password: form.get("password"),
+    displayName: form.get("displayName") || undefined,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+
+  const { features } = await getPublicSettings();
+  if (!features.signupsOpen) return { error: "Les inscriptions sont fermées pour le moment." };
+
+  const supabase = await getServerSupabase();
+  if (!supabase) return { error: "Supabase n'est pas configuré (mode démo)." };
+  const { data, error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: {
+      emailRedirectTo: `${await siteOrigin()}/auth/callback`,
+      data: parsed.data.displayName ? { display_name: parsed.data.displayName } : undefined,
+    },
+  });
+  if (error) return { error: authErrorMessage(error.message) };
+  if (data.session) redirect("/");
+  return { info: "Compte créé : cliquez sur le lien reçu par email pour l'activer." };
+}
