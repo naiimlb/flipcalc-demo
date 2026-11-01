@@ -84,7 +84,7 @@ jobs:
       - run: npm run build
       - name: Identifiants de test (mots de passe masqués)
         run: |
-          mkdir -p /tmp/req "$RUNNER_TEMP/e2e" && cd /tmp/req
+          mkdir -p /tmp/req "$RUNNER_TEMP/e2e"
           node -e '
             const crypto = require("crypto"), bcrypt = require("bcryptjs"), fs = require("fs");
             const run = process.env.GITHUB_RUN_ID;
@@ -97,8 +97,9 @@ jobs:
               return { name, email, hash: bcrypt.hashSync(password, 10) };
             });
             fs.appendFileSync(process.env.GITHUB_ENV, env.join("\n") + "\n");
-            fs.writeFileSync("request.json", JSON.stringify({ run, accounts }) + "\n");
+            fs.writeFileSync("/tmp/req/request.json", JSON.stringify({ run, accounts }) + "\n");
           '
+          cd /tmp/req
           git init -q && git checkout -q -b claude/forma3d-e2e
           git add request.json
           git -c user.name=github-actions -c user.email=actions@github.com commit -qm "E2E Forma3D : comptes de test (run $GITHUB_RUN_ID)"
@@ -128,6 +129,7 @@ jobs:
         if: always()
         run: |
           cd "$RUNNER_TEMP/e2e" 2>/dev/null || exit 0
+          [ -n "$(ls -A .)" ] || exit 0
           git init -q && git checkout -q -b claude/forma3d-e2e-screens
           git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures E2E Forma3D (run $GITHUB_RUN_ID)"
           git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e-screens
