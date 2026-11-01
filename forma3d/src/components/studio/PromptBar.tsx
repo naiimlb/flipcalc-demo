@@ -112,7 +112,7 @@ export function PromptBar({
               submit();
             }
           }}
-          placeholder="Décrivez un problème ou un objet… ex. : mes câbles tombent derrière le bureau"
+          placeholder="Décrivez un problème ou un objet…"
           className="min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-6 outline-none placeholder:text-ink-mute"
         />
         {image && (

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/AuthShell";
 import { getPublicSettings } from "@/lib/settings.server";
 import { isDemoMode } from "@/lib/supabase/env";
-import { getServerSupabase } from "@/lib/supabase/server";
 import { getAuthProviders } from "@/lib/auth-providers";
 import { AuthForm } from "./AuthForm";
 
@@ -16,9 +15,6 @@ export default async function LoginPage({
   searchParams: Promise<{ mode?: string; next?: string; erreur?: string }>;
 }) {
   if (isDemoMode()) redirect("/");
-  const supabase = await getServerSupabase();
-  const { data: setupRequired } = (await supabase?.rpc("setup_required")) ?? { data: null };
-  if (setupRequired === true) redirect("/setup");
 
   const [{ site, features }, providers] = await Promise.all([getPublicSettings(), getAuthProviders()]);
   const params = await searchParams;

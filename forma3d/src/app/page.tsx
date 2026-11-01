@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Backdrop } from "@/components/landing/Backdrop";
 import { Studio } from "@/components/studio/Studio";
@@ -6,7 +5,7 @@ import type { StudioViewer } from "@/components/studio/types";
 import { REQUEST_COLUMNS, sampleRequests, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getPublicSettings } from "@/lib/settings.server";
 import { isDemoMode } from "@/lib/supabase/env";
-import { getServerSupabase, getSession } from "@/lib/supabase/server";
+import { getSession } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +18,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   let items: RequestItem[] = [];
 
   if (!demoMode) {
-    // Premier lancement : aucun administrateur → installation.
-    const supabase = await getServerSupabase();
-    const { data: setupRequired } = (await supabase?.rpc("setup_required")) ?? { data: null };
-    if (setupRequired === true) redirect("/setup");
-
     const session = await getSession();
     if (session) {
       viewer = {
