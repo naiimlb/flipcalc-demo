@@ -40,6 +40,8 @@ async function login(page) {
   await Promise.all([page.waitForURL((u) => !u.pathname.startsWith("/connexion"), { timeout: 20000 }), page.getByRole("button", { name: "Se connecter" }).click()]);
 }
 
+let mainPage = null;
+let stage = "début";
 try {
   // 0. Sécurité : sans session, l'API Supabase ne renvoie aucune donnée privée.
   for (const table of ["design_requests", "profiles", "folders", "request_debug", "app_logs"]) {
@@ -49,6 +51,7 @@ try {
   }
 
   const { context, page } = await newPage("appareil-1");
+  mainPage = page;
 
   // 1. Essai sans compte.
   await page.goto(base, { waitUntil: "networkidle" });
@@ -69,6 +72,7 @@ try {
   check(true, "Connexion : l'essai invité est ajouté au compte");
   await shot(page, "02-connecte");
 
+  stage = "génération";
   // 3. Génération sauvegardée + modèle 3D dans Storage.
   await page.locator("#prompt").fill("Une solution pour ranger mes câbles de charge");
   await page.keyboard.press("Enter");
@@ -81,6 +85,7 @@ try {
   await page.waitForTimeout(1200);
   await shot(page, "03-generation");
 
+  stage = "Mon espace";
   // 4. Mon espace.
   await page.goto(`${base}/espace`, { waitUntil: "networkidle" });
   const rows = page.locator("main li.panel");
@@ -122,12 +127,14 @@ try {
   check(true, "Paramètres : nom et unités");
   await shot(page, "06-parametres");
 
+  stage = "export";
   // 5. Export de toutes les données.
   const exported = await (await page.request.get(`${base}/api/account/export`)).json();
   check(exported.requests?.length >= 3 && exported.folders?.length >= 1, `Export : ${exported.requests?.length} demandes, ${exported.folders?.length} dossier(s)`);
   check(exported.profile?.units === "cm" && exported.profile?.display_name === "Testeur E2E", "Export : profil à jour");
   check(exported.requests.some((r) => r.model_download_url), "Export : lien de téléchargement du modèle 3D");
 
+  stage = "autre appareil";
   // 6. Autre appareil : mêmes données après connexion.
   const second = await newPage("appareil-2");
   await login(second.page);
@@ -136,6 +143,7 @@ try {
   check(rows2 === exported.requests.length, `Autre appareil : ${rows2} demandes retrouvées`);
   await second.context.close();
 
+  stage = "suppression";
   // 7. Suppression du compte.
   await page.getByRole("button", { name: "Mes données" }).click();
   await page.getByLabel("Tapez SUPPRIMER pour confirmer").fill("SUPPRIMER");
@@ -149,7 +157,8 @@ try {
   check(true, "Après suppression : connexion impossible");
   await context.close();
 } catch (err) {
-  check(false, `Parcours interrompu : ${err.message.split("\n")[0]}`);
+  check(false, `Parcours interrompu à l'étape « ${stage} » : ${err.message.split("\n").slice(0, 4).join(" | ")}`);
+  if (mainPage) await mainPage.screenshot({ path: join(out, "99-echec.png") }).catch(() => {});
 }
 
 await browser.close();
