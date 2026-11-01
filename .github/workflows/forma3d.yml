@@ -63,7 +63,8 @@ jobs:
   # attend (15 min max) que la connexion fonctionne. Le test supprime ensuite le compte lui-même.
   e2e-supabase:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+    # Un message de commit contenant [skip e2e] saute ce test (nécessite la création de comptes de test à la main).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d' && !contains(github.event.head_commit.message, '[skip e2e]')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:

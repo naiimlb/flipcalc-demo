@@ -185,7 +185,7 @@ function Notice({
     body = "Créez votre première demande : elle apparaîtra ici et dans l'historique.";
   } else if (item?.provider === "demo") {
     title = "Modèle d'exemple";
-    body = "L'IA n'est pas encore configurée : le modèle d'exemple le plus proche a été utilisé.";
+    body = "L'IA n'est pas disponible pour le moment (clé ou crédit manquant) : le modèle d'exemple le plus proche de votre demande a été utilisé.";
   }
   if (!title) return null;
 

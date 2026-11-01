@@ -42,6 +42,8 @@ export type ClaudeResult =
       usage: ClaudeUsage | null;
       validationErrors?: string[];
       servedBy: string | null;
+      /** Service indisponible pour une raison durable (crédit épuisé, clé refusée, modèle introuvable) : repli possible. */
+      unavailable?: boolean;
     };
 
 function userContent(input: ClaudeInput): Anthropic.Beta.BetaContentBlockParam[] {
@@ -89,7 +91,8 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
     });
     message = await stream.finalMessage();
   } catch (err) {
-    return { ok: false, ...describeApiError(err), raw: "", stopReason: null, usage: null, servedBy: null };
+    const described = describeApiError(err);
+    return { ok: false, ...described, raw: "", stopReason: null, usage: null, servedBy: null };
   }
 
   const raw = message.content
@@ -145,7 +148,24 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
   return { ok: true, design: validated.design, ...base };
 }
 
-function describeApiError(err: unknown): { error: string; detail: string } {
+/** Erreurs durables côté compte : inutile de réessayer, le repli sur les exemples est préférable. */
+export function isProviderUnavailable(err: unknown): boolean {
+  if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError || err instanceof Anthropic.NotFoundError) {
+    return true;
+  }
+  if (err instanceof Anthropic.APIError) {
+    return err.status === 402 || /credit|billing|balance|quota/i.test(err.message ?? "");
+  }
+  return false;
+}
+
+function describeApiError(err: unknown): { error: string; detail: string; unavailable: boolean } {
+  const unavailable = isProviderUnavailable(err);
+  const base = describeApiErrorText(err);
+  return { ...base, unavailable };
+}
+
+function describeApiErrorText(err: unknown): { error: string; detail: string } {
   if (err instanceof Anthropic.AuthenticationError) {
     return { error: "Clé d'API Anthropic invalide : prévenez l'administrateur.", detail: err.message };
   }

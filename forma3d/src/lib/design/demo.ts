@@ -15,13 +15,13 @@ function normalize(s: string) {
   return s.toLocaleLowerCase("fr-FR");
 }
 
-export function demoDesign(prompt: string): Design {
+export function demoDesign(
+  prompt: string,
+  note = "Mode démonstration : modèle d'exemple le plus proche de la demande (l'IA n'a pas été utilisée).",
+): Design {
   const text = normalize(prompt);
   const match = RULES.find((r) => r.keywords.some((k) => text.includes(k)))?.design ?? DESK_ORGANIZER;
   const design: Design = structuredClone(match);
-  design.analysis.assumptions = [
-    "Mode démonstration : modèle d'exemple le plus proche de la demande (aucune IA n'a été appelée).",
-    ...design.analysis.assumptions,
-  ];
+  design.analysis.assumptions = [note, ...design.analysis.assumptions];
   return design;
 }

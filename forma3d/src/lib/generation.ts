@@ -81,6 +81,24 @@ export async function generateDesign(params: {
     image: params.image ?? null,
   });
   const durationMs = Date.now() - started;
+  if (!result.ok && result.unavailable && params.allowDemo) {
+    // Crédit épuisé, clé refusée… : on sert le modèle d'exemple le plus proche plutôt qu'une erreur.
+    console.warn(`IA indisponible, repli sur les exemples : ${result.detail}`);
+    const design = demoDesign(params.prompt, "L'IA est momentanément indisponible (clé ou crédit) : modèle d'exemple le plus proche de la demande.");
+    return {
+      ok: true,
+      design,
+      provider: "demo",
+      model: null,
+      error: null,
+      detail: result.detail,
+      raw: JSON.stringify(design, null, 2),
+      stopReason: null,
+      usage: null,
+      validationErrors: null,
+      durationMs,
+    };
+  }
   if (result.ok) {
     return {
       ok: true,
