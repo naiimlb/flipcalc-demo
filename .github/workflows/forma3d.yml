@@ -73,6 +73,8 @@ jobs:
         working-directory: ${{ runner.temp }}/screens
         run: |
           git init -q && git checkout -q -b claude/forma3d-screens
+          # Branche annexe : désactive le déploiement Vercel (chaque tentative compte dans le quota de 100 par jour).
+          mkdir -p forma3d && echo '{"git":{"deploymentEnabled":false}}' > forma3d/vercel.json
           git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures Forma3D (run $GITHUB_RUN_ID)"
           git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-screens
 
@@ -121,7 +123,9 @@ jobs:
           '
           cd /tmp/req
           git init -q && git checkout -q -b claude/forma3d-e2e
-          git add request.json
+          # Branche annexe : désactive le déploiement Vercel (chaque tentative compte dans le quota de 100 par jour).
+          mkdir -p forma3d && echo '{"git":{"deploymentEnabled":false}}' > forma3d/vercel.json
+          git add request.json forma3d/vercel.json
           git -c user.name=github-actions -c user.email=actions@github.com commit -qm "E2E Forma3D : comptes de test (run $GITHUB_RUN_ID)"
           git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e
       - name: Attente de la création des comptes (15 min max)
@@ -151,5 +155,7 @@ jobs:
           cd "$RUNNER_TEMP/e2e" 2>/dev/null || exit 0
           [ -n "$(ls -A .)" ] || exit 0
           git init -q && git checkout -q -b claude/forma3d-e2e-screens
+          # Branche annexe : désactive le déploiement Vercel (chaque tentative compte dans le quota de 100 par jour).
+          mkdir -p forma3d && echo '{"git":{"deploymentEnabled":false}}' > forma3d/vercel.json
           git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures E2E Forma3D (run $GITHUB_RUN_ID)"
           git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e-screens
