@@ -6,6 +6,10 @@
 -- Tant que ce script n'est pas appliqué, le site fonctionne sans crédits (aucune limite de ce type).
 -- =====================================================================
 
+-- La table des réglages n'accepte que certaines clés : on ajoute « credits ».
+alter table public.app_settings drop constraint if exists app_settings_key_check;
+alter table public.app_settings add constraint app_settings_key_check check (key in ('site', 'features', 'ai', 'credits'));
+
 -- Réglages (coûts et allocation mensuelle) : lisibles par tous (ils sont affichés), modifiables par l'admin.
 alter policy "settings_select_public" on public.app_settings
   using (key in ('site', 'features', 'ai', 'credits') or (select public.is_admin()));
