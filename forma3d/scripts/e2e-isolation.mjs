@@ -114,7 +114,13 @@ try {
   check(promote.status >= 400 && roleNow.json?.[0]?.role === "user", "B ne peut pas se promouvoir administrateur via l'API");
   check((await rpc("set_user_role", { p_user_id: B.id, p_role: "admin" }, B.token)).status >= 400, "B ne peut pas appeler set_user_role");
   check((await rpc("admin_stats", {}, B.token)).status >= 400, "B ne peut pas lire les statistiques admin");
-  check((await rpc("claim_first_admin", { p_token: "mauvais-jeton" }, B.token)).status >= 400, "B ne devient pas admin avec un faux jeton");
+  // Un administrateur existe déjà : la fonction répond « false » (ou refuse) ; dans tous les cas B reste simple utilisateur.
+  const claim = await rpc("claim_first_admin", { p_token: "mauvais-jeton" }, B.token);
+  const roleAfterClaim = await rest(`profiles?id=eq.${B.id}&select=role`, { token: B.token });
+  check(
+    (claim.status >= 400 || claim.json === false) && roleAfterClaim.json?.[0]?.role === "user",
+    "B ne devient pas admin avec un faux jeton",
+  );
   const secrets = await rest("app_secrets?select=*", { token: B.token });
   check(secrets.status >= 400 || empty(secrets), "B ne peut pas lire les clés d'API");
   check((await rest("settings_inexistants?select=*", { token: B.token })).status >= 400, "Les tables non exposées restent introuvables");
