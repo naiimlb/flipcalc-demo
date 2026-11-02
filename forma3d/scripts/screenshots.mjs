@@ -84,7 +84,7 @@ await session("assistant", { width: 1280, height: 800 }, async (page) => {
   await page.waitForTimeout(400);
   check((await page.locator("#prompt").inputValue()) === "un support", "Assistant : « Modifier ma demande » remet le texte dans la barre");
 
-  await page.keyboard.press("Enter");
+  await page.locator("#prompt").press("Enter");
   await dialog.waitFor({ timeout: 15000 });
   const first = dialog.locator("fieldset").first();
   await first.getByRole("button").first().click();

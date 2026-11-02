@@ -4,6 +4,8 @@ const nextConfig = {
   poweredByHeader: false,
   transpilePackages: ["three"],
   experimental: {
+    // N'embarque que les morceaux réellement utilisés de ces bibliothèques (moteur 3D plus léger).
+    optimizePackageImports: ["@react-three/drei", "three-stdlib", "framer-motion"],
     // Images de référence envoyées par les actions serveur (logo de l'admin).
     serverActions: { bodySizeLimit: "2mb" },
   },

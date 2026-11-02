@@ -81,23 +81,44 @@ export function ViewerPanel({
     const arm = () => {
       if (!cancelled) setArmed(true);
     };
-    if (typeof IntersectionObserver === "undefined") {
-      arm();
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        observer.disconnect();
-        if ("requestIdleCallback" in window) idle = window.requestIdleCallback(arm, { timeout: 1200 });
-        else timer = setTimeout(arm, 150);
-      },
-      { rootMargin: "300px" },
-    );
-    observer.observe(el);
+    // Priorité à l'affichage de la page : le moteur 3D n'est demandé qu'une fois la page chargée, le navigateur au repos
+    // et la zone visible (ou dès que l'utilisateur touche à la page).
+    let visible = typeof IntersectionObserver === "undefined";
+    let loaded = document.readyState === "complete";
+    const schedule = () => {
+      if (!visible || !loaded || cancelled) return;
+      if ("requestIdleCallback" in window) idle = window.requestIdleCallback(arm, { timeout: 1500 });
+      else timer = setTimeout(arm, 200);
+    };
+    const onLoad = () => {
+      loaded = true;
+      schedule();
+    };
+    if (!loaded) window.addEventListener("load", onLoad, { once: true });
+    const observer =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(
+            (entries) => {
+              if (!entries.some((e) => e.isIntersecting)) return;
+              observer?.disconnect();
+              visible = true;
+              schedule();
+            },
+            { rootMargin: "300px" },
+          );
+    observer?.observe(el);
+    // Un clic, un toucher ou une touche : l'utilisateur est là, on charge tout de suite.
+    const wake = () => arm();
+    window.addEventListener("pointerdown", wake, { once: true, passive: true });
+    window.addEventListener("keydown", wake, { once: true });
+    schedule();
     return () => {
       cancelled = true;
-      observer.disconnect();
+      observer?.disconnect();
+      window.removeEventListener("load", onLoad);
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
       if (idle !== undefined && "cancelIdleCallback" in window) window.cancelIdleCallback(idle);
       if (timer) clearTimeout(timer);
     };
