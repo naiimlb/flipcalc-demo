@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { deleteRequest } from "@/app/actions";
+import type { Answer, ClarifyQuestion } from "@/lib/clarify-types";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { DEFAULT_VIEWER_SETTINGS, type ViewerSettings } from "../viewer/settings";
 import { IconChevronLeft, IconChevronRight } from "../icons";
 import { Portal } from "../Portal";
 import { AuthPrompt } from "./AuthPrompt";
+import { ClarifyPanel } from "./ClarifyPanel";
 import { readPending, savePending } from "./draft";
 import { readGuestItems, saveGuestItems } from "./guest";
 import { HistoryTab } from "./HistoryTab";
@@ -17,6 +19,7 @@ import { JsonDrawer } from "./JsonDrawer";
 import { LeftColumn } from "./LeftColumn";
 import { PromptBar } from "./PromptBar";
 import { RightColumn } from "./RightColumn";
+import { readEventStream } from "./stream";
 import { SettingsTab } from "./SettingsTab";
 import { Notifications, SearchBox, TABS } from "./TopBar";
 import type { StudioFeatures, StudioTab, StudioViewer } from "./types";
@@ -62,6 +65,11 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
   const [restore, setRestore] = useState<{ prompt: string; image: ImagePayload | null } | null>(null);
   const [favoriteMaterials, setFavoriteMaterials] = useState<string[]>(viewer?.favoriteMaterials ?? []);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Assistant de questions : la génération attend la réponse de l'utilisateur (ou « Passer »).
+  const [clarify, setClarify] = useState<{ prompt: string; questions: ClarifyQuestion[]; resolve(answers: Answer[] | null): void } | null>(null);
+  // Projet dont les panneaux viennent d'être remplis : ils apparaissent un par un.
+  const [revealId, setRevealId] = useState<string | null>(null);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const busy = userItems.some((i) => i.id.startsWith(TEMP_PREFIX));
   useEffect(() => {
@@ -112,7 +120,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (jsonOpen || authPrompt || tab !== "overview") return;
+      if (jsonOpen || authPrompt || clarify || tab !== "overview") return;
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (e.key === "ArrowLeft") step(-1);
@@ -120,7 +128,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [jsonOpen, authPrompt, tab, step]);
+  }, [jsonOpen, authPrompt, clarify, tab, step]);
 
   /* ---------------- Essai sans compte → import après inscription ---------------- */
 
@@ -213,6 +221,26 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
   /* ---------------- Création d'une demande ---------------- */
 
+  const askQuestions = useCallback(async (prompt: string, hasImage: boolean): Promise<ClarifyQuestion[]> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25_000);
+    try {
+      const res = await fetch("/api/clarify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, hasImage }),
+        signal: controller.signal,
+      });
+      if (!res.ok) return [];
+      const body = (await res.json()) as { needed?: boolean; questions?: ClarifyQuestion[] };
+      return body.needed && Array.isArray(body.questions) ? body.questions.slice(0, 3) : [];
+    } catch {
+      return []; // jamais bloquant : la demande part telle quelle
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
+
   const create = useCallback(
     async (prompt: string, image: ImagePayload | null) => {
       const tempId = `${TEMP_PREFIX}${Date.now()}`;
@@ -233,6 +261,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         isFavorite: false,
         modelPath: null,
         source: "generated",
+        stream: { stage: "checking", done: [] },
       };
       const previousId = selectedId;
       savePending({ prompt, image });
@@ -241,22 +270,56 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       setTab("overview");
 
       try {
+        // 1. Assistant de questions (uniquement si la demande est floue).
+        let answers: Answer[] = [];
+        const questions = features.newRequests ? await askQuestions(prompt, Boolean(image)) : [];
+        if (questions.length) {
+          const chosen = await new Promise<Answer[] | null>((resolve) => setClarify({ prompt, questions, resolve }));
+          setClarify(null);
+          if (chosen === null) {
+            // « Modifier ma demande » : on remet le texte dans la barre.
+            setUserItems((prev) => prev.filter((i) => i.id !== tempId));
+            setSelectedId(previousId);
+            savePending(null);
+            setRestore({ prompt, image });
+            return;
+          }
+          answers = chosen;
+        }
+        patchItem(tempId, { stream: { stage: "thinking", done: [] } });
+
+        // 2. Génération, diffusée en continu (l'analyse s'écrit à l'écran pendant que l'IA travaille).
         const res = await fetch("/api/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, image: image ? { mediaType: image.mediaType, data: image.data } : null }),
+          headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+          body: JSON.stringify({ prompt, answers, image: image ? { mediaType: image.mediaType, data: image.data } : null }),
         });
-        const body = (await res.json().catch(() => ({}))) as { request?: RequestItem; raw?: string; error?: string; code?: string };
-        if (!res.ok || !body.request) {
+        type Body = { request?: RequestItem; raw?: string; error?: string; code?: string; cached?: boolean };
+        let status = res.status;
+        let body: Body = {};
+        if (res.headers.get("content-type")?.includes("application/x-ndjson") && res.body) {
+          const final = await readEventStream(res.body, (event) => {
+            if (event.t === "progress" && event.progress) {
+              patchItem(tempId, { stream: event.progress, title: event.progress.title ?? null });
+            }
+          });
+          if (!final) throw new Error("flux interrompu");
+          status = final.status ?? 500;
+          body = (final.body ?? {}) as Body;
+        } else {
+          body = (await res.json().catch(() => ({}))) as Body;
+        }
+
+        if (status < 200 || status >= 300 || !body.request) {
           setUserItems((prev) => prev.filter((i) => i.id !== tempId));
           setSelectedId(previousId);
           savePending(null);
-          if (res.status === 401 || body.code === "guest_quota" || body.code === "guest_unavailable") {
+          if (status === 401 || body.code === "guest_quota" || body.code === "guest_unavailable") {
             setRestore({ prompt, image });
             setAuthPrompt(body.error ?? "Créez un compte gratuit pour lancer vos demandes et les retrouver partout.");
             return;
           }
-          if (res.status === 504) {
+          if (status === 504) {
             showToast("La génération prend plus de temps que prévu : elle apparaîtra dans l'historique.");
             void refreshFromDb();
             return;
@@ -267,6 +330,11 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         }
         savePending(null);
         const item = body.request;
+        const reveal = (id: string) => {
+          setRevealId(id);
+          if (revealTimer.current) clearTimeout(revealTimer.current);
+          revealTimer.current = setTimeout(() => setRevealId(null), 4000);
+        };
         if (item.guest) {
           // Essai invité : affiché et gardé dans ce navigateur jusqu'à l'inscription.
           setUserItems((prev) => prev.filter((i) => i.id !== tempId));
@@ -276,6 +344,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
             return next;
           });
           setSelectedId(item.id);
+          reveal(item.id);
           if (item.status === "ready") {
             setTimeout(
               () => setAuthPrompt("Votre conception est prête. Créez un compte pour la sauvegarder : elle sera ajoutée à votre espace."),
@@ -287,15 +356,23 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         setUserItems((prev) => prev.map((i) => (i.id === tempId ? item : i)));
         setSelectedId((current) => (current === tempId ? item.id : current));
         if (body.raw) setRawById((prev) => ({ ...prev, [item.id]: body.raw! }));
-        showToast(item.status === "ready" ? `Conception prête : ${item.title ?? "nouveau modèle"}` : item.error ?? "Échec de la génération.");
+        reveal(item.id);
+        showToast(
+          item.status === "ready"
+            ? body.cached
+              ? `Résultat instantané : ${item.title ?? "conception"} (demande déjà traitée)`
+              : `Conception prête : ${item.title ?? "nouveau modèle"}`
+            : item.error ?? "Échec de la génération.",
+        );
       } catch {
+        setClarify(null);
         setUserItems((prev) =>
-          prev.map((i) => (i.id === tempId ? { ...i, status: "error", error: "Connexion interrompue pendant la génération." } : i)),
+          prev.map((i) => (i.id === tempId ? { ...i, status: "error", error: "Connexion interrompue pendant la génération.", stream: null } : i)),
         );
         void refreshFromDb();
       }
     },
-    [selectedId, showToast, refreshFromDb],
+    [selectedId, features.newRequests, askQuestions, patchItem, showToast, refreshFromDb],
   );
 
   const remove = useCallback(
@@ -442,6 +519,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 onSignupPrompt={() => setAuthPrompt("Créez un compte pour sauvegarder ce résultat dans votre espace.")}
                 demoMode={demoMode}
                 signedIn={Boolean(viewer)}
+                reveal={revealId !== null && revealId === selected?.id}
               />
             </div>
             <div className="order-1 min-h-0 lg:order-2 lg:h-full">
@@ -463,6 +541,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 unit={prefs.unit}
                 favoriteMaterials={favoriteMaterials}
                 onToggleFavoriteMaterial={toggleFavoriteMaterial}
+                reveal={revealId !== null && revealId === selected?.id}
               />
             </div>
           </div>
@@ -487,6 +566,14 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
       <JsonDrawer item={jsonOpen ? selected : null} localRaw={selected ? rawById[selected.id] ?? null : null} onClose={() => setJsonOpen(false)} />
       <AuthPrompt message={authPrompt} onClose={() => setAuthPrompt(null)} />
+      {clarify && (
+        <ClarifyPanel
+          prompt={clarify.prompt}
+          questions={clarify.questions}
+          onSubmit={(answers) => clarify.resolve(answers)}
+          onCancel={() => clarify.resolve(null)}
+        />
+      )}
 
       <Portal>
         <div className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">

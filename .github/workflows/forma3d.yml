@@ -44,13 +44,32 @@ jobs:
           node scripts/smoke.mjs http://localhost:3100 || (cat /tmp/forma3d.log; exit 1)
       # Captures d'écran (mode démo) publiées sur la branche claude/forma3d-screens.
       - name: Captures d'écran
-        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
           node scripts/screenshots.mjs http://localhost:3100 "$RUNNER_TEMP/screens"
+      # Performance mobile (Lighthouse, informatif : le score est publié avec les captures, il ne bloque pas la CI).
+      - name: Lighthouse (mobile)
+        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/screens"
+          npx --yes lighthouse@12.8.2 http://localhost:3100 \
+            --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile \
+            --chrome-flags="--headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader" \
+            --output=json --output=html --output-path="$RUNNER_TEMP/screens/lighthouse" --quiet
+          node -e '
+            const r = require(process.env.RUNNER_TEMP + "/screens/lighthouse.report.json");
+            const pct = (k) => Math.round(r.categories[k].score * 100);
+            const a = r.audits;
+            const line = `Lighthouse mobile — performance ${pct("performance")}, accessibilité ${pct("accessibility")}, bonnes pratiques ${pct("best-practices")}, SEO ${pct("seo")} | FCP ${a["first-contentful-paint"].displayValue} · LCP ${a["largest-contentful-paint"].displayValue} · TBT ${a["total-blocking-time"].displayValue} · CLS ${a["cumulative-layout-shift"].displayValue} · JS ${a["total-byte-weight"].displayValue}`;
+            console.log(line);
+            require("fs").writeFileSync(process.env.RUNNER_TEMP + "/screens/lighthouse.txt", line + "\n");
+            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, line + "\n");
+          '
       - name: Publication des captures
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d'
+        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
         working-directory: ${{ runner.temp }}/screens
         run: |
           git init -q && git checkout -q -b claude/forma3d-screens
@@ -64,7 +83,7 @@ jobs:
   e2e-supabase:
     needs: check
     # Un message de commit contenant [skip e2e] saute ce test (nécessite la création de comptes de test à la main).
-    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d' && !contains(github.event.head_commit.message, '[skip e2e]')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1') && !contains(github.event.head_commit.message, '[skip e2e]')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:

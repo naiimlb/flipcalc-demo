@@ -13,6 +13,10 @@ export interface ClaudeInput {
   maxTokens: number;
   prompt: string;
   image?: { mediaType: ImageMediaType; data: string } | null;
+  /** Reçoit le texte cumulé de la réponse à mesure qu'elle s'écrit (affichage progressif). */
+  onText?: (snapshot: string) => void;
+  /** Appelé quand une seconde tentative repart de zéro. */
+  onRestart?: () => void;
 }
 
 export interface ClaudeUsage {
@@ -97,6 +101,16 @@ async function attemptOnce(client: Anthropic, input: ClaudeInput, hint: string |
       ],
       messages: [{ role: "user", content }],
     });
+    if (input.onText && typeof stream.on === "function") {
+      const onText = input.onText;
+      stream.on("text", (_delta: string, snapshot: string) => {
+        try {
+          onText(snapshot);
+        } catch {
+          // l'affichage progressif ne doit jamais faire échouer la génération
+        }
+      });
+    }
     message = await stream.finalMessage();
   } catch (err) {
     const described = describeApiError(err);
@@ -169,6 +183,7 @@ export async function generateDesignWithClaude(input: ClaudeInput): Promise<Clau
   if (first.ok || !first.retryable) return first;
 
   const problems = first.validationErrors?.join(" ; ") ?? first.detail;
+  input.onRestart?.();
   const second = await attemptOnce(
     client,
     input,

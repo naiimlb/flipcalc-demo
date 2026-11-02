@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#5b6ee1" />
+    <title>Hors ligne · Forma3D</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px;
+        font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; color: #fff;
+        background: linear-gradient(135deg, #5b6ee1, #7b5ce6);
+      }
+      main { max-width: 420px; text-align: center; }
+      .card { background: #f6f6fb; color: #1b1c27; border-radius: 28px; padding: 28px 24px; box-shadow: 0 20px 50px rgba(20, 20, 70, .35); }
+      svg { width: 56px; height: 56px; }
+      h1 { margin: 12px 0 6px; font-size: 22px; letter-spacing: -.02em; }
+      p { margin: 0 0 18px; font-size: 14px; line-height: 1.5; color: #55566b; }
+      button { appearance: none; border: 0; border-radius: 999px; padding: 12px 22px; font: inherit; font-weight: 700; color: #fff; background: #1b1c27; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b6ee1" /><stop offset="1" stop-color="#c05fe0" /></linearGradient></defs>
+          <path d="M16 2.5 28 9.25v13.5L16 29.5 4 22.75V9.25Z" fill="url(#g)" />
+          <path d="M16 2.5 28 9.25 16 16 4 9.25Z" fill="#fff" fill-opacity=".35" />
+        </svg>
+        <h1>Vous êtes hors ligne</h1>
+        <p>Forma3D a besoin d'Internet pour concevoir vos solutions. Vos projets enregistrés vous attendent : reconnectez-vous, puis réessayez.</p>
+        <button type="button" onclick="location.reload()">Réessayer</button>
+      </div>
+    </main>
+  </body>
+</html>

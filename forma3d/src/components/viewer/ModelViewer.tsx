@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, type Ref } from "react";
+import { Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Edges, Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { ContactShadows, Edges, Environment, Grid, Lightformer, OrbitControls, PerformanceMonitor, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { Design, Part } from "@/lib/design/schema";
@@ -14,6 +14,7 @@ import {
   createPartGeometry,
   partRotation,
 } from "@/lib/three/geometry";
+import { detectQuality, type ViewerQuality } from "./quality";
 import { VIEWER_BACKGROUNDS, type ViewerHandle, type ViewerSettings } from "./settings";
 
 export type { RenderMode, ViewerHandle, ViewerSettings } from "./settings";
@@ -31,21 +32,26 @@ interface ViewerProps {
 }
 
 export default function ModelViewer(props: ViewerProps) {
+  // Niveau de rendu : appareil modeste ou téléphone = « low » ; descend aussi tout seul si l'affichage rame.
+  const [quality, setQuality] = useState<ViewerQuality>(detectQuality);
   return (
     <Canvas
-      dpr={[1, 1.75]}
-      gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
+      dpr={quality === "low" ? [1, 1.25] : [1, 1.75]}
+      // Image fixe quand rien ne bouge (économise la batterie) ; en continu seulement pour la rotation automatique.
+      frameloop={props.settings.autoRotate ? "always" : "demand"}
+      gl={{ preserveDrawingBuffer: true, antialias: quality !== "low", alpha: true, powerPreference: "high-performance" }}
       camera={{ position: [3, 2.4, 3.6], fov: 38, near: 0.01, far: 200 }}
       onPointerMissed={() => props.onFocusChange(null)}
-      className="!touch-none"
+      className="!touch-none select-none"
     >
-      <Scene {...props} />
+      <PerformanceMonitor flipflops={2} onDecline={() => setQuality("low")} />
+      <Scene {...props} quality={quality} />
     </Canvas>
   );
 }
 
-function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }: ViewerProps) {
-  const { camera, gl, scene, size } = useThree();
+function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, quality }: ViewerProps & { quality: ViewerQuality }) {
+  const { camera, gl, scene, size, invalidate } = useThree();
   const controls = useRef<OrbitControlsImpl>(null);
   const explode = useRef(0);
 
@@ -77,7 +83,8 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
       controls.current.maxDistance = distance * 4;
       controls.current.update();
     }
-  }, [camera, size.width, size.height, sphere]);
+    invalidate();
+  }, [camera, size.width, size.height, sphere, invalidate]);
 
   useEffect(() => {
     fit();
@@ -88,9 +95,73 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
       const target = controls.current?.target ?? sphere.center;
       camera.position.sub(target).multiplyScalar(factor).add(target);
       controls.current?.update();
+      invalidate();
     },
-    [camera, sphere],
+    [camera, sphere, invalidate],
   );
+
+  // Double-tap (ou double-clic) : recentre la vue. Ignoré pour un glissement ou un geste à deux doigts (pincement).
+  const fitRef = useRef(fit);
+  useEffect(() => {
+    fitRef.current = fit;
+  }, [fit]);
+  useEffect(() => {
+    const el = gl.domElement;
+    const pointers = new Set<number>();
+    let multi = false;
+    let down: { x: number; y: number; t: number } | null = null;
+    let last: { x: number; y: number; t: number } | null = null;
+    const onDown = (e: PointerEvent) => {
+      pointers.add(e.pointerId);
+      if (pointers.size > 1) multi = true;
+      down = { x: e.clientX, y: e.clientY, t: performance.now() };
+    };
+    const onUp = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      const start = down;
+      if (pointers.size === 0) {
+        const wasMulti = multi;
+        multi = false;
+        down = null;
+        if (!start || wasMulti) {
+          last = null;
+          return;
+        }
+        const now = performance.now();
+        if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 12 || now - start.t > 350) {
+          last = null;
+          return;
+        }
+        if (last && now - last.t < 320 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 40) {
+          last = null;
+          fitRef.current();
+        } else {
+          last = { x: e.clientX, y: e.clientY, t: now };
+        }
+      }
+    };
+    const onCancel = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size === 0) {
+        multi = false;
+        down = null;
+        last = null;
+      }
+    };
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onCancel);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onCancel);
+    };
+  }, [gl]);
+
+  // En mode « image fixe », tout changement de réglage doit déclencher un nouveau rendu.
+  useEffect(() => {
+    invalidate();
+  }, [invalidate, design, settings, focusId, meshUrl, quality]);
 
   useImperativeHandle(
     handleRef,
@@ -107,7 +178,11 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
   );
 
   useFrame((_, delta) => {
-    explode.current = THREE.MathUtils.damp(explode.current, settings.exploded ? 1 : 0, 5, delta);
+    const target = settings.exploded ? 1 : 0;
+    if (explode.current === target) return;
+    explode.current = THREE.MathUtils.damp(explode.current, target, 5, delta);
+    if (Math.abs(explode.current - target) < 0.002) explode.current = target;
+    invalidate(); // l'animation continue jusqu'à l'arrivée, puis le rendu se fige
   });
 
   const real = settings.mode === "real";
@@ -117,7 +192,7 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
       <ambientLight intensity={real ? 0.35 : 0.8} />
       <hemisphereLight args={["#e7e9ff", "#2b2266", real ? 0.55 : 0.3]} />
       <directionalLight position={[4, 6, 5]} intensity={real ? 1.5 : 0.6} />
-      <Environment resolution={64}>
+      <Environment resolution={quality === "low" ? 32 : 64}>
         <Lightformer intensity={2} position={[0, 5, -5]} scale={[10, 5, 1]} color="#ffffff" />
         <Lightformer intensity={1.2} position={[-5, 1, 0]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} color="#c3b5ff" />
         <Lightformer intensity={1.2} position={[5, 1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} color="#a6dcff" />
@@ -140,6 +215,7 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
                 settings={settings}
                 focused={focusId === part.id}
                 dimmed={focusId !== null && focusId !== part.id}
+                detail={quality}
                 onSelect={() => onFocusChange(part.id)}
               />
             ))}
@@ -168,7 +244,10 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
           far={Math.max(sphere.radius * 2, 0.5)}
           blur={2.2}
           opacity={0.45}
-          resolution={512}
+          resolution={quality === "low" ? 256 : 512}
+          // Ombre figée sur appareil modeste (elle n'est recalculée que si la conception change).
+          frames={quality === "low" ? 1 : Infinity}
+          key={`${design?.title ?? "vide"}-${quality}`}
         />
       )}
 
@@ -180,6 +259,12 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef }:
         autoRotate={settings.autoRotate}
         autoRotateSpeed={0.8}
         maxPolarAngle={Math.PI * 0.95}
+        // Tactile : un doigt tourne, deux doigts pincent pour zoomer (et déplacent la vue).
+        touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+        rotateSpeed={0.9}
+        zoomSpeed={0.9}
+        panSpeed={0.8}
+        screenSpacePanning
       />
     </>
   );
@@ -236,12 +321,14 @@ interface PartMeshProps {
   settings: ViewerSettings;
   focused: boolean;
   dimmed: boolean;
+  detail: ViewerQuality;
   onSelect(): void;
 }
 
-function PartMesh({ part, index, offset, explode, settings, focused, dimmed, onSelect }: PartMeshProps) {
+function PartMesh({ part, index, offset, explode, settings, focused, dimmed, detail, onSelect }: PartMeshProps) {
   const group = useRef<THREE.Group>(null);
-  const geometry = useMemo(() => createPartGeometry(part), [part]);
+  // Moins de facettes à l'écran sur appareil modeste (les exports GLB/STL gardent le plein détail).
+  const geometry = useMemo(() => createPartGeometry(part, detail), [part, detail]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   const base = useMemo(() => new THREE.Vector3(part.position.x, part.position.y, part.position.z), [part]);

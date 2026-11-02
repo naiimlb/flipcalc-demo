@@ -5,7 +5,7 @@ import type { RequestItem } from "@/lib/requests";
 import { IconAlert, IconCube, IconMicroscope, IconPin, IconPlus, IconSparkles, IconStar } from "../icons";
 import { RecentCard } from "./RecentCard";
 import { formatDate, formatDuration, formatRelative } from "./format";
-import { BulletList, Field, Panel, StatusChip } from "./ui";
+import { BulletList, Field, Panel, Reveal, StatusChip } from "./ui";
 
 export function LeftColumn({
   item,
@@ -16,6 +16,7 @@ export function LeftColumn({
   onSignupPrompt,
   demoMode,
   signedIn,
+  reveal = false,
 }: {
   item: RequestItem | null;
   items: RequestItem[];
@@ -25,6 +26,8 @@ export function LeftColumn({
   onSignupPrompt(): void;
   demoMode: boolean;
   signedIn: boolean;
+  /** Les panneaux apparaissent l'un après l'autre (conception qui vient d'arriver). */
+  reveal?: boolean;
 }) {
   const canFavorite = Boolean(item && signedIn && !item.sample && !item.guest && !item.id.startsWith("tmp-"));
   const design = item?.design ?? null;
@@ -91,6 +94,7 @@ export function LeftColumn({
       </section>
 
       {/* Analyse */}
+      <Reveal index={0} on={reveal}>
       <Panel icon={<IconMicroscope size={15} />} title="Analyse du problème">
         {design ? (
           <div className="space-y-2">
@@ -113,14 +117,13 @@ export function LeftColumn({
             )}
           </div>
         ) : (
-          <p className="text-xs text-ink-mute">
-            {item?.status === "processing" ? "Analyse en cours…" : "L'analyse apparaîtra ici après la génération."}
-          </p>
+          <LiveAnalysis item={item} />
         )}
         <button type="button" onClick={onNew} className="btn-outline-accent mt-3 w-full !rounded-xl !py-2 !text-xs">
           <IconPlus size={14} /> Nouvelle demande
         </button>
       </Panel>
+      </Reveal>
 
       {/* Alerte contextuelle */}
       <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />
@@ -135,6 +138,42 @@ export function LeftColumn({
       )}
 
       <RecentCard items={items} selectedId={item?.id ?? null} onSelect={onSelect} />
+    </div>
+  );
+}
+
+/** Analyse écrite en direct pendant que l'IA travaille (flux de la réponse), sinon texte d'attente. */
+function LiveAnalysis({ item }: { item: RequestItem | null }) {
+  const analysis = item?.status === "processing" ? item.stream?.analysis : null;
+  if (!analysis || (!analysis.summary && !analysis.needs?.length)) {
+    return (
+      <p className="text-xs text-ink-mute">
+        {item?.status === "processing" ? "Analyse en cours…" : "L'analyse apparaîtra ici après la génération."}
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2" aria-live="polite">
+      {analysis.summary && (
+        <div className="rounded-xl border border-line/80 p-2.5">
+          <Field label="Problème :">
+            {analysis.summary}
+            <span className="ml-0.5 inline-block h-3 w-[2px] animate-pulse bg-brand-accent align-middle" aria-hidden />
+          </Field>
+        </div>
+      )}
+      {analysis.needs && analysis.needs.length > 0 && (
+        <div className="rounded-xl border border-line/80 p-2.5">
+          <p className="mb-1 text-[10.5px] font-medium text-ink-mute">Besoins :</p>
+          <BulletList items={analysis.needs} />
+        </div>
+      )}
+      {analysis.constraints && analysis.constraints.length > 0 && (
+        <div className="rounded-xl border border-line/80 p-2.5">
+          <p className="mb-1 text-[10.5px] font-medium text-ink-mute">Contraintes :</p>
+          <BulletList items={analysis.constraints} />
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
+import { DESIGN_SECTIONS, type StreamProgress } from "@/lib/design/partial-json";
 import type { RequestItem } from "@/lib/requests";
 import { downloadBlob, exportGlb, exportStl, fileBaseName } from "@/lib/three/export";
 import { viewerBackgroundCss, type ViewerHandle, type ViewerSettings } from "../viewer/settings";
@@ -51,6 +52,9 @@ export function ViewerPanel({
   onToast(message: string): void;
 }) {
   const handle = useRef<ViewerHandle>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+  // Chargement différé : le moteur 3D (le plus lourd du site) n'est téléchargé qu'une fois la zone visible et le navigateur au repos.
+  const [armed, setArmed] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -67,6 +71,37 @@ export function ViewerPanel({
     setFocusId(null);
     setShowMesh(false);
   }, [item?.id]);
+
+  useEffect(() => {
+    const el = wrap.current;
+    if (armed || !el) return;
+    let cancelled = false;
+    let idle: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      if (!cancelled) setArmed(true);
+    };
+    if (typeof IntersectionObserver === "undefined") {
+      arm();
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        if ("requestIdleCallback" in window) idle = window.requestIdleCallback(arm, { timeout: 1200 });
+        else timer = setTimeout(arm, 150);
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      if (idle !== undefined && "cancelIdleCallback" in window) window.cancelIdleCallback(idle);
+      if (timer) clearTimeout(timer);
+    };
+  }, [armed]);
 
   const stepPart = (dir: 1 | -1) => {
     if (!parts.length) return;
@@ -119,13 +154,19 @@ export function ViewerPanel({
 
   return (
     <div
+      ref={wrap}
       className="relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"
       style={{ background: viewerBackgroundCss(design ? settings.mode : "neon") }}
     >
       {/* Halo décoratif */}
       <div className="pointer-events-none absolute -left-1/4 top-1/3 h-2/3 w-[150%] rounded-[100%] border border-white/15" />
 
-      {design && (
+      {design && !armed && (
+        <div className="absolute inset-0 flex items-center justify-center text-white/80">
+          <Spinner size={22} />
+        </div>
+      )}
+      {design && armed && (
         <ModelViewer
           design={design}
           settings={settings}
@@ -215,6 +256,8 @@ export function ViewerPanel({
         </div>
       )}
 
+      {design && armed && <GestureHint />}
+
       {/* Navigation entre les pièces */}
       {design && parts.length > 1 && (
         <div className="absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-full bg-white px-1 py-1 shadow-float">
@@ -236,7 +279,7 @@ export function ViewerPanel({
       )}
 
       {/* Génération en cours */}
-      <AnimatePresence>{item?.status === "processing" && <Processing key="processing" startedAt={item.createdAt} />}</AnimatePresence>
+      <AnimatePresence>{item?.status === "processing" && <Processing key="processing" startedAt={item.createdAt} stream={item.stream ?? null} />}</AnimatePresence>
 
       {/* États vides / erreur */}
       {!item && (
@@ -258,6 +301,45 @@ export function ViewerPanel({
         </Centered>
       )}
     </div>
+  );
+}
+
+/** Rappel des gestes tactiles, affiché quelques secondes la première fois sur écran tactile. */
+function GestureHint() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = localStorage.getItem("forma3d:gesture-hint") === "1";
+    } catch {
+      // stockage indisponible : on affiche quand même
+    }
+    if (seen || !window.matchMedia?.("(pointer: coarse)").matches) return;
+    setVisible(true);
+    const timer = setTimeout(() => {
+      setVisible(false);
+      try {
+        localStorage.setItem("forma3d:gesture-hint", "1");
+      } catch {
+        // ignoré
+      }
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.p
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          role="status"
+          className="pointer-events-none absolute left-3 right-14 top-12 rounded-2xl bg-black/45 px-3 py-2 text-center text-[11px] font-medium text-white backdrop-blur"
+        >
+          Glisser pour tourner · Pincer pour zoomer · Double-tap pour recentrer
+        </motion.p>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -300,7 +382,7 @@ function Centered({ children }: { children: React.ReactNode }) {
   return <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">{children}</div>;
 }
 
-function Processing({ startedAt }: { startedAt: string }) {
+function Processing({ startedAt, stream }: { startedAt: string; stream: StreamProgress | null }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const start = new Date(startedAt).getTime();
@@ -309,14 +391,26 @@ function Processing({ startedAt }: { startedAt: string }) {
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [startedAt]);
-  const step = Math.min(STEPS.length - 1, Math.floor(elapsed / 9));
+
+  // Étape affichée : d'après le flux de l'IA quand il existe, sinon d'après le temps écoulé.
+  const done = stream?.done ?? [];
+  const current = DESIGN_SECTIONS.findIndex((s) => !done.includes(s.key));
+  const label = !stream
+    ? `${STEPS[Math.min(STEPS.length - 1, Math.floor(elapsed / 9))]}…`
+    : stream.stage === "checking"
+      ? "Vérification de votre demande…"
+      : stream.stage === "saving"
+        ? "Enregistrement…"
+        : stream.stage === "thinking" || current < 0
+          ? "Réflexion…"
+          : `${DESIGN_SECTIONS[current].label}…`;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden"
+      className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden px-4"
     >
       <motion.div
         className="absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-white/25 to-transparent"
@@ -330,13 +424,27 @@ function Processing({ startedAt }: { startedAt: string }) {
         transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         style={{ boxShadow: "0 0 40px rgba(255,120,220,.55), inset 0 0 30px rgba(120,200,255,.5)" }}
       />
-      <p className="mt-6 text-sm font-semibold text-white">{STEPS[step]}…</p>
+      <p className="mt-6 text-sm font-semibold text-white" role="status">
+        {label}
+      </p>
       <p className="mt-1 text-xs text-white/75">{elapsed} s · en général 30 à 90 s</p>
-      <div className="mt-3 flex gap-1.5">
-        {STEPS.map((s, i) => (
-          <span key={s} className={`h-1.5 w-6 rounded-full transition ${i <= step ? "bg-white" : "bg-white/30"}`} />
-        ))}
-      </div>
+      <ol className="mt-3 flex flex-wrap justify-center gap-1.5" aria-label="Avancement">
+        {DESIGN_SECTIONS.map((s, i) => {
+          const finished = stream ? done.includes(s.key) : false;
+          const active = stream ? i === current && stream.stage === "writing" : false;
+          return (
+            <li
+              key={s.key}
+              className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition ${
+                finished ? "bg-white text-brand-accent" : active ? "bg-white/40 text-white" : "bg-white/15 text-white/70"
+              }`}
+            >
+              {finished ? "✓ " : ""}
+              {s.label}
+            </li>
+          );
+        })}
+      </ol>
     </motion.div>
   );
 }

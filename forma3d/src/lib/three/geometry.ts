@@ -31,30 +31,34 @@ function shapeFromPoints(points: { x: number; y: number }[]): THREE.Shape {
   return new THREE.Shape(points.map((p) => new THREE.Vector2(p.x, p.y)));
 }
 
+/** Niveau de détail : « low » divise par deux le nombre de facettes (affichage sur mobile), « high » sert aux exports. */
+export type GeometryDetail = "high" | "low";
+
 /** Géométrie d'une pièce, en millimètres, centrée sur son origine. */
-export function createPartGeometry(part: Part): THREE.BufferGeometry {
+export function createPartGeometry(part: Part, detail: GeometryDetail = "high"): THREE.BufferGeometry {
   const { x, y, z } = part.size;
+  const seg = (n: number) => (detail === "low" ? Math.max(8, Math.round(n / 2)) : n);
   try {
     switch (part.shape) {
       case "box": {
         const r = Math.min(part.cornerRadius, x / 2 - 0.01, y / 2 - 0.01, z / 2 - 0.01);
-        return r > 0.3 ? new RoundedBoxGeometry(x, y, z, 3, r) : new THREE.BoxGeometry(x, y, z);
+        return r > 0.3 ? new RoundedBoxGeometry(x, y, z, detail === "low" ? 2 : 3, r) : new THREE.BoxGeometry(x, y, z);
       }
       case "cylinder":
-        return new THREE.CylinderGeometry(x / 2, x / 2, y, 48);
+        return new THREE.CylinderGeometry(x / 2, x / 2, y, seg(48));
       case "cone":
-        return new THREE.ConeGeometry(x / 2, y, 48);
+        return new THREE.ConeGeometry(x / 2, y, seg(48));
       case "sphere":
-        return new THREE.SphereGeometry(x / 2, 48, 32);
+        return new THREE.SphereGeometry(x / 2, seg(48), seg(32));
       case "capsule": {
         const radius = x / 2;
-        return new THREE.CapsuleGeometry(radius, Math.max(0.01, y - x), 10, 28);
+        return new THREE.CapsuleGeometry(radius, Math.max(0.01, y - x), seg(10), seg(28));
       }
       case "torus": {
         // Anneau couché à plat (plan XZ) : x = diamètre extérieur, y = épaisseur du boudin.
         const tube = Math.max(0.25, Math.min(y / 2, x / 4));
         const radius = Math.max(tube * 1.05, x / 2 - tube);
-        const geometry = new THREE.TorusGeometry(radius, tube, 24, 72);
+        const geometry = new THREE.TorusGeometry(radius, tube, seg(24), seg(72));
         geometry.rotateX(-Math.PI / 2);
         return geometry;
       }
@@ -64,7 +68,7 @@ export function createPartGeometry(part: Part): THREE.BufferGeometry {
         const wall = Math.min(Math.max(z, 0.4), outer * 0.95);
         const shape = new THREE.Shape().absarc(0, 0, outer, 0, Math.PI * 2, false);
         shape.holes.push(new THREE.Path().absarc(0, 0, outer - wall, 0, Math.PI * 2, true));
-        const geometry = new THREE.ExtrudeGeometry(shape, { depth: y, bevelEnabled: false, curveSegments: 48 });
+        const geometry = new THREE.ExtrudeGeometry(shape, { depth: y, bevelEnabled: false, curveSegments: seg(48) });
         geometry.translate(0, 0, -y / 2);
         geometry.rotateX(-Math.PI / 2);
         return geometry;
@@ -74,7 +78,7 @@ export function createPartGeometry(part: Part): THREE.BufferGeometry {
         const shape = shapeFromPoints(part.profile);
         for (const hole of part.holes) shape.holes.push(new THREE.Path(hole.map((p) => new THREE.Vector2(p.x, p.y))));
         const depth = Math.max(z, 0.5);
-        const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 24 });
+        const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: seg(24) });
         geometry.translate(0, 0, -depth / 2);
         return geometry;
       }

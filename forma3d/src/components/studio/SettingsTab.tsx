@@ -1,8 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut } from "@/app/actions";
 import { IconLogout, IconShield } from "../icons";
+import {
+  getInstallPrompt,
+  isAppleTouchDevice,
+  isInstalledApp,
+  onInstallPromptChange,
+} from "@/lib/install-prompt";
 import type { LengthUnit } from "./format";
 import type { StudioPrefs, StudioViewer } from "./types";
 import { Toggle } from "./ui";
@@ -76,6 +83,8 @@ export function SettingsTab({
         </div>
       </section>
 
+      <InstallApp />
+
       <section className="panel p-4">
         <h3 className="text-sm font-semibold">Compte</h3>
         {viewer ? (
@@ -120,5 +129,45 @@ export function SettingsTab({
         </div>
       </section>
     </div>
+  );
+}
+
+/** Installation sur l'écran d'accueil : bouton si le navigateur le permet, sinon le mode d'emploi (Safari). */
+function InstallApp() {
+  const [, refresh] = useState(0);
+  const [info, setInfo] = useState<{ installed: boolean; apple: boolean } | null>(null);
+  useEffect(() => {
+    setInfo({ installed: isInstalledApp(), apple: isAppleTouchDevice() });
+    return onInstallPromptChange(() => refresh((n) => n + 1));
+  }, []);
+  if (!info || info.installed) return null;
+  const prompt = getInstallPrompt();
+
+  return (
+    <section className="panel p-4">
+      <h3 className="text-sm font-semibold">Application</h3>
+      <p className="mt-0.5 text-xs text-ink-mute">Plein écran, sans barre du navigateur, depuis votre écran d&apos;accueil.</p>
+      {prompt ? (
+        <button
+          type="button"
+          className="btn-accent mt-3 !text-xs"
+          onClick={async () => {
+            await prompt.prompt();
+            await prompt.userChoice.catch(() => null);
+            refresh((n) => n + 1);
+          }}
+        >
+          Installer l&apos;application
+        </button>
+      ) : info.apple ? (
+        <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+          Dans Safari : touchez <strong>Partager</strong> (le carré avec la flèche), puis <strong>Sur l&apos;écran d&apos;accueil</strong>.
+        </p>
+      ) : (
+        <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+          Dans le menu de votre navigateur, choisissez <strong>Installer l&apos;application</strong> (ou « Ajouter à l&apos;écran d&apos;accueil »).
+        </p>
+      )}
+    </section>
   );
 }

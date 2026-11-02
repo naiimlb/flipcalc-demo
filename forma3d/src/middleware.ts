@@ -48,5 +48,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|robots.txt).*)"],
+  // Fichiers statiques (icônes, service worker, page hors-ligne…) : pas de contrôle de session.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|robots.txt|sw.js|offline.html|manifest.webmanifest|icons/|splash/).*)"],
 };

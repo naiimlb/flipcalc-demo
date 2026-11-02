@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { RequestStatus } from "@/lib/requests";
 import { IconAlert, IconCheck, IconMinus, IconPlus, Spinner } from "../icons";
 
@@ -116,5 +116,20 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
         className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "left-[18px]" : "left-0.5"}`}
       />
     </button>
+  );
+}
+
+/** Fait apparaître les panneaux l'un après l'autre quand une conception vient d'arriver (désactivé si « réduire les animations »). */
+export function Reveal({ index, on, children }: { index: number; on?: boolean; children: React.ReactNode }) {
+  const reduced = useReducedMotion();
+  if (!on || reduced) return <div>{children}</div>;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.08 + index * 0.14, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }

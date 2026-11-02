@@ -70,6 +70,31 @@ await session("desktop", { width: 1440, height: 900 }, async (page) => {
   await page.screenshot({ path: join(out, "desktop-historique.png") });
 });
 
+// Assistant de questions : demande floue → boutons de réponse → conception ; « Modifier ma demande » remet le texte.
+await session("assistant", { width: 1280, height: 800 }, async (page) => {
+  await ready(page);
+  await page.locator("#prompt").fill("un support");
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor({ timeout: 15000 });
+  check((await dialog.getByRole("button", { name: "Passer" }).count()) >= 2, "Assistant : une option « Passer » par question");
+  await page.screenshot({ path: join(out, "assistant-questions.png") });
+  await dialog.getByRole("button", { name: "Modifier ma demande" }).click();
+  await dialog.waitFor({ state: "detached", timeout: 5000 });
+  await page.waitForTimeout(400);
+  check((await page.locator("#prompt").inputValue()) === "un support", "Assistant : « Modifier ma demande » remet le texte dans la barre");
+
+  await page.keyboard.press("Enter");
+  await dialog.waitFor({ timeout: 15000 });
+  const first = dialog.locator("fieldset").first();
+  await first.getByRole("button").first().click();
+  check((await first.getByRole("button").first().getAttribute("aria-pressed")) === "true", "Assistant : une réponse se choisit d'un clic");
+  await dialog.getByRole("button", { name: /^Concevoir/ }).click();
+  await page.getByText(/Conception prête/).waitFor({ timeout: 30000 });
+  check(true, "Assistant : après les réponses, la conception est générée");
+  await page.screenshot({ path: join(out, "assistant-resultat.png") });
+});
+
 // Bouton « Mettre à jour » : on simule un nouveau déploiement en changeant la version renvoyée.
 await session("mise-a-jour", { width: 1280, height: 800 }, async (page) => {
   let calls = 0;

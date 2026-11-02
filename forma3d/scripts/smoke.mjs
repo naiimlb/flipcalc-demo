@@ -40,6 +40,57 @@ assert(body.request.design?.model?.parts?.length > 0, `le modèle 3D contient ${
 assert(typeof body.request.design.analysis.summary === "string", "l'analyse du problème est présente");
 assert(body.request.design.materiaux_conseilles?.length >= 3, "des matières conseillées sont renvoyées");
 
+// Réponse diffusée en continu (une ligne JSON par évènement, la dernière contient le résultat).
+const streamed = await fetch(`${base}/api/generate`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base, Accept: "application/x-ndjson" },
+  body: JSON.stringify({ prompt: "Un support de téléphone pour mon bureau" }),
+});
+assert((streamed.headers.get("content-type") ?? "").includes("application/x-ndjson"), "la génération est diffusée en continu (NDJSON)");
+const events = (await streamed.text()).trim().split("\n").map((l) => JSON.parse(l));
+assert(events.some((e) => e.t === "progress"), "des évènements d'avancement sont envoyés");
+const last = events.at(-1);
+assert(last.t === "result" && last.status === 200 && last.body.request.status === "ready", "l'évènement final contient la conception");
+
+// Assistant de questions : floue → 2 à 3 questions à choix ; détaillée → aucune ; invalide → 400.
+const clarify = (payload) =>
+  fetch(`${base}/api/clarify`, { method: "POST", headers: { "Content-Type": "application/json", Origin: base }, body: JSON.stringify(payload) });
+const vague = await (await clarify({ prompt: "un support" })).json();
+assert(vague.needed === true && vague.questions.length >= 2 && vague.questions.length <= 3, `une demande floue déclenche ${vague.questions?.length} questions`);
+assert(vague.questions.every((q) => q.options.length >= 2), "chaque question propose des réponses à cliquer");
+const detailed = await (
+  await clarify({ prompt: "Un support de téléphone pour mon bureau en bois, qui laisse passer le câble de charge et incline l'écran à 60 degrés pour les visioconférences" })
+).json();
+assert(detailed.needed === false && detailed.questions.length === 0, "une demande détaillée ne pose aucune question");
+assert((await clarify({ prompt: "x" })).status === 400, "une demande invalide est refusée par l'assistant (400)");
+const answered = await fetch(`${base}/api/generate`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base },
+  body: JSON.stringify({ prompt: "un support", answers: [{ question: "Où ?", answer: "À l'intérieur" }] }),
+});
+assert(answered.ok, "une demande accompagnée de réponses est acceptée");
+const tooMany = await fetch(`${base}/api/generate`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base },
+  body: JSON.stringify({ prompt: "un support", answers: Array.from({ length: 5 }, () => ({ question: "Q ?", answer: "R" })) }),
+});
+assert(tooMany.status === 400, "plus de 3 réponses sont refusées (400)");
+
+// Application installable (PWA).
+const manifest = await fetch(`${base}/manifest.webmanifest`);
+const manifestBody = await manifest.json();
+assert(manifest.ok && manifestBody.display === "standalone" && manifestBody.icons.length >= 3, "le manifeste PWA est valide (plein écran, icônes)");
+assert(manifestBody.icons.some((i) => i.purpose === "maskable"), "une icône « maskable » est fournie");
+for (const path of ["/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/splash/2048x2732.png"]) {
+  const r = await fetch(`${base}${path}`);
+  assert(r.ok && (r.headers.get("content-type") ?? "").includes("image/png"), `${path} est servi`);
+}
+const sw = await fetch(`${base}/sw.js`);
+assert(sw.ok && (sw.headers.get("cache-control") ?? "").includes("no-cache"), "le service worker n'est jamais mis en cache");
+assert((await (await fetch(`${base}/offline.html`)).text()).includes("hors ligne"), "la page hors-ligne est disponible");
+assert(html.includes("apple-mobile-web-app-capable") || html.includes("mobile-web-app-capable"), "la page déclare le mode application");
+assert(html.includes('rel="manifest"'), "la page référence le manifeste");
+
 const version = await fetch(`${base}/api/version`);
 const versionBody = await version.json();
 assert(version.ok && typeof versionBody.version === "string", `/api/version répond (${versionBody.version})`);

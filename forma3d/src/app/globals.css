@@ -22,6 +22,15 @@ body {
   min-height: 100dvh;
 }
 
+/* Application installée (plein écran) : le contenu évite l'encoche et la barre d'accueil. */
+@media (display-mode: standalone) {
+  body > main,
+  body > div > main {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 ::selection {
   background: rgb(var(--brand-accent) / 0.25);
 }

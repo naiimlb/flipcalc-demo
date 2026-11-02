@@ -5,7 +5,7 @@ import { MATERIAL_LABELS } from "@/lib/three/geometry";
 import type { ViewerSettings } from "../viewer/settings";
 import { IconBulb, IconCheck, IconCoin, IconExplode, IconHeart, IconLayers, IconRuler, IconSparkles, IconSteps, IconWire, IconCube } from "../icons";
 import { formatDuration, formatLength, formatMoney, formatWeight, type LengthUnit } from "./format";
-import { BulletList, Panel } from "./ui";
+import { BulletList, Panel, Reveal } from "./ui";
 
 const SWATCHES = ["#5b6ee1", "#ff5fb5", "#2fd3c5", "#f5b13d", "#22232b", "#f2f2f5"];
 const MATERIAL_CHOICES: (MaterialKind | null)[] = [null, "plastic", "metal", "wood", "glass"];
@@ -17,6 +17,7 @@ export function RightColumn({
   unit,
   favoriteMaterials,
   onToggleFavoriteMaterial,
+  reveal = false,
 }: {
   design: Design | null;
   settings: ViewerSettings;
@@ -24,6 +25,8 @@ export function RightColumn({
   unit: LengthUnit;
   favoriteMaterials: string[];
   onToggleFavoriteMaterial(name: string): void;
+  /** Les panneaux apparaissent l'un après l'autre (conception qui vient d'arriver). */
+  reveal?: boolean;
 }) {
   const totalMinutes = design?.fabrication.reduce((s, f) => s + f.durationMin, 0) ?? 0;
   const maxItem = Math.max(1, ...(design?.cost.items.map((i) => i.amount) ?? [1]));
@@ -46,6 +49,7 @@ export function RightColumn({
         </ModeButton>
       </section>
 
+      <Reveal index={0} on={reveal}>
       <Panel icon={<IconRuler size={15} />} title="Dimensions">
         {design ? (
           <>
@@ -77,7 +81,9 @@ export function RightColumn({
           <Empty />
         )}
       </Panel>
+      </Reveal>
 
+      <Reveal index={1} on={reveal}>
       <Panel icon={<IconLayers size={15} />} title="Matériaux">
         {design ? (
           <>
@@ -147,7 +153,9 @@ export function RightColumn({
           <Empty />
         )}
       </Panel>
+      </Reveal>
 
+      <Reveal index={2} on={reveal}>
       <Panel
         icon={<IconSteps size={15} />}
         title="Fabrication"
@@ -175,7 +183,9 @@ export function RightColumn({
           <Empty />
         )}
       </Panel>
+      </Reveal>
 
+      <Reveal index={3} on={reveal}>
       <Panel icon={<IconCoin size={15} />} title="Coût estimé" defaultOpen={false}>
         {design ? (
           <>
@@ -207,7 +217,9 @@ export function RightColumn({
           <Empty />
         )}
       </Panel>
+      </Reveal>
 
+      <Reveal index={4} on={reveal}>
       <Panel icon={<IconBulb size={15} />} title="Recommandations" defaultOpen={false}>
         {design ? (
           <div className="space-y-2.5">
@@ -223,6 +235,7 @@ export function RightColumn({
           <Empty />
         )}
       </Panel>
+      </Reveal>
     </div>
   );
 }

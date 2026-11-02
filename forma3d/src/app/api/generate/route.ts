@@ -1,11 +1,14 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { IMAGE_MEDIA_TYPES } from "@/lib/ai/claude";
-import { generateDesign } from "@/lib/generation";
+import { cacheLookup, cacheStore, computeCacheKey, type CachedDesign } from "@/lib/cache";
+import { AnswersSchema, composePrompt } from "@/lib/clarify-types";
+import { progressChanged, progressFromText, type StreamProgress } from "@/lib/design/partial-json";
+import { generateDesign, type GenerationOutcome } from "@/lib/generation";
 import { isSameOrigin, jsonError } from "@/lib/http";
 import { logEvent } from "@/lib/logs";
 import { getModelProvider } from "@/lib/providers";
+import { ipHash } from "@/lib/request-ip";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getSecret } from "@/lib/secrets";
 import { DEFAULT_AI } from "@/lib/settings";
@@ -23,6 +26,8 @@ const BodySchema = z.object({
     .string()
     .transform((s) => s.replace(/\s+/g, " ").trim())
     .pipe(z.string().min(3, "Décrivez votre besoin en quelques mots.").max(1500, "1 500 caractères maximum.")),
+  /** Réponses de l'assistant de questions (facultatif). */
+  answers: AnswersSchema.optional().default([]),
   image: z
     .object({
       mediaType: z.enum(IMAGE_MEDIA_TYPES),
@@ -33,6 +38,7 @@ const BodySchema = z.object({
     })
     .nullish(),
 });
+type Body = z.infer<typeof BodySchema>;
 
 const QUOTA_MESSAGES: Record<string, [number, string]> = {
   QUOTA_HOURLY: [429, "Limite horaire atteinte : réessayez dans une heure."],
@@ -43,11 +49,17 @@ const QUOTA_MESSAGES: Record<string, [number, string]> = {
   AUTH_REQUIRED: [401, "Connectez-vous pour créer une demande."],
 };
 
-function localItem(
-  body: z.infer<typeof BodySchema>,
-  outcome: Awaited<ReturnType<typeof generateDesign>>,
-  extra: Partial<RequestItem>,
-): RequestItem {
+/** Résultat d'un traitement : statut HTTP + corps JSON (le même, avec ou sans diffusion en continu). */
+interface Result {
+  status: number;
+  body: unknown;
+}
+type Emit = (event: Record<string, unknown>) => void;
+
+const ok = (body: unknown): Result => ({ status: 200, body });
+const fail = (status: number, error: string, code?: string): Result => ({ status, body: { error, code } });
+
+function localItem(body: Body, outcome: GenerationOutcome, extra: Partial<RequestItem>): RequestItem {
   return {
     id: crypto.randomUUID(),
     prompt: body.prompt,
@@ -69,69 +81,108 @@ function localItem(
   };
 }
 
-/** Empreinte salée de l'IP du visiteur (l'IP elle-même n'est jamais stockée). */
-function guestHash(request: Request): string {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "inconnu";
-  const salt = process.env.SECRETS_ENCRYPTION_KEY || process.env.NEXT_PUBLIC_SUPABASE_URL || "forma3d";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
+function cachedOutcome(cached: CachedDesign, started: number): GenerationOutcome {
+  return {
+    ok: true,
+    design: cached.design,
+    provider: "claude",
+    model: cached.model,
+    error: null,
+    detail: null,
+    raw: null,
+    stopReason: null,
+    usage: null,
+    validationErrors: null,
+    durationMs: Date.now() - started,
+  };
 }
 
-export async function POST(request: Request) {
-  if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.", "forbidden");
+/** Transforme le texte de l'IA en évènements d'avancement (au plus un toutes les 300 ms). */
+function progressReporter(emit: Emit) {
+  let last: StreamProgress | null = null;
+  let lastAt = 0;
+  return {
+    onText(snapshot: string) {
+      const now = Date.now();
+      if (now - lastAt < 300) return;
+      lastAt = now;
+      const progress = progressFromText(snapshot);
+      if (progress && progressChanged(last, progress)) {
+        last = progress;
+        emit({ t: "progress", progress });
+      }
+    },
+    onRestart() {
+      last = null;
+      lastAt = 0;
+      emit({ t: "progress", progress: { stage: "thinking", done: [] } satisfies StreamProgress });
+    },
+  };
+}
 
-  let body: z.infer<typeof BodySchema>;
-  try {
-    const parsed = BodySchema.safeParse(await request.json());
-    if (!parsed.success) return jsonError(400, parsed.error.issues[0]?.message ?? "Requête invalide.", "invalid");
-    body = parsed.data;
-  } catch {
-    return jsonError(400, "Corps JSON invalide.", "invalid");
-  }
+async function run(request: Request, body: Body, emit: Emit): Promise<Result> {
+  const started = Date.now();
+  const composed = composePrompt(body.prompt, body.answers);
+  const reporter = progressReporter(emit);
+  emit({ t: "progress", progress: { stage: "thinking", done: [] } satisfies StreamProgress });
 
   /* ---------- Mode démo (Supabase non configuré) : rien n'est sauvegardé ---------- */
   if (isDemoMode()) {
     // En production sans Supabase, pas d'appel payant : uniquement les modèles d'exemple.
     const allowClaude = process.env.NODE_ENV !== "production";
     const outcome = await generateDesign({
-      prompt: body.prompt,
+      prompt: composed,
       image: allowClaude ? body.image : null,
       ai: DEFAULT_AI,
       allowDemo: true,
       forceDemo: !allowClaude,
+      onText: reporter.onText,
+      onRestart: reporter.onRestart,
     });
-    return NextResponse.json({ request: localItem(body, outcome, {}), raw: outcome.raw });
+    return ok({ request: localItem(body, outcome, {}), raw: outcome.raw });
   }
 
   const { features } = await getPublicSettings();
   if (body.image && !features.imageUpload) {
-    return jsonError(400, "L'ajout d'image est désactivé.", "image_disabled");
+    return fail(400, "L'ajout d'image est désactivé.", "image_disabled");
   }
   const session = await getSession();
+  const ai = await getAiSettings();
+  const language = session?.profile.language ?? "fr";
+  // Pas de cache pour les demandes avec photo.
+  const cacheKey = body.image ? null : await computeCacheKey({ prompt: body.prompt, answers: body.answers, language, ai });
 
   /* ---------- Essai sans compte : résultat renvoyé, non enregistré ---------- */
   if (!session) {
     if (!features.guestTrial || !features.newRequests) {
-      return jsonError(401, "Connectez-vous pour créer une demande.", "unauthorized");
+      return fail(401, "Connectez-vous pour créer une demande.", "unauthorized");
     }
     const anon = await getServerSupabase();
-    const { data: allowed, error } = (await anon?.rpc("consume_guest_quota", { p_ip_hash: guestHash(request) })) ?? {
+
+    // Demande déjà traitée : affichage instantané, sans IA donc sans consommer l'essai gratuit.
+    const hit = await cacheLookup(anon, cacheKey);
+    if (hit) return ok({ request: localItem(body, cachedOutcome(hit, started), { guest: true }), cached: true });
+
+    const { data: allowed, error } = (await anon?.rpc("consume_guest_quota", { p_ip_hash: ipHash(request) })) ?? {
       data: false,
       error: null,
     };
     if (error) {
       console.error("Quota invité :", error.message);
-      return jsonError(503, "Essai indisponible pour le moment : créez un compte pour continuer.", "guest_unavailable");
+      return fail(503, "Essai indisponible pour le moment : créez un compte pour continuer.", "guest_unavailable");
     }
     if (allowed !== true) {
-      return jsonError(429, "Votre essai gratuit est utilisé : créez un compte (gratuit) pour continuer.", "guest_quota");
+      return fail(429, "Votre essai gratuit est utilisé : créez un compte (gratuit) pour continuer.", "guest_quota");
     }
     const outcome = await generateDesign({
-      prompt: body.prompt,
+      prompt: composed,
       image: body.image,
-      ai: await getAiSettings(),
+      ai,
       allowDemo: features.demoFallback,
+      onText: reporter.onText,
+      onRestart: reporter.onRestart,
     });
-    return NextResponse.json({ request: localItem(body, outcome, { guest: true }) });
+    return ok({ request: localItem(body, outcome, { guest: true }) });
   }
 
   /* ---------- Utilisateur connecté : quota, génération, enregistrement ---------- */
@@ -142,29 +193,35 @@ export async function POST(request: Request) {
     const code = Object.keys(QUOTA_MESSAGES).find((k) => createError?.message?.includes(k));
     if (code) {
       const [status, message] = QUOTA_MESSAGES[code];
-      return jsonError(status, message, code.toLowerCase());
+      return fail(status, message, code.toLowerCase());
     }
     await logEvent("error", "generate", "Création de la demande impossible.", {
       details: createError,
       userId: session.user.id,
       supabase: session.supabase,
     });
-    return jsonError(500, "Impossible d'enregistrer la demande.", "db_error");
+    return fail(500, "Impossible d'enregistrer la demande.", "db_error");
   }
   const requestId = created.id;
 
-  const ai = await getAiSettings();
-  const outcome = await generateDesign({
-    prompt: body.prompt,
-    image: body.image,
-    ai,
-    allowDemo: features.demoFallback,
-    language: session.profile.language,
-  });
+  // Demande déjà traitée (même texte, mêmes réponses) : on réutilise la conception, sans rappeler l'IA.
+  const hit = await cacheLookup(session.supabase, cacheKey);
+  const outcome = hit
+    ? cachedOutcome(hit, started)
+    : await generateDesign({
+        prompt: composed,
+        image: body.image,
+        ai,
+        allowDemo: features.demoFallback,
+        language: session.profile.language,
+        onText: reporter.onText,
+        onRestart: reporter.onRestart,
+      });
+  emit({ t: "progress", progress: { stage: "saving", done: [] } satisfies StreamProgress });
 
   // Fournisseur 3D externe (expérimental) : lance la tâche, la suite se fait par sondage.
   let modelAsset: unknown = null;
-  if (outcome.ok && outcome.design && ai.provider3d !== "primitives") {
+  if (!hit && outcome.ok && outcome.design && ai.provider3d !== "primitives") {
     const provider = getModelProvider(ai.provider3d);
     const key = provider?.secretName ? await getSecret(provider.secretName) : null;
     if (provider && key) {
@@ -202,6 +259,9 @@ export async function POST(request: Request) {
       requestId,
       supabase: session.supabase,
     });
+  } else if (outcome.ok && outcome.provider === "claude") {
+    // Cette conception devient la source du cache pour les demandes identiques.
+    await cacheStore(session.supabase, requestId, cacheKey);
   }
   if (!outcome.ok) {
     await logEvent("error", "generate", outcome.detail ?? outcome.error ?? "Génération échouée.", {
@@ -212,9 +272,67 @@ export async function POST(request: Request) {
   }
 
   const { data: row } = await session.supabase.from("design_requests").select(REQUEST_COLUMNS).eq("id", requestId).single();
-  if (!row) return jsonError(500, "Demande introuvable après génération.", "db_error");
-  return NextResponse.json({
+  if (!row) return fail(500, "Demande introuvable après génération.", "db_error");
+  return ok({
     request: toRequestItem(row),
     raw: session.role === "admin" && features.devMode ? outcome.raw : undefined,
+    cached: hit ? true : undefined,
+  });
+}
+
+export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.", "forbidden");
+
+  let body: Body;
+  try {
+    const parsed = BodySchema.safeParse(await request.json());
+    if (!parsed.success) return jsonError(400, parsed.error.issues[0]?.message ?? "Requête invalide.", "invalid");
+    body = parsed.data;
+  } catch {
+    return jsonError(400, "Corps JSON invalide.", "invalid");
+  }
+
+  // Réponse classique (scripts, tests, anciens clients).
+  if (!request.headers.get("accept")?.includes("application/x-ndjson")) {
+    const result = await run(request, body, () => {});
+    return NextResponse.json(result.body, { status: result.status });
+  }
+
+  // Diffusion en continu : une ligne JSON par évènement, la dernière (« result ») contient la réponse finale.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let open = true;
+      const send = (event: Record<string, unknown>) => {
+        if (!open) return;
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        } catch {
+          open = false; // le navigateur est parti : la génération continue et sera enregistrée quand même
+        }
+      };
+      const keepAlive = setInterval(() => send({ t: "ping" }), 8000);
+      try {
+        const result = await run(request, body, send);
+        send({ t: "result", status: result.status, body: result.body });
+      } catch (err) {
+        console.error("Génération :", err);
+        send({ t: "result", status: 500, body: { error: "Erreur inattendue pendant la génération.", code: "internal" } });
+      } finally {
+        clearInterval(keepAlive);
+        try {
+          controller.close();
+        } catch {
+          // déjà fermé
+        }
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      "X-Accel-Buffering": "no",
+    },
   });
 }

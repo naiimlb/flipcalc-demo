@@ -33,6 +33,9 @@ export async function generateDesign(params: {
   forceDemo?: boolean;
   /** Langue de rédaction préférée de l'utilisateur. */
   language?: "fr" | "en";
+  /** Texte cumulé de la réponse de l'IA pendant qu'elle s'écrit (affichage progressif). */
+  onText?: (snapshot: string) => void;
+  onRestart?: () => void;
 }): Promise<GenerationOutcome> {
   const started = Date.now();
   const apiKey = params.forceDemo ? null : await getSecret("ANTHROPIC_API_KEY");
@@ -79,6 +82,8 @@ export async function generateDesign(params: {
     maxTokens: params.ai.maxTokens,
     prompt: params.prompt,
     image: params.image ?? null,
+    onText: params.onText,
+    onRestart: params.onRestart,
   });
   const durationMs = Date.now() - started;
   if (!result.ok && result.unavailable && params.allowDemo) {

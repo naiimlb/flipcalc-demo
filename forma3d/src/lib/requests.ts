@@ -1,4 +1,5 @@
 import { validateDesign, type Design } from "./design/schema";
+import type { StreamProgress } from "./design/partial-json";
 import { SAMPLE_DESIGNS } from "./design/samples";
 
 /** Une demande telle qu'affichée par le tableau de bord (jamais de données sensibles). */
@@ -33,6 +34,8 @@ export interface RequestItem {
   sample?: boolean;
   /** Essai sans compte : gardé dans ce navigateur jusqu'à la création du compte. */
   guest?: boolean;
+  /** Avancement affiché pendant la génération (jamais enregistré). */
+  stream?: StreamProgress | null;
 }
 
 export const REQUEST_COLUMNS =

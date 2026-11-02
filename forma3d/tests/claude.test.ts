@@ -64,6 +64,29 @@ describe("appel à Claude", () => {
     expect(params.thinking).toEqual({ type: "adaptive" });
   });
 
+  it("diffuse le texte au fur et à mesure et signale une seconde tentative", async () => {
+    const onText = vi.fn();
+    const onRestart = vi.fn();
+    const streamWith = (text: string) => {
+      const handlers: Record<string, (d: string, snapshot: string) => void> = {};
+      return {
+        on: (event: string, handler: (d: string, snapshot: string) => void) => {
+          handlers[event] = handler;
+        },
+        finalMessage: async () => {
+          handlers.text?.("part", "snapshot-1");
+          handlers.text?.("ie", "snapshot-2");
+          return (await reply(text).finalMessage());
+        },
+      };
+    };
+    mocks.stream.mockReturnValueOnce(streamWith("pas du JSON")).mockReturnValueOnce(streamWith(JSON.stringify(SAMPLE_DESIGNS[0].design)));
+    const result = await generateDesignWithClaude({ ...input, onText, onRestart });
+    expect(result.ok).toBe(true);
+    expect(onText).toHaveBeenCalledWith("snapshot-2");
+    expect(onRestart).toHaveBeenCalledTimes(1);
+  });
+
   it("accepte un JSON entouré de texte", async () => {
     mocks.stream.mockReturnValue(reply(`Voici la conception :\n${JSON.stringify(SAMPLE_DESIGNS[1].design)}\nBonne fabrication !`));
     expect((await generateDesignWithClaude(input)).ok).toBe(true);
