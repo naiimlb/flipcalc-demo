@@ -2,13 +2,16 @@ import "server-only";
 import { cache } from "react";
 import {
   AiSettingsSchema,
+  CreditSettingsSchema,
   DEFAULT_AI,
+  DEFAULT_CREDITS,
   DEFAULT_FEATURES,
   DEFAULT_SITE,
   FeatureFlagsSchema,
   SiteSettingsSchema,
   mergeWithDefaults,
   type AiSettings,
+  type CreditSettings,
   type FeatureFlags,
   type SiteSettings,
 } from "./settings";
@@ -32,6 +35,13 @@ export const getPublicSettings = cache(async (): Promise<{ site: SiteSettings; f
 });
 
 /** Réglages IA (lus côté serveur, avec la clé secrète si présente, sinon la session). */
+export async function getCreditSettings(): Promise<CreditSettings> {
+  const client = getServiceSupabase() ?? (await getServerSupabase());
+  if (!client) return DEFAULT_CREDITS;
+  const { data } = await client.from("app_settings").select("value").eq("key", "credits").maybeSingle();
+  return mergeWithDefaults(CreditSettingsSchema, DEFAULT_CREDITS, data?.value);
+}
+
 export async function getAiSettings(): Promise<AiSettings> {
   const client = getServiceSupabase() ?? (await getServerSupabase());
   if (!client) return DEFAULT_AI;

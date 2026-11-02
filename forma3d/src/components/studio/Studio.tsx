@@ -16,6 +16,7 @@ import { useT } from "../app/Preferences";
 import { AuthPrompt } from "./AuthPrompt";
 import { ClarifyPanel } from "./ClarifyPanel";
 import { ShareDialog } from "./ShareDialog";
+import { CREDITS_EVENT, type CreditsSnapshot } from "../app/CreditsBadge";
 import { readPending, savePending } from "./draft";
 import { readGuestItems, saveGuestItems } from "./guest";
 import { HistoryTab } from "./HistoryTab";
@@ -374,7 +375,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
             ...(variantOf ? { variant: variantOf.variant, base: variantOf.base } : {}),
           }),
         });
-        type Body = { request?: RequestItem; raw?: string; error?: string; code?: string; cached?: boolean };
+        type Body = { request?: RequestItem; raw?: string; error?: string; code?: string; cached?: boolean; credits?: CreditsSnapshot | null };
         let status = res.status;
         let body: Body = {};
         if (res.headers.get("content-type")?.includes("application/x-ndjson") && res.body) {
@@ -390,6 +391,8 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
           body = (await res.json().catch(() => ({}))) as Body;
         }
 
+        // Solde de crédits mis à jour dans l'en-tête.
+        if (body.credits) window.dispatchEvent(new CustomEvent(CREDITS_EVENT, { detail: body.credits }));
         if (status < 200 || status >= 300 || !body.request) {
           setUserItems((prev) => prev.filter((i) => i.id !== tempId));
           setSelectedId(previousId);

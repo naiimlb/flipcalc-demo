@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/admin/demandes", label: "Demandes" },
   { href: "/admin/galerie", label: "Galerie" },
   { href: "/admin/utilisateurs", label: "Utilisateurs" },
+  { href: "/admin/credits", label: "Crédits" },
   { href: "/admin/fonctionnalites", label: "Fonctionnalités" },
   { href: "/admin/logs", label: "Mode Dev · logs" },
 ];

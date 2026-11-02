@@ -16,6 +16,8 @@ import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests
 import { getSecret } from "@/lib/secrets";
 import { DEFAULT_AI } from "@/lib/settings";
 import { getAiSettings, getPublicSettings } from "@/lib/settings.server";
+import { consumeCredits, getMyCredits, refundCredits } from "@/lib/credits";
+import { intlLocale, translate } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { isDemoMode } from "@/lib/supabase/env";
 import { getServerSupabase, getSession } from "@/lib/supabase/server";
@@ -204,11 +206,30 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
     return ok({ request: localItem(body, outcome, { guest: true }) });
   }
 
-  /* ---------- Utilisateur connecté : quota, génération, enregistrement ---------- */
+  /* ---------- Utilisateur connecté : crédits, quota, génération, enregistrement ---------- */
+  // Demande déjà traitée (même texte, mêmes réponses) : on réutilise la conception, sans IA et sans crédit.
+  const hit = await cacheLookup(session.supabase, cacheKey);
+
+  // Crédits (phase 5) : consommés avant l'appel à l'IA, remboursés si la génération échoue.
+  let ledgerId: number | null = null;
+  if (!hit) {
+    const consumed = await consumeCredits(session.supabase, variant ? "variant" : "design");
+    if (!consumed.ok) {
+      const credits = await getMyCredits(session.supabase);
+      const date = credits?.renewsAt ? new Date(credits.renewsAt).toLocaleDateString(intlLocale(language), { day: "numeric", month: "long" }) : "";
+      return {
+        status: 402,
+        body: { error: translate(language, "credits.exhausted", { date }), code: "credits_exhausted", credits },
+      };
+    }
+    ledgerId = consumed.ledgerId;
+  }
+
   const { data: created, error: createError } = await session.supabase
     .rpc("create_design_request", { p_prompt: body.prompt, p_has_image: Boolean(body.image) })
     .single<{ id: string }>();
   if (createError || !created) {
+    await refundCredits(session.supabase, ledgerId);
     const code = Object.keys(QUOTA_MESSAGES).find((k) => createError?.message?.includes(k));
     if (code) {
       const [status, message] = QUOTA_MESSAGES[code];
@@ -223,8 +244,6 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
   }
   const requestId = created.id;
 
-  // Demande déjà traitée (même texte, mêmes réponses) : on réutilise la conception, sans rappeler l'IA.
-  const hit = await cacheLookup(session.supabase, cacheKey);
   const outcome = hit
     ? cachedOutcome(hit, started)
     : await generateDesign({
@@ -238,16 +257,21 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
         onRestart: reporter.onRestart,
       });
   emit({ t: "progress", progress: { stage: "saving", done: [] } satisfies StreamProgress });
+  // Pas de crédit pour une génération échouée ou servie sans IA (modèle d'exemple, version calculée localement).
+  if (!outcome.ok || outcome.provider !== "claude") await refundCredits(session.supabase, ledgerId);
 
   // Fournisseur 3D externe (expérimental) : lance la tâche, la suite se fait par sondage.
   let modelAsset: unknown = null;
   if (!hit && outcome.ok && outcome.design && ai.provider3d !== "primitives") {
     const provider = getModelProvider(ai.provider3d);
     const key = provider?.secretName ? await getSecret(provider.secretName) : null;
-    if (provider && key) {
+    // Service text-to-3D (futur) : plus coûteux en crédits qu'une conception simple.
+    const meshCredits = provider && key ? await consumeCredits(session.supabase, "model3d", requestId) : null;
+    if (provider && key && meshCredits?.ok) {
       try {
         modelAsset = await provider.start({ prompt: body.prompt, design: outcome.design, apiKey: key });
       } catch (err) {
+        await refundCredits(session.supabase, meshCredits.ledgerId);
         await logEvent("warn", `provider:${provider.id}`, "Lancement du maillage impossible.", {
           details: String(err),
           requestId,
@@ -297,6 +321,7 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
     request: toRequestItem(row),
     raw: session.role === "admin" && features.devMode ? outcome.raw : undefined,
     cached: hit ? true : undefined,
+    credits: await getMyCredits(session.supabase),
   });
 }
 

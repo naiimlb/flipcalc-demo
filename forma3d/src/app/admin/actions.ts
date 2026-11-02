@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin";
 import { logEvent } from "@/lib/logs";
 import { KNOWN_SECRETS, canStoreSecrets, deleteSecret, storeSecret, type SecretName } from "@/lib/secrets";
-import { AiSettingsSchema, FeatureFlagsSchema, SiteSettingsSchema } from "@/lib/settings";
+import { AiSettingsSchema, CreditSettingsSchema, FeatureFlagsSchema, SiteSettingsSchema } from "@/lib/settings";
 
 export interface ActionResult {
   ok: boolean;
@@ -122,4 +122,44 @@ export async function moderateGalleryItem(id: string, action: "hide" | "show" | 
   revalidatePath("/admin/galerie");
   revalidatePath("/galerie");
   return { ok: true, message: "Fait." };
+}
+
+/* ------------------------------ Crédits (phase 5, sans paiement) ------------------------------ */
+
+export async function saveCreditSettings(input: unknown): Promise<ActionResult> {
+  const parsed = CreditSettingsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Réglages invalides." };
+  const session = await requireAdminAction();
+  const { error } = await session.supabase
+    .from("app_settings")
+    .upsert({ key: "credits", value: parsed.data, updated_at: new Date().toISOString(), updated_by: session.user.id });
+  if (error) return { ok: false, message: "Enregistrement impossible (script SQL de la phase 5 appliqué ?)." };
+  await logEvent("info", "admin:credits", "Réglages des crédits mis à jour.", { details: parsed.data, supabase: session.supabase });
+  revalidatePath("/admin/credits");
+  return { ok: true, message: "Enregistré." };
+}
+
+/** Offrir (nombre positif) ou retirer (négatif) des crédits à un utilisateur. */
+export async function adjustUserCredits(userId: string, delta: number, note: string): Promise<ActionResult> {
+  const session = await requireAdminAction();
+  if (!z.string().uuid().safeParse(userId).success) return { ok: false, message: "Utilisateur invalide." };
+  const n = Math.trunc(Number(delta));
+  if (!Number.isFinite(n) || n === 0 || Math.abs(n) > 100000) return { ok: false, message: "Nombre de crédits invalide." };
+  const { error } = await session.supabase.rpc("admin_adjust_credits", { p_user_id: userId, p_delta: n, p_note: note.slice(0, 200) });
+  if (error) return { ok: false, message: "Opération impossible." };
+  revalidatePath("/admin/credits");
+  return { ok: true, message: n > 0 ? `${n} crédit(s) offert(s).` : `${-n} crédit(s) retiré(s).` };
+}
+
+/** Allocation mensuelle propre à un utilisateur (vide = valeur par défaut). */
+export async function setUserAllowance(userId: string, allowance: number | null): Promise<ActionResult> {
+  const session = await requireAdminAction();
+  if (!z.string().uuid().safeParse(userId).success) return { ok: false, message: "Utilisateur invalide." };
+  if (allowance !== null && (!Number.isInteger(allowance) || allowance < 0 || allowance > 100000)) {
+    return { ok: false, message: "Allocation invalide (0 à 100 000)." };
+  }
+  const { error } = await session.supabase.rpc("admin_set_allowance", { p_user_id: userId, p_allowance: allowance });
+  if (error) return { ok: false, message: "Opération impossible." };
+  revalidatePath("/admin/credits");
+  return { ok: true, message: "Allocation enregistrée." };
 }

@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getTranslator } from "@/lib/i18n/server";
 import { DEFAULT_SITE } from "@/lib/settings";
 import { AccountMenu } from "../studio/TopBar";
+import { getMyCredits } from "@/lib/credits";
+import { getSession } from "@/lib/supabase/server";
+import { CreditsBadge } from "./CreditsBadge";
 import { PreferenceMenuButton } from "./PreferencePicker";
 import type { StudioViewer } from "../studio/types";
 import { IconCube, LogoMark } from "../icons";
@@ -34,6 +37,9 @@ export async function AppHeader({
     if (line2 === DEFAULT_SITE.heroTitleLine2) line2 = t("hero.line2");
     if (subtitle === DEFAULT_SITE.heroSubtitle) subtitle = t("hero.subtitle");
   }
+  // Solde de crédits (phase 5) : affiché en permanence pour les personnes connectées (masqué sans le script SQL).
+  const session = viewer ? await getSession() : null;
+  const credits = session ? await getMyCredits(session.supabase) : null;
   const heading = (
     <>
       {pill && (
@@ -81,6 +87,7 @@ export async function AppHeader({
               {t("nav.admin")}
             </Link>
           )}
+          {credits && <CreditsBadge initial={credits} />}
           <PreferenceMenuButton />
           <AccountMenu viewer={viewer} demoMode={demoMode} />
         </nav>

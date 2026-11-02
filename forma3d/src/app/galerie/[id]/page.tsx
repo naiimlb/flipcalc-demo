@@ -7,6 +7,7 @@ import { Backdrop } from "@/components/landing/Backdrop";
 import { validateDesign } from "@/lib/design/schema";
 import { getTranslator } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/settings.server";
+import { getViewer } from "@/lib/viewer";
 import { isDemoMode } from "@/lib/supabase/env";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -28,7 +29,7 @@ export default async function GalleryItemPage({ params }: { params: Promise<{ id
   return (
     <main className="relative min-h-dvh overflow-x-clip">
       <Backdrop />
-      <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={null} demoMode={false} />
+      <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={false} />
       <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
         <Link href="/galerie" className="text-sm font-semibold text-white/85 hover:text-white">
           {t("gallery.back")}

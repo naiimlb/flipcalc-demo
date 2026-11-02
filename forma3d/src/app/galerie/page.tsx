@@ -5,6 +5,7 @@ import { Backdrop } from "@/components/landing/Backdrop";
 import { IconCube, IconSearch } from "@/components/icons";
 import { getTranslator } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/settings.server";
+import { getViewer } from "@/lib/viewer";
 import { isDemoMode } from "@/lib/supabase/env";
 import { getServerSupabase, getSession } from "@/lib/supabase/server";
 
@@ -59,7 +60,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   return (
     <main className="relative min-h-dvh overflow-x-clip">
       <Backdrop />
-      <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={null} demoMode={isDemoMode()} />
+      <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={isDemoMode()} />
       <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">{t("gallery.title")}</h1>
         <p className="mt-1 max-w-2xl text-sm text-white/85">{t("gallery.lead")}</p>

@@ -121,3 +121,21 @@ export function hexToRgbTriplet(hexColor: string): string {
   const n = parseInt(hexColor.slice(1), 16);
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 }
+
+/* ------------------------------ Crédits (phase 5, sans paiement) ------------------------------ */
+
+/** Coût en crédits de chaque action ; « model3d » prépare le futur service text-to-3D (plus coûteux). */
+export const CREDIT_ACTIONS = ["design", "variant", "model3d"] as const;
+export type CreditAction = (typeof CREDIT_ACTIONS)[number];
+
+export const CreditSettingsSchema = z.object({
+  monthlyFree: z.number().int().min(0).max(100_000),
+  costs: z.object({
+    design: z.number().int().min(0).max(1000),
+    variant: z.number().int().min(0).max(1000),
+    model3d: z.number().int().min(0).max(1000),
+  }),
+});
+export type CreditSettings = z.infer<typeof CreditSettingsSchema>;
+
+export const DEFAULT_CREDITS: CreditSettings = { monthlyFree: 30, costs: { design: 1, variant: 1, model3d: 5 } };
