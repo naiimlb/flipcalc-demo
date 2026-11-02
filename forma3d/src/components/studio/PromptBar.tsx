@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { IconImage, IconSparkles, IconX, Spinner } from "../icons";
+import { IconCamera, IconImage, IconSparkles, IconX, Spinner } from "../icons";
 import { readDraft, saveDraft } from "./draft";
 import { prepareImage, type ImagePayload } from "./image";
 
@@ -34,6 +34,7 @@ export function PromptBar({
   const [focused, setFocused] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
 
   // Brouillon restauré au chargement, puis sauvegardé à chaque frappe.
@@ -68,6 +69,18 @@ export function PromptBar({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 112)}px`;
   }, [prompt]);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setImage(await prepareImage(file));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image illisible.");
+    }
+  };
 
   const submit = () => {
     const text = prompt.trim();
@@ -134,23 +147,18 @@ export function PromptBar({
         )}
         {allowImage && (
           <>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                if (!file) return;
-                try {
-                  setImage(await prepareImage(file));
-                  setError(null);
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : "Image illisible.");
-                }
-              }}
-            />
+            <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={onFile} />
+            {/* Appareil photo (téléphone, tablette) : photo du problème prise sur le moment. */}
+            <input ref={cameraInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
+            <button
+              type="button"
+              onClick={() => cameraInput.current?.click()}
+              className="icon-btn mb-0.5 hidden !h-10 !w-10 shrink-0 [@media(pointer:coarse)]:flex"
+              aria-label="Prendre une photo du problème"
+              title="Prendre une photo du problème"
+            >
+              <IconCamera size={17} />
+            </button>
             <button
               type="button"
               onClick={() => fileInput.current?.click()}

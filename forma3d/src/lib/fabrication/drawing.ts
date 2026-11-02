@@ -198,7 +198,14 @@ export function renderPlanSheet(design: Design): HTMLCanvasElement {
   const lineH = 34;
   const max = Math.max(1, Math.floor((info.h - 40) / lineH));
   design.model.parts.slice(0, max).forEach((p, i) => {
-    const text = `${i + 1}. ${p.name} — ${fmt(p.size.x)} × ${fmt(p.size.y)} × ${fmt(p.size.z)}`;
+    // Pièce profilée : largeur et hauteur du profil, épaisseur d'extrusion.
+    let [x, y, z] = [p.size.x, p.size.y, p.size.z];
+    if (p.shape === "extrusion" && p.profile.length >= 3) {
+      const xs = p.profile.map((pt) => pt.x);
+      const ys = p.profile.map((pt) => pt.y);
+      [x, y, z] = [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys), Math.max(p.size.z, 0.5)];
+    }
+    const text = `${i + 1}. ${p.name} — ${fmt(x)} × ${fmt(y)} × ${fmt(z)}`;
     ctx.fillText(text.length > 60 ? `${text.slice(0, 59)}…` : text, info.x, info.y + 50 + i * lineH);
   });
   if (design.model.parts.length > max) ctx.fillText(`… et ${design.model.parts.length - max} autres pièces`, info.x, info.y + 50 + max * lineH);

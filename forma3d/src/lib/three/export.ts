@@ -1,5 +1,6 @@
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
+import { USDZExporter } from "three/examples/jsm/exporters/USDZExporter.js";
 import type { Design } from "../design/schema";
 import { buildDesignGroup, disposeGroup } from "./geometry";
 
@@ -30,6 +31,18 @@ export async function exportGlb(design: Design): Promise<ArrayBuffer> {
     const result = await new GLTFExporter().parseAsync(group, { binary: true });
     if (!(result instanceof ArrayBuffer)) throw new Error("Export GLB inattendu.");
     return result;
+  } finally {
+    disposeGroup(group);
+  }
+}
+
+/**
+ * USDZ en mètres pour AR Quick Look (iPhone / iPad) : l'objet apparaît à taille réelle, posé sur le sol.
+ */
+export async function exportUsdz(design: Design): Promise<Uint8Array> {
+  const group = buildDesignGroup(design, 0.001);
+  try {
+    return await new USDZExporter().parseAsync(group, { quickLookCompatible: true });
   } finally {
     disposeGroup(group);
   }

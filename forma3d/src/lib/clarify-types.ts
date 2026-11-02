@@ -5,11 +5,15 @@ import { z } from "zod";
 export const MAX_QUESTIONS = 3;
 export const MAX_ANSWER_LENGTH = 120;
 
-export const ClarifyQuestionSchema = z.object({
-  id: z.string().trim().min(1).max(30),
-  question: z.string().trim().min(5).max(140),
-  options: z.array(z.string().trim().min(1).max(40)).min(2).max(5),
-});
+export const ClarifyQuestionSchema = z
+  .object({
+    id: z.string().trim().min(1).max(30),
+    question: z.string().trim().min(5).max(140),
+    options: z.array(z.string().trim().min(1).max(40)).max(5),
+    /** Réponse libre (ex. une mesure de référence sur la photo) en plus des éventuels boutons. */
+    freeText: z.object({ placeholder: z.string().trim().max(80) }).nullish(),
+  })
+  .refine((q) => q.options.length >= 2 || Boolean(q.freeText), "Au moins deux réponses à choisir, ou une réponse libre.");
 export type ClarifyQuestion = z.infer<typeof ClarifyQuestionSchema>;
 
 export const ClarifyResponseSchema = z.object({
@@ -32,25 +36,52 @@ function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
+export function hasDimension(text: string): boolean {
+  return DIMENSION.test(text);
+}
+
 /**
  * Une demande est « claire » quand elle est détaillée : on ne pose alors aucune question (et on n'appelle pas l'IA).
  * - 20 mots ou plus ;
- * - 10 mots avec au moins une dimension ou un budget chiffré ;
- * - avec une photo jointe, 6 mots suffisent (la photo apporte le contexte).
+ * - 10 mots avec au moins une dimension ou un budget chiffré.
+ * Avec une photo, il faut en plus une mesure de référence (sinon les tailles ne peuvent pas être estimées).
  */
 export function looksClear(prompt: string, hasImage = false): boolean {
+  if (hasImage) return hasDimension(prompt) && wordCount(prompt) >= 6;
   const words = wordCount(prompt);
   if (words >= 20) return true;
-  if (hasImage && words >= 6) return true;
-  if (words >= 10 && DIMENSION.test(prompt)) return true;
+  if (words >= 10 && hasDimension(prompt)) return true;
   return false;
+}
+
+/** Mesure de référence demandée pour une photo : sert à estimer les tailles réelles. */
+export function referenceQuestion(): ClarifyQuestion {
+  return {
+    id: "reference",
+    question: "Une mesure de référence visible sur la photo ?",
+    options: [],
+    freeText: { placeholder: "ex. : la prise fait 8 cm de large, la table 80 cm" },
+  };
+}
+
+/** Ajoute la question de mesure de référence (photo sans cote dans la demande), en restant à 3 questions. */
+export function withReferenceQuestion(questions: ClarifyQuestion[], prompt: string, hasImage: boolean): ClarifyQuestion[] {
+  if (!hasImage || hasDimension(prompt) || questions.some((q) => q.freeText)) return questions.slice(0, MAX_QUESTIONS);
+  return [referenceQuestion(), ...questions.filter((q) => q.id !== "taille")].slice(0, MAX_QUESTIONS);
 }
 
 /**
  * Questions de repli (sans IA) pour une demande très courte :
  * utilisées quand l'IA n'est pas disponible, pour que l'assistant fonctionne quand même.
  */
-export function fallbackQuestions(prompt: string): ClarifyQuestion[] {
+export function fallbackQuestions(prompt: string, hasImage = false): ClarifyQuestion[] {
+  if (hasImage) {
+    return withReferenceQuestion(
+      wordCount(prompt) < 8 ? [{ id: "usage", question: "Où sera-t-il utilisé ?", options: ["À l'intérieur", "À l'extérieur", "Les deux"] }] : [],
+      prompt,
+      true,
+    );
+  }
   if (wordCount(prompt) >= 8) return [];
   return [
     { id: "taille", question: "Quelle taille approximative ?", options: ["Petit (moins de 10 cm)", "Moyen (10 à 30 cm)", "Grand (plus de 30 cm)"] },

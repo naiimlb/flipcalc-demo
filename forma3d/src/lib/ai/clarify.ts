@@ -23,6 +23,7 @@ export async function askClarifyingQuestions(params: {
   prompt: string;
   hasImage: boolean;
   language: string;
+  image?: { mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"; data: string } | null;
 }): Promise<ClarifyResponse | null> {
   try {
     const client = new Anthropic({ apiKey: params.apiKey, maxRetries: 1, timeout: 20_000 });
@@ -33,7 +34,19 @@ export async function askClarifyingQuestions(params: {
       messages: [
         {
           role: "user",
-          content: `<demande>\n${params.prompt}\n</demande>${params.hasImage ? "\nUne photo de référence est jointe." : ""}`,
+          content: [
+            ...(params.image
+              ? [{ type: "image" as const, source: { type: "base64" as const, media_type: params.image.mediaType, data: params.image.data } }]
+              : []),
+            {
+              type: "text" as const,
+              text:
+                `<demande>\n${params.prompt}\n</demande>` +
+                (params.hasImage
+                  ? "\nUne photo du problème est jointe : appuie tes questions sur ce que tu y vois. Ne demande pas de mesure de référence, l'interface s'en charge."
+                  : ""),
+            },
+          ],
         },
       ],
     });

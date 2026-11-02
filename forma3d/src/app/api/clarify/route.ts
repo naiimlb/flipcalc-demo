@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { askClarifyingQuestions } from "@/lib/ai/clarify";
-import { fallbackQuestions, looksClear, type ClarifyResponse } from "@/lib/clarify-types";
+import { IMAGE_MEDIA_TYPES } from "@/lib/ai/claude";
+import { fallbackQuestions, looksClear, withReferenceQuestion, type ClarifyResponse } from "@/lib/clarify-types";
 import { isSameOrigin, jsonError } from "@/lib/http";
 import { allowAction } from "@/lib/rate-limit";
 import { ipHash } from "@/lib/request-ip";
@@ -18,6 +19,13 @@ const BodySchema = z.object({
     .transform((s) => s.replace(/\s+/g, " ").trim())
     .pipe(z.string().min(3).max(1500)),
   hasImage: z.boolean().optional().default(false),
+  /** Photo jointe (déjà réduite par le navigateur) : le petit modèle la regarde pour choisir ses questions. */
+  image: z
+    .object({
+      mediaType: z.enum(IMAGE_MEDIA_TYPES),
+      data: z.string().max(2_000_000).regex(/^[A-Za-z0-9+/]+=*$/),
+    })
+    .nullish(),
 });
 
 const NONE: ClarifyResponse = { needed: false, questions: [] };
@@ -33,7 +41,8 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.", "forbidden");
   const parsed = BodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return jsonError(400, "Requête invalide.", "invalid");
-  const { prompt, hasImage } = parsed.data;
+  const { prompt, image } = parsed.data;
+  const hasImage = parsed.data.hasImage || Boolean(image);
 
   // Demande détaillée : aucune question, aucun appel à l'IA.
   if (looksClear(prompt, hasImage)) return NextResponse.json(NONE);
@@ -54,9 +63,8 @@ export async function POST(request: Request) {
   // En production sans Supabase, aucun appel payant : questions de repli uniquement.
   const apiKey = demo && process.env.NODE_ENV === "production" ? null : await getSecret("ANTHROPIC_API_KEY");
   const language = session?.profile.language ?? "fr";
-  const ai = apiKey ? await askClarifyingQuestions({ apiKey, prompt, hasImage, language }) : null;
-  if (ai) return NextResponse.json(ai);
-
-  const questions = hasImage ? [] : fallbackQuestions(prompt);
+  const ai = apiKey ? await askClarifyingQuestions({ apiKey, prompt, hasImage, language, image: image ?? null }) : null;
+  // Photo sans mesure dans la demande : on demande toujours une mesure de référence (pour estimer les tailles).
+  const questions = ai ? withReferenceQuestion(ai.needed ? ai.questions : [], prompt, hasImage) : fallbackQuestions(prompt, hasImage);
   return NextResponse.json({ needed: questions.length > 0, questions } satisfies ClarifyResponse);
 }

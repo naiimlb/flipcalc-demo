@@ -82,6 +82,8 @@ const detailed = await (
 ).json();
 assert(detailed.needed === false && detailed.questions.length === 0, "une demande détaillée ne pose aucune question");
 assert((await clarify({ prompt: "x" })).status === 400, "une demande invalide est refusée par l'assistant (400)");
+const photo = await (await clarify({ prompt: "un cache pour ce câble qui traîne le long du mur", hasImage: true })).json();
+assert(photo.needed && photo.questions[0]?.freeText, "photo sans mesure : une mesure de référence est demandée (réponse libre)");
 const answered = await fetch(`${base}/api/generate`, {
   method: "POST",
   headers: { "Content-Type": "application/json", Origin: base },

@@ -18,8 +18,8 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | --- | --- | --- |
 | Prototype + v2 | Génération, visionneuse 3D, matières conseillées, mise à jour automatique, espace personnel, admin | fait |
 | **1** | Assistant de questions, streaming, cache, performance, gestes tactiles, PWA | **fait** (voir « Phase 1 ») |
-| 2 | Fabrication et impression 3D (imprimabilité, estimations, plans cotés, « où fabriquer », versions) | à faire |
-| 3 | Photo vers solution, réalité augmentée | à faire |
+| 2 | Fabrication et impression 3D (imprimabilité, estimations, plans cotés, « où fabriquer », versions) | **fait** (voir « Phase 2 ») |
+| 3 | Photo vers solution, réalité augmentée | **fait** (voir « Phase 3 ») |
 | 4 | Design (mode sombre/clair), partage, galerie, langues | à faire |
 | 5 | Crédits et quotas (sans paiement) | à faire |
 
@@ -150,6 +150,46 @@ d'exemple le plus proche, clairement signalé à l'écran.
   ordinateur → Réglages → « Installer l'application » ; iPhone / iPad → Safari → Partager → « Sur
   l'écran d'accueil ». Les icônes se régénèrent avec `node scripts/make-pwa-assets.cjs`.
 
+## Phase 2 : fabrication et impression 3D
+
+Onglet **Fabriquer** (calculs faits dans le navigateur, chargés seulement à l'ouverture de l'onglet) :
+
+- **Contrôle d'imprimabilité** (`src/lib/fabrication/printability.ts`) : volume d'impression réglable
+  (220 × 220 × 250 mm par défaut, mémorisé dans le navigateur), parois de moins de 1,2 mm (erreur sous
+  0,8 mm), surfaces en porte-à-faux de plus de 45° (hors plateau et hors appui sur une autre pièce),
+  supports nécessaires ou non, risque de basculement, et **meilleure orientation** parmi 6 (moins de
+  supports, tient dans le volume). Chaque problème est accompagné d'une correction suggérée.
+- **Estimation** (`estimate.ts`) : matière (g), durée et coût selon la matière (PLA, PETG, ABS, ASA,
+  TPU, nylon, résine), le remplissage et la hauteur de couche ; modèle « coque + remplissage » et débit
+  moyen d'une imprimante grand public, supports compris si besoin. Toujours présenté comme une estimation.
+- **Plans cotés** (`drawing.ts`, `plan-layout.ts`, `pdf.ts`) : vues de face, de droite et de dessus
+  rendues en projection orthographique, à **échelle normalisée** (1:1, 1:2, 1:5…), cotes hors-tout,
+  nomenclature et cartouche ; export **PDF A4** (écrit sans bibliothèque) et **PNG**.
+- **Exports STL, GLB, PNG** depuis l'onglet Fabriquer, pour toutes les solutions (exemples, essais,
+  versions), en plus des exports de la visionneuse.
+- **Où fabriquer** (`sourcing.ts`) : uniquement des **liens de recherche génériques** (services
+  d'impression en ligne, fablabs proches, fournisseurs de la matière, découpe laser) et une **liste
+  d'achats** (matière estimée + éléments de la conception), prix marqués « ≈ » ou « à vérifier ».
+- **Ajuster et comparer** : « Plus petit », « Plus solide », « Moins cher », « Plus esthétique » créent
+  une **nouvelle version** (la précédente est conservée). Avec l'IA, la conception actuelle lui est
+  envoyée avec l'objectif ; sans IA, la version est calculée localement (`src/lib/design/variants.ts`)
+  et signalée. Les versions d'un projet partagent la même demande ; l'écran **Comparer** affiche deux
+  versions côte à côte (deux modèles 3D, dimensions, masse, matière, coût, impression, imprimabilité).
+  Le champ `variante` de la conception indique l'objectif et la version de départ.
+
+## Phase 3 : photo et réalité augmentée
+
+- **Photo vers solution** : bouton appareil photo sur téléphone et tablette (photo prise sur le
+  moment) et bouton « joindre » partout. La photo est **redimensionnée** (1024 px max), **compressée**
+  (JPEG, qualité réduite si nécessaire), remise à l'endroit (orientation de l'appareil) et convertie
+  si besoin (HEIC de l'iPhone) avant l'envoi. Sans cote dans la demande, l'assistant demande une
+  **mesure de référence** (réponse libre). Claude analyse l'image (objets, place, fixations) et estime
+  les tailles par proportion à partir de cette mesure ; le petit modèle de l'assistant voit aussi la photo.
+- **Voir chez moi** (réalité augmentée, à taille réelle) : sur **iPhone / iPad**, AR Quick Look avec un
+  fichier **USDZ** généré dans le navigateur (`exportUsdz`, en mètres, redimensionnement désactivé) ;
+  sur **Android**, **WebXR** (Chrome + ARCore) : un réticule suit le sol, un toucher pose l'objet. Sur
+  les appareils sans réalité augmentée, le bouton n'est **pas affiché** (aucune erreur).
+
 ## Mon espace et administration
 
 - `/espace` : demandes, modèles 3D (GLB dans Supabase Storage), favoris, dossiers, matières préférées,
@@ -203,4 +243,8 @@ forma3d/
 - Réglages Supabase : Site URL et Redirect URLs ; Google si souhaité (non testés : emails, Google, photo de profil).
 - Supprimer les comptes de test `e2e-*@forma3d.test` laissés par la CI.
 - Réduire les limites de l'essai sans compte dans `/admin` si le crédit Claude est limité.
-- Phases 2 à 5 (voir le tableau en haut).
+- Phase 2 : estimations simples (pas de vrai trancheur) ; les pièces qui se chevauchent comptent deux
+  fois dans le volume (léger surplus). Les ponts courts sont comptés comme des porte-à-faux.
+- Phase 3 : réalité augmentée non testée sur un vrai iPhone / Android (la CI n'a pas de caméra) ; à
+  vérifier : « Voir chez moi » dans Safari (iPhone/iPad) et dans Chrome (Android).
+- Phases 4 et 5 (voir le tableau en haut).

@@ -236,14 +236,14 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
   /* ---------------- Création d'une demande ---------------- */
 
-  const askQuestions = useCallback(async (prompt: string, hasImage: boolean): Promise<ClarifyQuestion[]> => {
+  const askQuestions = useCallback(async (prompt: string, image: ImagePayload | null): Promise<ClarifyQuestion[]> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 25_000);
     try {
       const res = await fetch("/api/clarify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, hasImage }),
+        body: JSON.stringify({ prompt, hasImage: Boolean(image), image: image ? { mediaType: image.mediaType, data: image.data } : null }),
         signal: controller.signal,
       });
       if (!res.ok) return [];
@@ -287,7 +287,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       try {
         // 1. Assistant de questions (uniquement si la demande est floue).
         let answers: Answer[] = [];
-        const questions = features.newRequests && !variantOf ? await askQuestions(prompt, Boolean(image)) : [];
+        const questions = features.newRequests && !variantOf ? await askQuestions(prompt, image) : [];
         if (questions.length) {
           const chosen = await new Promise<Answer[] | null>((resolve) => setClarify({ prompt, questions, resolve }));
           setClarify(null);

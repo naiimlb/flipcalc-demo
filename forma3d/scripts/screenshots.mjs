@@ -123,6 +123,28 @@ await session("fabrication", { width: 1366, height: 900 }, async (page) => {
   await page.screenshot({ path: join(out, "comparaison.png") });
 });
 
+// Photo vers solution : photo jointe sans mesure → question « mesure de référence » à réponse libre.
+await session("photo", { width: 1280, height: 800 }, async (page) => {
+  await ready(page);
+  // Petite image PNG (1×1) en guise de photo.
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  await page.locator('input[type="file"]:not([capture])').setInputFiles({ name: "probleme.png", mimeType: "image/png", buffer: png });
+  await page.getByAltText("Photo jointe").waitFor({ timeout: 8000 });
+  check(true, "Photo : la photo est jointe (réduite et compressée dans le navigateur)");
+  await page.locator("#prompt").fill("Un cache pour ce câble qui traîne le long du mur");
+  await page.locator("#prompt").press("Enter");
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor({ timeout: 15000 });
+  const reference = dialog.getByRole("textbox", { name: /mesure de référence/ });
+  check(await reference.isVisible(), "Photo : une mesure de référence est demandée (réponse libre)");
+  await reference.fill("la prise fait 8 cm de large");
+  await page.screenshot({ path: join(out, "photo-reference.png") });
+  await dialog.getByRole("button", { name: /^Concevoir/ }).click();
+  await page.getByText(/Conception prête/).waitFor({ timeout: 30000 });
+  check(true, "Photo : la conception est générée avec la mesure de référence");
+  check((await page.getByRole("button", { name: /Voir chez moi/ }).count()) === 0, "Réalité augmentée : bouton masqué sur un appareil sans AR");
+});
+
 // Bouton « Mettre à jour » : on simule un nouveau déploiement en changeant la version renvoyée.
 await session("mise-a-jour", { width: 1280, height: 800 }, async (page) => {
   let calls = 0;

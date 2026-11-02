@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AnswersSchema, ClarifyResponseSchema, composePrompt, fallbackQuestions, looksClear } from "@/lib/clarify-types";
+import { AnswersSchema, ClarifyResponseSchema, composePrompt, fallbackQuestions, looksClear, withReferenceQuestion } from "@/lib/clarify-types";
 
 describe("assistant de questions : faut-il poser des questions ?", () => {
   it("ne pose aucune question pour une demande détaillée", () => {
@@ -14,9 +14,17 @@ describe("assistant de questions : faut-il poser des questions ?", () => {
     expect(looksClear("Une solution pour ranger mes câbles")).toBe(false);
   });
 
-  it("avec une photo, six mots suffisent", () => {
-    expect(looksClear("Un cache pour ce câble qui traîne", true)).toBe(true);
-    expect(looksClear("un cache", true)).toBe(false);
+  it("avec une photo, il faut une mesure de référence", () => {
+    expect(looksClear("Un cache pour ce câble qui traîne, la prise fait 8 cm", true)).toBe(true);
+    expect(looksClear("Un cache pour ce câble qui traîne le long du mur", true)).toBe(false);
+    const questions = fallbackQuestions("un cache pour ce câble", true);
+    expect(questions[0].id).toBe("reference");
+    expect(questions[0].freeText).toBeTruthy();
+    expect(ClarifyResponseSchema.safeParse({ needed: true, questions }).success).toBe(true);
+    expect(withReferenceQuestion([], "un cache de 8 cm", true)).toEqual([]);
+    const three = fallbackQuestions("un support");
+    expect(withReferenceQuestion(three, "un support", true)).toHaveLength(3);
+    expect(withReferenceQuestion(three, "un support", true)[0].id).toBe("reference");
   });
 
   it("propose des questions de repli seulement pour les demandes très courtes", () => {

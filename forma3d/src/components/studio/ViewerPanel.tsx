@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { DESIGN_SECTIONS, type StreamProgress } from "@/lib/design/partial-json";
+import { detectAr, type ArMode } from "@/lib/ar-detect";
+import type { Design } from "@/lib/design/schema";
 import type { RequestItem } from "@/lib/requests";
 import { downloadBlob, exportGlb, exportStl, fileBaseName } from "@/lib/three/export";
 import { viewerBackgroundCss, type ViewerHandle, type ViewerSettings } from "../viewer/settings";
@@ -21,6 +23,7 @@ import {
   IconRotate,
   Spinner,
 } from "../icons";
+import { Portal } from "../Portal";
 import type { StudioFeatures } from "./types";
 
 const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
@@ -269,6 +272,7 @@ export function ViewerPanel({
               <Spinner size={11} /> Maillage {item.asset.progress}%
             </span>
           )}
+          {armed && <ArButton design={design} onToast={onToast} />}
           {features.devMode && (
             <button type="button" onClick={onShowJson} className="chip bg-black/40 text-white hover:bg-black/60">
               <IconCode size={12} /> JSON
@@ -322,6 +326,87 @@ export function ViewerPanel({
         </Centered>
       )}
     </div>
+  );
+}
+
+/** « Voir chez moi » : réalité augmentée à taille réelle (masqué si l'appareil ne la prend pas en charge). */
+function ArButton({ design, onToast }: { design: Design; onToast(message: string): void }) {
+  const [mode, setMode] = useState<ArMode | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [session, setSession] = useState(false);
+  const overlay = useRef<HTMLDivElement>(null);
+  const stop = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    detectAr()
+      .then((m) => !cancelled && setMode(m))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stop.current?.();
+    };
+  }, []);
+
+  // Session WebXR : démarrée une fois le calque (DOM overlay) affiché.
+  useEffect(() => {
+    if (!session || !overlay.current) return;
+    let cancelled = false;
+    import("@/lib/ar")
+      .then((ar) => ar.startWebXr(design, overlay.current!, () => setSession(false)))
+      .then((end) => {
+        if (cancelled) end();
+        else stop.current = end;
+      })
+      .catch((err) => {
+        console.error(err);
+        setSession(false);
+        onToast("La réalité augmentée n'a pas pu démarrer sur cet appareil.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, design, onToast]);
+
+  if (!mode) return null;
+
+  const open = async () => {
+    if (mode === "webxr") {
+      setSession(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const ar = await import("@/lib/ar");
+      await ar.openQuickLook(design);
+    } catch (err) {
+      console.error(err);
+      onToast("La réalité augmentée n'a pas pu s'ouvrir.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <button type="button" onClick={open} disabled={busy} className="chip bg-white/90 text-brand-accent" title="Voir l'objet à taille réelle chez vous">
+        {busy ? <Spinner size={11} /> : <IconCube size={12} />} Voir chez moi
+      </button>
+      {session && (
+        <Portal>
+          <div ref={overlay} className="fixed inset-0 z-[70] flex flex-col items-center justify-between p-6 text-white">
+            <p className="mt-10 rounded-full bg-black/55 px-4 py-2 text-sm font-medium">Visez le sol, puis touchez l&apos;écran pour poser l&apos;objet</p>
+            <button
+              type="button"
+              onClick={() => (stop.current ? stop.current() : setSession(false))}
+              className="mb-8 rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink"
+            >
+              Fermer
+            </button>
+          </div>
+        </Portal>
+      )}
+    </>
   );
 }
 

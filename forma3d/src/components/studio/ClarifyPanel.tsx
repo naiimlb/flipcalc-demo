@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import type { Answer, ClarifyQuestion } from "@/lib/clarify-types";
+import { MAX_ANSWER_LENGTH, type Answer, type ClarifyQuestion } from "@/lib/clarify-types";
 import { IconCheck, IconSparkles } from "../icons";
 import { Portal } from "../Portal";
 
@@ -25,13 +25,20 @@ export function ClarifyPanel({
   onCancel(): void;
 }) {
   const [choices, setChoices] = useState<Record<string, Choice>>({});
-  const answered = questions.filter((q) => typeof choices[q.id] === "string").length;
+  const [texts, setTexts] = useState<Record<string, string>>({});
+  const answerOf = (q: ClarifyQuestion): string | null => {
+    const typed = texts[q.id]?.trim();
+    if (typed && choices[q.id] !== null) return typed.slice(0, MAX_ANSWER_LENGTH);
+    const choice = choices[q.id];
+    return typeof choice === "string" ? choice : null;
+  };
+  const answered = questions.filter((q) => answerOf(q) !== null).length;
 
   const submit = () => {
     const answers: Answer[] = [];
     for (const q of questions) {
-      const choice = choices[q.id];
-      if (typeof choice === "string") answers.push({ question: q.question, answer: choice });
+      const answer = answerOf(q);
+      if (answer) answers.push({ question: q.question, answer });
     }
     onSubmit(answers);
   };
@@ -59,6 +66,21 @@ export function ClarifyPanel({
             {questions.map((q) => (
               <fieldset key={q.id}>
                 <legend className="text-[13px] font-semibold text-ink">{q.question}</legend>
+                {q.freeText && (
+                  <input
+                    type="text"
+                    maxLength={MAX_ANSWER_LENGTH}
+                    value={texts[q.id] ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setTexts((t) => ({ ...t, [q.id]: value }));
+                      if (value.trim()) setChoices((c) => ({ ...c, [q.id]: undefined }));
+                    }}
+                    placeholder={q.freeText.placeholder}
+                    aria-label={q.question}
+                    className="input mt-2"
+                  />
+                )}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {q.options.map((option) => {
                     const selected = choices[q.id] === option;
