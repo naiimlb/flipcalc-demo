@@ -1,15 +1,30 @@
 # Forma3D
 
 Décrivez un problème ou un objet (« une solution pour ranger mes câbles », « un support de
-téléphone »…) : Forma3D analyse la demande avec Claude, propose une solution fabricable et la
-modélise en **3D interactive** (rotation, zoom, fil de fer, vue éclatée, matières), avec
-dimensions, matériaux, étapes de fabrication, coût estimé et exports **GLB / STL / PNG**.
+téléphone »…) : Forma3D précise la demande si elle est floue, l'analyse avec Claude, propose une
+solution fabricable et la modélise en **3D interactive** (rotation, zoom, fil de fer, vue éclatée,
+matières conseillées), avec dimensions, matériaux, étapes de fabrication, coût estimé et exports
+**GLB / STL / PNG**. Le site est une **application installable** (iPad, téléphone, ordinateur).
 
 - Next.js 15 (App Router) · TypeScript · Tailwind · Framer Motion
 - React Three Fiber / Three.js (rendu néon « hologramme » ou réaliste)
-- Supabase : authentification, base de données, Row Level Security, rôles admin / utilisateur
-- API Claude côté serveur (sortie JSON structurée, validée par Zod)
-- Déployable sur Vercel
+- Supabase : authentification, base de données, Row Level Security, Storage, rôles admin / utilisateur
+- API Claude côté serveur (JSON décrit dans le prompt, validé par Zod, une seconde tentative si besoin)
+- Déployable sur Vercel (déploiement automatique depuis `main`)
+
+## Où en est le projet
+
+| Phase | Contenu | État |
+| --- | --- | --- |
+| Prototype + v2 | Génération, visionneuse 3D, matières conseillées, mise à jour automatique, espace personnel, admin | fait |
+| **1** | Assistant de questions, streaming, cache, performance, gestes tactiles, PWA | **fait** (voir « Phase 1 ») |
+| 2 | Fabrication et impression 3D (imprimabilité, estimations, plans cotés, « où fabriquer », versions) | à faire |
+| 3 | Photo vers solution, réalité augmentée | à faire |
+| 4 | Design (mode sombre/clair), partage, galerie, langues | à faire |
+| 5 | Crédits et quotas (sans paiement) | à faire |
+
+Aucun service text-to-3D payant n'est branché : l'interface `ModelProvider` est conservée pour plus tard.
+Il n'y a aucun paiement en ligne dans ce projet.
 
 ## Lancer en local
 
@@ -19,38 +34,38 @@ npm install
 npm run dev            # http://localhost:3000
 ```
 
-Sans aucune variable d'environnement, le site démarre en **mode démo** : quatre projets
-d'exemple, génération par le « modèle d'exemple le plus proche », rien n'est sauvegardé.
-Ajoutez `ANTHROPIC_API_KEY` dans `.env.local` pour que les demandes passent par Claude
-(en mode démo, Claude n'est appelé qu'en développement, jamais en production).
+Sans aucune variable d'environnement, le site démarre en **mode démo** : quatre projets d'exemple,
+génération par le « modèle d'exemple le plus proche », rien n'est sauvegardé. Ajoutez
+`ANTHROPIC_API_KEY` dans `.env.local` pour que les demandes passent par Claude (en mode démo,
+Claude n'est appelé qu'en développement, jamais en production).
 
-Pour la version complète (comptes, historique, admin) :
-
-```bash
-cp .env.example .env.local   # puis remplir les valeurs (voir ci-dessous)
-npm run dev
-```
+Pour la version complète (comptes, historique, admin) : `cp .env.example .env.local`, remplir les
+valeurs (voir ci-dessous), puis `npm run dev`.
 
 ## Mise en place de Supabase
 
 1. Créez un projet sur [supabase.com](https://supabase.com).
-2. **SQL Editor** → collez et exécutez `supabase/migrations/20261101000000_forma3d_schema.sql`
-   (ou `supabase db push` avec la CLI). Le script crée les tables, la RLS, les quotas et les
-   fonctions d'administration.
-3. **Authentication → URL Configuration** : *Site URL* = l'URL du site
-   (`http://localhost:3000` en local) et ajoutez `https://votre-domaine/auth/callback` aux
-   *Redirect URLs*.
-4. **Project Settings → API** : copiez l'URL, la clé publique (*publishable* / *anon*) et la clé
-   secrète (*secret* / *service_role*) dans `.env.local`.
-5. Lancez le site : il redirige vers **`/setup`** pour créer le compte administrateur.
+2. **SQL Editor** : exécutez, dans l'ordre, les fichiers de `supabase/migrations/` (ou `supabase db push`) :
+   1. `20261101000000_forma3d_schema.sql` : tables, RLS, quotas, fonctions d'administration ;
+   2. `20261102000000_espace_personnel.sql` : espace personnel (dossiers, favoris, Storage, export / suppression de compte, essai sans compte, premier administrateur par jeton) ;
+   3. `20261103000000_phase1_cache_ratelimit.sql` : **cache** des demandes identiques et **limite de débit** de l'assistant de questions.
+   Les scripts sont rejouables sans danger. L'application fonctionne même si le 3ᵉ n'est pas appliqué
+   (le cache est alors simplement désactivé et la limite de débit se fait en mémoire).
+3. **Authentication → URL Configuration** : *Site URL* = l'URL du site et, dans *Redirect URLs*,
+   `https://votre-domaine/auth/callback`. Sans cela, les liens des emails (confirmation,
+   mot de passe oublié) ne fonctionnent pas.
+4. **Project Settings → API** : copiez l'URL et la clé publique (*publishable*). La clé secrète
+   (*service_role*) est **facultative** : l'application fonctionne avec la session de l'utilisateur
+   et des fonctions SQL.
+5. Google (facultatif) : *Authentication → Providers → Google* ; le bouton apparaît tout seul
+   quand le fournisseur est activé.
 
 ### Premier lancement : `/setup`
 
-`/setup` affiche une liste de contrôle de la configuration puis crée le **premier compte, qui
-devient administrateur**. Dès qu'un administrateur existe, la page se verrouille (vérifié en base
-par `setup_required()` ; deux installations simultanées sont sérialisées par un verrou SQL).
-Sur un déploiement public, définissez **`SETUP_TOKEN`** : le jeton est alors exigé pour créer
-l'administrateur.
+Le premier compte devient administrateur. Sans clé secrète Supabase, le jeton d'installation est
+enregistré en base (table `private.setup_secret`, empreinte SHA-256) : créez votre compte, puis
+ouvrez `/setup` connecté et saisissez le jeton. Dès qu'un administrateur existe, la page se
+verrouille (vérifié en base par `setup_required()`).
 
 ## Variables d'environnement
 
@@ -58,160 +73,134 @@ l'administrateur.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase | oui (sinon mode démo) |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clé publique Supabase (navigateur, protégée par la RLS) | oui (sinon mode démo) |
-| `SUPABASE_SECRET_KEY` | Clé secrète Supabase, **serveur uniquement** (`SUPABASE_SERVICE_ROLE_KEY` accepté aussi) | oui |
-| `ANTHROPIC_API_KEY` | Clé Claude. Peut aussi être saisie dans `/admin/cles` | recommandé |
-| `SECRETS_ENCRYPTION_KEY` | 32 octets en base64 : chiffre les clés saisies dans l'admin | recommandé |
-| `SETUP_TOKEN` | Jeton demandé par `/setup` | recommandé en production |
-| `MESHY_API_KEY` | Fournisseur text-to-3D expérimental | non |
-| `NEXT_PUBLIC_SITE_URL` | URL publique (liens des emails) | non |
-
-Générer une clé de chiffrement :
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
+| `ANTHROPIC_API_KEY` | Clé Claude (variable Vercel de type *Sensitive*). Peut aussi être saisie dans `/admin/cles` | recommandé |
+| `SUPABASE_SECRET_KEY` | Clé secrète Supabase, **serveur uniquement** | non |
+| `SECRETS_ENCRYPTION_KEY` | 32 octets en base64 : chiffre les clés saisies dans l'admin | recommandé si clés saisies dans l'admin |
+| `SETUP_TOKEN` | Jeton supplémentaire demandé par `/setup` | non |
+| `CACHE_SECRET` | Secret du cache des demandes identiques (sinon dérivé de `SECRETS_ENCRYPTION_KEY` ou de la clé Claude) | non |
+| `CLARIFY_MODEL` | Modèle de l'assistant de questions (défaut `claude-haiku-5-5`) | non |
+| `NEXT_PUBLIC_SITE_URL` | URL publique (liens des emails) | recommandé |
+| `MESHY_API_KEY` | Fournisseur text-to-3D expérimental (non branché) | non |
 
 ## Déployer sur Vercel
 
-1. Importez le dépôt sur Vercel et choisissez **Root Directory = `forma3d`** (framework Next.js
-   détecté automatiquement).
-2. Ajoutez les variables d'environnement ci-dessus (Production + Preview).
-3. Déployez, puis ajoutez `https://<votre-projet>.vercel.app/auth/callback` aux *Redirect URLs*
-   de Supabase et réglez la *Site URL*.
-4. Ouvrez `/setup` pour créer l'administrateur.
+1. Importez le dépôt, **Root Directory = `forma3d`** (Next.js détecté automatiquement).
+2. Ajoutez les variables d'environnement ci-dessus.
+3. Branche de production = `main` : chaque fusion dans `main` déploie automatiquement. Les autres
+   branches ne sont pas construites (règle « Ignored Build Step ») afin d'économiser le quota gratuit
+   (100 déploiements par jour).
+4. Le bouton **« Mettre à jour »** apparaît à tous les visiteurs ouverts quand un nouveau déploiement
+   est en ligne (`/api/version`, vérifié toutes les 60 s et au retour sur l'onglet) ; la demande en
+   cours de saisie est conservée.
 
 La route de génération déclare `maxDuration = 300` s (une génération dure en général 30 à 90 s).
-Sur l'offre Hobby sans Fluid Compute, la limite est plus basse : baissez l'effort de réflexion
-ou choisissez un modèle plus rapide dans `/admin/ia`.
 
-## Fonctionnement
+## Fonctionnement d'une demande
 
-1. L'utilisateur écrit sa demande (photo de référence optionnelle, réduite à 1024 px dans le
-   navigateur).
-2. `POST /api/generate` valide l'entrée (Zod), vérifie l'origine, puis appelle la fonction SQL
-   `create_design_request` qui applique **atomiquement** la pause globale, les quotas par heure
-   et par jour, la limite de générations simultanées, et insère la demande.
-3. Le serveur appelle Claude (`claude-opus-5-5` par défaut, réflexion adaptative, effort
-   réglable) avec une **sortie JSON structurée** (`output_config.format`) : analyse, solution,
-   dimensions, matériaux, étapes, coût, recommandations et **description 3D** (liste de formes :
-   pavé arrondi, cylindre, tube, cône, sphère, tore, capsule, extrusion de profil avec trous ;
-   positions, tailles, rotations, couleurs, matériaux). En cas de refus des classifieurs de
-   sécurité, le repli serveur (`fallbacks: "default"`) relance la demande sur le modèle
-   recommandé.
-4. Le JSON est validé et **normalisé** par Zod (bornes, couleurs, nombre de pièces, identifiants
-   uniques), enregistré dans Supabase avec la réponse brute (table réservée aux admins), puis
-   converti en scène React Three Fiber.
-5. Exports côté navigateur : **GLB** (mètres, couleurs PBR), **STL** binaire (millimètres, pour
-   les trancheurs d'impression 3D) et **capture PNG**.
+1. L'utilisateur écrit sa demande (photo optionnelle, réduite dans le navigateur).
+2. **Assistant de questions** (`POST /api/clarify`) : si la demande est floue, 2 à 3 questions courtes
+   avec réponses cliquables et « Passer » (dimensions, intérieur/extérieur, budget, matière,
+   imprimante). Une demande détaillée (≈ 20 mots, ou 10 mots avec une cote) ne déclenche **aucune**
+   question ni appel à l'IA. Le petit modèle (Haiku) décide ; sans IA, des questions de repli
+   s'appliquent aux demandes très courtes. L'assistant ne bloque jamais : erreur ou limite atteinte
+   = la demande part telle quelle.
+3. `POST /api/generate` valide l'entrée (Zod : texte, 3 réponses maximum, image), vérifie l'origine,
+   puis :
+   - **cache** : une demande identique (même texte, mêmes réponses, même langue, mêmes réglages d'IA)
+     est servie instantanément, sans rappeler l'IA ;
+   - sinon la fonction SQL `create_design_request` applique atomiquement pause globale, quotas
+     horaires/journaliers et générations simultanées, puis Claude est appelé.
+4. **Streaming** : avec `Accept: application/x-ndjson`, la réponse est diffusée ligne par ligne. Le
+   serveur lit le JSON de Claude pendant qu'il s'écrit et envoie des évènements d'avancement : titre,
+   **analyse écrite en direct**, rubriques terminées (Analyse → Solution → Dimensions → Matériaux →
+   Fabrication → Coût → Modèle 3D). Une dernière ligne `result` contient la réponse finale (la même
+   qu'en mode classique). Les panneaux apparaissent ensuite un par un. Si le navigateur se
+   déconnecte, la génération se termine et est enregistrée.
+5. Le JSON est validé et normalisé par Zod avant tout enregistrement ou rendu, puis converti en scène
+   React Three Fiber. Exports côté navigateur : GLB, STL binaire (mm), PNG.
 
-Sans clé Claude, l'option « Modèles d'exemple si l'IA est absente » (activée par défaut) produit
-le modèle d'exemple le plus proche, clairement signalé à l'écran.
+Sans clé Claude (ou crédit épuisé), l'option « Modèles d'exemple si l'IA est absente » sert le modèle
+d'exemple le plus proche, clairement signalé à l'écran.
 
-### Brancher un service text-to-3D (Meshy, Tripo…)
+## Phase 1 : détails
 
-`src/lib/providers/types.ts` définit l'interface `ModelProvider` (`start` lance une tâche,
-`poll` suit son avancement). Les primitives de Claude restent toujours disponibles ; quand le
-fournisseur externe a fini, la visionneuse propose « Voir le maillage IA ». Le GLB passe par
-`/api/requests/[id]/asset/file` (l'URL du fournisseur n'est jamais exposée et seuls ses hôtes
-déclarés sont autorisés). Un adaptateur **Meshy expérimental** est fourni
-(`src/lib/providers/meshy.ts`, à valider avec la documentation à jour) ; pour en ajouter un
-autre, implémentez l'interface et enregistrez-le dans `src/lib/providers/index.ts`, puis
-ajoutez son identifiant à `PROVIDERS_3D` (`src/lib/settings.ts`).
+- **Cache** : clé = HMAC-SHA256 calculé par le serveur avec un secret (`CACHE_SECRET`, sinon dérivé de
+  la clé de chiffrement ou de la clé Claude). Personne ne peut deviner ni calculer la clé de la
+  demande d'un autre. Seules les conceptions générées par Claude, sans photo, sont mises en cache ;
+  une conception ne ressort que pour une demande strictement identique. Un visiteur sans compte
+  profite du cache sans consommer son essai gratuit.
+- **Limite de débit** de l'assistant de questions : 20 appels par heure et par personne, 3 000 par jour
+  pour tout le site (fonction SQL `consume_rate_limit`, repli en mémoire). Limite connue : un appel
+  direct à cette fonction peut consommer le plafond global du jour ; l'effet se limite à la
+  désactivation temporaire des questions (la génération n'est pas touchée).
+- **Performance** : le moteur 3D (Three.js) n'est téléchargé qu'une fois la zone visible et le
+  navigateur au repos ; sur téléphone ou appareil modeste (ou si l'affichage rame) : moitié moins de
+  facettes, résolution réduite, ombre figée, pas d'anticrénelage matériel ; rendu « à la demande »
+  (l'image se fige quand rien ne bouge, en continu seulement pendant la rotation automatique) ;
+  les exports GLB/STL gardent le plein détail. La CI mesure un score **Lighthouse mobile**
+  (informatif, publié avec les captures). Il n'y a pas d'image de contenu à optimiser (le décor est en
+  CSS, les icônes sont de petits PNG).
+- **Gestes tactiles** : un doigt tourne, deux doigts pincent pour zoomer (et déplacent la vue),
+  double-tap (ou double-clic) recentre ; un rappel s'affiche la première fois sur écran tactile.
+- **Application installable (PWA)** : manifeste (`/manifest.webmanifest`, plein écran « standalone »),
+  icônes dont une « maskable », écrans de lancement iOS (iPhone et iPad, portrait et paysage),
+  service worker minimal (`public/sw.js`) et page hors-ligne (`public/offline.html`). Le service worker
+  ne met **pas** en cache les pages ni l'API (le bouton « Mettre à jour » reste fiable) : il garde
+  seulement la page hors-ligne et les fichiers statiques versionnés. Installation : Android et
+  ordinateur → Réglages → « Installer l'application » ; iPhone / iPad → Safari → Partager → « Sur
+  l'écran d'accueil ». Les icônes se régénèrent avec `node scripts/make-pwa-assets.cjs`.
 
-## Espace administrateur (`/admin`)
+## Mon espace et administration
 
-| Page | Contenu |
-| --- | --- |
-| Vue d'ensemble | Demandes, taux de réussite, utilisateurs, durée moyenne, jetons, générations par jour, dernières erreurs |
-| Apparence | Nom du site, textes du titre, sous-titre, pied de page, couleurs du dégradé et d'accent, logo, **aperçu en direct** |
-| Prompt IA | Éditeur du prompt système, modèle, effort, jetons max, fournisseur 3D ; bouton **Tester** (appel réel, rien n'est enregistré, aperçu 3D du résultat) |
-| Clés d'API | Saisie / remplacement / suppression ; chiffrées en AES-256-GCM, jamais renvoyées au navigateur (seuls les 4 derniers caractères) |
-| Demandes | Toutes les demandes, filtre par statut, JSON validé et réponse brute, suppression |
-| Utilisateurs | Comptes, générations sur 24 h / 30 jours, promotion / rétrogradation admin |
-| Fonctionnalités | Exports GLB / STL / PNG, ajout de photo, pause des demandes, inscriptions, modèles d'exemple, mode Dev, quotas |
-| Mode Dev · logs | Journal des erreurs (refus, validations échouées, erreurs d'API…) ; avec le mode Dev activé, bouton « JSON » sur la visionneuse |
+- `/espace` : demandes, modèles 3D (GLB dans Supabase Storage), favoris, dossiers, matières préférées,
+  paramètres, export JSON de toutes les données, suppression du compte.
+- `/admin` : vue d'ensemble, apparence en direct, prompt IA avec test, clés d'API chiffrées (AES-256-GCM),
+  demandes, utilisateurs, fonctionnalités et quotas, journal d'erreurs (mode Dev).
 
 ## Sécurité
 
-- **Authentification Supabase** (email + mot de passe, confirmation par email), session
-  rafraîchie par le middleware ; `/admin` vérifie le rôle côté serveur dans le layout **et** dans
-  chaque action.
-- **Row Level Security** sur toutes les tables : chacun ne lit et ne supprime que ses demandes ;
-  la création passe par `create_design_request` ; les résultats sont écrits par le serveur avec la
-  clé secrète ; le rôle n'est **pas modifiable** via l'API (droit de mise à jour limité à
-  `display_name`) ; `app_secrets` n'a aucune politique (inaccessible hors clé secrète) ; réponses
-  brutes, registre et journal réservés aux admins.
-- **Quotas** appliqués en base (verrou par utilisateur, registre `usage_events` que l'utilisateur
-  ne peut pas effacer), réglables dans l'admin ; les inscriptions peuvent être fermées (bloquées
-  aussi par le déclencheur SQL).
-- **Validation des entrées** côté serveur (Zod) : longueur de la demande, type et poids de
-  l'image, valeurs de l'admin (couleurs, logo, prompt, quotas) ; **validation de la sortie de
-  l'IA** avant tout enregistrement ou rendu.
-- Le prompt système demande d'ignorer les instructions contenues dans la demande ; la demande est
-  passée comme donnée dans une balise dédiée et la sortie est contrainte par le schéma.
-- Clés d'API uniquement côté serveur (`server-only`), protections CSRF (vérification d'origine
-  sur les routes API, actions serveur Next), en-têtes de sécurité (`nosniff`, `DENY`…).
-
-## Format de conception (extrait)
-
-```json
-{
-  "title": "Peigne range-câbles lesté",
-  "dimensions": { "width": 160, "depth": 60, "height": 44, "weightGrams": 95, "notes": "" },
-  "model": {
-    "parts": [
-      {
-        "id": "base", "name": "Base lestée", "role": "…", "shape": "box",
-        "size": { "x": 160, "y": 12, "z": 60 }, "position": { "x": 0, "y": 8, "z": 0 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }, "cornerRadius": 5,
-        "profile": [], "holes": [], "color": "#5b6ee1", "material": "plastic"
-      }
-    ]
-  }
-}
-```
-
-Unités : millimètres, axe Y vers le haut, sol à `y = 0`. Schéma complet :
-`src/lib/design/schema.ts`.
+- **Authentification Supabase** ; `/admin` vérifie le rôle côté serveur dans le layout **et** dans chaque action.
+- **Row Level Security** sur toutes les tables et les buckets Storage : chacun ne voit que ses données.
+  Les colonnes modifiables par l'utilisateur sont limitées (`title`, `folder_id`, `is_favorite`…) ; le
+  rôle n'est pas modifiable via l'API. Un test d'isolation automatique (CI) le vérifie depuis l'extérieur.
+- **Quotas** en base (verrou par utilisateur, registre que l'utilisateur ne peut pas effacer) et quota
+  d'essai sans compte par adresse (empreinte salée, l'IP n'est jamais stockée).
+- **Validation des entrées côté serveur** (Zod) et **validation de la sortie de l'IA** avant tout
+  enregistrement ou rendu. La demande est passée à l'IA comme une donnée dans une balise dédiée.
+- Clés d'API uniquement côté serveur (`server-only`), protection CSRF (vérification d'origine),
+  en-têtes de sécurité. Limite connue : sans clé secrète Supabase, le prompt système (réglage `ai`)
+  est lisible via l'API publique de la base (il ne contient aucun secret).
 
 ## Scripts
 
-`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm test` (Vitest :
-schéma, normalisation, géométries, cohérence des dimensions, export STL, chiffrement, réglages) ·
-`npm run smoke` (test de bout en bout en mode démo contre un serveur lancé : 1 demande → 1 modèle
-3D). La CI (`.github/workflows/forma3d.yml`) enchaîne les cinq.
+`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm test` (Vitest : schéma,
+géométries, chiffrement, réglages, génération et repli, appel à Claude, lecture du JSON en cours
+d'écriture, assistant de questions, cache) · `npm run smoke` (bout en bout en mode démo : génération
+classique et diffusée, assistant de questions, PWA). La CI (`.github/workflows/forma3d.yml`) enchaîne
+types, lint, tests, build, test de fumée, captures d'écran, Lighthouse et un parcours complet contre
+le vrai projet Supabase (comptes de test, Storage, export, suppression, isolation).
 
 ## Arborescence
 
 ```
 forma3d/
-├─ supabase/migrations/        schéma SQL complet (tables, RLS, fonctions)
-├─ src/app/                    pages (accueil, connexion, setup, admin) et routes API
-├─ src/components/studio/      tableau de bord (tablette) : barre, colonnes, visionneuse, dialogues
-├─ src/components/viewer/      visionneuse React Three Fiber (néon / réaliste, éclaté, captures)
-├─ src/components/landing/     fond dégradé, sphères en parallaxe, titre
-├─ src/lib/design/             schéma de conception, prompt par défaut, exemples, générateur de démo
-├─ src/lib/ai/                 appel Claude (sortie structurée, erreurs, refus)
-├─ src/lib/providers/          interface « fournisseur 3D » + adaptateur Meshy
+├─ supabase/migrations/        schéma SQL (tables, RLS, fonctions, cache, limite de débit)
+├─ public/                     icônes PWA, écrans de lancement iOS, service worker, page hors-ligne
+├─ src/app/                    pages (accueil, connexion, espace, setup, admin) et routes API
+├─ src/components/studio/      tableau de bord : barre de demande, assistant, colonnes, visionneuse
+├─ src/components/viewer/      visionneuse React Three Fiber (qualité, gestes, captures)
+├─ src/lib/design/             schéma de conception, prompt, exemples, lecture du JSON partiel
+├─ src/lib/ai/                 appels à Claude (conception en flux, assistant de questions)
+├─ src/lib/cache.ts            cache des demandes identiques
+├─ src/lib/providers/          interface « fournisseur 3D » (aucun service payant branché)
 ├─ src/lib/three/              géométries, vue éclatée, exports GLB / STL
 └─ tests/                      tests Vitest
 ```
 
-## Améliorations possibles
+## Reste à faire (hors phases suivantes)
 
-- **Affinage conversationnel** : « plus haut », « ajoute un tiroir » → nouvelle version du même
-  projet, avec historique des versions et comparaison.
-- **Vrai maillage** : finaliser un fournisseur text-to-3D (Meshy, Tripo, Rodin) et stocker les GLB
-  dans Supabase Storage plutôt que de les relayer.
-- **Opérations booléennes** (CSG, par ex. `three-bvh-csg`) pour percer des trous et creuser des
-  formes, afin d'obtenir des STL directement imprimables d'un seul tenant.
-- **Cotes dans la vue 3D** (lignes de cote, mesure au clic) et vérification d'imprimabilité
-  (épaisseurs minimales, porte-à-faux, volume d'impression).
-- **Diffusion en continu** de la génération (Server-Sent Events) pour afficher l'analyse avant
-  la fin de la modélisation.
-- **Partage public** d'un projet en lecture seule, export PDF de la fiche de fabrication.
-- **Facturation** des crédits (Stripe) et quotas par offre ; limitation par IP en complément.
-- **Photos stockées** (Supabase Storage, URLs signées) pour les retrouver dans l'historique.
-- **Tests de bout en bout** Playwright (connexion, génération, admin) contre un projet Supabase de
-  test, et vérification visuelle des captures.
-- Internationalisation (anglais) et mode sombre.
+- Appliquer la migration `20261103000000_phase1_cache_ratelimit.sql` dans Supabase (activer le cache).
+- Réglages Supabase : Site URL et Redirect URLs ; Google si souhaité (non testés : emails, Google, photo de profil).
+- Supprimer les comptes de test `e2e-*@forma3d.test` laissés par la CI.
+- Réduire les limites de l'essai sans compte dans `/admin` si le crédit Claude est limité.
+- Phases 2 à 5 (voir le tableau en haut).
