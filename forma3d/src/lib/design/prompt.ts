@@ -33,9 +33,9 @@ Règles
 
 /** Consigne de langue ajoutée au prompt selon la préférence de l'utilisateur. */
 export function languageInstruction(language: string | null | undefined): string {
-  return language === "en"
-    ? "\n\nLangue de rédaction : anglais (English) pour tous les textes du JSON."
-    : "";
+  if (language === "en") return "\n\nLangue de rédaction : anglais (English) pour tous les textes du JSON.";
+  if (language === "ar") return "\n\nLangue de rédaction : arabe (العربية) pour tous les textes du JSON (les identifiants, couleurs et noms de matières techniques comme PLA ou PETG restent tels quels).";
+  return "";
 }
 
 /** Demande d'exemple utilisée par le bouton « Tester » de l'admin. */

@@ -59,7 +59,7 @@ export function JsonDrawer({
     <AnimatePresence>
       {item && (
         <motion.div
-          className="fixed inset-0 z-50 flex justify-end bg-ink/40 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex justify-end bg-night/40 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -87,7 +87,7 @@ export function JsonDrawer({
                   key={v}
                   type="button"
                   onClick={() => setView(v)}
-                  className={`rounded-full px-3 py-1 font-semibold ${view === v ? "bg-white text-ink" : "bg-white/10"}`}
+                  className={`rounded-full px-3 py-1 font-semibold ${view === v ? "bg-surface text-ink" : "bg-white/10"}`}
                 >
                   {v === "raw" ? "Réponse brute de l'IA" : "Conception validée"}
                 </button>

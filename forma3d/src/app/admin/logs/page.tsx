@@ -29,9 +29,9 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
     <div>
       <AdminTitle title="Mode Dev · logs" subtitle="Erreurs de génération, refus de l'IA, validations échouées et actions d'administration.">
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-full bg-white p-1 ring-1 ring-line">
+          <div className="flex gap-1 rounded-full bg-surface p-1 ring-1 ring-line">
             {LEVELS.map((l) => (
-              <Link key={l} href={`/admin/logs?niveau=${l}`} className={`rounded-full px-3 py-1 text-xs font-semibold ${level === l ? "bg-ink text-white" : "text-ink-soft"}`}>
+              <Link key={l} href={`/admin/logs?niveau=${l}`} className={`rounded-full px-3 py-1 text-xs font-semibold ${level === l ? "bg-night text-white" : "text-ink-soft"}`}>
                 {l === "all" ? "Tous" : l}
               </Link>
             ))}

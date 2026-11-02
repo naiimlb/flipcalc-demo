@@ -11,6 +11,8 @@ import { IconX, Spinner } from "../icons";
 import { Portal } from "../Portal";
 import { formatDuration, formatLength, formatMoney, formatWeight, type LengthUnit } from "./format";
 import type { StudioPrefs } from "./types";
+import { useT } from "../app/Preferences";
+import type { Translator } from "@/lib/i18n";
 
 const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
   ssr: false,
@@ -38,13 +40,13 @@ interface Facts {
   verdict: string;
 }
 
-function facts(design: Design, prefs: StudioPrefs, unit: LengthUnit): Facts {
+function facts(design: Design, prefs: StudioPrefs, unit: LengthUnit, t: Translator): Facts {
   let printGrams: number | null = null;
   let printMinutes: number | null = null;
   let verdict = "—";
   try {
     const report = checkPrintability(design, prefs.printer);
-    verdict = report.verdict === "ok" ? "Imprimable" : report.verdict === "warning" ? "À vérifier" : "À corriger";
+    verdict = t(report.verdict === "ok" ? "fab.ok" : report.verdict === "warning" ? "fab.warn" : "fab.error");
     const e = estimatePrint(
       design,
       { material: prefs.print.material ?? defaultPrintMaterial(design), infill: prefs.print.infill, layerHeight: prefs.print.layerHeight },
@@ -76,10 +78,10 @@ function facts(design: Design, prefs: StudioPrefs, unit: LengthUnit): Facts {
 function Delta({ a, b, lowerIsBetter = true }: { a: number | null; b: number | null; lowerIsBetter?: boolean }) {
   if (a === null || b === null || a <= 0) return null;
   const pct = Math.round(((b - a) / a) * 100);
-  if (pct === 0) return <span className="ml-1 text-[10.5px] text-ink-mute">=</span>;
+  if (pct === 0) return <span className="ms-1 text-[10.5px] text-ink-mute">=</span>;
   const good = lowerIsBetter ? pct < 0 : pct > 0;
   return (
-    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${good ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"}`}>
+    <span className={`ms-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${good ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"}`}>
       {pct > 0 ? "+" : ""}
       {pct} %
     </span>
@@ -99,26 +101,27 @@ export default function CompareDialog({
   prefs: StudioPrefs;
   onClose(): void;
 }) {
+  const t = useT();
   const ready = items.filter((i) => i.design && i.status === "ready");
   const [aId, setAId] = useState(initialA);
   const [bId, setBId] = useState(initialB);
   const a = ready.find((i) => i.id === aId) ?? ready[0];
   const b = ready.find((i) => i.id === bId) ?? ready[1] ?? ready[0];
-  const fa = useMemo(() => (a?.design ? facts(a.design, prefs, prefs.unit) : null), [a, prefs]);
-  const fb = useMemo(() => (b?.design ? facts(b.design, prefs, prefs.unit) : null), [b, prefs]);
+  const fa = useMemo(() => (a?.design ? facts(a.design, prefs, prefs.unit, t) : null), [a, prefs, t]);
+  const fb = useMemo(() => (b?.design ? facts(b.design, prefs, prefs.unit, t) : null), [b, prefs, t]);
 
-  const label = (i: RequestItem) => `${i.title ?? i.prompt}${i.design?.variante ? ` · ${i.design.variante.libelle}` : ""}`;
+  const label = (i: RequestItem) => `${i.title ?? i.prompt}${i.design?.variante ? ` · ${t(`variant.${i.design.variante.objectif}`)}` : ""}`;
   const material = findPrintMaterial(prefs.print.material ?? (a?.design ? defaultPrintMaterial(a.design) : "pla")).label;
 
   const rows: { label: string; a: React.ReactNode; b: React.ReactNode }[] =
     fa && fb
       ? [
-          { label: "Dimensions (L × P × H)", a: fa.dims, b: <>{fb.dims}<Delta a={fa.volume} b={fb.volume} /></> },
-          { label: "Masse estimée", a: formatWeight(fa.weight), b: <>{formatWeight(fb.weight)}<Delta a={fa.weight} b={fb.weight} /></> },
-          { label: "Pièces", a: fa.parts, b: fb.parts },
-          { label: "Matière conseillée", a: fa.material, b: fb.material },
+          { label: t("compare.dims"), a: fa.dims, b: <>{fb.dims}<Delta a={fa.volume} b={fb.volume} /></> },
+          { label: t("compare.mass"), a: formatWeight(fa.weight), b: <>{formatWeight(fb.weight)}<Delta a={fa.weight} b={fb.weight} /></> },
+          { label: t("compare.parts"), a: fa.parts, b: fb.parts },
+          { label: t("compare.material"), a: fa.material, b: fb.material },
           {
-            label: "Coût estimé (IA)",
+            label: t("compare.cost"),
             a: `${formatMoney(fa.costMin, fa.currency)} – ${formatMoney(fa.costMax, fa.currency)}`,
             b: (
               <>
@@ -128,7 +131,7 @@ export default function CompareDialog({
             ),
           },
           {
-            label: `Impression (${material}, estimée)`,
+            label: t("compare.print", { material }),
             a: fa.printGrams !== null ? `${formatWeight(fa.printGrams)} · ${formatDuration(fa.printMinutes ?? 0)}` : "—",
             b: (
               <>
@@ -137,24 +140,24 @@ export default function CompareDialog({
               </>
             ),
           },
-          { label: "Imprimabilité", a: fa.verdict, b: fb.verdict },
+          { label: t("compare.printability"), a: fa.verdict, b: fb.verdict },
         ]
       : [];
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[60] flex items-stretch justify-center bg-ink/55 p-2 backdrop-blur-sm sm:items-center sm:p-6">
+      <div className="fixed inset-0 z-[60] flex items-stretch justify-center bg-night/55 p-2 backdrop-blur-sm sm:items-center sm:p-6">
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="compare-title"
-          className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-[24px] bg-white shadow-float"
+          className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-[24px] bg-surface shadow-float"
         >
           <header className="flex items-center gap-3 border-b border-line px-4 py-3">
             <h2 id="compare-title" className="flex-1 text-[15px] font-semibold">
-              Comparer deux versions
+              {t("compare.title")}
             </h2>
-            <button type="button" onClick={onClose} className="icon-btn" aria-label="Fermer">
+            <button type="button" onClick={onClose} className="icon-btn" aria-label={t("menu.close")}>
               <IconX size={15} />
             </button>
           </header>
@@ -168,7 +171,7 @@ export default function CompareDialog({
               ).map(([key, current, set]) => (
                 <div key={key} className="min-w-0">
                   <label className="label !mb-1" htmlFor={`compare-${key}`}>
-                    Version {key}
+                    {t("compare.version", { v: key })}
                   </label>
                   <select
                     id={`compare-${key}`}
@@ -193,12 +196,12 @@ export default function CompareDialog({
                 </div>
               ))}
             </div>
-            <table className="mt-4 w-full table-fixed border-collapse text-left text-[12px]">
+            <table className="mt-4 w-full table-fixed border-collapse text-start text-[12px]">
               <thead>
                 <tr className="text-[10.5px] uppercase tracking-wide text-ink-mute">
                   <th className="w-[30%] pb-2 font-semibold"> </th>
-                  <th className="pb-2 font-semibold">Version A</th>
-                  <th className="pb-2 font-semibold">Version B</th>
+                  <th className="pb-2 font-semibold">{t("compare.version", { v: "A" })}</th>
+                  <th className="pb-2 font-semibold">{t("compare.version", { v: "B" })}</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,7 +216,7 @@ export default function CompareDialog({
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-[10.5px] text-ink-mute">Écarts de la version B par rapport à la version A. Coûts, masses et durées sont des estimations.</p>
+            <p className="mt-3 text-[10.5px] text-ink-mute">{t("compare.note")}</p>
           </div>
         </div>
       </div>

@@ -37,12 +37,12 @@ export default async function RequestsAdminPage({ searchParams }: { searchParams
   return (
     <div>
       <AdminTitle title="Demandes" subtitle={`${count ?? 0} demande(s) au total.`}>
-        <div className="flex gap-1 rounded-full bg-white p-1 ring-1 ring-line">
+        <div className="flex gap-1 rounded-full bg-surface p-1 ring-1 ring-line">
           {STATUSES.map((s) => (
             <Link
               key={s}
               href={`/admin/demandes?statut=${s}`}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${status === s ? "bg-ink text-white" : "text-ink-soft"}`}
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${status === s ? "bg-night text-white" : "text-ink-soft"}`}
             >
               {STATUS_LABELS[s]}
             </Link>

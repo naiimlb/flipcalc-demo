@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { MAX_ANSWER_LENGTH, type Answer, type ClarifyQuestion } from "@/lib/clarify-types";
 import { IconCheck, IconSparkles } from "../icons";
 import { Portal } from "../Portal";
+import { useT } from "../app/Preferences";
 
 /** Réponse à une question : une option choisie, ou « Passer » (null). */
 type Choice = string | null | undefined;
@@ -24,6 +25,7 @@ export function ClarifyPanel({
   onSubmit(answers: Answer[]): void;
   onCancel(): void;
 }) {
+  const t = useT();
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const [texts, setTexts] = useState<Record<string, string>>({});
   const answerOf = (q: ClarifyQuestion): string | null => {
@@ -45,7 +47,7 @@ export function ClarifyPanel({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center sm:p-6">
+      <div className="fixed inset-0 z-[60] flex items-end justify-center bg-night/55 p-3 backdrop-blur-sm sm:items-center sm:p-6">
         <motion.div
           role="dialog"
           aria-modal="true"
@@ -53,10 +55,10 @@ export function ClarifyPanel({
           initial={{ opacity: 0, y: 24, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-[24px] bg-white p-4 shadow-float sm:p-5"
+          className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-[24px] bg-surface p-4 shadow-float sm:p-5"
         >
           <p className="flex items-center gap-1.5 text-[12px] font-semibold text-brand-accent">
-            <IconSparkles size={14} /> Quelques précisions pour mieux concevoir
+            <IconSparkles size={14} /> {t("clarify.kicker")}
           </p>
           <h2 id="clarify-title" className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-ink">
             « {prompt} »
@@ -109,7 +111,7 @@ export function ClarifyPanel({
                       choices[q.id] === null ? "border-ink/40 bg-ink/10 text-ink" : "border-line text-ink-mute hover:text-ink"
                     }`}
                   >
-                    Passer
+                    {t("clarify.skip")}
                   </button>
                 </div>
               </fieldset>
@@ -118,15 +120,15 @@ export function ClarifyPanel({
 
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
             <button type="button" onClick={onCancel} className="btn-ghost !py-2.5 !text-xs">
-              Modifier ma demande
+              {t("clarify.edit")}
             </button>
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <button type="button" onClick={() => onSubmit([])} className="btn-ghost !py-2.5 !text-xs">
-                Tout passer
+                {t("clarify.skipAll")}
               </button>
               <button type="button" onClick={submit} className="btn-accent !py-2.5 !text-xs">
                 <IconSparkles size={14} />
-                {answered > 0 ? `Concevoir (${answered} réponse${answered > 1 ? "s" : ""})` : "Concevoir"}
+                {answered > 0 ? t("clarify.goN", { n: answered }) : t("clarify.go")}
               </button>
             </div>
           </div>

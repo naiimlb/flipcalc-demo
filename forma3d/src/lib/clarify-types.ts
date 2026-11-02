@@ -54,40 +54,59 @@ export function looksClear(prompt: string, hasImage = false): boolean {
   return false;
 }
 
+type Lang = "fr" | "en" | "ar";
+const Q = {
+  reference: {
+    fr: ["Une mesure de référence visible sur la photo ?", "ex. : la prise fait 8 cm de large, la table 80 cm"],
+    en: ["A reference measurement visible in the photo?", "e.g. the socket is 8 cm wide, the table 80 cm"],
+    ar: ["قياس مرجعي ظاهر في الصورة؟", "مثال: عرض المقبس 8 سم، والطاولة 80 سم"],
+  },
+  size: {
+    fr: ["Quelle taille approximative ?", "Petit (moins de 10 cm)", "Moyen (10 à 30 cm)", "Grand (plus de 30 cm)"],
+    en: ["Roughly what size?", "Small (under 10 cm)", "Medium (10 to 30 cm)", "Large (over 30 cm)"],
+    ar: ["ما الحجم التقريبي؟", "صغير (أقل من 10 سم)", "متوسط (10 إلى 30 سم)", "كبير (أكثر من 30 سم)"],
+  },
+  usage: {
+    fr: ["Où sera-t-il utilisé ?", "À l'intérieur", "À l'extérieur", "Les deux"],
+    en: ["Where will it be used?", "Indoors", "Outdoors", "Both"],
+    ar: ["أين سيُستخدم؟", "في الداخل", "في الخارج", "كلاهما"],
+  },
+  make: {
+    fr: ["Comment le fabriquer ?", "Imprimante 3D à la maison", "Service d'impression", "Bois / atelier", "Peu importe"],
+    en: ["How will you make it?", "3D printer at home", "Printing service", "Wood / workshop", "No preference"],
+    ar: ["كيف ستصنعه؟", "طابعة ثلاثية الأبعاد في المنزل", "خدمة طباعة", "خشب / ورشة", "لا يهم"],
+  },
+} as const;
+
+const lang = (l?: string): Lang => (l === "en" || l === "ar" ? l : "fr");
+
 /** Mesure de référence demandée pour une photo : sert à estimer les tailles réelles. */
-export function referenceQuestion(): ClarifyQuestion {
-  return {
-    id: "reference",
-    question: "Une mesure de référence visible sur la photo ?",
-    options: [],
-    freeText: { placeholder: "ex. : la prise fait 8 cm de large, la table 80 cm" },
-  };
+export function referenceQuestion(language?: string): ClarifyQuestion {
+  const [question, placeholder] = Q.reference[lang(language)];
+  return { id: "reference", question, options: [], freeText: { placeholder } };
+}
+
+function choiceQuestion(id: "size" | "usage" | "make", language?: string): ClarifyQuestion {
+  const [question, ...options] = Q[id][lang(language)];
+  return { id: id === "size" ? "taille" : id === "make" ? "fabrication" : "usage", question, options: [...options] };
 }
 
 /** Ajoute la question de mesure de référence (photo sans cote dans la demande), en restant à 3 questions. */
-export function withReferenceQuestion(questions: ClarifyQuestion[], prompt: string, hasImage: boolean): ClarifyQuestion[] {
+export function withReferenceQuestion(questions: ClarifyQuestion[], prompt: string, hasImage: boolean, language?: string): ClarifyQuestion[] {
   if (!hasImage || hasDimension(prompt) || questions.some((q) => q.freeText)) return questions.slice(0, MAX_QUESTIONS);
-  return [referenceQuestion(), ...questions.filter((q) => q.id !== "taille")].slice(0, MAX_QUESTIONS);
+  return [referenceQuestion(language), ...questions.filter((q) => q.id !== "taille")].slice(0, MAX_QUESTIONS);
 }
 
 /**
  * Questions de repli (sans IA) pour une demande très courte :
  * utilisées quand l'IA n'est pas disponible, pour que l'assistant fonctionne quand même.
  */
-export function fallbackQuestions(prompt: string, hasImage = false): ClarifyQuestion[] {
+export function fallbackQuestions(prompt: string, hasImage = false, language?: string): ClarifyQuestion[] {
   if (hasImage) {
-    return withReferenceQuestion(
-      wordCount(prompt) < 8 ? [{ id: "usage", question: "Où sera-t-il utilisé ?", options: ["À l'intérieur", "À l'extérieur", "Les deux"] }] : [],
-      prompt,
-      true,
-    );
+    return withReferenceQuestion(wordCount(prompt) < 8 ? [choiceQuestion("usage", language)] : [], prompt, true, language);
   }
   if (wordCount(prompt) >= 8) return [];
-  return [
-    { id: "taille", question: "Quelle taille approximative ?", options: ["Petit (moins de 10 cm)", "Moyen (10 à 30 cm)", "Grand (plus de 30 cm)"] },
-    { id: "usage", question: "Où sera-t-il utilisé ?", options: ["À l'intérieur", "À l'extérieur", "Les deux"] },
-    { id: "fabrication", question: "Comment le fabriquer ?", options: ["Imprimante 3D à la maison", "Service d'impression", "Bois / atelier", "Peu importe"] },
-  ];
+  return [choiceQuestion("size", language), choiceQuestion("usage", language), choiceQuestion("make", language)];
 }
 
 /** Texte ajouté à la demande pour l'IA et pour la clé du cache (ordre des réponses conservé). */

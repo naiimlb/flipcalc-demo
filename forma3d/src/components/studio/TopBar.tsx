@@ -15,15 +15,16 @@ import {
   IconUser,
   IconX,
 } from "../icons";
+import { useT } from "../app/Preferences";
 import { formatRelative } from "./format";
 import { StatusChip } from "./ui";
 import type { StudioTab, StudioViewer } from "./types";
 
-export const TABS: { id: StudioTab; label: string }[] = [
-  { id: "overview", label: "Aperçu" },
-  { id: "fabrication", label: "Fabriquer" },
-  { id: "history", label: "Historique" },
-  { id: "settings", label: "Paramètres" },
+export const TABS: { id: StudioTab; label: "tab.overview" | "tab.fabrication" | "tab.history" | "tab.settings" }[] = [
+  { id: "overview", label: "tab.overview" },
+  { id: "fabrication", label: "tab.fabrication" },
+  { id: "history", label: "tab.history" },
+  { id: "settings", label: "tab.settings" },
 ];
 
 const SEEN_KEY = "forma3d:notifications-seen";
@@ -54,6 +55,7 @@ const dropdown = {
 };
 
 export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(id: string): void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useOutsideClose(open, () => setOpen(false));
@@ -73,12 +75,12 @@ export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(
 
   return (
     <div ref={ref} className="relative">
-      <button type="button" className="icon-btn" aria-label="Rechercher un projet" onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="icon-btn" aria-label={t("search.open")} onClick={() => setOpen((o) => !o)}>
         <IconSearch size={15} />
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div {...dropdown} className="absolute right-0 top-10 z-30 w-[min(300px,80vw)] rounded-2xl border border-line bg-white p-2 shadow-float">
+          <motion.div {...dropdown} className="absolute end-0 top-10 z-30 w-[min(300px,80vw)] rounded-2xl border border-line bg-surface p-2 shadow-float">
             <div className="flex items-center gap-2 rounded-xl bg-paper px-3 py-2">
               <IconSearch size={14} className="text-ink-mute" />
               <input
@@ -88,18 +90,18 @@ export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && results[0]) pick(results[0].id);
                 }}
-                placeholder="Rechercher un projet…"
+                placeholder={t("search.placeholder")}
                 className="w-full bg-transparent text-sm outline-none placeholder:text-ink-mute"
               />
             </div>
             <ul className="mt-1 max-h-72 overflow-y-auto scrollbar-thin">
-              {results.length === 0 && <li className="px-3 py-4 text-center text-xs text-ink-mute">Aucun projet trouvé.</li>}
+              {results.length === 0 && <li className="px-3 py-4 text-center text-xs text-ink-mute">{t("search.empty")}</li>}
               {results.map((item) => (
                 <li key={item.id}>
                   <button
                     type="button"
                     onClick={() => pick(item.id)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-paper"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start hover:bg-paper"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-semibold">{item.title ?? item.prompt}</span>
@@ -118,6 +120,7 @@ export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(
 }
 
 export function Notifications({ items, onSelect }: { items: RequestItem[]; onSelect(id: string): void }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const [seenAt, setSeenAt] = useState<number>(Date.now());
   const ref = useOutsideClose(open, () => setOpen(false));
@@ -146,7 +149,7 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
 
   return (
     <div ref={ref} className="relative">
-      <button type="button" className="icon-btn relative" aria-label={`Notifications (${unread} nouvelles)`} onClick={toggle}>
+      <button type="button" className="icon-btn relative" aria-label={tr("notif.label", { n: unread })} onClick={toggle}>
         <IconBell size={15} />
         {unread > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
@@ -156,10 +159,10 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div {...dropdown} className="absolute right-0 top-10 z-30 w-[min(300px,80vw)] rounded-2xl border border-line bg-white p-2 shadow-float">
-            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-mute">Activité</p>
+          <motion.div {...dropdown} className="absolute end-0 top-10 z-30 w-[min(300px,80vw)] rounded-2xl border border-line bg-surface p-2 shadow-float">
+            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-mute">{tr("notif.activity")}</p>
             {recent.length === 0 ? (
-              <p className="px-3 py-4 text-center text-xs text-ink-mute">Aucune activité pour l&apos;instant.</p>
+              <p className="px-3 py-4 text-center text-xs text-ink-mute">{tr("notif.empty")}</p>
             ) : (
               <ul>
                 {recent.map((item) => (
@@ -170,17 +173,17 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
                         onSelect(item.id);
                         setOpen(false);
                       }}
-                      className="flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left hover:bg-paper"
+                      className="flex w-full items-start gap-2 rounded-xl px-3 py-2 text-start hover:bg-paper"
                     >
                       <StatusChip status={item.status} compact />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-semibold">{item.title ?? item.prompt}</span>
                         <span className="block text-[11px] text-ink-mute">
                           {item.status === "ready"
-                            ? "Conception prête"
+                            ? tr("notif.ready")
                             : item.status === "processing"
-                              ? "Génération en cours"
-                              : item.error ?? "Échec de la génération"}{" "}
+                              ? tr("notif.processing")
+                              : item.error ?? tr("notif.failed")}{" "}
                           · {formatRelative(item.createdAt)}
                         </span>
                       </span>
@@ -205,18 +208,19 @@ export function AccountMenu({
   demoMode: boolean;
   onSettings?: () => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, () => setOpen(false));
 
   if (!viewer) {
-    if (demoMode) return <span className="chip bg-amber-100 text-amber-800">Mode démo</span>;
+    if (demoMode) return <span className="chip bg-amber-100 text-amber-800">{t("nav.demo")}</span>;
     return (
       <div className="flex items-center gap-1.5">
         <Link href="/connexion" className="btn !px-3 !py-1.5 !text-xs text-white hover:bg-white/15">
-          Connexion
+          {t("nav.login")}
         </Link>
         <Link href="/connexion?mode=inscription" className="btn-dark !px-3 !py-1.5 !text-xs">
-          Créer un compte
+          {t("nav.signup")}
         </Link>
       </div>
     );
@@ -235,7 +239,7 @@ export function AccountMenu({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-0.5 text-white/80 hover:text-white"
-        aria-label="Menu du compte"
+        aria-label={t("menu.account")}
         aria-expanded={open}
       >
         <IconChevronDown size={14} />
@@ -250,19 +254,19 @@ export function AccountMenu({
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div {...dropdown} className="absolute right-0 top-11 z-30 w-60 rounded-2xl border border-line bg-white p-2 shadow-float">
+          <motion.div {...dropdown} className="absolute end-0 top-11 z-30 w-60 rounded-2xl border border-line bg-surface p-2 shadow-float">
             <div className="px-3 py-2">
               <p className="truncate text-sm font-semibold">{name}</p>
               <p className="truncate text-[11px] text-ink-mute">{viewer.email}</p>
-              {viewer.role === "admin" && <span className="chip mt-1.5 bg-ink text-white">Administrateur</span>}
+              {viewer.role === "admin" && <span className="chip mt-1.5 bg-night text-white">{t("menu.administrator")}</span>}
             </div>
             <div className="my-1 h-px bg-line" />
             <Link href="/espace" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-paper">
-              <IconUser size={15} /> Mon espace
+              <IconUser size={15} /> {t("nav.space")}
             </Link>
             {viewer.role === "admin" && (
               <Link href="/admin" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-paper">
-                <IconShield size={15} /> Administration
+                <IconShield size={15} /> {t("menu.administration")}
               </Link>
             )}
             {onSettings && (
@@ -272,18 +276,18 @@ export function AccountMenu({
                   onSettings();
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-paper"
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm hover:bg-paper"
               >
-                <IconSettings size={15} /> Paramètres d&apos;affichage
+                <IconSettings size={15} /> {t("tab.settings")}
               </button>
             )}
             <form action={signOut}>
-              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50">
-                <IconLogout size={15} /> Se déconnecter
+              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-rose-600 hover:bg-rose-50">
+                <IconLogout size={15} /> {t("menu.logout")}
               </button>
             </form>
             <button type="button" onClick={() => setOpen(false)} className="sr-only">
-              <IconX /> Fermer
+              <IconX /> {t("menu.close")}
             </button>
           </motion.div>
         )}

@@ -6,6 +6,7 @@ import type { ViewerSettings } from "../viewer/settings";
 import { IconBulb, IconCheck, IconCoin, IconExplode, IconHeart, IconLayers, IconRuler, IconSparkles, IconSteps, IconWire, IconCube } from "../icons";
 import { formatDuration, formatLength, formatMoney, formatWeight, type LengthUnit } from "./format";
 import { BulletList, Panel, Reveal } from "./ui";
+import { useT } from "../app/Preferences";
 
 const SWATCHES = ["#5b6ee1", "#ff5fb5", "#2fd3c5", "#f5b13d", "#22232b", "#f2f2f5"];
 const MATERIAL_CHOICES: (MaterialKind | null)[] = [null, "plastic", "metal", "wood", "glass"];
@@ -28,37 +29,38 @@ export function RightColumn({
   /** Les panneaux apparaissent l'un après l'autre (conception qui vient d'arriver). */
   reveal?: boolean;
 }) {
+  const t = useT();
   const totalMinutes = design?.fabrication.reduce((s, f) => s + f.durationMin, 0) ?? 0;
   const maxItem = Math.max(1, ...(design?.cost.items.map((i) => i.amount) ?? [1]));
 
   return (
     <div className="flex min-h-0 flex-col gap-3 scrollbar-thin md:h-full md:overflow-y-auto lg:pl-0.5 [&>*]:shrink-0">
       {/* Modes d'affichage (grille 2×2) */}
-      <section className="panel grid grid-cols-2 gap-1.5 p-1.5" aria-label="Modes d'affichage">
+      <section className="panel grid grid-cols-2 gap-1.5 p-1.5" aria-label={t("mode.label")}>
         <ModeButton active={settings.mode === "neon"} onClick={() => onSettings({ mode: "neon" })} icon={<IconSparkles size={14} />}>
-          Néon
+          {t("mode.neon")}
         </ModeButton>
         <ModeButton active={settings.mode === "real"} onClick={() => onSettings({ mode: "real" })} icon={<IconCube size={14} />}>
-          Réaliste
+          {t("mode.real")}
         </ModeButton>
         <ModeButton active={settings.wireframe} onClick={() => onSettings({ wireframe: !settings.wireframe })} icon={<IconWire size={14} />}>
-          Fil de fer
+          {t("mode.wire")}
         </ModeButton>
         <ModeButton active={settings.exploded} onClick={() => onSettings({ exploded: !settings.exploded })} icon={<IconExplode size={14} />}>
-          Éclaté
+          {t("mode.exploded")}
         </ModeButton>
       </section>
 
       <Reveal index={0} on={reveal}>
-      <Panel icon={<IconRuler size={15} />} title="Dimensions">
+      <Panel icon={<IconRuler size={15} />} title={t("panel.dimensions")}>
         {design ? (
           <>
             <div className="grid grid-cols-3 gap-1.5">
               {(
                 [
-                  ["L", design.dimensions.width],
-                  ["P", design.dimensions.depth],
-                  ["H", design.dimensions.height],
+                  [t("dim.width"), design.dimensions.width],
+                  [t("dim.depth"), design.dimensions.depth],
+                  [t("dim.height"), design.dimensions.height],
                 ] as const
               ).map(([label, value]) => (
                 <div key={label} className="rounded-xl bg-brand-accent/[0.07] px-2 py-2 text-center">
@@ -68,11 +70,11 @@ export function RightColumn({
               ))}
             </div>
             <p className="mt-2 flex justify-between text-[11.5px] text-ink-soft">
-              <span>Masse estimée</span>
+              <span>{t("dim.weight")}</span>
               <span className="font-semibold text-ink">{formatWeight(design.dimensions.weightGrams)}</span>
             </p>
             <p className="mt-1 flex justify-between text-[11.5px] text-ink-soft">
-              <span>Pièces</span>
+              <span>{t("dim.parts")}</span>
               <span className="font-semibold text-ink">{design.model.parts.length}</span>
             </p>
             {design.dimensions.notes && <p className="mt-2 text-[11px] leading-snug text-ink-mute">{design.dimensions.notes}</p>}
@@ -84,7 +86,7 @@ export function RightColumn({
       </Reveal>
 
       <Reveal index={1} on={reveal}>
-      <Panel icon={<IconLayers size={15} />} title="Matériaux">
+      <Panel icon={<IconLayers size={15} />} title={t("panel.materials")}>
         {design ? (
           <>
             {design.materiaux_conseilles.length > 0 && (
@@ -96,20 +98,20 @@ export function RightColumn({
                 onToggleFavorite={onToggleFavoriteMaterial}
               />
             )}
-            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">Nomenclature du modèle</p>
+            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">{t("mat.bom")}</p>
             <ul className="space-y-2">
               {design.materials.map((m, i) => (
                 <li key={i} className="rounded-xl border border-line/80 p-2.5">
                   <p className="flex items-center gap-2 text-[12px] font-semibold">
                     <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style={{ background: m.color }} />
                     {m.name}
-                    <span className="ml-auto text-[10.5px] font-medium text-ink-mute">{m.quantity}</span>
+                    <span className="ms-auto text-[10.5px] font-medium text-ink-mute">{m.quantity}</span>
                   </p>
                   <p className="mt-0.5 text-[11px] leading-snug text-ink-mute">{m.usage}</p>
                 </li>
               ))}
             </ul>
-            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">Aperçu matière</p>
+            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">{t("mat.preview")}</p>
             <div className="flex flex-wrap gap-1">
               {MATERIAL_CHOICES.map((kind) => (
                 <button
@@ -120,20 +122,20 @@ export function RightColumn({
                     settings.materialOverride === kind ? "bg-brand-accent text-white" : "bg-paper text-ink-soft hover:text-ink"
                   }`}
                 >
-                  {kind ? MATERIAL_LABELS[kind] : "Origine"}
+                  {kind ? MATERIAL_LABELS[kind] : t("mat.original")}
                 </button>
               ))}
             </div>
-            <p className="mb-1.5 mt-2.5 text-[10.5px] font-medium text-ink-mute">Couleur</p>
+            <p className="mb-1.5 mt-2.5 text-[10.5px] font-medium text-ink-mute">{t("mat.color")}</p>
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => onSettings({ colorOverride: null })}
                 className={`h-6 rounded-full px-2 text-[10px] font-semibold ${
-                  settings.colorOverride === null ? "bg-ink text-white" : "bg-paper text-ink-soft"
+                  settings.colorOverride === null ? "bg-night text-white" : "bg-paper text-ink-soft"
                 }`}
               >
-                Origine
+                {t("mat.original")}
               </button>
               {SWATCHES.map((c) => (
                 <button
@@ -158,7 +160,7 @@ export function RightColumn({
       <Reveal index={2} on={reveal}>
       <Panel
         icon={<IconSteps size={15} />}
-        title="Fabrication"
+        title={t("panel.fabrication")}
         defaultOpen={false}
         aside={design ? <span className="text-[10.5px] font-semibold text-ink-mute">{formatDuration(totalMinutes)}</span> : null}
       >
@@ -186,7 +188,7 @@ export function RightColumn({
       </Reveal>
 
       <Reveal index={3} on={reveal}>
-      <Panel icon={<IconCoin size={15} />} title="Coût estimé" defaultOpen={false}>
+      <Panel icon={<IconCoin size={15} />} title={t("panel.cost")} defaultOpen={false}>
         {design ? (
           <>
             <p className="text-lg font-bold tracking-tight">
@@ -220,13 +222,13 @@ export function RightColumn({
       </Reveal>
 
       <Reveal index={4} on={reveal}>
-      <Panel icon={<IconBulb size={15} />} title="Recommandations" defaultOpen={false}>
+      <Panel icon={<IconBulb size={15} />} title={t("panel.recommendations")} defaultOpen={false}>
         {design ? (
           <div className="space-y-2.5">
             <BulletList items={design.recommendations} />
             {design.solution.keyFeatures.length > 0 && (
               <div className="rounded-xl bg-paper p-2.5">
-                <p className="mb-1 text-[10.5px] font-medium text-ink-mute">Points forts</p>
+                <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("rec.highlights")}</p>
                 <BulletList items={design.solution.keyFeatures} />
               </div>
             )}
@@ -254,14 +256,15 @@ function RecommendedMaterials({
   favoriteMaterials: string[];
   onToggleFavorite(name: string): void;
 }) {
+  const t = useT();
   const criteria = design.criteres_materiaux;
   const isActive = (m: RecommendedMaterial) => settings.colorOverride === m.couleur && settings.materialOverride === m.aspect;
   return (
     <div>
-      <p className="mb-1.5 text-[10.5px] font-medium text-ink-mute">Matières conseillées pour votre demande</p>
+      <p className="mb-1.5 text-[10.5px] font-medium text-ink-mute">{t("mat.recommendedFor")}</p>
       {criteria && (
         <div className="mb-2 flex flex-wrap gap-1">
-          {[criteria.usage, criteria.charge, criteria.chaleur, criteria.contact_alimentaire ? "Contact alimentaire" : "", criteria.budget, criteria.fabrication]
+          {[criteria.usage, criteria.charge, criteria.chaleur, criteria.contact_alimentaire ? t("mat.food") : "", criteria.budget, criteria.fabrication]
             .filter(Boolean)
             .map((c) => (
               <span key={c} className="rounded-full bg-paper px-2 py-0.5 text-[10px] text-ink-soft">
@@ -292,8 +295,8 @@ function RecommendedMaterials({
                       )
                     }
                     aria-pressed={active}
-                    className="flex min-w-0 flex-1 items-start gap-2 text-left"
-                    title="Appliquer cette matière au modèle 3D"
+                    className="flex min-w-0 flex-1 items-start gap-2 text-start"
+                    title={t("mat.apply")}
                   >
                     <span
                       className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10"
@@ -306,9 +309,9 @@ function RecommendedMaterials({
                         <span className="text-[12.5px] font-semibold">
                           {i + 1}. {m.nom}
                         </span>
-                        {i === 0 && <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-brand-accent text-white">Recommandé</span>}
+                        {i === 0 && <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-brand-accent text-white">{t("mat.recommended")}</span>}
                         {m.alternative_economique && (
-                          <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-emerald-100 text-emerald-700">Économique</span>
+                          <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-emerald-100 text-emerald-700">{t("mat.cheap")}</span>
                         )}
                       </span>
                       <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">{m.pourquoi}</span>
@@ -318,18 +321,18 @@ function RecommendedMaterials({
                     type="button"
                     onClick={() => onToggleFavorite(m.nom)}
                     aria-pressed={favorite}
-                    aria-label={favorite ? `Retirer ${m.nom} des matières préférées` : `Ajouter ${m.nom} aux matières préférées`}
+                    aria-label={favorite ? t("mat.favRemove", { name: m.nom }) : t("mat.favAdd", { name: m.nom })}
                     className={`shrink-0 rounded-full p-1 transition ${favorite ? "text-rose-500" : "text-ink-mute hover:text-rose-500"}`}
                   >
                     <IconHeart size={14} fill={favorite ? "currentColor" : "none"} />
                   </button>
                 </div>
-                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 pl-7 text-[10.5px] leading-snug">
-                  <dt className="text-ink-mute">Limites</dt>
+                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 ps-7 text-[10.5px] leading-snug">
+                  <dt className="text-ink-mute">{t("mat.limits")}</dt>
                   <dd className="text-ink-soft">{m.limites}</dd>
-                  <dt className="text-ink-mute">Coût</dt>
+                  <dt className="text-ink-mute">{t("mat.cost")}</dt>
                   <dd className="font-semibold text-ink">{m.cout_approx}</dd>
-                  <dt className="text-ink-mute">Procédé</dt>
+                  <dt className="text-ink-mute">{t("mat.process")}</dt>
                   <dd className="text-brand-accent">{m.procede}</dd>
                 </dl>
               </div>
@@ -370,5 +373,6 @@ function ModeButton({
 }
 
 function Empty() {
-  return <p className="text-xs text-ink-mute">Disponible une fois la conception prête.</p>;
+  const t = useT();
+  return <p className="text-xs text-ink-mute">{t("panel.empty")}</p>;
 }

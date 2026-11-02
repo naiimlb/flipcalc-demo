@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { RequestStatus } from "@/lib/requests";
+import { useT } from "../app/Preferences";
 import { IconAlert, IconCheck, IconMinus, IconPlus, Spinner } from "../icons";
 
 export function StatusChip({ status, compact = false }: { status: RequestStatus; compact?: boolean }) {
+  const t = useT();
   if (status === "ready") {
     return (
       <span className="chip bg-brand-accent text-white">
         <IconCheck size={12} strokeWidth={2.6} />
-        {!compact && "Prête"}
+        {!compact && t("status.ready")}
       </span>
     );
   }
@@ -18,14 +20,14 @@ export function StatusChip({ status, compact = false }: { status: RequestStatus;
     return (
       <span className="chip bg-brand-accent/10 text-brand-accent">
         <Spinner size={11} />
-        {!compact && "En cours"}
+        {!compact && t("status.processing")}
       </span>
     );
   }
   return (
     <span className="chip bg-rose-500 text-white">
       <IconAlert size={12} strokeWidth={2.4} />
-      {!compact && "Erreur"}
+      {!compact && t("status.error")}
     </span>
   );
 }
@@ -51,7 +53,7 @@ export function Panel({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left"
+        className="flex w-full items-center gap-2.5 px-3.5 py-3 text-start"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-accent/10 text-brand-accent">
           {icon}
@@ -113,7 +115,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       className={`relative h-6 w-10 shrink-0 rounded-full transition ${checked ? "bg-brand-accent" : "bg-ink/15"}`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "left-[18px]" : "left-0.5"}`}
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-all ${checked ? "left-[18px]" : "left-0.5"}`}
       />
     </button>
   );

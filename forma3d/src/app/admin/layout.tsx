@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <LogoMark size={26} />
             )}
             {site.siteName}
-            <span className="chip bg-ink text-white">Admin</span>
+            <span className="chip bg-night text-white">Admin</span>
           </Link>
           <div className="flex items-center gap-2 text-xs text-ink-mute">
             {session.user.email}

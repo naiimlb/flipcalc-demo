@@ -6,14 +6,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import { deleteRequest } from "@/app/actions";
 import type { Answer, ClarifyQuestion } from "@/lib/clarify-types";
 import type { Design } from "@/lib/design/schema";
-import { VARIANTS, type VariantId } from "@/lib/design/variants";
+import type { VariantId } from "@/lib/design/variants";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { DEFAULT_VIEWER_SETTINGS, type ViewerSettings } from "../viewer/settings";
 import { IconChevronLeft, IconChevronRight, Spinner } from "../icons";
 import { Portal } from "../Portal";
+import { useT } from "../app/Preferences";
 import { AuthPrompt } from "./AuthPrompt";
 import { ClarifyPanel } from "./ClarifyPanel";
+import { ShareDialog } from "./ShareDialog";
 import { readPending, savePending } from "./draft";
 import { readGuestItems, saveGuestItems } from "./guest";
 import { HistoryTab } from "./HistoryTab";
@@ -47,8 +49,10 @@ export interface StudioProps {
   viewer: StudioViewer | null;
   features: StudioFeatures;
   demoMode: boolean;
-  /** Projet à ouvrir (lien « Ouvrir » depuis Mon espace : /?p=<id>). */
+  /** Projet à ouvrir (lien « Ouvrir » depuis Mon espace : /studio?p=<id>). */
   initialSelectedId: string | null;
+  /** Conception de la galerie à reprendre comme point de départ (/studio?depart=<id>). */
+  startFrom?: { prompt: string; design: unknown; title: string } | null;
 }
 
 const TEMP_PREFIX = "tmp-";
@@ -56,7 +60,8 @@ const SELECTED_KEY = "forma3d:selected";
 /** Signalé au bouton « Mettre à jour » : on ne recharge pas pendant une génération. */
 export const BUSY_EVENT = "forma3d:busy";
 
-export function Studio({ initialItems, samples, viewer, features, demoMode, initialSelectedId }: StudioProps) {
+export function Studio({ initialItems, samples, viewer, features, demoMode, initialSelectedId, startFrom = null }: StudioProps) {
+  const tr = useT();
   const [userItems, setUserItems] = useState<RequestItem[]>(initialItems);
   const [guestItems, setGuestItems] = useState<RequestItem[]>([]);
   const items = useMemo(() => {
@@ -84,6 +89,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
   // Projet dont les panneaux viennent d'être remplis : ils apparaissent un par un.
   const [revealId, setRevealId] = useState<string | null>(null);
   const [compare, setCompare] = useState<{ a: string; b: string } | null>(null);
+  const [shareFor, setShareFor] = useState<string | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const busy = userItems.some((i) => i.id.startsWith(TEMP_PREFIX));
@@ -169,10 +175,64 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         saveGuestItems([]);
         setUserItems((prev) => [...imported, ...prev]);
         setSelectedId(imported[0].id);
-        showToast(imported.length > 1 ? "Vos essais ont été ajoutés à votre espace." : "Votre essai a été ajouté à votre espace.");
+        showToast(imported.length > 1 ? tr("toast.importedMany") : tr("toast.imported"));
       }
     })();
   }, [demoMode, viewer, showToast]);
+
+  /* ---------------- Point de départ venu de la galerie ---------------- */
+
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (!startFrom || startedRef.current) return;
+    startedRef.current = true;
+    (async () => {
+      let item: RequestItem | null = null;
+      if (viewer && !demoMode) {
+        // Compte : la conception est copiée dans l'espace de l'utilisateur.
+        const res = await fetch("/api/requests/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: startFrom.prompt, design: startFrom.design, provider: "gallery", model: null }),
+        }).catch(() => null);
+        if (res?.ok) item = ((await res.json()) as { request: RequestItem }).request;
+        if (item) setUserItems((prev) => [item!, ...prev]);
+      } else {
+        // Visiteur : gardée dans ce navigateur, comme un essai.
+        item = {
+          id: `guest-${Date.now()}`,
+          prompt: startFrom.prompt,
+          status: "ready",
+          title: startFrom.title,
+          design: startFrom.design as Design,
+          error: null,
+          provider: "gallery",
+          model: null,
+          hasImage: false,
+          createdAt: new Date().toISOString(),
+          durationMs: null,
+          asset: null,
+          folderId: null,
+          isFavorite: false,
+          modelPath: null,
+          source: "import",
+          guest: true,
+        };
+        const guestItem = item;
+        setGuestItems((prev) => {
+          const next = [guestItem, ...prev].slice(0, 5);
+          saveGuestItems(next);
+          return next;
+        });
+      }
+      if (item) {
+        setSelectedId(item.id);
+        showToast(tr("gallery.started"));
+      }
+      // Le lien ?depart= ne doit pas être rejoué au rechargement.
+      window.history.replaceState(null, "", window.location.pathname);
+    })();
+  }, [startFrom, viewer, demoMode, showToast, tr]);
 
   /* ---------------- Synchronisation avec la base ---------------- */
 
@@ -205,7 +265,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     );
     if (!recent) {
       setRestore(pending);
-      showToast("Votre demande en cours a été remise dans la barre : relancez-la.");
+      showToast(tr("toast.restored"));
     }
   }, [initialItems, showToast]);
 
@@ -263,7 +323,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         id: tempId,
         prompt,
         status: "processing",
-        title: variantOf ? `Nouvelle version : ${VARIANTS[variantOf.variant].label.toLowerCase()}` : null,
+        title: variantOf ? tr("studio.newVersion", { label: tr(`variant.${variantOf.variant}`).toLowerCase() }) : null,
         design: null,
         error: null,
         provider: null,
@@ -336,16 +396,16 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
           savePending(null);
           if (status === 401 || body.code === "guest_quota" || body.code === "guest_unavailable") {
             setRestore({ prompt, image });
-            setAuthPrompt(body.error ?? "Créez un compte gratuit pour lancer vos demandes et les retrouver partout.");
+            setAuthPrompt(body.error ?? tr("auth.prompt.default"));
             return;
           }
           if (status === 504) {
-            showToast("La génération prend plus de temps que prévu : elle apparaîtra dans l'historique.");
+            showToast(tr("toast.slow"));
             void refreshFromDb();
             return;
           }
           if (!variantOf) setRestore({ prompt, image });
-          showToast(body.error ?? "La génération a échoué. Réessayez.");
+          showToast(body.error ?? tr("toast.failed"));
           return;
         }
         savePending(null);
@@ -367,7 +427,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
           reveal(item.id);
           if (item.status === "ready") {
             setTimeout(
-              () => setAuthPrompt("Votre conception est prête. Créez un compte pour la sauvegarder : elle sera ajoutée à votre espace."),
+              () => setAuthPrompt(tr("auth.prompt.ready")),
               2500,
             );
           }
@@ -380,21 +440,21 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         showToast(
           item.status === "ready"
             ? body.cached
-              ? `Résultat instantané : ${item.title ?? "conception"} (demande déjà traitée)`
+              ? tr("toast.instant", { title: item.title ?? "" })
               : variantOf
-                ? `Nouvelle version prête : ${item.title ?? VARIANTS[variantOf.variant].label}`
-                : `Conception prête : ${item.title ?? "nouveau modèle"}`
-            : item.error ?? "Échec de la génération.",
+                ? tr("toast.versionReady", { title: item.title ?? tr(`variant.${variantOf.variant}`) })
+                : tr("toast.ready", { title: item.title ?? "" })
+            : item.error ?? tr("notif.failed"),
         );
       } catch {
         setClarify(null);
         setUserItems((prev) =>
-          prev.map((i) => (i.id === tempId ? { ...i, status: "error", error: "Connexion interrompue pendant la génération.", stream: null } : i)),
+          prev.map((i) => (i.id === tempId ? { ...i, status: "error", error: tr("toast.connection"), stream: null } : i)),
         );
         void refreshFromDb();
       }
     },
-    [selectedId, features.newRequests, askQuestions, patchItem, showToast, refreshFromDb],
+    [selectedId, features.newRequests, askQuestions, patchItem, showToast, refreshFromDb, tr],
   );
 
   /** « Plus petit », « Plus solide »… : nouvelle version de la conception affichée (l'ancienne est conservée). */
@@ -435,9 +495,9 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         return;
       }
       setUserItems((prev) => prev.filter((i) => i.id !== id));
-      showToast("Demande supprimée.");
+      showToast(tr("toast.deleted"));
     },
-    [demoMode, guestItems, showToast],
+    [demoMode, guestItems, showToast, tr],
   );
 
   const toggleFavorite = useCallback(
@@ -448,17 +508,17 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       const { error } = await supabase.from("design_requests").update({ is_favorite: !item.isFavorite }).eq("id", item.id);
       if (error) {
         patchItem(item.id, { isFavorite: item.isFavorite });
-        showToast("Mise à jour impossible.");
+        showToast(tr("toast.updateFailed"));
       }
     },
-    [viewer, patchItem, showToast],
+    [viewer, patchItem, showToast, tr],
   );
 
   const toggleFavoriteMaterial = useCallback(
     async (name: string) => {
       const supabase = getBrowserSupabase();
       if (!supabase || !viewer) {
-        setAuthPrompt("Créez un compte pour enregistrer vos matières préférées.");
+        setAuthPrompt(tr("auth.prompt.materials"));
         return;
       }
       const next = favoriteMaterials.includes(name)
@@ -468,10 +528,10 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       const { error } = await supabase.from("profiles").update({ favorite_materials: next }).eq("id", viewer.id);
       if (error) {
         setFavoriteMaterials(favoriteMaterials);
-        showToast("Enregistrement impossible.");
+        showToast(tr("toast.saveFailed"));
       }
     },
-    [viewer, favoriteMaterials, showToast],
+    [viewer, favoriteMaterials, showToast, tr],
   );
 
   const patchSettings = useCallback((patch: Partial<ViewerSettings>) => setSettings((s) => ({ ...s, ...patch })), []);
@@ -494,7 +554,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
           <PromptBar onSubmit={create} busy={busy} allowImage={features.imageUpload} restore={restore} />
         </div>
         <div className="flex items-center gap-1.5">
-          <nav aria-label="Sections" className="flex flex-1 gap-1 rounded-full bg-white/90 p-1 shadow-soft lg:flex-none">
+          <nav aria-label={tr("tabs.label")} className="flex flex-1 gap-1 rounded-full bg-surface/90 p-1 shadow-soft lg:flex-none">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -512,11 +572,11 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}
-                <span className="relative">{t.label}</span>
+                <span className="relative">{tr(t.label)}</span>
               </button>
             ))}
           </nav>
-          <span className="flex gap-1.5 rounded-full bg-white/90 p-1 shadow-soft">
+          <span className="flex gap-1.5 rounded-full bg-surface/90 p-1 shadow-soft">
             <SearchBox items={items} onSelect={select} />
             <Notifications items={items} onSelect={select} />
           </span>
@@ -527,19 +587,19 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       {tab === "overview" && (
         <div className="flex items-center gap-2 text-[12px] font-medium text-white/85">
           <button type="button" onClick={() => setTab("history")} className="hover:text-white">
-            Projets
+            {tr("studio.projects")}
           </button>
           <IconChevronRight size={12} />
           <span className="min-w-0 truncate text-white">{selected?.title ?? selected?.prompt ?? "—"}</span>
           {items.length > 1 && (
-            <span className="ml-auto flex items-center gap-1">
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label="Projet précédent" onClick={() => step(-1)}>
+            <span className="ms-auto flex items-center gap-1">
+              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label={tr("studio.prev")} onClick={() => step(-1)}>
                 <IconChevronLeft size={14} />
               </button>
               <span className="tabular-nums">
                 {selectedIndex + 1}/{items.length}
               </span>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label="Projet suivant" onClick={() => step(1)}>
+              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label={tr("studio.next")} onClick={() => step(1)}>
                 <IconChevronRight size={14} />
               </button>
             </span>
@@ -558,7 +618,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 onSelect={select}
                 onNew={() => window.dispatchEvent(new Event("forma3d:focus-prompt"))}
                 onToggleFavorite={toggleFavorite}
-                onSignupPrompt={() => setAuthPrompt("Créez un compte pour sauvegarder ce résultat dans votre espace.")}
+                onSignupPrompt={() => setAuthPrompt(tr("auth.prompt.save"))}
                 demoMode={demoMode}
                 signedIn={Boolean(viewer)}
                 reveal={revealId !== null && revealId === selected?.id}
@@ -566,6 +626,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 onAdjust={adjust}
                 onCompare={openCompare}
                 canCompare={canCompare}
+                onShare={viewer && selected ? () => setShareFor(selected.id) : undefined}
               />
             </div>
             <div className="order-1 min-h-0 lg:order-2 lg:h-full">
@@ -628,6 +689,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
       <JsonDrawer item={jsonOpen ? selected : null} localRaw={selected ? rawById[selected.id] ?? null : null} onClose={() => setJsonOpen(false)} />
       <AuthPrompt message={authPrompt} onClose={() => setAuthPrompt(null)} />
+      {shareFor && <ShareDialog requestId={shareFor} onClose={() => setShareFor(null)} onToast={showToast} />}
       {compare && (
         <CompareDialog items={items} initialA={compare.a} initialB={compare.b} prefs={prefs} onClose={() => setCompare(null)} />
       )}
@@ -649,7 +711,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="pointer-events-auto max-w-full rounded-full bg-ink px-5 py-3 text-sm font-medium text-white shadow-float"
+                className="pointer-events-auto max-w-full rounded-full bg-night px-5 py-3 text-sm font-medium text-white shadow-float"
               >
                 {toast}
               </motion.div>

@@ -7,6 +7,7 @@ import { isSameOrigin, jsonError } from "@/lib/http";
 import { allowAction } from "@/lib/rate-limit";
 import { ipHash } from "@/lib/request-ip";
 import { getSecret } from "@/lib/secrets";
+import { getLocale } from "@/lib/i18n/server";
 import { isDemoMode } from "@/lib/supabase/env";
 import { getServerSupabase, getSession } from "@/lib/supabase/server";
 
@@ -62,9 +63,11 @@ export async function POST(request: Request) {
 
   // En production sans Supabase, aucun appel payant : questions de repli uniquement.
   const apiKey = demo && process.env.NODE_ENV === "production" ? null : await getSecret("ANTHROPIC_API_KEY");
-  const language = session?.profile.language ?? "fr";
+  const language = await getLocale();
   const ai = apiKey ? await askClarifyingQuestions({ apiKey, prompt, hasImage, language, image: image ?? null }) : null;
   // Photo sans mesure dans la demande : on demande toujours une mesure de référence (pour estimer les tailles).
-  const questions = ai ? withReferenceQuestion(ai.needed ? ai.questions : [], prompt, hasImage) : fallbackQuestions(prompt, hasImage);
+  const questions = ai
+    ? withReferenceQuestion(ai.needed ? ai.questions : [], prompt, hasImage, language)
+    : fallbackQuestions(prompt, hasImage, language);
   return NextResponse.json({ needed: questions.length > 0, questions } satisfies ClarifyResponse);
 }

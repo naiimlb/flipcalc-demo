@@ -78,7 +78,7 @@ export function UpdateNotifier() {
           className="fixed inset-x-0 top-3 z-[60] flex justify-center px-3"
           role="status"
         >
-          <div className="flex items-center gap-3 rounded-full bg-ink py-1.5 pl-4 pr-1.5 text-sm text-white shadow-float">
+          <div className="flex items-center gap-3 rounded-full bg-night py-1.5 pl-4 pr-1.5 text-sm text-white shadow-float">
             <span className="hidden sm:inline">{waiting ? "Mise à jour à la fin de la génération…" : "Nouvelle version disponible"}</span>
             <button type="button" onClick={update} disabled={waiting} className="btn-accent !py-1.5 !text-xs">
               <IconRefresh size={14} /> {waiting ? "En attente" : "Mettre à jour"}

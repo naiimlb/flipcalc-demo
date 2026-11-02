@@ -33,7 +33,7 @@ export async function generateDesign(params: {
   /** Force le générateur de démonstration (aucun appel payant). */
   forceDemo?: boolean;
   /** Langue de rédaction préférée de l'utilisateur. */
-  language?: "fr" | "en";
+  language?: "fr" | "en" | "ar";
   /** Texte cumulé de la réponse de l'IA pendant qu'elle s'écrit (affichage progressif). */
   onText?: (snapshot: string) => void;
   onRestart?: () => void;

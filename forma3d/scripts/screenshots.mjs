@@ -14,7 +14,8 @@ const check = (ok, label) => checks.push(`${ok ? "✓" : "✗"} ${label}`);
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 
 async function session(name, viewport, run) {
-  const context = await browser.newContext({ viewport, deviceScaleFactor: viewport.width < 900 ? 2 : 1 });
+  // Interface en français pour les vérifications (le navigateur de test est en anglais par défaut).
+  const context = await browser.newContext({ viewport, deviceScaleFactor: viewport.width < 900 ? 2 : 1, locale: "fr-FR" });
   const page = await context.newPage();
   page.on("console", (msg) => msg.type() === "error" && errors.push(`[${name}] console : ${msg.text()}`));
   page.on("pageerror", (err) => errors.push(`[${name}] page : ${err.message}`));
@@ -28,7 +29,7 @@ async function session(name, viewport, run) {
 }
 
 async function ready(page) {
-  await page.goto(base, { waitUntil: "networkidle" });
+  await page.goto(`${base}/studio`, { waitUntil: "networkidle" });
   await page.waitForSelector("canvas", { timeout: 20000 });
   await page.waitForTimeout(3000);
 }
@@ -143,6 +144,43 @@ await session("photo", { width: 1280, height: 800 }, async (page) => {
   await page.getByText(/Conception prête/).waitFor({ timeout: 30000 });
   check(true, "Photo : la conception est générée avec la mesure de référence");
   check((await page.getByRole("button", { name: /Voir chez moi/ }).count()) === 0, "Réalité augmentée : bouton masqué sur un appareil sans AR");
+});
+
+// Phase 4 : accueil des visiteurs, mode sombre, arabe (droite à gauche), galerie.
+await session("accueil", { width: 1366, height: 900 }, async (page) => {
+  await page.goto(base, { waitUntil: "networkidle" });
+  check(await page.getByRole("link", { name: /Essayer/ }).isVisible(), "Accueil : bouton « Essayer »");
+  check(await page.getByRole("link", { name: "Créer un compte" }).first().isVisible(), "Accueil : bouton « Créer un compte »");
+  check((await page.locator("h1").first().innerText()).includes("Décrivez"), "Accueil : titre avec badge noir");
+  check((await page.getByText("Comment ça marche").count()) === 1, "Accueil : explication en 3 étapes");
+  await page.mouse.click(5, 5);
+  await page.waitForSelector("canvas", { timeout: 20000 });
+  check(true, "Accueil : exemples de solutions affichés en 3D");
+  await page.screenshot({ path: join(out, "accueil.png") });
+
+  // Mode sombre puis arabe, depuis le sélecteur de l'en-tête.
+  await page.getByRole("button", { name: /Thème/ }).click();
+  await page.getByRole("radio", { name: "Sombre" }).click();
+  await page.waitForTimeout(300);
+  check(await page.evaluate(() => document.documentElement.classList.contains("dark")), "Thème : mode sombre appliqué");
+  await page.screenshot({ path: join(out, "accueil-sombre.png") });
+  await page.getByRole("radio", { name: "العربية" }).click();
+  await page.waitForFunction(() => document.documentElement.dir === "rtl", null, { timeout: 10000 });
+  await page.waitForTimeout(1500);
+  check(true, "Langue : arabe, lecture de droite à gauche");
+  check((await page.getByRole("link", { name: "جرّب الآن" }).count()) >= 1, "Langue : textes traduits (arabe)");
+  await page.screenshot({ path: join(out, "accueil-arabe.png") });
+  await page.goto(`${base}/studio`, { waitUntil: "networkidle" });
+  check(await page.evaluate(() => document.documentElement.classList.contains("dark") && document.documentElement.lang === "ar"), "Thème et langue mémorisés d'une page à l'autre");
+  await page.waitForSelector("canvas", { timeout: 20000 });
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: join(out, "studio-sombre-arabe.png") });
+});
+
+await session("galerie", { width: 1280, height: 800 }, async (page) => {
+  const res = await page.goto(`${base}/galerie`, { waitUntil: "networkidle" });
+  check(res.ok() && (await page.getByRole("heading", { name: "Galerie" }).isVisible()), "Galerie : page publique accessible");
+  await page.screenshot({ path: join(out, "galerie.png") });
 });
 
 // Bouton « Mettre à jour » : on simule un nouveau déploiement en changeant la version renvoyée.

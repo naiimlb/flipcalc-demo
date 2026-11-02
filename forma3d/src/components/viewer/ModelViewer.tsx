@@ -169,12 +169,21 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
       zoomIn: () => dolly(0.8),
       zoomOut: () => dolly(1.25),
       resetView: fit,
+      // Capture de qualité : rendu temporaire en haute résolution (2 à 3 fois la taille affichée).
       capturePng: async () => {
+        const previous = gl.getPixelRatio();
+        const hd = Math.min(3, Math.max(2, window.devicePixelRatio * 2));
+        gl.setPixelRatio(hd);
+        gl.setSize(size.width, size.height, false);
         gl.render(scene, camera);
-        return compositePng(gl.domElement, VIEWER_BACKGROUNDS[settings.mode]);
+        const blob = await compositePng(gl.domElement, VIEWER_BACKGROUNDS[settings.mode]);
+        gl.setPixelRatio(previous);
+        gl.setSize(size.width, size.height, false);
+        invalidate();
+        return blob;
       },
     }),
-    [dolly, fit, gl, scene, camera, settings.mode],
+    [dolly, fit, gl, scene, camera, settings.mode, size.width, size.height, invalidate],
   );
 
   useFrame((_, delta) => {
@@ -189,13 +198,18 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
 
   return (
     <>
-      <ambientLight intensity={real ? 0.35 : 0.8} />
-      <hemisphereLight args={["#e7e9ff", "#2b2266", real ? 0.55 : 0.3]} />
-      <directionalLight position={[4, 6, 5]} intensity={real ? 1.5 : 0.6} />
-      <Environment resolution={quality === "low" ? 32 : 64}>
+      {/* Éclairage studio : lumière principale, débouchage et contre-jour ; reflets par une carte d'environnement (boîtes à lumière). */}
+      <ambientLight intensity={real ? 0.22 : 0.8} />
+      <hemisphereLight args={["#eef0ff", "#2b2266", real ? 0.45 : 0.3]} />
+      <directionalLight position={[4, 6, 5]} intensity={real ? 1.6 : 0.6} />
+      {real && <directionalLight position={[-5, 3, 2]} intensity={0.55} color="#c9d4ff" />}
+      {real && <directionalLight position={[0, 4, -6]} intensity={0.9} color="#ffffff" />}
+      <Environment resolution={quality === "low" ? 32 : 128}>
+        <Lightformer form="rect" intensity={2.4} position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[8, 8, 1]} color="#ffffff" />
         <Lightformer intensity={2} position={[0, 5, -5]} scale={[10, 5, 1]} color="#ffffff" />
         <Lightformer intensity={1.2} position={[-5, 1, 0]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} color="#c3b5ff" />
         <Lightformer intensity={1.2} position={[5, 1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} color="#a6dcff" />
+        <Lightformer form="ring" intensity={1.5} position={[2, 2, 6]} scale={2} color="#ffffff" />
       </Environment>
 
       {meshUrl ? (
@@ -242,8 +256,8 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
           position={[sphere.center.x, 0.0005, sphere.center.z]}
           scale={Math.max(sphere.radius * 5, 1)}
           far={Math.max(sphere.radius * 2, 0.5)}
-          blur={2.2}
-          opacity={0.45}
+          blur={2.8}
+          opacity={0.55}
           resolution={quality === "low" ? 256 : 512}
           // Ombre figée sur appareil modeste (elle n'est recalculée que si la conception change).
           frames={quality === "low" ? 1 : Infinity}
@@ -381,10 +395,14 @@ function PartMesh({ part, index, offset, explode, settings, focused, dimmed, det
         {neon ? (
           <primitive object={neonMaterial} attach="material" />
         ) : (
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             color={color}
             metalness={preset.metalness}
             roughness={preset.roughness}
+            // Vernis léger sur le plastique et la céramique : reflets plus réalistes.
+            clearcoat={kind === "plastic" || kind === "ceramic" ? 0.35 : 0}
+            clearcoatRoughness={0.35}
+            envMapIntensity={kind === "metal" ? 1.3 : 1}
             transparent={dimmed || preset.opacity < 1}
             opacity={dimmed ? 0.2 : preset.opacity}
             wireframe={settings.wireframe}

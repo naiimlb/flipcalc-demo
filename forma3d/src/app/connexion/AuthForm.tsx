@@ -36,7 +36,7 @@ export function AuthForm({
   return (
     <div>
       {signupsOpen && (
-        <div className="mb-5 flex gap-1 rounded-full bg-white p-1 ring-1 ring-line">
+        <div className="mb-5 flex gap-1 rounded-full bg-surface p-1 ring-1 ring-line">
           {(
             [
               ["login", "Connexion"],
@@ -47,7 +47,7 @@ export function AuthForm({
               key={id}
               type="button"
               onClick={() => setMode(id)}
-              className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${mode === id ? "bg-ink text-white" : "text-ink-soft"}`}
+              className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${mode === id ? "bg-night text-white" : "text-ink-soft"}`}
             >
               {label}
             </button>

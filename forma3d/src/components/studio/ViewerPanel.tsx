@@ -24,6 +24,7 @@ import {
   Spinner,
 } from "../icons";
 import { Portal } from "../Portal";
+import { usePreferences, useT } from "../app/Preferences";
 import type { StudioFeatures } from "./types";
 
 const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
@@ -35,7 +36,7 @@ const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
   ),
 });
 
-const STEPS = ["Analyse du problème", "Recherche de solution", "Dimensionnement", "Modélisation 3D", "Chiffrage"];
+const STAGES = ["stage.analysis", "stage.design", "stage.check", "stage.ready"] as const;
 
 export function ViewerPanel({
   item,
@@ -54,6 +55,7 @@ export function ViewerPanel({
   onShowJson(): void;
   onToast(message: string): void;
 }) {
+  const { t, dark } = usePreferences();
   const handle = useRef<ViewerHandle>(null);
   const wrap = useRef<HTMLDivElement>(null);
   // Chargement différé : le moteur 3D (le plus lourd du site) n'est téléchargé qu'une fois la zone visible et le navigateur au repos.
@@ -67,7 +69,7 @@ export function ViewerPanel({
   const focusIndex = focusId ? parts.findIndex((p) => p.id === focusId) : -1;
   const meshReady = item?.asset?.status === "succeeded" && !item.sample;
   // Fond clair en mode réaliste : boutons et pastilles foncés pour rester lisibles.
-  const light = Boolean(design) && settings.mode === "real";
+  const light = Boolean(design) && settings.mode === "real" && !dark;
   const chip = light ? "bg-ink/10 text-ink" : "bg-white/20 text-white";
 
   useEffect(() => {
@@ -140,7 +142,7 @@ export function ViewerPanel({
       await task();
     } catch (err) {
       console.error(err);
-      onToast(`${label} impossible.`);
+      onToast(t("viewer.failed", { label }));
     } finally {
       setBusy(false);
     }
@@ -149,7 +151,8 @@ export function ViewerPanel({
   const exportItems = design
     ? [
         features.exportGlb && {
-          label: "GLB (3D, couleurs)",
+          kind: "file",
+          label: t("viewer.exportGlb"),
           run: () =>
             run("Export GLB", async () => {
               const buffer = await exportGlb(design);
@@ -157,7 +160,8 @@ export function ViewerPanel({
             }),
         },
         features.exportStl && {
-          label: "STL (impression 3D, mm)",
+          kind: "file",
+          label: t("viewer.exportStl"),
           run: () =>
             run("Export STL", async () => {
               const buffer = exportStl(design);
@@ -165,7 +169,8 @@ export function ViewerPanel({
             }),
         },
         features.exportPng && {
-          label: "Capture PNG",
+          kind: "capture",
+          label: t("viewer.capture"),
           run: () =>
             run("Capture", async () => {
               const blob = await handle.current?.capturePng();
@@ -173,14 +178,14 @@ export function ViewerPanel({
               downloadBlob(blob, `${fileBaseName(design)}.png`);
             }),
         },
-      ].filter(Boolean) as { label: string; run(): void }[]
+      ].filter(Boolean) as { kind: "file" | "capture"; label: string; run(): void }[]
     : [];
 
   return (
     <div
       ref={wrap}
       className="relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"
-      style={{ background: viewerBackgroundCss(design ? settings.mode : "neon") }}
+      style={{ background: viewerBackgroundCss(design ? settings.mode : "neon", dark) }}
     >
       {/* Halo décoratif */}
       <div className="pointer-events-none absolute -left-1/4 top-1/3 h-2/3 w-[150%] rounded-[100%] border border-white/15" />
@@ -204,29 +209,29 @@ export function ViewerPanel({
       {/* Barre d'outils verticale */}
       {design && (
         <div className="absolute right-3 top-3 flex flex-col gap-1.5">
-          <ToolButton light={light} label="Zoom avant" onClick={() => handle.current?.zoomIn()}>
+          <ToolButton light={light} label={t("viewer.zoomIn")} onClick={() => handle.current?.zoomIn()}>
             <IconPlus size={15} />
           </ToolButton>
-          <ToolButton light={light} label="Zoom arrière" onClick={() => handle.current?.zoomOut()}>
+          <ToolButton light={light} label={t("viewer.zoomOut")} onClick={() => handle.current?.zoomOut()}>
             <IconMinus size={15} />
           </ToolButton>
-          <ToolButton light={light} label="Recentrer" onClick={() => handle.current?.resetView()}>
+          <ToolButton light={light} label={t("viewer.recenter")} onClick={() => handle.current?.resetView()}>
             <IconRefocus size={15} />
           </ToolButton>
           <ToolButton
             light={light}
-            label={settings.autoRotate ? "Arrêter la rotation" : "Rotation automatique"}
+            label={settings.autoRotate ? t("viewer.stopRotate") : t("viewer.autoRotate")}
             active={settings.autoRotate}
             onClick={() => onSettings({ autoRotate: !settings.autoRotate })}
           >
             <IconRotate size={15} />
           </ToolButton>
-          <ToolButton light={light} label="Grille" active={settings.showGrid} onClick={() => onSettings({ showGrid: !settings.showGrid })}>
+          <ToolButton light={light} label={t("viewer.grid")} active={settings.showGrid} onClick={() => onSettings({ showGrid: !settings.showGrid })}>
             <IconGrid size={15} />
           </ToolButton>
           {exportItems.length > 0 && (
             <div className="relative">
-              <ToolButton light={light} label="Exporter" onClick={() => setExportOpen((o) => !o)} active={exportOpen}>
+              <ToolButton light={light} label={t("viewer.export")} onClick={() => setExportOpen((o) => !o)} active={exportOpen}>
                 {busy ? <Spinner size={14} /> : <IconDownload size={15} />}
               </ToolButton>
               <AnimatePresence>
@@ -235,7 +240,7 @@ export function ViewerPanel({
                     initial={{ opacity: 0, x: 6 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 6 }}
-                    className="absolute right-10 top-0 z-10 w-48 rounded-2xl bg-white/95 p-1.5 shadow-float backdrop-blur"
+                    className="absolute right-10 top-0 z-10 w-48 rounded-2xl bg-surface/95 p-1.5 shadow-float backdrop-blur"
                   >
                     {exportItems.map((e) => (
                       <button
@@ -244,7 +249,7 @@ export function ViewerPanel({
                         onClick={e.run}
                         className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-ink hover:bg-paper"
                       >
-                        {e.label.startsWith("Capture") ? <IconCamera size={14} /> : <IconDownload size={14} />}
+                        {e.kind === "capture" ? <IconCamera size={14} /> : <IconDownload size={14} />}
                         {e.label}
                       </button>
                     ))}
@@ -260,10 +265,10 @@ export function ViewerPanel({
       {design && (
         <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
           <span className={`chip backdrop-blur ${chip}`}>
-            <IconCube size={12} /> {parts.length} pièces
+            <IconCube size={12} /> {t("viewer.parts", { n: parts.length })}
           </span>
           {meshReady && (
-            <button type="button" onClick={() => setShowMesh((s) => !s)} className="chip bg-white/90 text-brand-accent">
+            <button type="button" onClick={() => setShowMesh((s) => !s)} className="chip bg-surface/90 text-brand-accent">
               {showMesh ? "Voir les primitives" : "Voir le maillage IA"}
             </button>
           )}
@@ -285,14 +290,14 @@ export function ViewerPanel({
 
       {/* Navigation entre les pièces */}
       {design && parts.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-full bg-white px-1 py-1 shadow-float">
-          <button type="button" aria-label="Pièce précédente" onClick={() => stepPart(-1)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-paper">
+        <div className="absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-full bg-surface px-1 py-1 shadow-float">
+          <button type="button" aria-label={t("viewer.prevPart")} onClick={() => stepPart(-1)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-paper">
             <IconChevronLeft size={15} />
           </button>
           <span className="min-w-0 truncate px-1 text-[11px] font-semibold text-ink-soft">
-            {focusIndex >= 0 ? `${focusIndex + 1}/${parts.length} · ${parts[focusIndex].name}` : "Toutes les pièces"}
+            {focusIndex >= 0 ? `${focusIndex + 1}/${parts.length} · ${parts[focusIndex].name}` : t("viewer.allParts")}
           </span>
-          <button type="button" aria-label="Pièce suivante" onClick={() => stepPart(1)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-paper">
+          <button type="button" aria-label={t("viewer.nextPart")} onClick={() => stepPart(1)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-paper">
             <IconChevronRight size={15} />
           </button>
         </div>
@@ -309,19 +314,19 @@ export function ViewerPanel({
       {/* États vides / erreur */}
       {!item && (
         <Centered>
-          <p className="text-sm font-semibold text-white">Aucun projet pour l&apos;instant</p>
-          <p className="mt-1 text-xs text-white/75">Décrivez un problème ou un objet : Forma3D le modélise en 3D.</p>
-          <button type="button" onClick={onNew} className="btn mt-4 bg-white !text-xs text-brand-accent">
-            <IconPlus size={14} /> Nouvelle demande
+          <p className="text-sm font-semibold text-white">{t("viewer.empty")}</p>
+          <p className="mt-1 text-xs text-white/75">{t("viewer.emptyHint")}</p>
+          <button type="button" onClick={onNew} className="btn mt-4 bg-surface !text-xs text-brand-accent">
+            <IconPlus size={14} /> {t("left.newRequest")}
           </button>
         </Centered>
       )}
       {item?.status === "error" && !design && (
         <Centered>
-          <p className="text-sm font-semibold text-white">Pas de modèle pour cette demande</p>
+          <p className="text-sm font-semibold text-white">{t("viewer.noModel")}</p>
           <p className="mx-auto mt-1 max-w-xs text-xs text-white/80">{item.error}</p>
-          <button type="button" onClick={onNew} className="btn mt-4 bg-white !text-xs text-brand-accent">
-            Réessayer
+          <button type="button" onClick={onNew} className="btn mt-4 bg-surface !text-xs text-brand-accent">
+            {t("viewer.retry")}
           </button>
         </Centered>
       )}
@@ -331,6 +336,7 @@ export function ViewerPanel({
 
 /** « Voir chez moi » : réalité augmentée à taille réelle (masqué si l'appareil ne la prend pas en charge). */
 function ArButton({ design, onToast }: { design: Design; onToast(message: string): void }) {
+  const t = useT();
   const [mode, setMode] = useState<ArMode | null>(null);
   const [busy, setBusy] = useState(false);
   const [session, setSession] = useState(false);
@@ -361,12 +367,12 @@ function ArButton({ design, onToast }: { design: Design; onToast(message: string
       .catch((err) => {
         console.error(err);
         setSession(false);
-        onToast("La réalité augmentée n'a pas pu démarrer sur cet appareil.");
+        onToast(t("ar.failed"));
       });
     return () => {
       cancelled = true;
     };
-  }, [session, design, onToast]);
+  }, [session, design, onToast, t]);
 
   if (!mode) return null;
 
@@ -381,7 +387,7 @@ function ArButton({ design, onToast }: { design: Design; onToast(message: string
       await ar.openQuickLook(design);
     } catch (err) {
       console.error(err);
-      onToast("La réalité augmentée n'a pas pu s'ouvrir.");
+      onToast(t("ar.failed"));
     } finally {
       setBusy(false);
     }
@@ -389,19 +395,19 @@ function ArButton({ design, onToast }: { design: Design; onToast(message: string
 
   return (
     <>
-      <button type="button" onClick={open} disabled={busy} className="chip bg-white/90 text-brand-accent" title="Voir l'objet à taille réelle chez vous">
-        {busy ? <Spinner size={11} /> : <IconCube size={12} />} Voir chez moi
+      <button type="button" onClick={open} disabled={busy} className="chip bg-surface/90 text-brand-accent" title={t("ar.title")}>
+        {busy ? <Spinner size={11} /> : <IconCube size={12} />} {t("ar.button")}
       </button>
       {session && (
         <Portal>
           <div ref={overlay} className="fixed inset-0 z-[70] flex flex-col items-center justify-between p-6 text-white">
-            <p className="mt-10 rounded-full bg-black/55 px-4 py-2 text-sm font-medium">Visez le sol, puis touchez l&apos;écran pour poser l&apos;objet</p>
+            <p className="mt-10 rounded-full bg-black/55 px-4 py-2 text-sm font-medium">{t("ar.place")}</p>
             <button
               type="button"
               onClick={() => (stop.current ? stop.current() : setSession(false))}
-              className="mb-8 rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink"
+              className="mb-8 rounded-full bg-surface px-6 py-3 text-sm font-semibold text-ink"
             >
-              Fermer
+              {t("ar.close")}
             </button>
           </div>
         </Portal>
@@ -412,6 +418,7 @@ function ArButton({ design, onToast }: { design: Design; onToast(message: string
 
 /** Rappel des gestes tactiles, affiché quelques secondes la première fois sur écran tactile. */
 function GestureHint() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     let seen = false;
@@ -442,7 +449,7 @@ function GestureHint() {
           role="status"
           className="pointer-events-none absolute left-3 right-14 top-12 rounded-2xl bg-black/45 px-3 py-2 text-center text-[11px] font-medium text-white backdrop-blur"
         >
-          Glisser pour tourner · Pincer pour zoomer · Double-tap pour recentrer
+          {t("viewer.gestures")}
         </motion.p>
       )}
     </AnimatePresence>
@@ -473,7 +480,7 @@ function ToolButton({
         active
           ? light
             ? "bg-brand-accent text-white"
-            : "bg-white text-brand-accent"
+            : "bg-surface text-brand-accent"
           : light
             ? "bg-ink/[0.07] text-ink-soft hover:bg-ink/15"
             : "bg-white/25 text-white hover:bg-white/40"
@@ -488,28 +495,37 @@ function Centered({ children }: { children: React.ReactNode }) {
   return <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">{children}</div>;
 }
 
+/** Écran de chargement : Analyse → Conception → Contrôle → Prêt, d'après le flux de l'IA (ou le temps écoulé). */
 function Processing({ startedAt, stream }: { startedAt: string; stream: StreamProgress | null }) {
+  const t = useT();
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const start = new Date(startedAt).getTime();
     const tick = () => setElapsed(Math.max(0, Math.round((Date.now() - start) / 1000)));
     tick();
-    const t = setInterval(tick, 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
   }, [startedAt]);
 
-  // Étape affichée : d'après le flux de l'IA quand il existe, sinon d'après le temps écoulé.
   const done = stream?.done ?? [];
   const current = DESIGN_SECTIONS.findIndex((s) => !done.includes(s.key));
+  // Étape principale (0 Analyse, 1 Conception, 2 Contrôle) ; sans flux, avancement selon le temps.
+  const stage = !stream
+    ? Math.min(2, Math.floor(elapsed / 25))
+    : stream.stage === "saving"
+      ? 2
+      : stream.stage === "writing" && current > 0
+        ? 1
+        : 0;
   const label = !stream
-    ? `${STEPS[Math.min(STEPS.length - 1, Math.floor(elapsed / 9))]}…`
+    ? `${t(STAGES[stage])}…`
     : stream.stage === "checking"
-      ? "Vérification de votre demande…"
+      ? t("stage.checking")
       : stream.stage === "saving"
-        ? "Enregistrement…"
+        ? t("stage.saving")
         : stream.stage === "thinking" || current < 0
-          ? "Réflexion…"
-          : `${DESIGN_SECTIONS[current].label}…`;
+          ? t("stage.thinking")
+          : t("stage.writing", { section: t(`section.${DESIGN_SECTIONS[current].key}`) });
 
   return (
     <motion.div
@@ -530,27 +546,25 @@ function Processing({ startedAt, stream }: { startedAt: string; stream: StreamPr
         transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         style={{ boxShadow: "0 0 40px rgba(255,120,220,.55), inset 0 0 30px rgba(120,200,255,.5)" }}
       />
-      <p className="mt-6 text-sm font-semibold text-white" role="status">
-        {label}
-      </p>
-      <p className="mt-1 text-xs text-white/75">{elapsed} s · en général 30 à 90 s</p>
-      <ol className="mt-3 flex flex-wrap justify-center gap-1.5" aria-label="Avancement">
-        {DESIGN_SECTIONS.map((s, i) => {
-          const finished = stream ? done.includes(s.key) : false;
-          const active = stream ? i === current && stream.stage === "writing" : false;
-          return (
-            <li
-              key={s.key}
-              className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition ${
-                finished ? "bg-white text-brand-accent" : active ? "bg-white/40 text-white" : "bg-white/15 text-white/70"
+      <ol className="mt-6 flex items-center gap-1.5" aria-label={label}>
+        {STAGES.map((key, i) => (
+          <li key={key} className="flex items-center gap-1.5">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                i < stage ? "bg-white text-brand-accent" : i === stage ? "bg-white/40 text-white ring-1 ring-white/70" : "bg-white/15 text-white/70"
               }`}
             >
-              {finished ? "✓ " : ""}
-              {s.label}
-            </li>
-          );
-        })}
+              {i < stage ? "✓ " : ""}
+              {t(key)}
+            </span>
+            {i < STAGES.length - 1 && <span className="text-white/60" aria-hidden>→</span>}
+          </li>
+        ))}
       </ol>
+      <p className="mt-3 text-sm font-semibold text-white" role="status">
+        {label}
+      </p>
+      <p className="mt-1 text-xs text-white/75">{t("stage.elapsed", { s: elapsed })}</p>
     </motion.div>
   );
 }

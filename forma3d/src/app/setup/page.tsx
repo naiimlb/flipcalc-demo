@@ -39,7 +39,7 @@ export default async function SetupPage() {
   }
 
   const checks = (
-    <ul className="mb-6 space-y-2 rounded-2xl bg-white p-4 ring-1 ring-line">
+    <ul className="mb-6 space-y-2 rounded-2xl bg-surface p-4 ring-1 ring-line">
       <Check ok={!demo} label="Supabase configuré" hint={demo ? "NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" : undefined} />
       <Check ok={dbReady} label="Schéma SQL installé" hint={dbReady ? undefined : "Exécutez supabase/migrations/*.sql"} />
       <Check

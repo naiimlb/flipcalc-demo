@@ -108,3 +108,18 @@ export async function clearLogs(): Promise<ActionResult> {
   revalidatePath("/admin/logs");
   return { ok: true, message: "Journal vidé." };
 }
+
+/** Modération de la galerie : masquer, réafficher ou supprimer une publication (RLS : administrateurs uniquement). */
+export async function moderateGalleryItem(id: string, action: "hide" | "show" | "delete"): Promise<ActionResult> {
+  const session = await requireAdminAction();
+  if (!z.string().uuid().safeParse(id).success) return { ok: false, message: "Identifiant invalide." };
+  const { error } =
+    action === "delete"
+      ? await session.supabase.from("gallery").delete().eq("id", id)
+      : await session.supabase.from("gallery").update({ status: action === "hide" ? "hidden" : "published" }).eq("id", id);
+  if (error) return { ok: false, message: "Action impossible." };
+  await logEvent("info", "admin:galerie", `Publication ${id} : ${action}.`, { supabase: session.supabase });
+  revalidatePath("/admin/galerie");
+  revalidatePath("/galerie");
+  return { ok: true, message: "Fait." };
+}

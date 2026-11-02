@@ -48,7 +48,7 @@ export default async function UsersPage() {
                     <p className="text-xs text-ink-mute">{p.email}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`chip ${p.role === "admin" ? "bg-ink text-white" : "bg-paper text-ink-soft"}`}>
+                    <span className={`chip ${p.role === "admin" ? "bg-night text-white" : "bg-paper text-ink-soft"}`}>
                       {p.role === "admin" ? "Admin" : "Utilisateur"}
                     </span>
                   </td>

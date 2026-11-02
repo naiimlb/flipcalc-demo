@@ -24,9 +24,33 @@ function assert(condition, message) {
 }
 
 const home = await waitForServer();
-const html = await home.text();
-assert(html.includes("Forma3D"), "la page d'accueil s'affiche");
-assert(html.includes("Dernières demandes"), "la carte des dernières demandes est rendue");
+const landing = await home.text();
+assert(landing.includes("Forma3D"), "la page d'accueil s'affiche");
+assert(landing.includes("Essayer") && landing.includes("Comment ça marche"), "accueil des visiteurs : boutons et explication en 3 étapes");
+const studio = await fetch(`${base}/studio`);
+const html = await studio.text();
+assert(studio.ok && html.includes("Dernières demandes"), "le studio (/studio) rend la carte des dernières demandes");
+const english = await (await fetch(`${base}/`, { headers: { "Accept-Language": "en-US,en;q=0.9" } })).text();
+assert(english.includes('lang="en"') && english.includes("Try it"), "détection automatique de la langue (anglais)");
+const arabic = await (await fetch(`${base}/`, { headers: { "Accept-Language": "ar" } })).text();
+assert(arabic.includes('dir="rtl"'), "arabe : lecture de droite à gauche");
+const dark = await (await fetch(`${base}/studio`, { headers: { Cookie: "forma3d-theme=dark" } })).text();
+assert(/<html[^>]*class="[^"]*\bdark\b/.test(dark), "mode sombre mémorisé (cookie) rendu dès le serveur");
+assert((await fetch(`${base}/galerie`)).ok, "la galerie publique répond");
+const shared = await fetch(`${base}/p/lien-inexistant-0123456789`);
+assert(shared.ok && (await shared.text()).includes("lien de partage"), "un lien de partage inconnu affiche un message clair");
+const badComment = await fetch(`${base}/api/share/comment`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base },
+  body: JSON.stringify({ token: "x", pseudo: "", body: "" }),
+});
+assert(badComment.status === 400, "commentaire invalide refusé (400)");
+const badReport = await fetch(`${base}/api/gallery/report`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base },
+  body: JSON.stringify({ id: "pas-un-uuid", reason: "" }),
+});
+assert(badReport.status === 400, "signalement invalide refusé (400)");
 
 const res = await fetch(`${base}/api/generate`, {
   method: "POST",

@@ -30,7 +30,13 @@ export async function askClarifyingQuestions(params: {
     const message = await client.messages.create({
       model: CLARIFY_MODEL,
       max_tokens: 700,
-      system: SYSTEM + (params.language === "en" ? "\nWrite the questions and options in English." : "\nRédige les questions et réponses en français."),
+      system:
+        SYSTEM +
+        (params.language === "en"
+          ? "\nWrite the questions and options in English."
+          : params.language === "ar"
+            ? "\nاكتب الأسئلة والإجابات باللغة العربية."
+            : "\nRédige les questions et réponses en français."),
       messages: [
         {
           role: "user",

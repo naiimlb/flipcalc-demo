@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/admin/ia", label: "Prompt IA" },
   { href: "/admin/cles", label: "Clés d'API" },
   { href: "/admin/demandes", label: "Demandes" },
+  { href: "/admin/galerie", label: "Galerie" },
   { href: "/admin/utilisateurs", label: "Utilisateurs" },
   { href: "/admin/fonctionnalites", label: "Fonctionnalités" },
   { href: "/admin/logs", label: "Mode Dev · logs" },
@@ -26,7 +27,7 @@ export function AdminNav() {
             href={l.href}
             aria-current={active ? "page" : undefined}
             className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition ${
-              active ? "bg-ink text-white" : "text-ink-soft hover:bg-white hover:text-ink"
+              active ? "bg-night text-white" : "text-ink-soft hover:bg-surface hover:text-ink"
             }`}
           >
             {l.label}

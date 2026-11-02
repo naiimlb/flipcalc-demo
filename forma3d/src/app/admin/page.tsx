@@ -63,7 +63,7 @@ export default async function AdminHome() {
                   className="w-full rounded-t-[4px] bg-brand-accent transition group-hover:brightness-110"
                   style={{ height: `${d.count === 0 ? 0 : Math.max(3, (d.count / maxDay) * 100)}%` }}
                 />
-                <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink px-2 py-1 text-[11px] text-white group-hover:block">
+                <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-night px-2 py-1 text-[11px] text-white group-hover:block">
                   {new Date(d.day).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} : {d.count}
                 </span>
               </div>

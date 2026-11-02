@@ -1,6 +1,7 @@
 "use client";
 
-import { VARIANT_IDS, VARIANTS, type VariantId } from "@/lib/design/variants";
+import { VARIANT_IDS, type VariantId } from "@/lib/design/variants";
+import { useT } from "../app/Preferences";
 import { IconCoin, IconLayers, IconMinus, IconSparkles } from "../icons";
 
 const ICONS: Record<VariantId, React.ReactNode> = {
@@ -22,6 +23,7 @@ export function VariantButtons({
   disabled: boolean;
   canCompare: boolean;
 }) {
+  const t = useT();
   return (
     <div>
       <div className="grid grid-cols-2 gap-1.5">
@@ -31,11 +33,11 @@ export function VariantButtons({
             type="button"
             disabled={disabled}
             onClick={() => onAdjust(id)}
-            title={`Créer une nouvelle version : ${VARIANTS[id].label.toLowerCase()}`}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-line bg-white px-2 py-2 text-[11.5px] font-semibold text-ink-soft transition hover:border-brand-accent/50 hover:text-brand-accent disabled:cursor-not-allowed disabled:opacity-50"
+            title={t("variant.hint", { label: t(`variant.${id}`).toLowerCase() })}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-[11.5px] font-semibold text-ink-soft transition hover:border-brand-accent/50 hover:text-brand-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             {ICONS[id]}
-            {VARIANTS[id].label}
+            {t(`variant.${id}`)}
           </button>
         ))}
       </div>
@@ -45,9 +47,9 @@ export function VariantButtons({
           onClick={onCompare}
           disabled={!canCompare}
           className="btn-outline-accent mt-2 w-full !rounded-xl !py-2 !text-xs"
-          title={canCompare ? "Comparer deux versions côte à côte" : "Il faut au moins deux conceptions pour comparer"}
+          title={canCompare ? t("variant.compare") : t("variant.compareHint")}
         >
-          Comparer deux versions
+          {t("variant.compare")}
         </button>
       )}
     </div>

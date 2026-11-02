@@ -31,6 +31,7 @@ async function newPage(name) {
   const octet = (max) => 1 + Math.floor(Math.random() * max);
   const fakeIp = `198.${octet(250)}.${octet(250)}.${octet(250)}`;
   const context = await browser.newContext({
+    locale: "fr-FR",
     viewport: { width: 1366, height: 900 },
     acceptDownloads: true,
     extraHTTPHeaders: { "x-forwarded-for": fakeIp },
@@ -62,8 +63,8 @@ try {
   const { context, page } = await newPage("appareil-1");
   mainPage = page;
 
-  // 1. Essai sans compte.
-  await page.goto(base, { waitUntil: "networkidle" });
+  // 1. Essai sans compte (le studio est sur /studio ; l'accueil présente le site aux visiteurs).
+  await page.goto(`${base}/studio`, { waitUntil: "networkidle" });
   await page.waitForSelector("canvas", { timeout: 20000 });
   await page.locator("#prompt").fill("Je perds tout le temps mes clés en rentrant chez moi");
   await page.keyboard.press("Enter");

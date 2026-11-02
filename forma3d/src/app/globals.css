@@ -7,7 +7,27 @@
   --brand-from: 91 110 225;
   --brand-to: 123 92 230;
   --brand-accent: 91 110 225;
+  /* Surfaces et textes (mode clair). */
+  --surface: 255 255 255;
+  --paper: 244 244 246;
+  --ink: 17 17 20;
+  --ink-soft: 59 59 68;
+  --ink-mute: 122 122 134;
+  --line: 230 230 236;
+  --night: 17 17 20;
   color-scheme: light;
+}
+
+/* Mode sombre : mêmes couleurs de marque (bleu-violet), surfaces nuit et textes clairs. */
+.dark {
+  --surface: 30 31 48;
+  --paper: 21 22 36;
+  --ink: 238 238 247;
+  --ink-soft: 202 203 222;
+  --ink-mute: 150 152 178;
+  --line: 55 57 82;
+  --night: 8 8 14;
+  color-scheme: dark;
 }
 
 html {
@@ -20,6 +40,14 @@ body {
   background-image: linear-gradient(135deg, rgb(var(--brand-from)) 0%, rgb(var(--brand-to)) 100%);
   background-attachment: fixed;
   min-height: 100dvh;
+}
+.dark body {
+  background-color: #10112a;
+  background-image: linear-gradient(135deg, rgb(var(--brand-from) / 0.42) 0%, rgb(var(--brand-to) / 0.42) 100%);
+}
+/* Texte arabe : polices système adaptées (la police du site n'a pas de glyphes arabes). */
+html[lang="ar"] body {
+  font-family: var(--font-sans), "Noto Sans Arabic", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
 }
 
 /* Application installée (plein écran) : le contenu évite l'encoche et la barre d'accueil. */
@@ -40,7 +68,7 @@ body {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none;
   }
   .panel {
-    @apply rounded-2xl border border-line/70 bg-white shadow-soft;
+    @apply rounded-2xl border border-line/70 bg-surface shadow-soft;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition
@@ -48,26 +76,26 @@ body {
       disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-dark {
-    @apply btn bg-ink text-white hover:bg-ink-soft;
+    @apply btn bg-night text-white hover:bg-night/80;
   }
   .btn-accent {
     @apply btn bg-brand-accent text-white hover:brightness-110;
   }
   .btn-ghost {
-    @apply btn border border-line bg-white text-ink hover:border-brand-accent/40 hover:text-brand-accent;
+    @apply btn border border-line bg-surface text-ink hover:border-brand-accent/40 hover:text-brand-accent;
   }
   .btn-outline-accent {
-    @apply btn border-[1.5px] border-brand-accent/70 bg-white text-brand-accent hover:bg-brand-accent/5;
+    @apply btn border-[1.5px] border-brand-accent/70 bg-surface text-brand-accent hover:bg-brand-accent/5;
   }
   .input {
-    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition
       placeholder:text-ink-mute focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15;
   }
   .label {
     @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-mute;
   }
   .icon-btn {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-soft transition
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ink-soft transition
       hover:border-brand-accent/40 hover:text-brand-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-accent;
   }
 }

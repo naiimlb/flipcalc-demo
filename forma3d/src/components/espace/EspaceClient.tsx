@@ -54,7 +54,7 @@ export function EspaceClient({
   passwordChanged,
 }: {
   viewer: StudioViewer;
-  language: "fr" | "en";
+  language: "fr" | "en" | "ar";
   initialFolders: Folder[];
   initialItems: RequestItem[];
   passwordChanged: boolean;
@@ -158,12 +158,12 @@ export function EspaceClient({
             {viewer.displayName ?? viewer.email} · {items.length} demande{items.length > 1 ? "s" : ""} · sauvegardé dans votre compte
           </p>
         </div>
-        <Link href="/" className="btn bg-white !text-xs text-brand-accent shadow-soft">
+        <Link href="/" className="btn bg-surface !text-xs text-brand-accent shadow-soft">
           <IconPlus size={14} /> Nouvelle demande
         </Link>
       </div>
 
-      <nav className="mb-4 flex gap-1 overflow-x-auto rounded-full bg-white/90 p-1 shadow-soft scrollbar-none" aria-label="Sections de Mon espace">
+      <nav className="mb-4 flex gap-1 overflow-x-auto rounded-full bg-surface/90 p-1 shadow-soft scrollbar-none" aria-label="Sections de Mon espace">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -192,7 +192,7 @@ export function EspaceClient({
 
         <section className="min-w-0 rounded-[24px] bg-paper p-3 shadow-card sm:p-4">
           {showFolders && (
-            <div className="mb-3 flex items-center gap-2 rounded-full border border-line bg-white px-3 py-2">
+            <div className="mb-3 flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2">
               <IconSearch size={14} className="text-ink-mute" />
               <input
                 value={query}
@@ -245,7 +245,7 @@ export function EspaceClient({
                     {formatDateTime(item.createdAt)} · {item.design?.model.parts.length ?? 0} pièces
                   </p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    <Link href={`/?p=${item.id}`} className="btn-accent !px-3 !py-1.5 !text-xs">
+                    <Link href={`/studio?p=${item.id}`} className="btn-accent !px-3 !py-1.5 !text-xs">
                       <IconExternal size={13} /> Ouvrir
                     </Link>
                     <button type="button" onClick={() => downloadGlb(item)} className="btn-ghost !px-3 !py-1.5 !text-xs">
@@ -284,7 +284,7 @@ export function EspaceClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="pointer-events-auto rounded-full bg-ink px-5 py-3 text-sm font-medium text-white shadow-float"
+                className="pointer-events-auto rounded-full bg-night px-5 py-3 text-sm font-medium text-white shadow-float"
               >
                 {toast}
               </motion.div>
@@ -324,7 +324,7 @@ function FolderSidebar({
         type="button"
         onClick={() => onFilter(id)}
         className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition ${
-          filter === id ? "bg-ink text-white" : "text-ink-soft hover:bg-paper"
+          filter === id ? "bg-night text-white" : "text-ink-soft hover:bg-paper"
         }`}
       >
         <IconFolder size={15} />
@@ -344,7 +344,7 @@ function FolderSidebar({
     </li>
   );
   return (
-    <aside className="rounded-[24px] bg-white p-3 shadow-card lg:self-start">
+    <aside className="rounded-[24px] bg-surface p-3 shadow-card lg:self-start">
       <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-ink-mute">Dossiers (projets)</p>
       <ul className="space-y-0.5">
         {entry("all", "Toutes les demandes")}
@@ -465,7 +465,7 @@ function RequestRow({
         >
           <IconStar size={14} fill={item.isFavorite ? "currentColor" : "none"} />
         </button>
-        <Link href={`/?p=${item.id}`} className="icon-btn" aria-label="Ouvrir" title="Ouvrir">
+        <Link href={`/studio?p=${item.id}`} className="icon-btn" aria-label="Ouvrir" title="Ouvrir">
           <IconExternal size={14} />
         </Link>
         {item.status === "ready" && (
@@ -539,7 +539,7 @@ function MaterialsTab({ viewer, items, notify }: { viewer: StudioViewer; items: 
 
 /* ----------------------------- Paramètres ----------------------------- */
 
-function SettingsPanel({ viewer, language, notify }: { viewer: StudioViewer; language: "fr" | "en"; notify(m: string): void }) {
+function SettingsPanel({ viewer, language, notify }: { viewer: StudioViewer; language: "fr" | "en" | "ar"; notify(m: string): void }) {
   const router = useRouter();
   const supabase = getBrowserSupabase();
   const [name, setName] = useState(viewer.displayName ?? "");
@@ -629,9 +629,10 @@ function SettingsPanel({ viewer, language, notify }: { viewer: StudioViewer; lan
           <label htmlFor="lang" className="label">
             Langue des conceptions
           </label>
-          <select id="lang" value={lang} onChange={(e) => setLang(e.target.value as "fr" | "en")} className="input">
+          <select id="lang" value={lang} onChange={(e) => setLang(e.target.value as "fr" | "en" | "ar")} className="input">
             <option value="fr">Français</option>
             <option value="en">English</option>
+            <option value="ar">العربية</option>
           </select>
         </div>
         <div>

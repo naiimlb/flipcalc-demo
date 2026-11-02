@@ -13,6 +13,7 @@ import { IconAlert, IconCheck, IconCube, IconDownload, IconExternal, IconHistory
 import { formatDuration, formatMoney, formatRelative, formatWeight } from "./format";
 import type { StudioFeatures, StudioPrefs } from "./types";
 import { VariantButtons } from "./VariantButtons";
+import { useT } from "../app/Preferences";
 
 interface Props {
   item: RequestItem | null;
@@ -41,9 +42,9 @@ function Card({ icon, title, aside, children, className = "" }: { icon: React.Re
 }
 
 const VERDICT = {
-  ok: { label: "Imprimable", cls: "bg-emerald-500 text-white" },
-  warning: { label: "À vérifier", cls: "bg-amber-400 text-ink" },
-  error: { label: "À corriger", cls: "bg-rose-500 text-white" },
+  ok: { label: "fab.ok", cls: "bg-emerald-500 text-white" },
+  warning: { label: "fab.warn", cls: "bg-amber-400 text-night" },
+  error: { label: "fab.error", cls: "bg-rose-500 text-white" },
 } as const;
 
 const LEVEL = {
@@ -53,6 +54,7 @@ const LEVEL = {
 } as const;
 
 export default function FabricationTab({ item, items, prefs, onPrefs, features, busy, onAdjust, onCompare, onSelect, onToast }: Props) {
+  const t = useT();
   const design = item?.design ?? null;
   const materialId = prefs.print.material ?? defaultPrintMaterial(design);
 
@@ -93,8 +95,8 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
   if (!design || !item) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-        <p className="text-sm font-semibold">Aucune conception sélectionnée</p>
-        <p className="mt-1 text-xs text-ink-mute">Décrivez un problème dans la barre du haut, ou ouvrez un projet de l&apos;historique.</p>
+        <p className="text-sm font-semibold">{t("fab.none")}</p>
+        <p className="mt-1 text-xs text-ink-mute">{t("fab.noneHint")}</p>
       </div>
     );
   }
@@ -111,14 +113,14 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
       {/* Imprimabilité */}
       <Card
         icon={<IconCheck size={15} />}
-        title="Contrôle d'imprimabilité"
-        aside={report && <span className={`chip ${VERDICT[report.verdict].cls}`}>{VERDICT[report.verdict].label}</span>}
+        title={t("fab.printability")}
+        aside={report && <span className={`chip ${VERDICT[report.verdict].cls}`}>{t(VERDICT[report.verdict].label)}</span>}
       >
-        <p className="label !mb-1">Volume d&apos;impression (mm)</p>
+        <p className="label !mb-1">{t("fab.volume")}</p>
         <div className="grid grid-cols-3 gap-1.5">
           {(["x", "y", "z"] as const).map((axis) => (
             <label key={axis} className="text-[10.5px] font-medium text-ink-mute">
-              {axis === "x" ? "Largeur" : axis === "y" ? "Profondeur" : "Hauteur"}
+              {t(axis === "x" ? "fab.width" : axis === "y" ? "fab.depth" : "fab.height")}
               <input
                 type="number"
                 inputMode="numeric"
@@ -129,7 +131,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
                 onBlur={(e) => setPrinter(axis, e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && setPrinter(axis, (e.target as HTMLInputElement).value)}
                 className="input mt-0.5 !px-2.5 !py-1.5 !text-xs"
-                aria-label={`Volume d'impression : ${axis === "x" ? "largeur" : axis === "y" ? "profondeur" : "hauteur"} en mm`}
+                aria-label={`${t("fab.volume")} : ${t(axis === "x" ? "fab.width" : axis === "y" ? "fab.depth" : "fab.height")}`}
               />
             </label>
           ))}
@@ -137,13 +139,13 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
         {report ? (
           <>
             <p className="mt-3 text-[11.5px] text-ink-soft">
-              Objet : {Math.round(report.size.width)} × {Math.round(report.size.depth)} × {Math.round(report.size.height)} mm ·{" "}
-              {report.supportsNeeded ? "supports nécessaires" : "sans support"}
+              {t("fab.object", {
+                size: `${Math.round(report.size.width)} × ${Math.round(report.size.depth)} × ${Math.round(report.size.height)}`,
+                supports: report.supportsNeeded ? t("fab.supports") : t("fab.noSupports"),
+              })}
             </p>
             {report.issues.length === 0 ? (
-              <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[12px] text-emerald-800">
-                Aucun problème détecté : taille, parois et porte-à-faux sont compatibles avec votre imprimante.
-              </p>
+              <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[12px] text-emerald-800">{t("fab.allGood")}</p>
             ) : (
               <ul className="mt-2 space-y-2">
                 {report.issues.map((issue, i) => (
@@ -158,9 +160,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
                 ))}
               </ul>
             )}
-            <p className="mt-2 text-[10.5px] text-ink-mute">
-              Vérifications géométriques simples (parois de {">"} 1,2 mm, porte-à-faux de plus de 45°) : le trancheur reste la référence.
-            </p>
+            <p className="mt-2 text-[10.5px] text-ink-mute">{t("fab.checksNote")}</p>
           </>
         ) : (
           <p className="mt-3 text-xs text-ink-mute">Analyse impossible pour cette conception.</p>
@@ -168,10 +168,10 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
       </Card>
 
       {/* Estimation */}
-      <Card icon={<IconSteps size={15} />} title="Estimation d'impression">
+      <Card icon={<IconSteps size={15} />} title={t("fab.estimate")}>
         <div className="grid grid-cols-3 gap-1.5">
           <label className="text-[10.5px] font-medium text-ink-mute">
-            Matière
+            {t("fab.material")}
             <select
               value={materialId}
               onChange={(e) => onPrefs({ print: { ...prefs.print, material: e.target.value } })}
@@ -185,7 +185,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
             </select>
           </label>
           <label className="text-[10.5px] font-medium text-ink-mute">
-            Remplissage
+            {t("fab.infill")}
             <select
               value={prefs.print.infill}
               onChange={(e) => onPrefs({ print: { ...prefs.print, infill: Number(e.target.value) } })}
@@ -199,7 +199,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
             </select>
           </label>
           <label className="text-[10.5px] font-medium text-ink-mute">
-            Couche
+            {t("fab.layer")}
             <select
               value={prefs.print.layerHeight}
               onChange={(e) => onPrefs({ print: { ...prefs.print, layerHeight: Number(e.target.value) } })}
@@ -217,9 +217,9 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
         {estimate ? (
           <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
             {[
-              ["Matière", `≈ ${formatWeight(estimate.massGrams)}`],
-              ["Durée", `≈ ${formatDuration(estimate.minutes)}`],
-              ["Coût", `≈ ${formatMoney(estimate.cost.min)} – ${formatMoney(estimate.cost.max)}`],
+              [t("fab.mass"), `≈ ${formatWeight(estimate.massGrams)}`],
+              [t("fab.time"), `≈ ${formatDuration(estimate.minutes)}`],
+              [t("fab.cost"), `≈ ${formatMoney(estimate.cost.min)} – ${formatMoney(estimate.cost.max)}`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-paper px-1.5 py-2.5">
                 <p className="text-[10.5px] font-medium text-brand-accent">{label}</p>
@@ -230,16 +230,13 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
         ) : (
           <p className="mt-3 text-xs text-ink-mute">Estimation impossible pour cette conception.</p>
         )}
-        <p className="mt-2 rounded-xl bg-amber-50 p-2.5 text-[11px] leading-snug text-amber-800">
-          Estimations indicatives (coque + remplissage, débit moyen d&apos;une imprimante grand public, matière et électricité
-          {estimate?.supportsIncluded ? ", supports compris" : ""}). Le trancheur donnera les valeurs exactes.
-        </p>
+        <p className="mt-2 rounded-xl bg-amber-50 p-2.5 text-[11px] leading-snug text-amber-800">{t("fab.estimateNote")}</p>
       </Card>
 
       {/* Versions */}
-      <Card icon={<IconHistory size={15} />} title="Ajuster et comparer">
+      <Card icon={<IconHistory size={15} />} title={t("fab.adjust")}>
         <VariantButtons onAdjust={onAdjust} onCompare={onCompare} disabled={busy} canCompare={comparable} />
-        <p className="mt-2 text-[11px] text-ink-mute">Chaque ajustement crée une nouvelle version : la précédente est conservée.</p>
+        <p className="mt-2 text-[11px] text-ink-mute">{t("fab.adjustNote")}</p>
         {versions.length > 1 && (
           <ul className="mt-3 space-y-1">
             {versions.map((v) => (
@@ -247,10 +244,10 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
                 <button
                   type="button"
                   onClick={() => onSelect(v.id)}
-                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12px] transition ${v.id === item.id ? "bg-brand-accent/10 text-brand-accent" : "hover:bg-paper"}`}
+                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start text-[12px] transition ${v.id === item.id ? "bg-brand-accent/10 text-brand-accent" : "hover:bg-paper"}`}
                 >
                   <span className="min-w-0 flex-1 truncate font-medium">{v.title ?? v.prompt}</span>
-                  {v.design?.variante && <span className="chip bg-paper text-ink-soft">{v.design.variante.libelle}</span>}
+                  {v.design?.variante && <span className="chip bg-paper text-ink-soft">{t(`variant.${v.design.variante.objectif}`)}</span>}
                   <span className="shrink-0 text-[10.5px] text-ink-mute">{formatRelative(v.createdAt)}</span>
                 </button>
               </li>
@@ -263,12 +260,12 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
       <PlanCard design={design} allowed={features.exportPng} onToast={onToast} />
 
       {/* Exports */}
-      <Card icon={<IconDownload size={15} />} title="Exports 3D">
+      <Card icon={<IconDownload size={15} />} title={t("fab.exports")}>
         <ExportButtons design={design} features={features} onToast={onToast} />
       </Card>
 
       {/* Où fabriquer */}
-      <Card icon={<IconExternal size={15} />} title="Où fabriquer" className="md:col-span-2 xl:col-span-1">
+      <Card icon={<IconExternal size={15} />} title={t("fab.where")} className="md:col-span-2 xl:col-span-1">
         <ul className="space-y-1.5">
           {fabricationLinks(design, material.label).map((l) => (
             <li key={l.url}>
@@ -281,7 +278,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
             </li>
           ))}
         </ul>
-        <p className="label !mb-1 mt-4">Liste d&apos;achats</p>
+        <p className="label !mb-1 mt-4">{t("fab.shopping")}</p>
         <ul className="divide-y divide-line/70 rounded-xl border border-line">
           {shoppingList(design, estimate).map((s, i) => (
             <li key={i} className="flex items-center gap-2 px-2.5 py-2 text-[11.5px]">
@@ -289,20 +286,21 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
                 <span className="font-medium text-ink">{s.item}</span>
                 <span className="block text-ink-mute">{s.quantity}</span>
               </span>
-              <span className="shrink-0 text-right tabular-nums text-ink-soft">{s.estimate ?? "prix à vérifier"}</span>
-              <a href={s.url} target="_blank" rel="noopener noreferrer" className="icon-btn !h-7 !w-7 shrink-0" aria-label={`Rechercher « ${s.item} »`}>
+              <span className="shrink-0 text-right tabular-nums text-ink-soft">{s.estimate ?? t("fab.checkPrice")}</span>
+              <a href={s.url} target="_blank" rel="noopener noreferrer" className="icon-btn !h-7 !w-7 shrink-0" aria-label={t("fab.searchFor", { item: s.item })}>
                 <IconExternal size={12} />
               </a>
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-[10.5px] text-ink-mute">Liens de recherche génériques ; prix estimés, à vérifier chez le vendeur.</p>
+        <p className="mt-2 text-[10.5px] text-ink-mute">{t("fab.whereNote")}</p>
       </Card>
     </div>
   );
 }
 
 function PlanCard({ design, allowed, onToast }: { design: Design; allowed: boolean; onToast(m: string): void }) {
+  const t = useT();
   const [sheet, setSheet] = useState<{ canvas: HTMLCanvasElement; url: string } | null>(null);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -340,20 +338,20 @@ function PlanCard({ design, allowed, onToast }: { design: Design; allowed: boole
       }
     } catch (err) {
       console.error(err);
-      onToast("Export du plan impossible.");
+      onToast(t("fab.failed", { label: t("fab.plans") }));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Card icon={<IconRuler size={15} />} title="Plans cotés" className="md:col-span-2 xl:col-span-2">
-      <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-line bg-white">
+    <Card icon={<IconRuler size={15} />} title={t("fab.plans")} className="md:col-span-2 xl:col-span-2">
+      <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-line bg-surface">
         {sheet ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={sheet.url} alt={`Plan coté : vues de face, de droite et de dessus de « ${design.title} »`} className="h-auto w-full" />
+          <img src={sheet.url} alt={t("fab.planAlt", { title: design.title })} className="h-auto w-full" />
         ) : error ? (
-          <p className="p-4 text-xs text-ink-mute">Le plan n&apos;a pas pu être dessiné sur cet appareil (WebGL indisponible).</p>
+          <p className="p-4 text-xs text-ink-mute">{t("fab.planFailed")}</p>
         ) : (
           <Spinner size={20} />
         )}
@@ -361,19 +359,20 @@ function PlanCard({ design, allowed, onToast }: { design: Design; allowed: boole
       {allowed && (
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" disabled={!sheet || busy} onClick={() => download("pdf")} className="btn-accent !py-2 !text-xs">
-            <IconDownload size={14} /> Plan PDF (A4)
+            <IconDownload size={14} /> {t("fab.planPdf")}
           </button>
           <button type="button" disabled={!sheet || busy} onClick={() => download("png")} className="btn-ghost !py-2 !text-xs">
-            <IconDownload size={14} /> Plan PNG
+            <IconDownload size={14} /> {t("fab.planPng")}
           </button>
         </div>
       )}
-      <p className="mt-2 text-[10.5px] text-ink-mute">Vues de face, de droite et de dessus à échelle normalisée, cotes hors-tout en millimètres.</p>
+      <p className="mt-2 text-[10.5px] text-ink-mute">{t("fab.planNote")}</p>
     </Card>
   );
 }
 
 function ExportButtons({ design, features, onToast }: { design: Design; features: StudioFeatures; onToast(m: string): void }) {
+  const t = useT();
   const [busy, setBusy] = useState<string | null>(null);
   const run = async (label: string, task: () => Promise<void>) => {
     setBusy(label);
@@ -381,7 +380,7 @@ function ExportButtons({ design, features, onToast }: { design: Design; features
       await task();
     } catch (err) {
       console.error(err);
-      onToast(`${label} impossible.`);
+      onToast(t("fab.failed", { label }));
     } finally {
       setBusy(null);
     }
@@ -390,17 +389,17 @@ function ExportButtons({ design, features, onToast }: { design: Design; features
   const buttons = [
     features.exportStl && {
       label: "STL",
-      hint: "Impression 3D (mm)",
+      hint: t("fab.stlHint"),
       run: () => run("Export STL", async () => downloadBlob(new Blob([exportStl(design)], { type: "model/stl" }), `${base}.stl`)),
     },
     features.exportGlb && {
       label: "GLB",
-      hint: "3D en couleurs",
+      hint: t("fab.glbHint"),
       run: () => run("Export GLB", async () => downloadBlob(new Blob([await exportGlb(design)], { type: "model/gltf-binary" }), `${base}.glb`)),
     },
     features.exportPng && {
       label: "PNG",
-      hint: "Image 3D",
+      hint: t("fab.pngHint"),
       run: () =>
         run("Capture PNG", async () => {
           const blob = await canvasToPngBlob(renderSnapshot(design));
@@ -410,7 +409,7 @@ function ExportButtons({ design, features, onToast }: { design: Design; features
     },
   ].filter(Boolean) as { label: string; hint: string; run(): void }[];
 
-  if (!buttons.length) return <p className="text-xs text-ink-mute">Les exports sont désactivés par l&apos;administrateur.</p>;
+  if (!buttons.length) return <p className="text-xs text-ink-mute">{t("fab.exportsOff")}</p>;
   return (
     <div className="grid grid-cols-3 gap-1.5">
       {buttons.map((b) => (
@@ -419,7 +418,7 @@ function ExportButtons({ design, features, onToast }: { design: Design; features
           type="button"
           onClick={b.run}
           disabled={busy !== null}
-          className="flex flex-col items-center rounded-xl border border-line bg-white px-2 py-3 transition hover:border-brand-accent/50 disabled:opacity-50"
+          className="flex flex-col items-center rounded-xl border border-line bg-surface px-2 py-3 transition hover:border-brand-accent/50 disabled:opacity-50"
         >
           <span className="text-[13px] font-bold text-brand-accent">{busy?.includes(b.label) ? <Spinner size={14} /> : b.label}</span>
           <span className="mt-0.5 text-[10.5px] text-ink-mute">{b.hint}</span>

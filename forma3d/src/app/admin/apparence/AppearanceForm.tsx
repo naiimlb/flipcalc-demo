@@ -77,7 +77,7 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
               <label className="label" htmlFor={c.key}>
                 {c.label}
               </label>
-              <div className="flex items-center gap-2 rounded-xl border border-line bg-white p-1.5">
+              <div className="flex items-center gap-2 rounded-xl border border-line bg-surface p-1.5">
                 <input id={c.key} type="color" value={site[c.key]} onChange={(e) => set(c.key, e.target.value)} className="h-8 w-10 cursor-pointer rounded-lg border-0 bg-transparent" />
                 <span className="font-mono text-xs">{site[c.key]}</span>
               </div>
@@ -88,7 +88,7 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
         <div>
           <p className="label">Logo</p>
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white ring-1 ring-line">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface ring-1 ring-line">
               {site.logoDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={site.logoDataUrl} alt="Logo" className="h-9 w-9 object-contain" />
@@ -150,7 +150,7 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
             </div>
             <p className="mt-6 text-[1.9rem] font-semibold leading-[1.08] tracking-[-0.03em]">
               {site.heroPill && (
-                <span className="mr-2 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-0.5 text-white">
+                <span className="mr-2 inline-flex items-center gap-1.5 rounded-full bg-night px-3 py-0.5 text-white">
                   {site.heroPill}
                   <IconCube size={22} strokeWidth={1.5} />
                 </span>

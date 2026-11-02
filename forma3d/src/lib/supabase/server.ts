@@ -34,7 +34,7 @@ export type Role = "admin" | "user";
 export interface Profile {
   displayName: string | null;
   avatarUrl: string | null;
-  language: "fr" | "en";
+  language: "fr" | "en" | "ar";
   units: "mm" | "cm" | "in";
   favoriteMaterials: string[];
 }
@@ -67,7 +67,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
     profile: {
       displayName: profile?.display_name ?? null,
       avatarUrl: profile?.avatar_url ?? null,
-      language: profile?.language === "en" ? "en" : "fr",
+      language: profile?.language === "en" || profile?.language === "ar" ? profile.language : "fr",
       units: profile?.units === "cm" || profile?.units === "in" ? profile.units : "mm",
       favoriteMaterials: Array.isArray(profile?.favorite_materials) ? profile.favorite_materials : [],
     },

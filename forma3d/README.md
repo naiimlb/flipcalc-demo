@@ -20,7 +20,7 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | **1** | Assistant de questions, streaming, cache, performance, gestes tactiles, PWA | **fait** (voir « Phase 1 ») |
 | 2 | Fabrication et impression 3D (imprimabilité, estimations, plans cotés, « où fabriquer », versions) | **fait** (voir « Phase 2 ») |
 | 3 | Photo vers solution, réalité augmentée | **fait** (voir « Phase 3 ») |
-| 4 | Design (mode sombre/clair), partage, galerie, langues | à faire |
+| 4 | Design (mode sombre/clair), partage, galerie, langues | **fait** (voir « Phase 4 ») |
 | 5 | Crédits et quotas (sans paiement) | à faire |
 
 Aucun service text-to-3D payant n'est branché : l'interface `ModelProvider` est conservée pour plus tard.
@@ -48,7 +48,9 @@ valeurs (voir ci-dessous), puis `npm run dev`.
 2. **SQL Editor** : exécutez, dans l'ordre, les fichiers de `supabase/migrations/` (ou `supabase db push`) :
    1. `20261101000000_forma3d_schema.sql` : tables, RLS, quotas, fonctions d'administration ;
    2. `20261102000000_espace_personnel.sql` : espace personnel (dossiers, favoris, Storage, export / suppression de compte, essai sans compte, premier administrateur par jeton) ;
-   3. `20261103000000_phase1_cache_ratelimit.sql` : **cache** des demandes identiques et **limite de débit** de l'assistant de questions.
+   3. `20261103000000_phase1_cache_ratelimit.sql` : **cache** des demandes identiques et **limite de débit** de l'assistant de questions ;
+   4. `20261104000000_phase4_galerie_partage.sql` : thème et arabe dans le profil, **galerie publique** (signalements,
+      modération), **liens de partage** et **commentaires**. Sans lui, la galerie et le partage affichent « pas encore activé ».
    Les scripts sont rejouables sans danger. L'application fonctionne même si le 3ᵉ n'est pas appliqué
    (le cache est alors simplement désactivé et la limite de débit se fait en mémoire).
 3. **Authentication → URL Configuration** : *Site URL* = l'URL du site et, dans *Redirect URLs*,
@@ -190,6 +192,36 @@ Onglet **Fabriquer** (calculs faits dans le navigateur, chargés seulement à l'
   sur **Android**, **WebXR** (Chrome + ARCore) : un réticule suit le sol, un toucher pose l'objet. Sur
   les appareils sans réalité augmentée, le bouton n'est **pas affiché** (aucune erreur).
 
+## Phase 4 : design et partage
+
+- **Mode sombre / clair** (`auto`, `clair`, `sombre`) : sélecteur dans l'en-tête (☀/☾) et dans Paramètres ;
+  choix gardé dans un cookie (appliqué avant l'affichage, sans clignotement) et dans le compte (`profiles.theme`).
+  Les couleurs passent par des variables CSS (`--surface`, `--paper`, `--ink`, `--line`, `--night`) : le
+  bleu-violet de la marque reste identique dans les deux modes.
+- **Visionneuse plus réaliste** : éclairage studio (lumière principale, débouchage, contre-jour), carte
+  d'environnement à boîtes à lumière (reflets), matériaux physiques (vernis sur le plastique), ombres douces au
+  sol, rendu néon toujours disponible, **capture PNG en haute définition** (rendu 2 à 3× la taille affichée).
+- **Animations** : transition entre les pages (`src/app/template.tsx`), panneaux révélés un par un, écran de
+  chargement en 4 étapes **Analyse → Conception → Contrôle → Prêt** suivant le flux de l'IA ; le réglage système
+  « réduire les animations » est respecté (Framer Motion `MotionConfig` + CSS).
+- **Accueil des visiteurs** (`/`) : titre à badge noir, exemples de solutions en **3D** (dernières publications
+  de la galerie, sinon exemples), fonctionnement en 3 étapes, boutons **Essayer** (→ `/studio`) et **Créer un
+  compte**. Une personne connectée arrive directement dans le studio. Le studio est aussi à `/studio`.
+- **Galerie publique** (`/galerie`) : publication par un **choix explicite** (bouton « Partager · Publier » sur
+  la fiche du projet, nom affiché ou non), copie figée de la conception ; recherche et filtre par catégorie ;
+  page de détail avec 3D, **Utiliser comme point de départ** (la conception est copiée dans l'espace, ou gardée
+  dans le navigateur pour un visiteur) et **Signaler** (limité ; masquage automatique au 5e signalement) ;
+  **modération** dans `/admin/galerie` (masquer, réafficher, supprimer, motifs des signalements).
+- **Partage** : lien en lecture seule `/p/<jeton>` (jeton aléatoire), **désactivable** à tout moment,
+  renouvelable (l'ancien lien cesse de fonctionner), commentaires avec **pseudo** activables ou non, limités
+  par adresse. La page partagée n'affiche jamais l'identité de l'auteur et n'est pas indexée.
+- **Langues** : français (par défaut), anglais et arabe ; détection automatique (`Accept-Language`),
+  sélecteur dans l'en-tête et dans Paramètres, choix mémorisé (cookie + compte), **lecture de droite à gauche**
+  pour l'arabe (`dir="rtl"`). Les réponses de l'IA (conception, questions) suivent la langue choisie.
+  Textes traduits : accueil, studio (barre, colonnes, visionneuse, onglet Fabriquer, comparaison, réglages),
+  galerie, partage. **Restent en français** : l'administration, `/setup`, Mon espace, les pages de connexion et
+  les 4 projets d'exemple.
+
 ## Mon espace et administration
 
 - `/espace` : demandes, modèles 3D (GLB dans Supabase Storage), favoris, dossiers, matières préférées,
@@ -247,4 +279,6 @@ forma3d/
   fois dans le volume (léger surplus). Les ponts courts sont comptés comme des porte-à-faux.
 - Phase 3 : réalité augmentée non testée sur un vrai iPhone / Android (la CI n'a pas de caméra) ; à
   vérifier : « Voir chez moi » dans Safari (iPhone/iPad) et dans Chrome (Android).
-- Phases 4 et 5 (voir le tableau en haut).
+- Phase 4 : appliquer `20261104000000_phase4_galerie_partage.sql` (galerie, partage, thème dans le compte) ;
+  traduire l'administration, Mon espace et la connexion ; vignettes d'aperçu dans la galerie (aujourd'hui une icône).
+- Phase 5 (voir le tableau en haut).

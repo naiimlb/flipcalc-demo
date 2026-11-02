@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { cookies } from "next/headers";
+import { PreferencesProvider } from "@/components/app/Preferences";
 import { RegisterServiceWorker } from "@/components/app/RegisterServiceWorker";
 import { UpdateNotifier } from "@/components/app/UpdateNotifier";
 import { hexToRgbTriplet } from "@/lib/settings";
 import { getPublicSettings } from "@/lib/settings.server";
+import { LANG_COOKIE, dirOf, isLocale, type Locale } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+import { getSession } from "@/lib/supabase/server";
+import { THEME_BOOT_SCRIPT, THEME_COOKIE, isThemeChoice, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
 const uiFont = Plus_Jakarta_Sans({
@@ -66,12 +72,34 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     "--brand-accent": hexToRgbTriplet(site.accent),
   } as React.CSSProperties;
 
+  // Langue et thème : choix mémorisé (cookie), sinon celui du compte, sinon détection automatique.
+  const store = await cookies();
+  const themeCookie = store.get(THEME_COOKIE)?.value;
+  const langCookie = store.get(LANG_COOKIE)?.value;
+  let theme: ThemeChoice = isThemeChoice(themeCookie) ? themeCookie : "auto";
+  let locale: Locale = await getLocale();
+  if (!isThemeChoice(themeCookie) || !isLocale(langCookie)) {
+    const session = await getSession().catch(() => null);
+    if (session) {
+      // Colonnes ajoutées par le script SQL de la phase 4 : sans lui, la requête échoue et on garde les valeurs par défaut.
+      const { data } = await session.supabase.from("profiles").select("theme, language").eq("id", session.user.id).maybeSingle();
+      const row = data as { theme?: string; language?: string } | null;
+      if (!isThemeChoice(themeCookie) && isThemeChoice(row?.theme)) theme = row.theme;
+      if (!isLocale(langCookie) && isLocale(row?.language)) locale = row.language;
+    }
+  }
+
   return (
-    <html lang="fr" className={uiFont.variable} style={brandVars}>
+    <html lang={locale} dir={dirOf(locale)} className={`${uiFont.variable}${theme === "dark" ? " dark" : ""}`} style={brandVars} data-theme={theme} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body>
-        {children}
-        <UpdateNotifier />
-        <RegisterServiceWorker />
+        <PreferencesProvider initialLocale={locale} initialTheme={theme}>
+          {children}
+          <UpdateNotifier />
+          <RegisterServiceWorker />
+        </PreferencesProvider>
       </body>
     </html>
   );

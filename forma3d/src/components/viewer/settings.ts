@@ -37,7 +37,10 @@ export const VIEWER_BACKGROUNDS: Record<RenderMode, string[]> = {
   real: ["#f6f7ff", "#e2e4f8", "#d3d6f2"],
 };
 
-export function viewerBackgroundCss(mode: RenderMode) {
-  const [a, b, c] = VIEWER_BACKGROUNDS[mode];
+/** Studio sombre pour le rendu réaliste en mode sombre. */
+const REAL_DARK = ["#3a3d5c", "#24263d", "#191a2c"];
+
+export function viewerBackgroundCss(mode: RenderMode, dark = false) {
+  const [a, b, c] = mode === "real" && dark ? REAL_DARK : VIEWER_BACKGROUNDS[mode];
   return `radial-gradient(120% 90% at 25% 10%, ${a} 0%, ${b} 55%, ${c} 100%)`;
 }

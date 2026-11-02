@@ -16,6 +16,7 @@ import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests
 import { getSecret } from "@/lib/secrets";
 import { DEFAULT_AI } from "@/lib/settings";
 import { getAiSettings, getPublicSettings } from "@/lib/settings.server";
+import { getLocale } from "@/lib/i18n/server";
 import { isDemoMode } from "@/lib/supabase/env";
 import { getServerSupabase, getSession } from "@/lib/supabase/server";
 
@@ -155,7 +156,8 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
   }
   const session = await getSession();
   const ai = await getAiSettings();
-  const language = session?.profile.language ?? "fr";
+  // Les réponses de l'IA suivent la langue choisie dans l'interface.
+  const language = await getLocale();
   // Pas de cache pour les demandes avec photo.
   const cacheKey = body.image
     ? null
@@ -194,6 +196,7 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
       image: body.image,
       ai,
       allowDemo: features.demoFallback,
+      language,
       variant,
       onText: reporter.onText,
       onRestart: reporter.onRestart,
@@ -229,7 +232,7 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
         image: body.image,
         ai,
         allowDemo: features.demoFallback,
-        language: session.profile.language,
+        language,
         variant,
         onText: reporter.onText,
         onRestart: reporter.onRestart,

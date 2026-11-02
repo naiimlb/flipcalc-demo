@@ -1,5 +1,7 @@
 "use client";
 
+import { intlLocale } from "@/lib/i18n";
+import { usePreferences } from "../app/Preferences";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { RequestItem } from "@/lib/requests";
@@ -22,6 +24,7 @@ export function RecentCard({
   onSelect(id: string): void;
   className?: string;
 }) {
+  const { t, locale } = usePreferences();
   // Les dates dépendent de l'heure locale : calculées après le montage (pas d'écart d'hydratation).
   const [today, setToday] = useState<number | null>(null);
   useEffect(() => {
@@ -39,18 +42,18 @@ export function RecentCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className={`panel p-3.5 ${className}`}
-      aria-label="Dernières demandes"
+      aria-label={t("recent.title")}
     >
-      <h2 className="text-[13px] font-semibold">Dernières demandes</h2>
+      <h2 className="text-[13px] font-semibold">{t("recent.title")}</h2>
       <div className="mt-2 grid grid-cols-7 text-[9.5px] text-ink-mute">
         {days.map((d) => (
           <span key={d.getTime()} className="truncate">
-            {d.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "")} {d.getDate()}
+            {d.toLocaleDateString(intlLocale(locale), { weekday: "short" }).replace(".", "")} {d.getDate()}
           </span>
         ))}
       </div>
       <ul className="mt-2 space-y-2.5">
-        {rows.length === 0 && <li className="py-4 text-center text-xs text-ink-mute">Vos demandes apparaîtront ici.</li>}
+        {rows.length === 0 && <li className="py-4 text-center text-xs text-ink-mute">{t("recent.empty")}</li>}
         {rows.map((item, index) => {
           const created = new Date(item.createdAt);
           created.setHours(0, 0, 0, 0);

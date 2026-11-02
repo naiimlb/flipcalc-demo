@@ -3,15 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { IconCamera, IconImage, IconSparkles, IconX, Spinner } from "../icons";
+import { useT } from "../app/Preferences";
 import { readDraft, saveDraft } from "./draft";
 import { prepareImage, type ImagePayload } from "./image";
 
-const EXAMPLES = [
-  "Une solution pour ranger mes câbles de charge",
-  "Un support de téléphone pour mon bureau",
-  "Un porte-clés mural pour l'entrée",
-  "Un bac à herbes aromatiques pour le balcon",
-];
+const EXAMPLES = ["prompt.example1", "prompt.example2", "prompt.example3", "prompt.example4"] as const;
 
 export const FOCUS_PROMPT_EVENT = "forma3d:focus-prompt";
 
@@ -28,6 +24,7 @@ export function PromptBar({
   /** Demande à remettre dans la barre (ex. après rechargement en pleine génération). */
   restore: { prompt: string; image: ImagePayload | null } | null;
 }) {
+  const t = useT();
   const [prompt, setPrompt] = useState("");
   const [image, setImage] = useState<ImagePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,14 +75,14 @@ export function PromptBar({
       setImage(await prepareImage(file));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Image illisible.");
+      setError(err instanceof Error ? err.message : t("prompt.badImage"));
     }
   };
 
   const submit = () => {
     const text = prompt.trim();
     if (text.length < 3) {
-      setError("Décrivez votre besoin en quelques mots.");
+      setError(t("prompt.tooShort"));
       area.current?.focus();
       return;
     }
@@ -105,13 +102,13 @@ export function PromptBar({
           e.preventDefault();
           submit();
         }}
-        className="flex items-end gap-2 rounded-[22px] bg-white p-1.5 pl-3 shadow-card ring-1 ring-black/5"
+        className="flex items-end gap-2 rounded-[22px] bg-surface p-1.5 pl-3 shadow-card ring-1 ring-black/5"
       >
         <span className="mb-2.5 hidden text-brand-accent sm:block">
           <IconSparkles size={18} />
         </span>
         <label htmlFor="prompt" className="sr-only">
-          Votre demande
+          {t("prompt.label")}
         </label>
         <textarea
           id="prompt"
@@ -128,18 +125,18 @@ export function PromptBar({
               submit();
             }
           }}
-          placeholder="Décrivez un problème ou un objet…"
+          placeholder={t("prompt.placeholder")}
           className="min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-6 outline-none placeholder:text-ink-mute"
         />
         {image && (
           <span className="relative mb-1 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image.previewUrl} alt="Photo jointe" className="h-9 w-9 rounded-xl object-cover" />
+            <img src={image.previewUrl} alt={t("prompt.photo")} className="h-9 w-9 rounded-xl object-cover" />
             <button
               type="button"
               onClick={() => setImage(null)}
-              aria-label="Retirer la photo"
-              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-white"
+              aria-label={t("prompt.removePhoto")}
+              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-night text-white"
             >
               <IconX size={10} strokeWidth={3} />
             </button>
@@ -154,8 +151,8 @@ export function PromptBar({
               type="button"
               onClick={() => cameraInput.current?.click()}
               className="icon-btn mb-0.5 hidden !h-10 !w-10 shrink-0 [@media(pointer:coarse)]:flex"
-              aria-label="Prendre une photo du problème"
-              title="Prendre une photo du problème"
+              aria-label={t("prompt.takePhoto")}
+              title={t("prompt.takePhoto")}
             >
               <IconCamera size={17} />
             </button>
@@ -163,8 +160,8 @@ export function PromptBar({
               type="button"
               onClick={() => fileInput.current?.click()}
               className="icon-btn mb-0.5 !h-10 !w-10 shrink-0"
-              aria-label="Joindre une photo (optionnel)"
-              title="Joindre une photo (optionnel)"
+              aria-label={t("prompt.attachPhoto")}
+              title={t("prompt.attachPhoto")}
             >
               <IconImage size={17} />
             </button>
@@ -172,7 +169,7 @@ export function PromptBar({
         )}
         <button type="submit" disabled={busy && prompt.trim().length < 3} className="btn-accent mb-0.5 shrink-0 !rounded-[16px] !px-4 !py-2.5">
           {busy ? <Spinner /> : <IconSparkles size={15} />}
-          <span className="hidden sm:inline">Générer</span>
+          <span className="hidden sm:inline">{t("prompt.generate")}</span>
         </button>
       </form>
       {error && <p className="mt-1.5 px-3 text-xs font-medium text-white">{error}</p>}
@@ -182,20 +179,20 @@ export function PromptBar({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className="absolute left-0 right-0 top-full z-30 mt-2 flex flex-wrap gap-1.5 rounded-2xl bg-white p-2 shadow-float"
+            className="absolute left-0 right-0 top-full z-30 mt-2 flex flex-wrap gap-1.5 rounded-2xl bg-surface p-2 shadow-float"
           >
-            {EXAMPLES.map((ex) => (
+            {EXAMPLES.map((key) => (
               <button
-                key={ex}
+                key={key}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
-                  setPrompt(ex);
+                  setPrompt(t(key));
                   area.current?.focus();
                 }}
                 className="rounded-full bg-paper px-3 py-1.5 text-xs text-ink-soft transition hover:bg-brand-accent/10 hover:text-brand-accent"
               >
-                {ex}
+                {t(key)}
               </button>
             ))}
           </motion.div>
