@@ -21,7 +21,7 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | 2 | Fabrication et impression 3D (imprimabilité, estimations, plans cotés, « où fabriquer », versions) | **fait** (voir « Phase 2 ») |
 | 3 | Photo vers solution, réalité augmentée | **fait** (voir « Phase 3 ») |
 | 4 | Design (mode sombre/clair), partage, galerie, langues | **fait** (voir « Phase 4 ») |
-| 5 | Crédits et quotas (sans paiement) | à faire |
+| 5 | Crédits et quotas (sans paiement) | **fait** (voir « Phase 5 ») |
 
 Aucun service text-to-3D payant n'est branché : l'interface `ModelProvider` est conservée pour plus tard.
 Il n'y a aucun paiement en ligne dans ce projet.
@@ -50,7 +50,9 @@ valeurs (voir ci-dessous), puis `npm run dev`.
    2. `20261102000000_espace_personnel.sql` : espace personnel (dossiers, favoris, Storage, export / suppression de compte, essai sans compte, premier administrateur par jeton) ;
    3. `20261103000000_phase1_cache_ratelimit.sql` : **cache** des demandes identiques et **limite de débit** de l'assistant de questions ;
    4. `20261104000000_phase4_galerie_partage.sql` : thème et arabe dans le profil, **galerie publique** (signalements,
-      modération), **liens de partage** et **commentaires**. Sans lui, la galerie et le partage affichent « pas encore activé ».
+      modération), **liens de partage** et **commentaires**. Sans lui, la galerie et le partage affichent « pas encore activé » ;
+   5. `20261105000000_phase5_credits.sql` : **crédits** (comptes, registre, renouvellement mensuel, fonctions
+      d'administration). Sans lui, aucune limite de crédits ne s'applique et le solde n'est pas affiché.
    Les scripts sont rejouables sans danger. L'application fonctionne même si le 3ᵉ n'est pas appliqué
    (le cache est alors simplement désactivé et la limite de débit se fait en mémoire).
 3. **Authentication → URL Configuration** : *Site URL* = l'URL du site et, dans *Redirect URLs*,
@@ -222,6 +224,27 @@ Onglet **Fabriquer** (calculs faits dans le navigateur, chargés seulement à l'
   galerie, partage. **Restent en français** : l'administration, `/setup`, Mon espace, les pages de connexion et
   les 4 projets d'exemple.
 
+## Phase 5 : crédits et quotas (sans paiement)
+
+- **Aucun paiement en ligne** : ni Stripe ni autre moyen de paiement. Les crédits sont seulement une unité de
+  mesure gérée par l'administrateur.
+- Chaque action consomme un nombre de crédits **réglable dans `/admin/credits`** : conception (1 par défaut),
+  nouvelle version (1), **maillage 3D par le futur service text-to-3D (5)** ; ce dernier est déjà branché
+  dans la route de génération (consommé avant de lancer le fournisseur, remboursé s'il échoue) : il suffira
+  d'activer un fournisseur pour qu'il coûte plus qu'une conception simple, sans rien refaire.
+- Chaque utilisateur reçoit des **crédits gratuits renouvelés chaque mois** (30 par défaut, réglable ; allocation
+  propre possible par utilisateur). Les crédits offerts par l'administrateur ne disparaissent pas au renouvellement.
+- Le **solde est affiché en permanence** dans l'en-tête (⚡), mis à jour après chaque conception ; quand il est
+  épuisé, la demande est refusée avec un **message clair** (date de renouvellement) et le texte reste dans la barre.
+- Une génération **échouée** ou servie **sans IA** (cache, modèle d'exemple, version calculée localement) est
+  **remboursée** automatiquement ; les administrateurs ne consomment pas de crédits ; l'essai sans compte garde
+  son propre quota.
+- `/admin/credits` : allocation mensuelle et coûts, consommation **par jour** (14 jours), **par utilisateur et par
+  jour** (7 jours) et par utilisateur sur 30 jours, **offrir ou retirer** des crédits (avec motif), allocation par
+  utilisateur. Les quotas horaires et journaliers existants restent dans `/admin/fonctionnalites`.
+- Sécurité : le solde n'est modifiable que par des fonctions SQL (`consume_credits`, `refund_credits`,
+  `admin_adjust_credits`, `admin_set_allowance`) ; RLS : chacun ne voit que son compte et ses mouvements.
+
 ## Mon espace et administration
 
 - `/espace` : demandes, modèles 3D (GLB dans Supabase Storage), favoris, dossiers, matières préférées,
@@ -281,4 +304,5 @@ forma3d/
   vérifier : « Voir chez moi » dans Safari (iPhone/iPad) et dans Chrome (Android).
 - Phase 4 : appliquer `20261104000000_phase4_galerie_partage.sql` (galerie, partage, thème dans le compte) ;
   traduire l'administration, Mon espace et la connexion ; vignettes d'aperçu dans la galerie (aujourd'hui une icône).
-- Phase 5 (voir le tableau en haut).
+- Phase 5 : appliquer `20261105000000_phase5_credits.sql` ; afficher le coût en crédits avant de lancer une
+  demande ; historique des crédits dans Mon espace.

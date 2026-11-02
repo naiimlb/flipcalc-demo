@@ -46,6 +46,19 @@ export default async function CreditsAdminPage() {
     }
   }
   const days = [...perDay.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+
+  // Matrice utilisateur × jour (7 derniers jours).
+  const week = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10));
+  const matrix = new Map<string, Map<string, number>>();
+  for (const m of moves) {
+    if (m.kind !== "consume" && m.kind !== "refund") continue;
+    const day = m.created_at.slice(0, 10);
+    if (!week.includes(day)) continue;
+    const row = matrix.get(m.user_id) ?? new Map<string, number>();
+    row.set(day, (row.get(day) ?? 0) - m.delta);
+    matrix.set(m.user_id, row);
+  }
+  const names = new Map((profiles ?? []).map((p) => [p.id, p.display_name || p.email]));
   const maxDay = Math.max(1, ...days.map(([, n]) => n));
 
   return (
@@ -81,6 +94,38 @@ export default async function CreditsAdminPage() {
               </li>
             ))}
           </ul>
+        )}
+      </Card>
+
+      <Card className="overflow-x-auto">
+        <h2 className="mb-3 font-semibold">Consommation par utilisateur et par jour (7 jours)</h2>
+        {matrix.size === 0 ? (
+          <p className="text-sm text-ink-mute">Aucune consommation cette semaine.</p>
+        ) : (
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="text-xs text-ink-mute">
+              <tr>
+                <th className="pb-2">Compte</th>
+                {week.map((d) => (
+                  <th key={d} className="pb-2 text-center font-medium">
+                    {new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...matrix.entries()].map(([uid, row]) => (
+                <tr key={uid} className="border-t border-line">
+                  <td className="py-1.5 pe-2">{names.get(uid) ?? uid.slice(0, 8)}</td>
+                  {week.map((d) => (
+                    <td key={d} className="py-1.5 text-center tabular-nums">
+                      {row.get(d) ?? ""}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </Card>
 
