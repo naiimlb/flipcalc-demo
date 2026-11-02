@@ -3,6 +3,7 @@ import { generateDesignWithClaude, type ClaudeUsage, type ImageMediaType } from 
 import { demoDesign } from "./design/demo";
 import { languageInstruction } from "./design/prompt";
 import type { Design } from "./design/schema";
+import { VARIANTS, applyVariantLocally, variantInstruction, type VariantId } from "./design/variants";
 import { getSecret } from "./secrets";
 import type { AiSettings } from "./settings";
 
@@ -36,8 +37,16 @@ export async function generateDesign(params: {
   /** Texte cumulé de la réponse de l'IA pendant qu'elle s'écrit (affichage progressif). */
   onText?: (snapshot: string) => void;
   onRestart?: () => void;
+  /** Nouvelle version d'une conception existante (« Plus petit », « Plus solide »…). */
+  variant?: { id: VariantId; base: Design } | null;
 }): Promise<GenerationOutcome> {
   const started = Date.now();
+  const variant = params.variant ?? null;
+  // Version : l'IA reçoit la conception actuelle et l'objectif ; sans IA, la version est calculée localement.
+  const fallbackDesign = (note: string) =>
+    variant ? applyVariantLocally(variant.base, variant.id) : demoDesign(params.prompt, note);
+  const markVariant = (design: Design): Design =>
+    variant ? { ...design, variante: { objectif: variant.id, libelle: VARIANTS[variant.id].label, base: variant.base.title } } : design;
   const apiKey = params.forceDemo ? null : await getSecret("ANTHROPIC_API_KEY");
 
   if (!apiKey) {
@@ -58,7 +67,7 @@ export async function generateDesign(params: {
     }
     // Petite attente pour que l'animation de génération reste lisible.
     await new Promise((r) => setTimeout(r, 900));
-    const design = demoDesign(params.prompt);
+    const design = fallbackDesign("Mode démonstration : modèle d'exemple le plus proche de la demande (l'IA n'a pas été utilisée).");
     return {
       ok: true,
       design,
@@ -80,8 +89,8 @@ export async function generateDesign(params: {
     model: params.ai.model,
     effort: params.ai.effort,
     maxTokens: params.ai.maxTokens,
-    prompt: params.prompt,
-    image: params.image ?? null,
+    prompt: variant ? `${params.prompt}\n\n${variantInstruction(variant.id, variant.base)}` : params.prompt,
+    image: variant ? null : (params.image ?? null),
     onText: params.onText,
     onRestart: params.onRestart,
   });
@@ -89,7 +98,7 @@ export async function generateDesign(params: {
   if (!result.ok && result.unavailable && params.allowDemo) {
     // Crédit épuisé, clé refusée… : on sert le modèle d'exemple le plus proche plutôt qu'une erreur.
     console.warn(`IA indisponible, repli sur les exemples : ${result.detail}`);
-    const design = demoDesign(params.prompt, "L'IA n'a pas pu répondre (clé, crédit ou réglage) : modèle d'exemple le plus proche de la demande.");
+    const design = fallbackDesign("L'IA n'a pas pu répondre (clé, crédit ou réglage) : modèle d'exemple le plus proche de la demande.");
     return {
       ok: true,
       design,
@@ -107,7 +116,7 @@ export async function generateDesign(params: {
   if (result.ok) {
     return {
       ok: true,
-      design: result.design,
+      design: markVariant(result.design),
       provider: "claude",
       model: result.servedBy,
       error: null,

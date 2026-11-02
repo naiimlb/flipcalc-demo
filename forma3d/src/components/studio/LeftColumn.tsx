@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import type { RequestItem } from "@/lib/requests";
-import { IconAlert, IconCube, IconMicroscope, IconPin, IconPlus, IconSparkles, IconStar } from "../icons";
+import type { VariantId } from "@/lib/design/variants";
+import { IconAlert, IconCube, IconHistory, IconMicroscope, IconPin, IconPlus, IconSparkles, IconStar } from "../icons";
 import { RecentCard } from "./RecentCard";
 import { formatDate, formatDuration, formatRelative } from "./format";
 import { BulletList, Field, Panel, Reveal, StatusChip } from "./ui";
+import { VariantButtons } from "./VariantButtons";
 
 export function LeftColumn({
   item,
@@ -17,6 +19,10 @@ export function LeftColumn({
   demoMode,
   signedIn,
   reveal = false,
+  busy = false,
+  onAdjust,
+  onCompare,
+  canCompare = false,
 }: {
   item: RequestItem | null;
   items: RequestItem[];
@@ -28,6 +34,10 @@ export function LeftColumn({
   signedIn: boolean;
   /** Les panneaux apparaissent l'un après l'autre (conception qui vient d'arriver). */
   reveal?: boolean;
+  busy?: boolean;
+  onAdjust?: (variant: VariantId) => void;
+  onCompare?: () => void;
+  canCompare?: boolean;
 }) {
   const canFavorite = Boolean(item && signedIn && !item.sample && !item.guest && !item.id.startsWith("tmp-"));
   const design = item?.design ?? null;
@@ -124,6 +134,20 @@ export function LeftColumn({
         </button>
       </Panel>
       </Reveal>
+
+      {/* Ajuster : nouvelle version de la solution */}
+      {design && onAdjust && (
+        <Reveal index={1} on={reveal}>
+          <Panel icon={<IconHistory size={15} />} title="Ajuster la solution">
+            {design.variante && (
+              <p className="mb-2 text-[11px] text-ink-mute">
+                Version « {design.variante.libelle} » de « {design.variante.base} ».
+              </p>
+            )}
+            <VariantButtons onAdjust={onAdjust} onCompare={onCompare} disabled={busy || item?.status !== "ready"} canCompare={canCompare} />
+          </Panel>
+        </Reveal>
+      )}
 
       {/* Alerte contextuelle */}
       <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />
@@ -222,6 +246,9 @@ function Notice({
   } else if (item?.sample) {
     title = "Projet d'exemple";
     body = "Créez votre première demande : elle apparaîtra ici et dans l'historique.";
+  } else if (item?.provider === "demo" && item.design?.variante) {
+    title = "Version calculée sans IA";
+    body = "L'IA n'était pas disponible : cette version a été calculée automatiquement (dimensions, coût et matières ajustés).";
   } else if (item?.provider === "demo") {
     title = "Modèle d'exemple";
     body = "L'IA n'a pas pu répondre (clé, crédit ou réglage) : le modèle d'exemple le plus proche de votre demande a été utilisé.";

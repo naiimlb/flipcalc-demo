@@ -52,6 +52,25 @@ assert(events.some((e) => e.t === "progress"), "des évènements d'avancement so
 const last = events.at(-1);
 assert(last.t === "result" && last.status === 200 && last.body.request.status === "ready", "l'évènement final contient la conception");
 
+// Nouvelle version d'une conception (« Plus petit ») : calculée sans IA en mode démo.
+const variantRes = await fetch(`${base}/api/generate`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base },
+  body: JSON.stringify({ prompt: body.request.prompt, variant: "smaller", base: body.request.design }),
+});
+const variantBody = await variantRes.json();
+assert(variantRes.ok && variantBody.request?.design?.variante?.objectif === "smaller", "« Plus petit » crée une nouvelle version marquée comme telle");
+assert(
+  variantBody.request.design.dimensions.width < body.request.design.dimensions.width,
+  `la nouvelle version est plus petite (${Math.round(variantBody.request.design.dimensions.width)} < ${Math.round(body.request.design.dimensions.width)} mm)`,
+);
+const badVariant = await fetch(`${base}/api/generate`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: base },
+  body: JSON.stringify({ prompt: "un support", variant: "smaller", base: { title: "faux" } }),
+});
+assert(badVariant.status === 400, "une conception de départ invalide est refusée (400)");
+
 // Assistant de questions : floue → 2 à 3 questions à choix ; détaillée → aucune ; invalide → 400.
 const clarify = (payload) =>
   fetch(`${base}/api/clarify`, { method: "POST", headers: { "Content-Type": "application/json", Origin: base }, body: JSON.stringify(payload) });

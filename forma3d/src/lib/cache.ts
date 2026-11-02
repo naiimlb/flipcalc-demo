@@ -36,6 +36,8 @@ export async function computeCacheKey(params: {
   answers: Answer[];
   language: string;
   ai: Pick<AiSettings, "model" | "effort" | "systemPrompt">;
+  /** Élément supplémentaire de la clé (ex. version demandée + empreinte de la conception de départ). */
+  extra?: string;
 }): Promise<string | null> {
   const secret = await cacheSecret();
   if (!secret) return null;
@@ -46,6 +48,7 @@ export async function computeCacheKey(params: {
     m: params.ai.model,
     e: params.ai.effort,
     s: createHash("sha256").update(params.ai.systemPrompt).digest("hex"),
+    ...(params.extra ? { x: params.extra } : {}),
   });
   return createHmac("sha256", secret).update(payload).digest("hex");
 }

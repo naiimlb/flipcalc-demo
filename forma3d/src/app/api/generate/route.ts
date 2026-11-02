@@ -1,9 +1,12 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { IMAGE_MEDIA_TYPES } from "@/lib/ai/claude";
 import { cacheLookup, cacheStore, computeCacheKey, type CachedDesign } from "@/lib/cache";
 import { AnswersSchema, composePrompt } from "@/lib/clarify-types";
 import { progressChanged, progressFromText, type StreamProgress } from "@/lib/design/partial-json";
+import { validateDesign, type Design } from "@/lib/design/schema";
+import { VARIANT_IDS, type VariantId } from "@/lib/design/variants";
 import { generateDesign, type GenerationOutcome } from "@/lib/generation";
 import { isSameOrigin, jsonError } from "@/lib/http";
 import { logEvent } from "@/lib/logs";
@@ -28,6 +31,9 @@ const BodySchema = z.object({
     .pipe(z.string().min(3, "Décrivez votre besoin en quelques mots.").max(1500, "1 500 caractères maximum.")),
   /** Réponses de l'assistant de questions (facultatif). */
   answers: AnswersSchema.optional().default([]),
+  /** Nouvelle version d'une conception : objectif + conception de départ (revalidée ci-dessous). */
+  variant: z.enum(VARIANT_IDS as [VariantId, ...VariantId[]]).optional(),
+  base: z.unknown().optional(),
   image: z
     .object({
       mediaType: z.enum(IMAGE_MEDIA_TYPES),
@@ -120,7 +126,7 @@ function progressReporter(emit: Emit) {
   };
 }
 
-async function run(request: Request, body: Body, emit: Emit): Promise<Result> {
+async function run(request: Request, body: Body, emit: Emit, variant: { id: VariantId; base: Design } | null): Promise<Result> {
   const started = Date.now();
   const composed = composePrompt(body.prompt, body.answers);
   const reporter = progressReporter(emit);
@@ -136,6 +142,7 @@ async function run(request: Request, body: Body, emit: Emit): Promise<Result> {
       ai: DEFAULT_AI,
       allowDemo: true,
       forceDemo: !allowClaude,
+      variant,
       onText: reporter.onText,
       onRestart: reporter.onRestart,
     });
@@ -150,7 +157,15 @@ async function run(request: Request, body: Body, emit: Emit): Promise<Result> {
   const ai = await getAiSettings();
   const language = session?.profile.language ?? "fr";
   // Pas de cache pour les demandes avec photo.
-  const cacheKey = body.image ? null : await computeCacheKey({ prompt: body.prompt, answers: body.answers, language, ai });
+  const cacheKey = body.image
+    ? null
+    : await computeCacheKey({
+        prompt: body.prompt,
+        answers: body.answers,
+        language,
+        ai,
+        extra: variant ? `${variant.id}:${createHash("sha256").update(JSON.stringify(variant.base)).digest("hex")}` : undefined,
+      });
 
   /* ---------- Essai sans compte : résultat renvoyé, non enregistré ---------- */
   if (!session) {
@@ -179,6 +194,7 @@ async function run(request: Request, body: Body, emit: Emit): Promise<Result> {
       image: body.image,
       ai,
       allowDemo: features.demoFallback,
+      variant,
       onText: reporter.onText,
       onRestart: reporter.onRestart,
     });
@@ -214,6 +230,7 @@ async function run(request: Request, body: Body, emit: Emit): Promise<Result> {
         ai,
         allowDemo: features.demoFallback,
         language: session.profile.language,
+        variant,
         onText: reporter.onText,
         onRestart: reporter.onRestart,
       });
@@ -292,9 +309,19 @@ export async function POST(request: Request) {
     return jsonError(400, "Corps JSON invalide.", "invalid");
   }
 
+  // Version d'une conception : la conception de départ vient du navigateur, elle est revalidée et bornée.
+  let variant: { id: VariantId; base: Design } | null = null;
+  if (body.variant) {
+    const raw = JSON.stringify(body.base ?? null);
+    const validated = raw.length <= 200_000 ? validateDesign(body.base) : null;
+    if (!validated?.ok) return jsonError(400, "Conception de départ invalide.", "invalid_base");
+    variant = { id: body.variant, base: validated.design };
+    body.image = null;
+  }
+
   // Réponse classique (scripts, tests, anciens clients).
   if (!request.headers.get("accept")?.includes("application/x-ndjson")) {
-    const result = await run(request, body, () => {});
+    const result = await run(request, body, () => {}, variant);
     return NextResponse.json(result.body, { status: result.status });
   }
 
@@ -313,7 +340,7 @@ export async function POST(request: Request) {
       };
       const keepAlive = setInterval(() => send({ t: "ping" }), 8000);
       try {
-        const result = await run(request, body, send);
+        const result = await run(request, body, send, variant);
         send({ t: "result", status: result.status, body: result.body });
       } catch (err) {
         console.error("Génération :", err);

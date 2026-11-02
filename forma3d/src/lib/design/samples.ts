@@ -123,6 +123,7 @@ export const CABLE_ORGANIZER: Design = {
     mat("TPU 95A", "Peigne entièrement souple, se tord sans casser, antidérapant naturel.", "Impression lente, aspect moins net.", "≈ 3,50 € (85 g)", 3.5, "Impression 3D FDM (extrudeur direct)", "#2b2b33", "rubber"),
     mat("Contreplaqué 6 mm", "Rendu naturel, se découpe en série au laser.", "Bords à poncer, fentes moins précises.", "≈ 3 € la planchette", 3, "Découpe laser", "#c99a6a", "wood"),
   ],
+  variante: null,
   model: {
     parts: [
       part("semelle", "Semelle", "Antidérapant sous la base", "box", [150, 2, 54], [0, 1, 0], {
@@ -210,6 +211,7 @@ export const PHONE_STAND: Design = {
     mat("Aluminium 3 mm", "Très stable et haut de gamme, dissipe la chaleur du téléphone.", "Nécessite découpe et pliage, coût plus élevé.", "≈ 18 € la pièce", 18, "Découpe laser + pliage", "#b8bfca", "metal"),
     mat("Hêtre massif", "Aspect chaleureux, lourd donc très stable.", "Usinage plus long, sensible à l'humidité.", "≈ 12 €", 12, "Défonceuse / CNC", "#d2a679", "wood"),
   ],
+  variante: null,
   model: {
     parts: [
       ...[-30, 30].flatMap((x, i) => [
@@ -317,6 +319,7 @@ export const WALL_KEY_SHELF: Design = {
     mat("Acier thermolaqué", "Très fin et très solide, look industriel.", "Demande pliage et soudure ou un atelier.", "≈ 35 €", 35, "Découpe laser + pliage", "#2e3138", "metal"),
     mat("PETG imprimé", "Possible en plusieurs morceaux pour une version légère.", "Charge limitée, sensible au fluage sur la durée.", "≈ 9 € (350 g)", 9, "Impression 3D FDM", "#5b6ee1", "plastic"),
   ],
+  variante: null,
   model: {
     parts: [
       part("dosseret", "Dosseret", "Support principal fixé au mur", "box", [300, 180, 15], [0, 90, 0], {
@@ -391,6 +394,7 @@ export const DESK_ORGANIZER: Design = {
     mat("PLA recyclé", "Même usage, empreinte carbone réduite.", "Couleurs moins régulières.", "≈ 3,20 € (200 g)", 3.2, "Impression 3D FDM", "#7a7f99", "plastic", true),
     mat("PETG", "Plus résistant aux chocs et aux chutes.", "Impression un peu plus délicate.", "≈ 5,20 € (200 g)", 5.2, "Impression 3D FDM", "#7b5ce6", "plastic"),
   ],
+  variante: null,
   model: {
     parts: [
       part("plateau", "Plateau", "Base commune des modules", "box", [220, 8, 120], [0, 4, 0], { cornerRadius: 10, color: "#5b6ee1" }),

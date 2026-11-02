@@ -95,6 +95,34 @@ await session("assistant", { width: 1280, height: 800 }, async (page) => {
   await page.screenshot({ path: join(out, "assistant-resultat.png") });
 });
 
+// Fabrication : imprimabilité, estimation, plan coté (PDF), nouvelle version et comparaison.
+await session("fabrication", { width: 1366, height: 900 }, async (page) => {
+  await ready(page);
+  await page.getByRole("button", { name: "Fabriquer", exact: true }).click();
+  await page.getByText("Contrôle d'imprimabilité").waitFor({ timeout: 15000 });
+  check(await page.getByText("Estimation d'impression").isVisible(), "Fabrication : contrôle d'imprimabilité et estimation affichés");
+  const plan = page.getByAltText(/^Plan coté/);
+  await plan.waitFor({ timeout: 20000 });
+  check(true, "Fabrication : plan coté dessiné (vues de face, de droite, de dessus)");
+  const [pdf] = await Promise.all([page.waitForEvent("download", { timeout: 20000 }), page.getByRole("button", { name: /Plan PDF/ }).click()]);
+  const { readFileSync } = await import("node:fs");
+  const bytes = readFileSync(await pdf.path());
+  check(bytes.subarray(0, 5).toString() === "%PDF-" && bytes.length > 20000, `Fabrication : plan PDF téléchargé (${Math.round(bytes.length / 1024)} Ko)`);
+  check((await page.locator('a[href^="https://www.google.com/"]').count()) >= 3, "Où fabriquer : liens de recherche génériques");
+  await page.screenshot({ path: join(out, "fabrication.png") });
+
+  await page.getByRole("button", { name: "Plus petit" }).first().click();
+  await page.getByText(/Nouvelle version prête/).waitFor({ timeout: 30000 });
+  check(true, "Versions : « Plus petit » crée une nouvelle version");
+  await page.getByRole("button", { name: "Comparer deux versions" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Comparer deux versions" });
+  await dialog.waitFor({ timeout: 10000 });
+  await page.waitForTimeout(2500);
+  check((await dialog.locator("canvas").count()) === 2, "Comparer : deux modèles 3D côte à côte");
+  check(await dialog.getByText("Dimensions (L × P × H)").isVisible(), "Comparer : tableau dimensions, matière, coût");
+  await page.screenshot({ path: join(out, "comparaison.png") });
+});
+
 // Bouton « Mettre à jour » : on simule un nouveau déploiement en changeant la version renvoyée.
 await session("mise-a-jour", { width: 1280, height: 800 }, async (page) => {
   let calls = 0;

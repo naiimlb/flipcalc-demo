@@ -155,6 +155,16 @@ export const DesignSchema = z.object({
       .min(1, "Le modèle 3D doit contenir au moins une pièce.")
       .transform((parts) => parts.slice(0, LIMITS.maxParts)),
   }),
+  // Ajouté en phase 2 : version dérivée d'une autre conception (« Plus petit », « Plus solide »…).
+  // Renseigné par le serveur, jamais demandé à l'IA.
+  variante: z
+    .object({
+      objectif: z.enum(["smaller", "stronger", "cheaper", "prettier"]),
+      libelle: text(40),
+      base: text(120),
+    })
+    .nullable()
+    .default(null),
 });
 
 export type Design = z.output<typeof DesignSchema>;

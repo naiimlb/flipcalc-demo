@@ -21,6 +21,7 @@ import type { StudioTab, StudioViewer } from "./types";
 
 export const TABS: { id: StudioTab; label: string }[] = [
   { id: "overview", label: "Aperçu" },
+  { id: "fabrication", label: "Fabriquer" },
   { id: "history", label: "Historique" },
   { id: "settings", label: "Paramètres" },
 ];

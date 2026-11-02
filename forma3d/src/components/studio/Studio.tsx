@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { deleteRequest } from "@/app/actions";
 import type { Answer, ClarifyQuestion } from "@/lib/clarify-types";
+import type { Design } from "@/lib/design/schema";
+import { VARIANTS, type VariantId } from "@/lib/design/variants";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { DEFAULT_VIEWER_SETTINGS, type ViewerSettings } from "../viewer/settings";
-import { IconChevronLeft, IconChevronRight } from "../icons";
+import { IconChevronLeft, IconChevronRight, Spinner } from "../icons";
 import { Portal } from "../Portal";
 import { AuthPrompt } from "./AuthPrompt";
 import { ClarifyPanel } from "./ClarifyPanel";
@@ -26,6 +29,17 @@ import type { StudioFeatures, StudioTab, StudioViewer } from "./types";
 import { useModelAutosave } from "./useModelAutosave";
 import { usePrefs } from "./usePrefs";
 import { ViewerPanel } from "./ViewerPanel";
+
+// Onglet « Fabriquer » et comparaison : chargés à la demande (calculs 3D, plans), pas au premier affichage.
+const FabricationTab = dynamic(() => import("./FabricationTab"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-ink-mute">
+      <Spinner size={20} />
+    </div>
+  ),
+});
+const CompareDialog = dynamic(() => import("./CompareDialog"), { ssr: false });
 
 export interface StudioProps {
   initialItems: RequestItem[];
@@ -69,6 +83,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
   const [clarify, setClarify] = useState<{ prompt: string; questions: ClarifyQuestion[]; resolve(answers: Answer[] | null): void } | null>(null);
   // Projet dont les panneaux viennent d'être remplis : ils apparaissent un par un.
   const [revealId, setRevealId] = useState<string | null>(null);
+  const [compare, setCompare] = useState<{ a: string; b: string } | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const busy = userItems.some((i) => i.id.startsWith(TEMP_PREFIX));
@@ -120,7 +135,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (jsonOpen || authPrompt || clarify || tab !== "overview") return;
+      if (jsonOpen || authPrompt || clarify || compare || tab !== "overview") return;
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (e.key === "ArrowLeft") step(-1);
@@ -128,7 +143,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [jsonOpen, authPrompt, clarify, tab, step]);
+  }, [jsonOpen, authPrompt, clarify, compare, tab, step]);
 
   /* ---------------- Essai sans compte → import après inscription ---------------- */
 
@@ -242,13 +257,13 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
   }, []);
 
   const create = useCallback(
-    async (prompt: string, image: ImagePayload | null) => {
+    async (prompt: string, image: ImagePayload | null, variantOf?: { variant: VariantId; base: Design }) => {
       const tempId = `${TEMP_PREFIX}${Date.now()}`;
       const placeholder: RequestItem = {
         id: tempId,
         prompt,
         status: "processing",
-        title: null,
+        title: variantOf ? `Nouvelle version : ${VARIANTS[variantOf.variant].label.toLowerCase()}` : null,
         design: null,
         error: null,
         provider: null,
@@ -261,10 +276,10 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         isFavorite: false,
         modelPath: null,
         source: "generated",
-        stream: { stage: "checking", done: [] },
+        stream: { stage: variantOf ? "thinking" : "checking", done: [] },
       };
       const previousId = selectedId;
-      savePending({ prompt, image });
+      if (!variantOf) savePending({ prompt, image });
       setUserItems((prev) => [placeholder, ...prev]);
       setSelectedId(tempId);
       setTab("overview");
@@ -272,7 +287,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       try {
         // 1. Assistant de questions (uniquement si la demande est floue).
         let answers: Answer[] = [];
-        const questions = features.newRequests ? await askQuestions(prompt, Boolean(image)) : [];
+        const questions = features.newRequests && !variantOf ? await askQuestions(prompt, Boolean(image)) : [];
         if (questions.length) {
           const chosen = await new Promise<Answer[] | null>((resolve) => setClarify({ prompt, questions, resolve }));
           setClarify(null);
@@ -292,7 +307,12 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
-          body: JSON.stringify({ prompt, answers, image: image ? { mediaType: image.mediaType, data: image.data } : null }),
+          body: JSON.stringify({
+            prompt,
+            answers,
+            image: image ? { mediaType: image.mediaType, data: image.data } : null,
+            ...(variantOf ? { variant: variantOf.variant, base: variantOf.base } : {}),
+          }),
         });
         type Body = { request?: RequestItem; raw?: string; error?: string; code?: string; cached?: boolean };
         let status = res.status;
@@ -324,7 +344,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
             void refreshFromDb();
             return;
           }
-          setRestore({ prompt, image });
+          if (!variantOf) setRestore({ prompt, image });
           showToast(body.error ?? "La génération a échoué. Réessayez.");
           return;
         }
@@ -361,7 +381,9 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
           item.status === "ready"
             ? body.cached
               ? `Résultat instantané : ${item.title ?? "conception"} (demande déjà traitée)`
-              : `Conception prête : ${item.title ?? "nouveau modèle"}`
+              : variantOf
+                ? `Nouvelle version prête : ${item.title ?? VARIANTS[variantOf.variant].label}`
+                : `Conception prête : ${item.title ?? "nouveau modèle"}`
             : item.error ?? "Échec de la génération.",
         );
       } catch {
@@ -374,6 +396,26 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     },
     [selectedId, features.newRequests, askQuestions, patchItem, showToast, refreshFromDb],
   );
+
+  /** « Plus petit », « Plus solide »… : nouvelle version de la conception affichée (l'ancienne est conservée). */
+  const adjust = useCallback(
+    (variant: VariantId) => {
+      if (!selected?.design || busy) return;
+      void create(selected.prompt, null, { variant, base: selected.design });
+    },
+    [selected, busy, create],
+  );
+
+  const openCompare = useCallback(() => {
+    const ready = items.filter((i) => i.design && i.status === "ready");
+    if (ready.length < 2) return;
+    const a = selected && ready.some((i) => i.id === selected.id) ? selected : ready[0];
+    // Par défaut : une autre version du même projet (même demande), sinon la conception voisine.
+    const sibling =
+      ready.find((i) => i.id !== a.id && i.prompt === a.prompt) ?? ready[Math.min(ready.indexOf(a) + 1, ready.length - 1)] ?? ready[0];
+    setCompare({ a: a.id, b: sibling.id === a.id ? ready.find((i) => i.id !== a.id)!.id : sibling.id });
+  }, [items, selected]);
+  const canCompare = items.filter((i) => i.design && i.status === "ready").length >= 2;
 
   const remove = useCallback(
     async (id: string) => {
@@ -459,7 +501,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 type="button"
                 onClick={() => setTab(t.id)}
                 aria-current={tab === t.id ? "page" : undefined}
-                className={`relative flex-1 rounded-full px-3.5 py-2 text-xs font-semibold transition lg:flex-none ${
+                className={`relative flex-1 rounded-full px-2 py-2 text-xs font-semibold transition sm:px-3.5 lg:flex-none ${
                   tab === t.id ? "text-white" : "text-ink-soft hover:text-ink"
                 }`}
               >
@@ -520,6 +562,10 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
                 demoMode={demoMode}
                 signedIn={Boolean(viewer)}
                 reveal={revealId !== null && revealId === selected?.id}
+                busy={busy}
+                onAdjust={adjust}
+                onCompare={openCompare}
+                canCompare={canCompare}
               />
             </div>
             <div className="order-1 min-h-0 lg:order-2 lg:h-full">
@@ -546,6 +592,22 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
             </div>
           </div>
         )}
+        {tab === "fabrication" && (
+          <div className="h-full min-h-[60dvh] rounded-[24px] bg-paper/95 p-3 shadow-card sm:p-4 lg:min-h-0">
+            <FabricationTab
+              item={selected}
+              items={items}
+              prefs={prefs}
+              onPrefs={updatePrefs}
+              features={features}
+              busy={busy}
+              onAdjust={adjust}
+              onCompare={openCompare}
+              onSelect={(id) => setSelectedId(id)}
+              onToast={showToast}
+            />
+          </div>
+        )}
         {tab === "history" && (
           <div className="h-full rounded-[24px] bg-paper/95 p-3 shadow-card sm:p-4">
             <HistoryTab
@@ -566,6 +628,9 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
       <JsonDrawer item={jsonOpen ? selected : null} localRaw={selected ? rawById[selected.id] ?? null : null} onClose={() => setJsonOpen(false)} />
       <AuthPrompt message={authPrompt} onClose={() => setAuthPrompt(null)} />
+      {compare && (
+        <CompareDialog items={items} initialA={compare.a} initialB={compare.b} prefs={prefs} onClose={() => setCompare(null)} />
+      )}
       {clarify && (
         <ClarifyPanel
           prompt={clarify.prompt}
