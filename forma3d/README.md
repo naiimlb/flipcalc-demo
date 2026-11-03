@@ -22,6 +22,10 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | 3 | Photo vers solution, réalité augmentée | **fait** (voir « Phase 3 ») |
 | 4 | Design (mode sombre/clair), partage, galerie, langues | **fait** (voir « Phase 4 ») |
 | 5 | Crédits et quotas (sans paiement) | **fait** (voir « Phase 5 ») |
+| Refonte 1 | Identité visuelle néon (sombre par défaut) et nouvelle page d'accueil | **fait** (voir « Refonte — phase 1 ») |
+| Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | à venir |
+| Refonte 3 | Outils de création + génération Meshy (coûts affichés) | à venir |
+| Refonte 4 | Finitions, Lighthouse > 90 sur l'accueil, tests Safari | à venir |
 
 Aucun service text-to-3D payant n'est branché : l'interface `ModelProvider` est conservée pour plus tard.
 Il n'y a aucun paiement en ligne dans ce projet.
@@ -244,6 +248,54 @@ Onglet **Fabriquer** (calculs faits dans le navigateur, chargés seulement à l'
   utilisateur. Les quotas horaires et journaliers existants restent dans `/admin/fonctionnalites`.
 - Sécurité : le solde n'est modifiable que par des fonctions SQL (`consume_credits`, `refund_credits`,
   `admin_adjust_credits`, `admin_set_allowance`) ; RLS : chacun ne voit que son compte et ses mouvements.
+
+## Refonte — phase 1 : identité visuelle et accueil
+
+**Identité.** Fond noir profond par défaut, thème clair au choix (sélecteur ☾/☀ de l'en-tête, « Auto » suit
+l'appareil). Palette en jetons réutilisables (`src/app/globals.css`, `tailwind.config.ts`) :
+
+| Jeton | Rôle | Sombre | Clair |
+| --- | --- | --- | --- |
+| `canvas` | fond de page | `#05060a` | `#f4f5fa` |
+| `fg` | texte posé sur le fond | presque blanc | presque noir |
+| `neon-blue` | bleu électrique (boutons, lueurs) | `#3d7aff` | `#2f6bff` |
+| `neon-coral` | corail (lueurs, accents) | `#ff7050` | `#ff6b4a` |
+| `neon-violet` | touches de violet | `#9668ff` | `#8b5cf6` |
+| `surface`, `paper`, `ink`, `line`, `night` | panneaux, textes, bordures (inchangés, réglés pour le noir) | | |
+
+Classes prêtes : `btn-neon` (bouton principal), `btn-line` (secondaire), `btn-fg`, `neon-rim` (contour
+dégradé bleu → corail), `text-neon` (texte en dégradé), `tap` (cible tactile ≥ 44 px), `pt-nav`.
+Titres : Inter 800/900 (`font-display`), texte : Plus Jakarta Sans. Les couleurs de marque par défaut de
+`/admin/apparence` passent au bleu électrique / violet (une couleur personnalisée reste prioritaire).
+Icônes et écrans de lancement de l'application installée régénérés (`node scripts/make-pwa-assets.cjs`).
+
+**Navigation.** Accueil, Éditeur (`/studio`), Galerie, Mon espace, crédits, thème/langue, avatar. Sur l'accueil
+et la galerie elle flotte au-dessus de la page et se réduit (fond flouté) au défilement ; dans l'éditeur elle reste
+compacte. Sous 768 px : bouton « Menu » avec des liens de 48 px. Zone sûre de l'encoche respectée.
+
+**Accueil (`/`, pour tout le monde).** L'accueil n'ouvre plus l'éditeur pour les personnes connectées :
+la connexion, l'inscription et l'application installée mènent à `/studio` ; les anciens liens `/?p=<id>`
+redirigent vers `/studio?p=<id>`.
+- Héros plein écran : titre géant avec badge noir en pilule (contour néon, cube qui tourne), étiquette flottante,
+  sous-titre gris, boutons « Essayer » et « Créer un compte ».
+- Objets 3D flottants : support de téléphone, boîte de rangement, figurine et roue dentée — de vraies pièces
+  Forma3D décrites en formes simples (`src/lib/design/hero.ts`), donc aucun fichier à télécharger et aucune
+  génération en direct. Éclairage de contour bleu à gauche, corail à droite. Ils tournent lentement et suivent
+  le curseur, le doigt, et l'inclinaison de l'iPad / iPhone (bouton « Activer l'inclinaison », l'autorisation est
+  demandée par Safari).
+- Performance : le titre s'affiche immédiatement (rendu serveur), la 3D se charge après la page (ou au premier
+  toucher), se met en pause hors écran et onglet masqué, et baisse sa résolution si l'appareil peine
+  (`PerformanceMonitor`). « Réduire les animations » : objets immobiles, révélations et rotations coupées.
+- Sections révélées au défilement : 1. comment ça marche, 2. exemples de solutions (3D manipulable),
+  3. outils de création (aperçu de l'éditeur), 4. avant / après d'une photo (curseur au doigt, à la souris ou
+  aux flèches), 5. dernières créations de la galerie, 6. appel à l'action final.
+- Indicateur de progression vertical à gauche (iPad et ordinateur) et bouton rond en bas à droite
+  (section suivante, puis retour en haut), avec anneau de progression.
+- Toutes les pages publiques (galerie, partage, Mon espace) passent en pleine largeur.
+
+**Rendu 3D : WebGL.** WebGPU n'est pas activé dans cette phase : avec Three.js r180, mélanger `three` et
+`three/webgpu` duplique le moteur et casse les composants existants ; ce sera réévalué en phase 4 de la refonte.
+La qualité est adaptative (résolution, détail des formes).
 
 ## Mon espace et administration
 

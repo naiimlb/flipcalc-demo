@@ -150,15 +150,15 @@ export function EspaceClient({
   const showFolders = tab === "demandes" || tab === "modeles" || tab === "favoris";
 
   return (
-    <div className="mx-auto max-w-[1280px]">
-      <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-2">
-        <div className="text-white">
-          <h2 className="text-2xl font-semibold tracking-tight">Mon espace</h2>
-          <p className="text-sm text-white/80">
+    <div className="w-full">
+      <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-4">
+        <div className="text-fg">
+          <h2 className="font-display text-3xl font-black tracking-[-0.04em] sm:text-5xl">Mon espace</h2>
+          <p className="mt-1 text-sm text-fg/65">
             {viewer.displayName ?? viewer.email} · {items.length} demande{items.length > 1 ? "s" : ""} · sauvegardé dans votre compte
           </p>
         </div>
-        <Link href="/" className="btn bg-surface !text-xs text-brand-accent shadow-soft">
+        <Link href="/studio" className="btn-neon tap !text-xs">
           <IconPlus size={14} /> Nouvelle demande
         </Link>
       </div>

@@ -1,14 +1,12 @@
-import { StudioScreen } from "@/components/app/StudioScreen";
+import { redirect } from "next/navigation";
 import { Landing } from "@/components/landing/Landing";
-import { isDemoMode } from "@/lib/supabase/env";
-import { getSession } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-/** Accueil : présentation pour les visiteurs, tableau de bord pour les personnes connectées. */
+/** Accueil : toujours la présentation du site (l'éditeur est sur /studio). */
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
   const params = await searchParams;
-  const session = isDemoMode() ? null : await getSession();
-  if (session) return <StudioScreen p={params.p} />;
+  // Anciens liens « /?p=<id> » (avant la refonte) : on ouvre le projet dans l'éditeur.
+  if (params.p && /^[0-9a-f-]{36}$/i.test(params.p)) redirect(`/studio?p=${params.p}`);
   return <Landing />;
 }

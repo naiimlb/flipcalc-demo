@@ -216,10 +216,10 @@ export function AccountMenu({
     if (demoMode) return <span className="chip bg-amber-100 text-amber-800">{t("nav.demo")}</span>;
     return (
       <div className="flex items-center gap-1.5">
-        <Link href="/connexion" className="btn !px-3 !py-1.5 !text-xs text-white hover:bg-white/15">
+        <Link href="/connexion" className="btn tap !px-3 !py-1.5 !text-xs text-fg/85 hover:bg-fg/10 hover:text-fg">
           {t("nav.login")}
         </Link>
-        <Link href="/connexion?mode=inscription" className="btn-dark !px-3 !py-1.5 !text-xs">
+        <Link href="/connexion?mode=inscription" className="btn-fg tap !px-3.5 !py-1.5 !text-xs">
           {t("nav.signup")}
         </Link>
       </div>
@@ -238,16 +238,16 @@ export function AccountMenu({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-0.5 text-white/80 hover:text-white"
+        className="tap flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-0.5 text-fg/75 hover:text-fg"
         aria-label={t("menu.account")}
         aria-expanded={open}
       >
         <IconChevronDown size={14} />
         {viewer.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={viewer.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-white" />
+          <img src={viewer.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-fg/20" />
         ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-[11px] font-bold text-white ring-2 ring-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-[11px] font-bold text-white ring-2 ring-fg/20">
             {initials || "?"}
           </span>
         )}

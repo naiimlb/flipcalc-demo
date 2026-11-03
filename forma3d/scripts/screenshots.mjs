@@ -146,24 +146,63 @@ await session("photo", { width: 1280, height: 800 }, async (page) => {
   check((await page.getByRole("button", { name: /Voir chez moi/ }).count()) === 0, "Réalité augmentée : bouton masqué sur un appareil sans AR");
 });
 
-// Phase 4 : accueil des visiteurs, mode sombre, arabe (droite à gauche), galerie.
+// Refonte phase 1 : accueil plein écran (héros 3D, sections, repères), thème sombre par défaut, clair, arabe.
 await session("accueil", { width: 1366, height: 900 }, async (page) => {
   await page.goto(base, { waitUntil: "networkidle" });
-  check(await page.getByRole("link", { name: /Essayer/ }).isVisible(), "Accueil : bouton « Essayer »");
+  check(await page.evaluate(() => document.documentElement.classList.contains("dark")), "Identité : thème sombre par défaut");
+  check(await page.getByRole("link", { name: /Essayer/ }).first().isVisible(), "Accueil : bouton « Essayer »");
   check(await page.getByRole("link", { name: "Créer un compte" }).first().isVisible(), "Accueil : bouton « Créer un compte »");
-  check((await page.locator("h1").first().innerText()).includes("Décrivez"), "Accueil : titre avec badge noir");
-  check((await page.getByText("Comment ça marche").count()) === 1, "Accueil : explication en 3 étapes");
-  await page.mouse.click(5, 5);
+  check((await page.locator("h1").first().innerText()).includes("Décrivez"), "Accueil : grand titre avec badge en pilule");
+  check((await page.getByRole("heading", { name: "Comment ça marche" }).count()) === 1, "Accueil : explication en 3 étapes");
+  const nav = page.getByRole("navigation", { name: "Navigation principale" });
+  const navOk = await Promise.all(["Accueil", "Éditeur", "Galerie"].map((n) => nav.getByRole("link", { name: n }).isVisible()));
+  check(navOk.every(Boolean), "Navigation : Accueil, Éditeur, Galerie (+ Mon espace avec un compte)");
+  const ids = await page.evaluate(() => ["accueil", "etapes", "exemples", "outils", "photo", "galerie", "commencer"].filter((id) => document.getElementById(id)).length);
+  check(ids === 7, "Accueil : héros + 6 sections (étapes, exemples, outils, photo, galerie, appel final)");
+  const rail = page.getByRole("navigation", { name: "Sections de la page" });
+  check((await rail.getByRole("button").count()) === 7, "Accueil : indicateur de progression vertical (7 repères)");
+  await page.mouse.move(200, 300);
+  await page.mouse.down();
+  await page.mouse.up();
   await page.waitForSelector("canvas", { timeout: 20000 });
-  check(true, "Accueil : exemples de solutions affichés en 3D");
+  await page.waitForTimeout(2500);
+  check(true, "Accueil : objets 3D flottants autour du titre");
+  await page.mouse.move(1100, 200, { steps: 8 });
+  await page.waitForTimeout(800);
   await page.screenshot({ path: join(out, "accueil.png") });
 
-  // Mode sombre puis arabe, depuis le sélecteur de l'en-tête.
+  // Bouton rond : section suivante, la navigation se réduit au défilement.
+  const headerBefore = await page.locator("header").first().boundingBox();
+  await page.getByRole("button", { name: "Section suivante" }).click();
+  await page.waitForTimeout(1500);
+  const headerAfter = await page.locator("header").first().boundingBox();
+  check((await page.evaluate(() => window.scrollY)) > 300, "Accueil : le bouton rond descend à la section suivante");
+  check(headerBefore && headerAfter && headerAfter.height < headerBefore.height, "Navigation : se réduit au défilement");
+  await page.screenshot({ path: join(out, "accueil-etapes.png") });
+  for (const id of ["exemples", "outils", "photo", "commencer"]) {
+    await page.evaluate((target) => document.getElementById(target)?.scrollIntoView({ block: "start" }), id);
+    await page.waitForTimeout(1800);
+    await page.screenshot({ path: join(out, `accueil-${id}.png`) });
+  }
+  check((await page.getByRole("button", { name: "Revenir en haut" }).count()) === 1, "Accueil : le bouton rond ramène en haut en fin de page");
+  const slider = page.getByRole("slider", { name: /comparer/ });
+  await page.evaluate(() => document.getElementById("photo")?.scrollIntoView({ block: "start" }));
+  await slider.focus();
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  check(Number(await slider.getAttribute("aria-valuenow")) < 50, "Avant / après : comparaison au clavier");
+
+  // Thème clair puis arabe, depuis le sélecteur de l'en-tête.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(600);
   await page.getByRole("button", { name: /Thème/ }).click();
+  await page.getByRole("radio", { name: "Clair" }).click();
+  await page.waitForTimeout(500);
+  check(await page.evaluate(() => !document.documentElement.classList.contains("dark")), "Thème : mode clair appliqué");
+  await page.screenshot({ path: join(out, "accueil-clair.png") });
   await page.getByRole("radio", { name: "Sombre" }).click();
   await page.waitForTimeout(300);
-  check(await page.evaluate(() => document.documentElement.classList.contains("dark")), "Thème : mode sombre appliqué");
-  await page.screenshot({ path: join(out, "accueil-sombre.png") });
+  check(await page.evaluate(() => document.documentElement.classList.contains("dark")), "Thème : retour au mode sombre");
   await page.getByRole("radio", { name: "العربية" }).click();
   await page.waitForFunction(() => document.documentElement.dir === "rtl", null, { timeout: 10000 });
   await page.waitForTimeout(1500);
@@ -176,6 +215,31 @@ await session("accueil", { width: 1366, height: 900 }, async (page) => {
   await page.waitForTimeout(2000);
   await page.screenshot({ path: join(out, "studio-sombre-arabe.png") });
 });
+
+// Accueil sur iPad (portrait) et iPhone : menu tactile, cibles de 44 px, objets placés au-dessus et au-dessous du titre.
+for (const [name, viewport] of [
+  ["accueil-ipad", { width: 820, height: 1180 }],
+  ["accueil-iphone", { width: 390, height: 844 }],
+]) {
+  await session(name, viewport, async (page) => {
+    await page.goto(base, { waitUntil: "networkidle" });
+    await page.mouse.click(viewport.width / 2, viewport.height - 40);
+    await page.waitForSelector("canvas", { timeout: 20000 });
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: join(out, `${name}.png`) });
+    if (viewport.width < 768) {
+      await page.getByRole("button", { name: "Menu" }).click();
+      const link = page.locator("#site-menu").getByRole("link", { name: "Éditeur" });
+      const box = await link.boundingBox();
+      check(box && box.height >= 44, `${name} : menu mobile, liens d'au moins 44 px`);
+      await page.screenshot({ path: join(out, `${name}-menu.png`) });
+    } else {
+      check(await page.getByRole("navigation", { name: "Sections de la page" }).isVisible(), `${name} : indicateur de progression visible`);
+    }
+    const scrollBtn = await page.getByRole("button", { name: "Section suivante" }).boundingBox();
+    check(scrollBtn && scrollBtn.width >= 44 && scrollBtn.height >= 44, `${name} : bouton rond de défilement (≥ 44 px)`);
+  });
+}
 
 await session("galerie", { width: 1280, height: 800 }, async (page) => {
   const res = await page.goto(`${base}/galerie`, { waitUntil: "networkidle" });

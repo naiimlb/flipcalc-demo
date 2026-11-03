@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
   }
   if (user && pathname === "/connexion") {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/studio";
     url.search = "";
     return NextResponse.redirect(url);
   }

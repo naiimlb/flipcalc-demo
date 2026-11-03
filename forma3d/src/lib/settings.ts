@@ -32,9 +32,9 @@ export const DEFAULT_SITE: SiteSettings = {
   heroTitleLine2: "obtenez sa solution 3D",
   heroSubtitle:
     "Forma3D analyse votre besoin, conçoit une solution fabricable et la modélise en 3D interactive, prête à imprimer ou à fabriquer.",
-  colorFrom: "#5b6ee1",
-  colorTo: "#7b5ce6",
-  accent: "#5b6ee1",
+  colorFrom: "#2f6bff",
+  colorTo: "#8b5cf6",
+  accent: "#2f6bff",
   logoDataUrl: null,
   footerText: "Forma3D — prototype de conception assistée par IA.",
 };

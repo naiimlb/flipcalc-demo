@@ -18,7 +18,7 @@ export default async function LoginPage({
 
   const [{ site, features }, providers] = await Promise.all([getPublicSettings(), getAuthProviders()]);
   const params = await searchParams;
-  const next = params.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : "/";
+  const next = params.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : "/studio";
 
   return (
     <AuthShell

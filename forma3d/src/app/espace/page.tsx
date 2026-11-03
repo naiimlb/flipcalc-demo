@@ -39,7 +39,7 @@ export default async function EspacePage({ searchParams }: { searchParams: Promi
   };
 
   return (
-    <main className="relative min-h-dvh">
+    <main className="pt-nav relative min-h-dvh">
       <Backdrop />
       <AppHeader
         siteName={site.siteName}
@@ -51,7 +51,7 @@ export default async function EspacePage({ searchParams }: { searchParams: Promi
         viewer={viewer}
         demoMode={false}
       />
-      <div className="px-3 pb-6 sm:px-5">
+      <div className="px-4 pb-6 sm:px-6 lg:px-10">
         <EspaceClient
           viewer={viewer}
           language={session.profile.language}

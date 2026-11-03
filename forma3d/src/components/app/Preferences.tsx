@@ -97,7 +97,7 @@ export function usePreferences(): PreferencesValue {
   const value = useContext(PreferencesContext);
   if (value) return value;
   // Hors du fournisseur (tests, pages isolées) : français, thème clair.
-  return { locale: "fr", t: translator("fr"), setLocale: () => {}, theme: "auto", dark: false, setTheme: () => {} };
+  return { locale: "fr", t: translator("fr"), setLocale: () => {}, theme: "dark", dark: true, setTheme: () => {} };
 }
 
 export function useT(): Translator {

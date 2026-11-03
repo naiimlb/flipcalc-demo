@@ -36,6 +36,13 @@ const arabic = await (await fetch(`${base}/`, { headers: { "Accept-Language": "a
 assert(arabic.includes('dir="rtl"'), "arabe : lecture de droite à gauche");
 const dark = await (await fetch(`${base}/studio`, { headers: { Cookie: "forma3d-theme=dark" } })).text();
 assert(/<html[^>]*class="[^"]*\bdark\b/.test(dark), "mode sombre mémorisé (cookie) rendu dès le serveur");
+assert(/<html[^>]*class="[^"]*\bdark\b/.test(landing), "identité : thème sombre par défaut (sans choix enregistré)");
+const light = await (await fetch(`${base}/`, { headers: { Cookie: "forma3d-theme=light" } })).text();
+assert(!/<html[^>]*class="[^"]*\bdark\b/.test(light), "thème clair mémorisé (cookie) rendu dès le serveur");
+assert(["accueil", "etapes", "exemples", "outils", "photo", "galerie", "commencer"].every((id) => landing.includes(`id="${id}"`)), "accueil : héros + 6 sections");
+assert(landing.includes('aria-label="Navigation principale"') && landing.includes('href="/studio"'), "navigation : lien vers l'éditeur");
+const oldLink = await fetch(`${base}/?p=00000000-0000-0000-0000-000000000000`, { redirect: "manual" });
+assert(oldLink.status >= 300 && oldLink.status < 400 && (oldLink.headers.get("location") ?? "").includes("/studio?p="), "anciens liens /?p= redirigés vers l'éditeur");
 assert((await fetch(`${base}/galerie`)).ok, "la galerie publique répond");
 const shared = await fetch(`${base}/p/lien-inexistant-0123456789`);
 assert(shared.ok && (await shared.text()).includes("lien de partage"), "un lien de partage inconnu affiche un message clair");

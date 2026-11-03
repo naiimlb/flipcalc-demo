@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import { PreferencesProvider } from "@/components/app/Preferences";
 import { RegisterServiceWorker } from "@/components/app/RegisterServiceWorker";
@@ -9,13 +9,20 @@ import { getPublicSettings } from "@/lib/settings.server";
 import { LANG_COOKIE, dirOf, isLocale, type Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { getSession } from "@/lib/supabase/server";
-import { THEME_BOOT_SCRIPT, THEME_COOKIE, isThemeChoice, type ThemeChoice } from "@/lib/theme";
+import { DEFAULT_THEME, THEME_BOOT_SCRIPT, THEME_COOKIE, isThemeChoice, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
 const uiFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
+});
+// Titres géants : Inter très gras (police variable, un seul fichier).
+const displayFont = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+  weight: ["800", "900"],
 });
 
 /** Écrans de lancement iOS : un par taille d'appareil (largeur × hauteur en pixels CSS, densité). */
@@ -60,7 +67,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#5b6ee1",
+  themeColor: "#05060a",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -76,7 +83,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const store = await cookies();
   const themeCookie = store.get(THEME_COOKIE)?.value;
   const langCookie = store.get(LANG_COOKIE)?.value;
-  let theme: ThemeChoice = isThemeChoice(themeCookie) ? themeCookie : "auto";
+  // Thème sombre par défaut (identité Forma3D) ; « auto » et « clair » restent au choix.
+  let theme: ThemeChoice = isThemeChoice(themeCookie) ? themeCookie : DEFAULT_THEME;
   let locale: Locale = await getLocale();
   if (!isThemeChoice(themeCookie) || !isLocale(langCookie)) {
     const session = await getSession().catch(() => null);
@@ -84,13 +92,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       // Colonnes ajoutées par le script SQL de la phase 4 : sans lui, la requête échoue et on garde les valeurs par défaut.
       const { data } = await session.supabase.from("profiles").select("theme, language").eq("id", session.user.id).maybeSingle();
       const row = data as { theme?: string; language?: string } | null;
-      if (!isThemeChoice(themeCookie) && isThemeChoice(row?.theme)) theme = row.theme;
+      // « auto » est la valeur par défaut de la colonne : seul un choix explicite (clair / sombre) remplace le défaut.
+      if (!isThemeChoice(themeCookie) && (row?.theme === "light" || row?.theme === "dark")) theme = row.theme;
       if (!isLocale(langCookie) && isLocale(row?.language)) locale = row.language;
     }
   }
 
   return (
-    <html lang={locale} dir={dirOf(locale)} className={`${uiFont.variable}${theme === "dark" ? " dark" : ""}`} style={brandVars} data-theme={theme} suppressHydrationWarning>
+    <html lang={locale} dir={dirOf(locale)} className={`${uiFont.variable} ${displayFont.variable}${theme === "dark" ? " dark" : ""}`} style={brandVars} data-theme={theme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>

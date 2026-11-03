@@ -211,8 +211,9 @@ export function LogoMark({ size = 22 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
       <defs>
         <linearGradient id="f3d-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#5b6ee1" />
-          <stop offset="1" stopColor="#c05fe0" />
+          <stop offset="0" stopColor="#2f6bff" />
+          <stop offset=".55" stopColor="#8b5cf6" />
+          <stop offset="1" stopColor="#ff6b4a" />
         </linearGradient>
       </defs>
       <path d="M16 2.5 28 9.25v13.5L16 29.5 4 22.75V9.25Z" fill="url(#f3d-logo)" />

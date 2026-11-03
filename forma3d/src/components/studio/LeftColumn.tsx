@@ -167,7 +167,7 @@ export function LeftColumn({
       <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />
 
       {item && signedIn && !item.sample && (
-        <p className="px-1 text-[11px] text-white/85">
+        <p className="px-1 text-[11px] text-fg/70">
           {item.modelPath ? t("left.saved") : ""}
           <Link href="/espace" className="font-semibold underline-offset-2 hover:underline">
             {t("nav.space")}

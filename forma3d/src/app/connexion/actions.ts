@@ -18,8 +18,8 @@ const Credentials = z.object({
 });
 
 function safeNext(value: FormDataEntryValue | null): string {
-  const next = typeof value === "string" ? value : "/";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const next = typeof value === "string" ? value : "/studio";
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/studio";
 }
 
 export async function signIn(_prev: AuthState, form: FormData): Promise<AuthState> {
@@ -56,7 +56,7 @@ export async function signUp(_prev: AuthState, form: FormData): Promise<AuthStat
     },
   });
   if (error) return { error: authErrorMessage(error.message) };
-  if (data.session) redirect("/");
+  if (data.session) redirect("/studio");
   return { info: "Compte créé : cliquez sur le lien reçu par email pour l'activer." };
 }
 

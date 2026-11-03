@@ -53,7 +53,7 @@ export async function StudioScreen({ p, depart }: { p?: string; depart?: string 
   }
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-x-clip lg:h-dvh">
+    <main className="relative flex min-h-dvh flex-col overflow-x-clip pt-[env(safe-area-inset-top)] lg:h-dvh">
       <Backdrop />
       <AppHeader
         siteName={site.siteName}
@@ -64,6 +64,7 @@ export async function StudioScreen({ p, depart }: { p?: string; depart?: string 
         subtitle={site.heroSubtitle}
         viewer={viewer}
         demoMode={demoMode}
+        variant="bar"
       />
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3 sm:px-5 lg:pb-4">
         <Studio

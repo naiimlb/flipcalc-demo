@@ -15,18 +15,32 @@
   --ink-mute: 122 122 134;
   --line: 230 230 236;
   --night: 17 17 20;
+  /* Fond de page et texte posé directement dessus (hors panneaux). */
+  --canvas: 244 245 250;
+  --fg: 12 13 20;
+  /* Palette néon de l'identité Forma3D : bleu électrique, corail, touches de violet. */
+  --neon-blue: 47 107 255;
+  --neon-coral: 255 107 74;
+  --neon-violet: 139 92 246;
+  --glow-strength: 0.18;
   color-scheme: light;
 }
 
 /* Mode sombre : mêmes couleurs de marque (bleu-violet), surfaces nuit et textes clairs. */
 .dark {
-  --surface: 30 31 48;
-  --paper: 21 22 36;
-  --ink: 238 238 247;
-  --ink-soft: 202 203 222;
-  --ink-mute: 150 152 178;
-  --line: 55 57 82;
-  --night: 8 8 14;
+  --surface: 17 18 26;
+  --paper: 11 12 18;
+  --ink: 240 241 248;
+  --ink-soft: 200 202 216;
+  --ink-mute: 140 143 162;
+  --line: 40 42 56;
+  --night: 4 5 9;
+  --canvas: 5 6 10;
+  --fg: 246 247 252;
+  --neon-blue: 61 122 255;
+  --neon-coral: 255 112 80;
+  --neon-violet: 150 104 255;
+  --glow-strength: 0.32;
   color-scheme: dark;
 }
 
@@ -35,15 +49,14 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+/* Fond de page : noir profond (sombre) ou blanc cassé (clair), avec deux lueurs néon discrètes. */
 body {
-  @apply bg-brand-from font-sans text-ink antialiased;
-  background-image: linear-gradient(135deg, rgb(var(--brand-from)) 0%, rgb(var(--brand-to)) 100%);
+  @apply bg-canvas font-sans text-ink antialiased;
+  background-image:
+    radial-gradient(60rem 40rem at 0% 0%, rgb(var(--neon-blue) / var(--glow-strength)), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 100%, rgb(var(--neon-coral) / calc(var(--glow-strength) * 0.7)), transparent 60%);
   background-attachment: fixed;
   min-height: 100dvh;
-}
-.dark body {
-  background-color: #10112a;
-  background-image: linear-gradient(135deg, rgb(var(--brand-from) / 0.42) 0%, rgb(var(--brand-to) / 0.42) 100%);
 }
 /* Texte arabe : polices système adaptées (la police du site n'a pas de glyphes arabes). */
 html[lang="ar"] body {
@@ -51,16 +64,44 @@ html[lang="ar"] body {
 }
 
 /* Application installée (plein écran) : le contenu évite l'encoche et la barre d'accueil. */
+/* La navigation gère l'encoche (zone sûre du haut) ; le bas évite la barre d'accueil. */
 @media (display-mode: standalone) {
   body > main,
   body > div > main {
-    padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+/* Pages sous la navigation flottante : espace réservé à sa hauteur + zone sûre. */
+.pt-nav {
+  padding-top: calc(72px + env(safe-area-inset-top));
+}
 
 ::selection {
-  background: rgb(var(--brand-accent) / 0.25);
+  background: rgb(var(--neon-blue) / 0.3);
+}
+
+/* Contour néon (bleu à gauche, corail à droite), utilisé pour le badge du titre et les cartes mises en avant. */
+.neon-rim {
+  position: relative;
+  isolation: isolate;
+}
+.neon-rim::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(100deg, rgb(var(--neon-blue)), rgb(var(--neon-violet)) 50%, rgb(var(--neon-coral)));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.text-neon {
+  background: linear-gradient(100deg, rgb(var(--neon-blue)), rgb(var(--neon-violet)) 55%, rgb(var(--neon-coral)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @layer components {
@@ -77,6 +118,20 @@ html[lang="ar"] body {
   }
   .btn-dark {
     @apply btn bg-night text-white hover:bg-night/80;
+  }
+  .dark .btn-dark {
+    @apply bg-white/10 ring-1 ring-inset ring-white/15 hover:bg-white/15;
+  }
+  /* Bouton principal de l'identité : bleu électrique avec halo. */
+  .btn-neon {
+    @apply btn bg-neon-blue text-white shadow-neon hover:brightness-110;
+  }
+  /* Bouton lumineux sur fond de page (texte = couleur du fond). */
+  .btn-fg {
+    @apply btn bg-fg text-canvas hover:bg-fg/90;
+  }
+  .btn-line {
+    @apply btn border border-fg/20 text-fg hover:border-fg/40 hover:bg-fg/5;
   }
   .btn-accent {
     @apply btn bg-brand-accent text-white hover:brightness-110;
@@ -101,6 +156,13 @@ html[lang="ar"] body {
 }
 
 @layer utilities {
+  /* Cible tactile d'au moins 44 px sur écran tactile (iPad, iPhone), sans grossir l'interface à la souris. */
+  @media (pointer: coarse) {
+    .tap {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: rgb(17 17 20 / 0.15) transparent;
@@ -150,7 +212,34 @@ html[lang="ar"] body {
   mask-image: radial-gradient(circle at 60% 70%, #000 25%, transparent 70%);
 }
 
+/* Accueil : étiquette flottante près du titre et cube du badge qui tourne lentement. */
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-3deg);
+  }
+}
+@keyframes landing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.landing-tag {
+  animation: landing-float 5s ease-in-out infinite;
+}
+.landing-spin {
+  animation: landing-spin 14s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .landing-tag,
+  .landing-spin {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {

@@ -8,19 +8,19 @@ const root = join(__dirname, "..", "public");
 mkdirSync(join(root, "icons"), { recursive: true });
 mkdirSync(join(root, "splash"), { recursive: true });
 
-const FROM = "#5b6ee1";
-const TO = "#7b5ce6";
-// Même hexagone que public/icon.svg, en blanc sur le dégradé de la marque.
+// Identité « néon » : fond noir profond, cube en dégradé bleu électrique → violet → corail.
+const BG = "#05060a";
 const logo = (size) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
-  <path d="M16 2.5 28 9.25v13.5L16 29.5 4 22.75V9.25Z" fill="#fff"/>
-  <path d="M16 2.5 28 9.25 16 16 4 9.25Z" fill="#fff" fill-opacity=".55"/>
-  <path d="M16 16v13.5L4 22.75V9.25Z" fill="#5b6ee1" fill-opacity=".22"/>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6bff"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ff6b4a"/></linearGradient></defs>
+  <path d="M16 2.5 28 9.25v13.5L16 29.5 4 22.75V9.25Z" fill="url(#g)"/>
+  <path d="M16 2.5 28 9.25 16 16 4 9.25Z" fill="#fff" fill-opacity=".35"/>
+  <path d="M16 16v13.5L4 22.75V9.25Z" fill="#000" fill-opacity=".14"/>
 </svg>`;
 
 // Les écrans de lancement sont en aplat (un dégradé pèserait des Mo en PNG pour ces grandes tailles).
 const page = (w, h, body, flat = false) => `<!doctype html><html><body style="margin:0;width:${w}px;height:${h}px;overflow:hidden;
-  background:${flat ? "#6263e3" : `linear-gradient(135deg,${FROM},${TO})`};display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:${flat ? BG : `radial-gradient(circle at 20% 15%,#14204a,${BG} 70%)`};display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;color:#fff">${body}</body></html>`;
 
 const icons = [

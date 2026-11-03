@@ -58,12 +58,12 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   }
 
   return (
-    <main className="relative min-h-dvh overflow-x-clip">
+    <main className="pt-nav relative min-h-dvh overflow-x-clip">
       <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={isDemoMode()} />
-      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">{t("gallery.title")}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-white/85">{t("gallery.lead")}</p>
+      <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
+        <h1 className="mt-6 font-display text-4xl font-black tracking-[-0.04em] text-fg sm:text-6xl">{t("gallery.title")}</h1>
+        <p className="mt-2 max-w-2xl text-sm text-fg/65 sm:text-base">{t("gallery.lead")}</p>
 
         <form className="mt-5 flex flex-wrap gap-2" role="search">
           <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-full bg-surface px-4 py-2.5 shadow-soft">

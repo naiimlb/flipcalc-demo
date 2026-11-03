@@ -75,7 +75,7 @@ export function PreferenceMenuButton() {
         aria-expanded={open}
         aria-label={`${t("pref.theme")} · ${t("pref.language")}`}
         title={`${t("pref.theme")} · ${t("pref.language")}`}
-        className="flex h-8 items-center gap-1 rounded-full px-2 text-[11px] font-bold uppercase text-white/85 hover:bg-white/15 hover:text-white"
+        className="tap flex h-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-bold uppercase text-fg/80 hover:bg-fg/10 hover:text-fg"
       >
         <span aria-hidden>{dark ? "☾" : "☀"}</span>
         <span>{locale}</span>

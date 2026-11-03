@@ -35,10 +35,10 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
   const validated = shared ? validateDesign(shared.design) : null;
 
   return (
-    <main className="relative min-h-dvh overflow-x-clip">
+    <main className="pt-nav relative min-h-dvh overflow-x-clip">
       <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={isDemoMode()} />
-      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+      <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
         {shared && validated?.ok ? (
           <ProjectView
             kind="share"

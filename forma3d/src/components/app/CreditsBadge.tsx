@@ -34,7 +34,7 @@ export function CreditsBadge({ initial }: { initial: CreditsSnapshot }) {
     <span
       title={title}
       aria-label={title}
-      className={`chip shrink-0 ${empty ? "bg-rose-500 text-white" : "bg-white/20 text-white"}`}
+      className={`chip shrink-0 ${empty ? "bg-rose-500 text-white" : "bg-fg/10 text-fg ring-1 ring-inset ring-fg/10"}`}
       role="status"
     >
       ⚡ {credits.unlimited ? "∞" : t("credits.badge", { n: credits.total })}

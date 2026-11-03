@@ -24,9 +24,19 @@ const config: Config = {
         line: "rgb(var(--line) / <alpha-value>)",
         // Toujours sombre (boutons noirs, badge du titre, toasts), dans les deux modes.
         night: "rgb(var(--night) / <alpha-value>)",
+        // Fond de page et texte posé dessus (inversés entre clair et sombre).
+        canvas: "rgb(var(--canvas) / <alpha-value>)",
+        fg: "rgb(var(--fg) / <alpha-value>)",
+        // Palette néon de l'identité.
+        neon: {
+          blue: "rgb(var(--neon-blue) / <alpha-value>)",
+          coral: "rgb(var(--neon-coral) / <alpha-value>)",
+          violet: "rgb(var(--neon-violet) / <alpha-value>)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       borderRadius: {
@@ -36,6 +46,8 @@ const config: Config = {
         card: "0 30px 80px -30px rgba(40, 30, 120, 0.45), 0 10px 30px -15px rgba(40, 30, 120, 0.25)",
         soft: "0 1px 2px rgba(17,17,20,0.04), 0 8px 24px -12px rgba(17,17,20,0.12)",
         float: "0 30px 60px -20px rgba(30, 20, 90, 0.35)",
+        neon: "0 0 0 1px rgb(var(--neon-blue) / 0.5), 0 10px 40px -8px rgb(var(--neon-blue) / 0.65)",
+        "neon-coral": "0 10px 40px -8px rgb(var(--neon-coral) / 0.6)",
       },
       keyframes: {
         shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },

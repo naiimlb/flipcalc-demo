@@ -10,13 +10,14 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     short_name: site.siteName.slice(0, 12),
     description: site.heroSubtitle,
     lang: "fr",
-    start_url: "/",
+    // L'application installée s'ouvre directement sur l'éditeur.
+    start_url: "/studio",
     scope: "/",
     // « standalone » : plein écran sans barre du navigateur, depuis l'écran d'accueil de l'iPad, du téléphone ou de l'ordinateur.
     display: "standalone",
     orientation: "any",
-    background_color: site.colorFrom,
-    theme_color: site.colorFrom,
+    background_color: "#05060a",
+    theme_color: "#05060a",
     categories: ["productivity", "utilities", "design"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

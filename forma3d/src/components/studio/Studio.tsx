@@ -588,12 +588,12 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
 
       {/* Fil d'Ariane + projet précédent / suivant */}
       {tab === "overview" && (
-        <div className="flex items-center gap-2 text-[12px] font-medium text-white/85">
-          <button type="button" onClick={() => setTab("history")} className="hover:text-white">
+        <div className="flex items-center gap-2 text-[12px] font-medium text-fg/75">
+          <button type="button" onClick={() => setTab("history")} className="hover:text-fg">
             {tr("studio.projects")}
           </button>
           <IconChevronRight size={12} />
-          <span className="min-w-0 truncate text-white">{selected?.title ?? selected?.prompt ?? "—"}</span>
+          <span className="min-w-0 truncate text-fg">{selected?.title ?? selected?.prompt ?? "—"}</span>
           {items.length > 1 && (
             <span className="ms-auto flex items-center gap-1">
               <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label={tr("studio.prev")} onClick={() => step(-1)}>

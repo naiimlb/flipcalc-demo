@@ -27,11 +27,11 @@ export default async function GalleryItemPage({ params }: { params: Promise<{ id
   const { t } = await getTranslator();
 
   return (
-    <main className="relative min-h-dvh overflow-x-clip">
+    <main className="pt-nav relative min-h-dvh overflow-x-clip">
       <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={false} />
-      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
-        <Link href="/galerie" className="text-sm font-semibold text-white/85 hover:text-white">
+      <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
+        <Link href="/galerie" className="tap inline-flex items-center text-sm font-semibold text-fg/70 hover:text-fg">
           {t("gallery.back")}
         </Link>
         <ProjectView
