@@ -22,6 +22,8 @@
   --neon-blue: 47 107 255;
   --neon-coral: 255 107 74;
   --neon-violet: 139 92 246;
+  /* Bleu des boutons pleins : assez foncé pour un texte blanc lisible (contraste ≥ 4,5:1). */
+  --neon-blue-strong: 37 93 235;
   --glow-strength: 0.18;
   color-scheme: light;
 }
@@ -124,7 +126,7 @@ html[lang="ar"] body {
   }
   /* Bouton principal de l'identité : bleu électrique avec halo. */
   .btn-neon {
-    @apply btn bg-neon-blue text-white shadow-neon hover:brightness-110;
+    @apply btn bg-neon-blue-strong text-white shadow-neon hover:brightness-110;
   }
   /* Bouton lumineux sur fond de page (texte = couleur du fond). */
   .btn-fg {

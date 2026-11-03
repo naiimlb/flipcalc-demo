@@ -89,7 +89,7 @@ export async function Landing() {
   ];
   // « 3D » en fin de titre : dégradé néon (seulement si le texte se termine ainsi, ex. le titre par défaut).
   const neonTail = line2.endsWith(" 3D") ? { head: line2.slice(0, -3), tail: "3D" } : null;
-  const section = "relative w-full scroll-mt-16 px-5 py-24 sm:px-8 md:ps-24 md:pe-12 lg:ps-36 lg:pe-20 lg:py-32";
+  const section = "relative w-full scroll-mt-16 px-5 py-24 sm:px-8 md:ps-24 md:pe-12 lg:ps-44 lg:pe-20 lg:py-32";
 
   return (
     <main className="relative min-h-dvh overflow-x-clip">
@@ -101,7 +101,7 @@ export async function Landing() {
       <section id="accueil" aria-labelledby="hero-title" className="relative flex min-h-[100svh] w-full items-center justify-center overflow-hidden px-5 pb-24 pt-28 sm:px-8">
         <HeroStage tiltLabel={t("landing.tilt")}>
           <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center text-center">
-            <h1 id="hero-title" className="relative font-display text-[clamp(2.75rem,8.6vw,8.25rem)] font-black leading-[0.9] tracking-[-0.055em] text-fg">
+            <h1 id="hero-title" className="relative font-display text-[clamp(2.75rem,7.2vw,7rem)] font-black leading-[0.9] tracking-[-0.055em] text-fg">
               <span
                 aria-hidden
                 className="landing-tag absolute -top-10 end-0 hidden rotate-[-5deg] items-center gap-2 rounded-full bg-fg px-3.5 py-1.5 font-sans text-[12px] font-semibold tracking-normal text-canvas shadow-neon-coral sm:inline-flex lg:-top-12 lg:end-[4%]"

@@ -73,7 +73,7 @@ export function PreferenceMenuButton() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label={`${t("pref.theme")} · ${t("pref.language")}`}
+        aria-label={`${t("pref.theme")} · ${t("pref.language")} · ${locale}`}
         title={`${t("pref.theme")} · ${t("pref.language")}`}
         className="tap flex h-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-bold uppercase text-fg/80 hover:bg-fg/10 hover:text-fg"
       >

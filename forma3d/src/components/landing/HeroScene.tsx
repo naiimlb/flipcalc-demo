@@ -39,10 +39,10 @@ function buildObject(obj: HeroObject): THREE.Group {
 
 /** Emplacements autour du titre, en fraction de la zone visible (paysage / portrait). */
 const SLOTS_WIDE = [
-  { x: -0.36, y: 0.2, z: -0.4, size: 0.24, spin: 0.22, phase: 0, tilt: [0.35, 0.5, 0.1] },
-  { x: 0.37, y: 0.24, z: -0.8, size: 0.22, spin: -0.18, phase: 1.4, tilt: [0.45, -0.6, -0.08] },
-  { x: -0.33, y: -0.27, z: -0.6, size: 0.2, spin: 0.26, phase: 2.6, tilt: [0.1, 0.4, 0.05] },
-  { x: 0.34, y: -0.24, z: -0.2, size: 0.2, spin: -0.3, phase: 3.9, tilt: [0.9, 0.2, 0.3] },
+  { x: -0.41, y: 0.27, z: -0.4, size: 0.16, spin: 0.22, phase: 0, tilt: [0.35, 0.5, 0.1] },
+  { x: 0.41, y: 0.3, z: -0.8, size: 0.15, spin: -0.18, phase: 1.4, tilt: [0.45, -0.6, -0.08] },
+  { x: -0.38, y: -0.3, z: -0.6, size: 0.15, spin: 0.26, phase: 2.6, tilt: [0.1, 0.4, 0.05] },
+  { x: 0.39, y: -0.28, z: -0.2, size: 0.15, spin: -0.3, phase: 3.9, tilt: [0.9, 0.2, 0.3] },
 ];
 const SLOTS_TALL = [
   { x: -0.3, y: 0.36, z: -0.4, size: 0.3, spin: 0.22, phase: 0, tilt: [0.35, 0.5, 0.1] },

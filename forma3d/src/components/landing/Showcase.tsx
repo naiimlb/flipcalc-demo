@@ -44,10 +44,10 @@ export function Showcase({ examples }: { examples: { title: string; category: st
   if (!current) return null;
   return (
     <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(260px,0.8fr)_2fr] lg:gap-12">
-      <ol className="flex gap-2 overflow-x-auto pb-1 scrollbar-none lg:flex-col lg:gap-1 lg:overflow-visible" role="tablist">
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none lg:flex-col lg:gap-1 lg:overflow-visible" role="tablist">
         {examples.map((e, i) => (
-          <li key={e.title} className="shrink-0">
             <button
+              key={e.title}
               type="button"
               role="tab"
               aria-selected={i === index}
@@ -55,7 +55,7 @@ export function Showcase({ examples }: { examples: { title: string; category: st
                 setIndex(i);
                 setPaused(true);
               }}
-              className={`group flex min-h-11 w-full items-center gap-4 rounded-2xl px-4 py-3 text-start transition ${
+              className={`group flex min-h-11 w-full shrink-0 items-center gap-4 rounded-2xl px-4 py-3 text-start transition ${
                 i === index ? "bg-fg/[0.07] text-fg" : "text-fg/55 hover:text-fg"
               }`}
             >
@@ -65,9 +65,8 @@ export function Showcase({ examples }: { examples: { title: string; category: st
                 <span className="block truncate text-xs text-fg/50">{e.category}</span>
               </span>
             </button>
-          </li>
         ))}
-      </ol>
+      </div>
       <div
         ref={ref}
         onPointerDown={() => setPaused(true)}

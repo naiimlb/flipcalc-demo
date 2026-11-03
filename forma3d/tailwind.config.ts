@@ -30,6 +30,7 @@ const config: Config = {
         // Palette néon de l'identité.
         neon: {
           blue: "rgb(var(--neon-blue) / <alpha-value>)",
+          "blue-strong": "rgb(var(--neon-blue-strong) / <alpha-value>)",
           coral: "rgb(var(--neon-coral) / <alpha-value>)",
           violet: "rgb(var(--neon-violet) / <alpha-value>)",
         },
