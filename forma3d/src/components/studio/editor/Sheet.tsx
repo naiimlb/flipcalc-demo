@@ -56,7 +56,7 @@ export function NumInput({ label, value, onChange, unit, min, max, step = 1 }: {
           step={step}
           onChange={(e) => onChange(Number(e.target.value.replace(",", ".")))}
           onKeyDown={(e) => e.stopPropagation()}
-          className="h-10 w-full min-w-0 bg-transparent font-mono text-sm tabular-nums outline-none"
+          className="num-plain h-10 w-full min-w-0 bg-transparent font-mono text-sm tabular-nums outline-none"
         />
         {unit && <span className="text-[11px] text-ink-mute">{unit}</span>}
       </span>

@@ -165,6 +165,16 @@ html[lang="ar"] body {
 }
 
 @layer utilities {
+  /* Champs chiffrés compacts (cotes en mm) : sans les petites flèches du navigateur, qui masquent les décimales. */
+  .num-plain {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .num-plain::-webkit-inner-spin-button,
+  .num-plain::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
   /* Cible tactile d'au moins 44 px sur écran tactile (iPad, iPhone), sans grossir l'interface à la souris. */
   @media (pointer: coarse) {
     .tap {

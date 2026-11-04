@@ -78,7 +78,7 @@ function NumberField({ label, value, unit, onCommit, highlight }: { label: strin
         onKeyDown={(e) => e.stopPropagation()}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className="h-9 w-full min-w-0 bg-transparent text-end font-mono text-[12px] tabular-nums text-ink outline-none"
+        className="num-plain h-9 w-full min-w-0 bg-transparent text-end font-mono text-[12px] tabular-nums text-ink outline-none"
       />
       <span className="shrink-0 text-[10px] text-ink-mute">{unit}</span>
     </label>
