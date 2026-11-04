@@ -139,7 +139,7 @@ export function OperationsPanel({
 
         <label className="block">
           <span className="label !mb-1">{t("ops.operation")}</span>
-          <select className="input !py-2" value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
+          <select className="input !py-2" aria-label={t("ops.operation")} value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
             {(Object.keys(supports) as Kind[]).map((k) => (
               <option key={k} value={k} disabled={!supports[k]}>
                 {t(`ops.${k}`)}

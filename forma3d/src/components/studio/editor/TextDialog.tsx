@@ -58,7 +58,7 @@ export function TextDialog({
         </label>
         <label className="block">
           <span className="label !mb-1">{t("text.font")}</span>
-          <select className="input" value={font} onChange={(e) => setFont(e.target.value as TextFontId)}>
+          <select className="input" aria-label={t("text.font")} value={font}onChange={(e) => setFont(e.target.value as TextFontId)}>
             {(Object.keys(TEXT_FONTS) as TextFontId[]).map((id) => (
               <option key={id} value={id}>
                 {TEXT_FONTS[id].label}
