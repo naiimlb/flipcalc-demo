@@ -7,6 +7,10 @@ import { MESHY_STAGE_KEYS, clampProgress, meshyStageIndex } from "@/lib/meshy-st
 import { useT } from "../app/Preferences";
 import { IconCheck, Spinner } from "../icons";
 
+const KINDS = ["preview", "refine", "retexture", "remesh", "resize", "repair", "analyze"] as const;
+type Kind = (typeof KINDS)[number];
+const asKind = (k: string | undefined): Kind => ((KINDS as readonly string[]).includes(k ?? "") ? (k as Kind) : "preview");
+
 /**
  * Écran de génération Meshy, posé sur la vue 3D sans la masquer : Analyse → Génération → Texturage → Prêt,
  * barre d'avancement et nom de l'action. Reste affiché « Prêt » quelques secondes quand la tâche réussit.
@@ -36,7 +40,7 @@ export function MeshyProgress({ asset }: { asset: PublicAsset | null | undefined
   const show = Boolean(asset) && (active || ready);
   const stage = asset ? (ready ? 3 : meshyStageIndex(asset.kind, asset.status, asset.progress)) : 0;
   const progress = ready ? 100 : clampProgress(asset?.progress ?? 0);
-  const action = t(`meshy.kind.${asset?.kind && asset.kind in KIND_KEYS ? asset.kind : "preview"}`);
+  const action = t(`meshy.kind.${asKind(asset?.kind)}`);
   const name = t(MESHY_STAGE_KEYS[stage]);
 
   return (
@@ -82,4 +86,3 @@ export function MeshyProgress({ asset }: { asset: PublicAsset | null | undefined
   );
 }
 
-const KIND_KEYS: Record<string, true> = { preview: true, refine: true, retexture: true, remesh: true, resize: true, repair: true, analyze: true };
