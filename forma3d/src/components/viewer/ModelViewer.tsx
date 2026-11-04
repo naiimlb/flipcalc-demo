@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+import { Suspense, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Edges, Environment, Grid, Html, Lightformer, Line, OrbitControls, PerformanceMonitor, TransformControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -121,8 +121,10 @@ function Scene({
   }, [measure]);
   const focusPart = focusId ? design?.model.parts.find((p) => p.id === focusId) ?? null : null;
   const gizmoOn = Boolean(transformMode && focusPart && !focusPart.locked && !meshUrl && !hiddenIds?.includes(focusPart.id) && !settings.exploded && !measure);
-  useEffect(() => {
-    setGizmoTarget(gizmoOn && focusId ? objects.current.get(focusId) ?? null : null);
+  // Avant la prochaine image : les poignées ne restent jamais accrochées à une pièce retirée de la scène.
+  useLayoutEffect(() => {
+    const obj = gizmoOn && focusId ? objects.current.get(focusId) ?? null : null;
+    setGizmoTarget(obj?.parent ? obj : null);
   }, [gizmoOn, focusId, design, hiddenIds]);
 
   const bounds = useMemo(() => (design ? computeDesignBounds(design) : null), [design]);
