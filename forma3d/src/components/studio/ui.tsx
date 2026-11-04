@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m as motion, useReducedMotion } from "framer-motion";
 import type { RequestStatus } from "@/lib/requests";
 import { useT } from "../app/Preferences";
 import { IconAlert, IconCheck, IconMinus, IconPlus, Spinner } from "../icons";

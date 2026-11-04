@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import { deleteRequest } from "@/app/actions";
 import type { Answer, ClarifyQuestion } from "@/lib/clarify-types";
 import type { Design, Finish } from "@/lib/design/schema";

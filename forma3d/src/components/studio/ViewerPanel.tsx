@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import { DESIGN_SECTIONS, type StreamProgress } from "@/lib/design/partial-json";
 import { detectAr, type ArMode } from "@/lib/ar-detect";
 import type { Design } from "@/lib/design/schema";

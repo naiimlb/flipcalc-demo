@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import { IconX } from "../icons";
 import { Portal } from "../Portal";
 import { useT } from "../app/Preferences";

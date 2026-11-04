@@ -2,7 +2,7 @@
 
 import { useT } from "../app/Preferences";
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import type { RequestItem, RequestStatus } from "@/lib/requests";
 import { IconCube, IconSearch, IconTrash } from "../icons";
 import { formatDateTime } from "./format";

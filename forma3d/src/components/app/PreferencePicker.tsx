@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import { LOCALES, LOCALE_NAMES } from "@/lib/i18n";
 import type { ThemeChoice } from "@/lib/theme";
 import { usePreferences } from "./Preferences";

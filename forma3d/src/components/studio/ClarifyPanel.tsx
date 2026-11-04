@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { MAX_ANSWER_LENGTH, type Answer, type ClarifyQuestion } from "@/lib/clarify-types";
 import { IconCheck, IconSparkles } from "../icons";
 import { Portal } from "../Portal";

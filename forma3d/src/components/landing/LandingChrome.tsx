@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { m as motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 
 export interface LandingSection {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId } from "react";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { Portal } from "../../Portal";
 import { IconX } from "../../icons";
 import { useT } from "../../app/Preferences";

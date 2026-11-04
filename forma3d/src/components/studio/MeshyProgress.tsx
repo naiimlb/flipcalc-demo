@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m as motion, useReducedMotion } from "framer-motion";
 import type { PublicAsset } from "@/lib/requests";
 import { MESHY_STAGE_KEYS, clampProgress, meshyStageIndex } from "@/lib/meshy-stages";
 import { useT } from "../app/Preferences";

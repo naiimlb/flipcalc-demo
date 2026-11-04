@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import type { RequestItem } from "@/lib/requests";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { IconX, Spinner } from "../icons";

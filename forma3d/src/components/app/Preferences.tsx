@@ -2,10 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MotionConfig } from "framer-motion";
+import { LazyMotion, MotionConfig } from "framer-motion";
 import { LANG_COOKIE, dirOf, translator, type Locale, type Translator } from "@/lib/i18n";
-import { getBrowserSupabase } from "@/lib/supabase/client";
 import { THEME_COOKIE, type ThemeChoice } from "@/lib/theme";
+
+const loadMotionFeatures = () => import("./motionFeatures").then((mod) => mod.default);
 
 interface PreferencesValue {
   locale: Locale;
@@ -25,6 +26,8 @@ function writeCookie(name: string, value: string) {
 
 /** Enregistre la préférence dans le compte (sans effet si l'on n'est pas connecté ou si le script SQL n'est pas appliqué). */
 async function saveToAccount(patch: Record<string, string>) {
+  // Chargé à la demande : le client Supabase n'alourdit pas le premier affichage des pages.
+  const { getBrowserSupabase } = await import("@/lib/supabase/client");
   const supabase = getBrowserSupabase();
   if (!supabase) return;
   const { data } = await supabase.auth.getUser();
@@ -88,7 +91,10 @@ export function PreferencesProvider({
 
   return (
     <PreferencesContext.Provider value={value}>
-      <MotionConfig reducedMotion="user">{children}</MotionConfig>
+      {/* Animations : version allégée (composants « m »), dont les fonctions complètes arrivent après le premier affichage. */}
+      <LazyMotion features={loadMotionFeatures}>
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
+      </LazyMotion>
     </PreferencesContext.Provider>
   );
 }

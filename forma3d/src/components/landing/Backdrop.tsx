@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { m as motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 /**
  * Décor de fond : lueurs néon (bleu électrique, corail, violet) en léger parallaxe et trame de points discrète.

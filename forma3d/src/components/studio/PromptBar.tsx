@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as motion } from "framer-motion";
 import { IconCamera, IconImage, IconSparkles, IconX, Spinner } from "../icons";
 import { useT } from "../app/Preferences";
 import { readDraft, saveDraft } from "./draft";

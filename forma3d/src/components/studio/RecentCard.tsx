@@ -3,7 +3,7 @@
 import { intlLocale } from "@/lib/i18n";
 import { usePreferences } from "../app/Preferences";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import type { RequestItem } from "@/lib/requests";
 import { IconAlert, IconCheck, IconCube, Spinner } from "../icons";
 
