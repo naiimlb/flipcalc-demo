@@ -23,7 +23,7 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | 4 | Design (mode sombre/clair), partage, galerie, langues | **fait** (voir « Phase 4 ») |
 | 5 | Crédits et quotas (sans paiement) | **fait** (voir « Phase 5 ») |
 | Refonte 1 | Identité visuelle néon (sombre par défaut) et nouvelle page d'accueil | **fait** (voir « Refonte — phase 1 ») |
-| Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | à venir |
+| Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | **fait** (voir « Refonte — phase 2 ») |
 | Refonte 3 | Outils de création + génération Meshy (coûts affichés) | à venir |
 | Refonte 4 | Finitions, Lighthouse > 90 sur l'accueil, tests Safari | à venir |
 
@@ -57,6 +57,8 @@ valeurs (voir ci-dessous), puis `npm run dev`.
       modération), **liens de partage** et **commentaires**. Sans lui, la galerie et le partage affichent « pas encore activé » ;
    5. `20261105000000_phase5_credits.sql` : **crédits** (comptes, registre, renouvellement mensuel, fonctions
       d'administration). Sans lui, aucune limite de crédits ne s'applique et le solde n'est pas affiché.
+   6. `20261106000000_refonte2_editeur.sql` : **sauvegarde des modifications de l'éditeur** dans le compte
+      (fonction `save_design_edit`, quotas). Sans lui, les modifications restent sur l'appareil ;
    Les scripts sont rejouables sans danger. L'application fonctionne même si le 3ᵉ n'est pas appliqué
    (le cache est alors simplement désactivé et la limite de débit se fait en mémoire).
 3. **Authentication → URL Configuration** : *Site URL* = l'URL du site et, dans *Redirect URLs*,
@@ -296,6 +298,42 @@ redirigent vers `/studio?p=<id>`.
 **Rendu 3D : WebGL.** WebGPU n'est pas activé dans cette phase : avec Three.js r180, mélanger `three` et
 `three/webgpu` duplique le moteur et casse les composants existants ; ce sera réévalué en phase 4 de la refonte.
 La qualité est adaptative (résolution, détail des formes).
+
+## Refonte — phase 2 : structure de l'éditeur
+
+L'éditeur (`/studio`) occupe tout l'écran, sans cadre autour :
+
+| Zone | Contenu |
+| --- | --- |
+| Barre du haut | accueil, **nom du projet** (crayon pour renommer), **annuler / rétablir**, **enregistrer** (état de la sauvegarde), onglets Éditeur · Fabriquer · Historique · Paramètres, recherche, notifications, **exporter** (STL, GLB, PNG HD), crédits, thème / langue, compte |
+| Gauche | **barre d'outils** : panneau Pièces, Sélection (V), Déplacer (W), Tourner (E), Échelle (R), **1 / 2 / 4 vues**, grille (G), axes, **règle** (M), recadrer (F), panneau Propriétés |
+| Panneau Pièces | fiche du projet (favori, partage, alertes), **arborescence** (assemblage → pièces : sélectionner, masquer / afficher, renommer d'un double-clic, dupliquer, supprimer), dernières demandes |
+| Centre | vue 3D (perspective) ; en 2 vues + face, en 4 vues + dessus, face, droite (orthographiques, sélection partagée) |
+| Panneau Propriétés | onglets **Objet** (nom, position, rotation, taille en mm / degrés), **Matière** (couleur et matière de la pièce, matières conseillées), **Dimensions** (encombrement mesuré en direct, taille de chaque pièce), **Analyse** (analyse, versions « plus petit / plus solide… »), **Fabrication** (étapes, coût, accès à l'atelier) |
+| Barre du bas | **historique des versions** du projet (v1, v2…, comparer) et barre de saisie |
+
+**iPad et iPhone** : les deux panneaux deviennent des **tiroirs** (bouton de la barre d'outils, fermés par Échap,
+la croix ou un toucher à côté) ; boutons de 44 px. **Mac** (≥ 1 280 px) : panneaux ancrés, **redimensionnables**
+(poignée à la souris / au trackpad, flèches du clavier, double-clic pour la largeur d'origine), largeur mémorisée.
+
+**Annuler / rétablir illimités**, par projet (les frappes successives d'un même champ comptent pour une étape).
+**Sauvegarde automatique** 1,2 s après la dernière modification (et à la fermeture de la page) :
+- connecté : dans le compte (`PATCH /api/requests/<id>/design` → conception **revalidée côté serveur**, puis fonction
+  SQL `save_design_edit` : propriétaire uniquement, projet terminé, 600 sauvegardes / heure / projet et 2 000 / heure /
+  personne). Le fichier 3D enregistré (GLB) est régénéré automatiquement ;
+- visiteur, exemple, ou script SQL pas encore exécuté : sur l'appareil (« Enregistré sur l'appareil »), sans erreur ;
+  les modifications sont renvoyées en ligne dès que c'est possible.
+
+Raccourcis (Mac : ⌘ ; Windows : Ctrl) : **⌘Z** annuler, **⇧⌘Z** ou **Ctrl+Y** rétablir, **⌘D** dupliquer la pièce,
+**Suppr / ⌫** supprimer la pièce, **⌘S** enregistrer, **V W E R** outils, **F** recadrer (sur la pièce sélectionnée),
+**G** grille, **M** règle, **H** masquer la pièce, **Échap** désélectionner, **← →** projet précédent / suivant.
+Tactile : un doigt tourne, deux doigts déplacent et pincent pour zoomer, double-tap recentre.
+
+Les poignées 3D de déplacement / rotation / échelle et le magnétisme arrivent en phase 3 (les outils W / E / R
+mettent déjà en avant les champs correspondants de l'onglet Objet).
+
+**Configuration** : exécuter `supabase/migrations/20261106000000_refonte2_editeur.sql` dans Supabase › SQL Editor
+pour la sauvegarde dans le compte (sans lui, tout fonctionne avec la sauvegarde sur l'appareil).
 
 ## Mon espace et administration
 

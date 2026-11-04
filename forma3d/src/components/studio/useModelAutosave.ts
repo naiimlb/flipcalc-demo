@@ -16,7 +16,8 @@ export function useModelAutosave(
   userId: string | null,
   onSaved: (id: string, path: string) => void,
 ) {
-  const tried = useRef(new Set<string>());
+  // Une tentative par version de la conception : après une modification dans l'éditeur, le fichier est régénéré.
+  const tried = useRef(new WeakSet<object>());
   const running = useRef(false);
 
   useEffect(() => {
@@ -24,14 +25,14 @@ export function useModelAutosave(
     const supabase = getBrowserSupabase();
     if (!supabase) return;
     const eligible = (i: RequestItem) =>
-      i.status === "ready" && i.design && !i.modelPath && !i.sample && !i.guest && !i.id.startsWith("tmp-") && !tried.current.has(i.id);
+      i.status === "ready" && i.design && !i.modelPath && !i.sample && !i.guest && !i.id.startsWith("tmp-") && !tried.current.has(i.design);
     const queue = [...items.filter((i) => i.id === selectedId && eligible(i)), ...items.filter((i) => i.id !== selectedId && eligible(i))].slice(0, 3);
     if (!queue.length) return;
 
     running.current = true;
     (async () => {
       for (const item of queue) {
-        tried.current.add(item.id);
+        tried.current.add(item.design!);
         try {
           const buffer = await exportGlb(item.design!);
           const path = `${userId}/${item.id}.glb`;

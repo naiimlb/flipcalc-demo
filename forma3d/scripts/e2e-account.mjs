@@ -90,6 +90,8 @@ try {
   await page.getByText("Modèle 3D sauvegardé dans votre espace").waitFor({ timeout: 40000 });
   check(true, "Demande enregistrée et modèle 3D (GLB) envoyé dans Supabase Storage");
   await page.getByRole("button", { name: "Ajouter aux favoris" }).first().click();
+  // Éditeur (refonte phase 2) : les matières conseillées sont dans l'onglet « Matière » du panneau de propriétés.
+  await page.getByRole("tab", { name: "Matière" }).click();
   const heart = page.getByRole("button", { name: /^Ajouter .* aux matières préférées$/ }).first();
   await heart.click();
   await page.waitForTimeout(1200);

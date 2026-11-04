@@ -19,7 +19,10 @@ export function RightColumn({
   favoriteMaterials,
   onToggleFavoriteMaterial,
   reveal = false,
+  only,
 }: {
+  /** Éditeur : seules ces sections sont affichées. */
+  only?: ("modes" | "dimensions" | "materials" | "steps" | "cost" | "recommendations")[];
   design: Design | null;
   settings: ViewerSettings;
   onSettings(patch: Partial<ViewerSettings>): void;
@@ -32,10 +35,12 @@ export function RightColumn({
   const t = useT();
   const totalMinutes = design?.fabrication.reduce((s, f) => s + f.durationMin, 0) ?? 0;
   const maxItem = Math.max(1, ...(design?.cost.items.map((i) => i.amount) ?? [1]));
+  const show = (s: NonNullable<typeof only>[number]) => !only || only.includes(s);
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin md:h-full md:overflow-y-auto lg:pl-0.5 [&>*]:shrink-0">
+    <div className={`flex min-h-0 flex-col gap-3 [&>*]:shrink-0 ${only ? "" : "scrollbar-thin md:h-full md:overflow-y-auto lg:pl-0.5"}`}>
       {/* Modes d'affichage (grille 2×2) */}
+      {show("modes") && (
       <section className="panel grid grid-cols-2 gap-1.5 p-1.5" aria-label={t("mode.label")}>
         <ModeButton active={settings.mode === "neon"} onClick={() => onSettings({ mode: "neon" })} icon={<IconSparkles size={14} />}>
           {t("mode.neon")}
@@ -50,7 +55,9 @@ export function RightColumn({
           {t("mode.exploded")}
         </ModeButton>
       </section>
+      )}
 
+      {show("dimensions") && (
       <Reveal index={0} on={reveal}>
       <Panel icon={<IconRuler size={15} />} title={t("panel.dimensions")}>
         {design ? (
@@ -84,7 +91,9 @@ export function RightColumn({
         )}
       </Panel>
       </Reveal>
+      )}
 
+      {show("materials") && (
       <Reveal index={1} on={reveal}>
       <Panel icon={<IconLayers size={15} />} title={t("panel.materials")}>
         {design ? (
@@ -156,12 +165,14 @@ export function RightColumn({
         )}
       </Panel>
       </Reveal>
+      )}
 
+      {show("steps") && (
       <Reveal index={2} on={reveal}>
       <Panel
         icon={<IconSteps size={15} />}
         title={t("panel.fabrication")}
-        defaultOpen={false}
+        defaultOpen={Boolean(only)}
         aside={design ? <span className="text-[10.5px] font-semibold text-ink-mute">{formatDuration(totalMinutes)}</span> : null}
       >
         {design ? (
@@ -186,9 +197,11 @@ export function RightColumn({
         )}
       </Panel>
       </Reveal>
+      )}
 
+      {show("cost") && (
       <Reveal index={3} on={reveal}>
-      <Panel icon={<IconCoin size={15} />} title={t("panel.cost")} defaultOpen={false}>
+      <Panel icon={<IconCoin size={15} />} title={t("panel.cost")} defaultOpen={Boolean(only)}>
         {design ? (
           <>
             <p className="text-lg font-bold tracking-tight">
@@ -220,7 +233,9 @@ export function RightColumn({
         )}
       </Panel>
       </Reveal>
+      )}
 
+      {show("recommendations") && (
       <Reveal index={4} on={reveal}>
       <Panel icon={<IconBulb size={15} />} title={t("panel.recommendations")} defaultOpen={false}>
         {design ? (
@@ -238,6 +253,7 @@ export function RightColumn({
         )}
       </Panel>
       </Reveal>
+      )}
     </div>
   );
 }

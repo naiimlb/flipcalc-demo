@@ -46,6 +46,14 @@ export function ViewerPanel({
   onNew,
   onShowJson,
   onToast,
+  selection,
+  onSelection,
+  handleRef,
+  hiddenIds = [],
+  showAxes = false,
+  showRuler = false,
+  editor = false,
+  className,
 }: {
   item: RequestItem | null;
   settings: ViewerSettings;
@@ -54,13 +62,27 @@ export function ViewerPanel({
   onNew(): void;
   onShowJson(): void;
   onToast(message: string): void;
+  /** Pièce sélectionnée, partagée avec l'arborescence et le panneau de propriétés (éditeur). */
+  selection?: string | null;
+  onSelection?: (id: string | null) => void;
+  /** Commandes de la vue (export PNG, recadrage) utilisées par la barre du haut de l'éditeur. */
+  handleRef?: React.RefObject<ViewerHandle | null>;
+  hiddenIds?: string[];
+  showAxes?: boolean;
+  showRuler?: boolean;
+  /** Dans l'éditeur : export et grille sont dans les barres d'outils, la vue remplit sa zone. */
+  editor?: boolean;
+  className?: string;
 }) {
   const { t, dark } = usePreferences();
-  const handle = useRef<ViewerHandle>(null);
+  const ownHandle = useRef<ViewerHandle>(null);
+  const handle = handleRef ?? ownHandle;
   const wrap = useRef<HTMLDivElement>(null);
   // Chargement différé : le moteur 3D (le plus lourd du site) n'est téléchargé qu'une fois la zone visible et le navigateur au repos.
   const [armed, setArmed] = useState(false);
-  const [focusId, setFocusId] = useState<string | null>(null);
+  const [ownFocus, setOwnFocus] = useState<string | null>(null);
+  const focusId = selection !== undefined ? selection : ownFocus;
+  const setFocusId = (id: string | null) => (onSelection ? onSelection(id) : setOwnFocus(id));
   const [exportOpen, setExportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showMesh, setShowMesh] = useState(false);
@@ -73,7 +95,7 @@ export function ViewerPanel({
   const chip = light ? "bg-ink/10 text-ink" : "bg-white/20 text-white";
 
   useEffect(() => {
-    setFocusId(null);
+    setOwnFocus(null);
     setShowMesh(false);
   }, [item?.id]);
 
@@ -148,7 +170,7 @@ export function ViewerPanel({
     }
   };
 
-  const exportItems = design
+  const exportItems = design && !editor
     ? [
         features.exportGlb && {
           kind: "file",
@@ -184,7 +206,7 @@ export function ViewerPanel({
   return (
     <div
       ref={wrap}
-      className="relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"
+      className={className ?? "relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"}
       style={{ background: viewerBackgroundCss(design ? settings.mode : "neon", dark) }}
     >
       {/* Halo décoratif */}
@@ -203,6 +225,9 @@ export function ViewerPanel({
           onFocusChange={setFocusId}
           handleRef={handle}
           meshUrl={showMesh && meshReady && item ? `/api/requests/${item.id}/asset/file` : null}
+          hiddenIds={hiddenIds}
+          showAxes={showAxes}
+          showRuler={showRuler}
         />
       )}
 
@@ -226,9 +251,11 @@ export function ViewerPanel({
           >
             <IconRotate size={15} />
           </ToolButton>
-          <ToolButton light={light} label={t("viewer.grid")} active={settings.showGrid} onClick={() => onSettings({ showGrid: !settings.showGrid })}>
-            <IconGrid size={15} />
-          </ToolButton>
+          {!editor && (
+            <ToolButton light={light} label={t("viewer.grid")} active={settings.showGrid} onClick={() => onSettings({ showGrid: !settings.showGrid })}>
+              <IconGrid size={15} />
+            </ToolButton>
+          )}
           {exportItems.length > 0 && (
             <div className="relative">
               <ToolButton light={light} label={t("viewer.export")} onClick={() => setExportOpen((o) => !o)} active={exportOpen}>

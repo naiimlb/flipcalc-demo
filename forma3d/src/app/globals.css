@@ -73,6 +73,13 @@ html[lang="ar"] body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+/* Éditeur : la barre du bas gère elle-même la zone sûre. */
+@media (display-mode: standalone) {
+  body > main.editor-shell,
+  body > div > main.editor-shell {
+    padding-bottom: 0;
+  }
+}
 /* Pages sous la navigation flottante : espace réservé à sa hauteur + zone sûre. */
 .pt-nav {
   padding-top: calc(72px + env(safe-area-inset-top));

@@ -28,6 +28,8 @@ export interface ViewerHandle {
   zoomIn(): void;
   zoomOut(): void;
   resetView(): void;
+  /** Cadre la vue sur une pièce (ou sur tout le modèle). */
+  frame?(partId: string | null): void;
   capturePng(): Promise<Blob | null>;
 }
 

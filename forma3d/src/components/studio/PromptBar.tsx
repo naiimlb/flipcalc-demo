@@ -17,7 +17,10 @@ export function PromptBar({
   busy,
   allowImage,
   restore,
+  placement = "below",
 }: {
+  /** Exemples affichés sous la barre, ou au-dessus quand elle est en bas de l'écran (éditeur). */
+  placement?: "below" | "above";
   onSubmit(prompt: string, image: ImagePayload | null): void;
   busy: boolean;
   allowImage: boolean;
@@ -172,14 +175,14 @@ export function PromptBar({
           <span className="hidden sm:inline">{t("prompt.generate")}</span>
         </button>
       </form>
-      {error && <p className="mt-1.5 px-3 text-xs font-medium text-white">{error}</p>}
+      {error && <p className="mt-1.5 px-3 text-xs font-medium text-fg">{error}</p>}
       <AnimatePresence>
         {focused && !prompt && (
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
+            initial={{ opacity: 0, y: placement === "above" ? 4 : -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="absolute left-0 right-0 top-full z-30 mt-2 flex flex-wrap gap-1.5 rounded-2xl bg-surface p-2 shadow-float"
+            exit={{ opacity: 0, y: placement === "above" ? 4 : -4 }}
+            className={`absolute left-0 right-0 z-30 ${placement === "above" ? "bottom-full mb-2" : "top-full mt-2"} flex flex-wrap gap-1.5 rounded-2xl bg-surface p-2 shadow-float`}
           >
             {EXAMPLES.map((key) => (
               <button

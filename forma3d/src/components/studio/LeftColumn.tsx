@@ -26,7 +26,13 @@ export function LeftColumn({
   onCompare,
   canCompare = false,
   onShare,
+  only,
+  hideTitle = false,
 }: {
+  /** Éditeur : seules ces sections sont affichées (fiche, analyse, ajuster, alerte, sauvegarde, récents). */
+  only?: ("card" | "analysis" | "adjust" | "notice" | "saved" | "recent")[];
+  /** Le titre est déjà affiché (barre du haut de l'éditeur). */
+  hideTitle?: boolean;
   item: RequestItem | null;
   items: RequestItem[];
   onSelect(id: string): void;
@@ -47,10 +53,12 @@ export function LeftColumn({
   const t = useT();
   const canFavorite = Boolean(item && signedIn && !item.sample && !item.guest && !item.id.startsWith("tmp-"));
   const design = item?.design ?? null;
+  const show = (s: NonNullable<typeof only>[number]) => !only || only.includes(s);
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 scrollbar-thin lg:h-full lg:overflow-y-auto lg:pr-0.5 [&>*]:shrink-0">
+    <div className={`flex min-h-0 flex-col gap-3 [&>*]:shrink-0 ${only ? "" : "scrollbar-thin lg:h-full lg:overflow-y-auto lg:pr-0.5"}`}>
       {/* Fiche de la demande */}
+      {show("card") && (
       <section className="panel p-3">
         <div className="flex items-start gap-2.5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-white shadow-soft">
@@ -58,9 +66,13 @@ export function LeftColumn({
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="line-clamp-2 text-[13.5px] font-semibold leading-tight">
-                {item ? item.title ?? t("left.newRequest") : t("left.none")}
-              </h2>
+              {hideTitle ? (
+                <p className="line-clamp-2 text-[12px] font-semibold leading-tight text-ink-soft">{t("left.project")}</p>
+              ) : (
+                <h2 className="line-clamp-2 text-[13.5px] font-semibold leading-tight">
+                  {item ? item.title ?? t("left.newRequest") : t("left.none")}
+                </h2>
+              )}
               <span className="flex shrink-0 items-center gap-1">
                 {canFavorite && item && (
                   <button
@@ -116,8 +128,10 @@ export function LeftColumn({
           </div>
         )}
       </section>
+      )}
 
       {/* Analyse */}
+      {show("analysis") && (
       <Reveal index={0} on={reveal}>
       <Panel icon={<IconMicroscope size={15} />} title={t("left.analysis")}>
         {design ? (
@@ -148,9 +162,10 @@ export function LeftColumn({
         </button>
       </Panel>
       </Reveal>
+      )}
 
       {/* Ajuster : nouvelle version de la solution */}
-      {design && onAdjust && (
+      {show("adjust") && design && onAdjust && (
         <Reveal index={1} on={reveal}>
           <Panel icon={<IconHistory size={15} />} title={t("left.adjust")}>
             {design.variante && (
@@ -164,9 +179,9 @@ export function LeftColumn({
       )}
 
       {/* Alerte contextuelle */}
-      <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />
+      {show("notice") && <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />}
 
-      {item && signedIn && !item.sample && (
+      {show("saved") && item && signedIn && !item.sample && (
         <p className="px-1 text-[11px] text-fg/70">
           {item.modelPath ? t("left.saved") : ""}
           <Link href="/espace" className="font-semibold underline-offset-2 hover:underline">
@@ -175,7 +190,7 @@ export function LeftColumn({
         </p>
       )}
 
-      <RecentCard items={items} selectedId={item?.id ?? null} onSelect={onSelect} />
+      {show("recent") && <RecentCard items={items} selectedId={item?.id ?? null} onSelect={onSelect} />}
     </div>
   );
 }

@@ -6,11 +6,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { deleteRequest } from "@/app/actions";
 import type { Answer, ClarifyQuestion } from "@/lib/clarify-types";
 import type { Design } from "@/lib/design/schema";
+import { deletePart, duplicatePart, renameDesign, updatePart, type PartPatch } from "@/lib/design/edit";
 import type { VariantId } from "@/lib/design/variants";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-import { DEFAULT_VIEWER_SETTINGS, type ViewerSettings } from "../viewer/settings";
-import { IconChevronLeft, IconChevronRight, Spinner } from "../icons";
+import { DEFAULT_VIEWER_SETTINGS, type ViewerHandle, type ViewerSettings } from "../viewer/settings";
+import { IconSteps, Spinner } from "../icons";
 import { Portal } from "../Portal";
 import { useT } from "../app/Preferences";
 import { AuthPrompt } from "./AuthPrompt";
@@ -27,8 +28,15 @@ import { PromptBar } from "./PromptBar";
 import { RightColumn } from "./RightColumn";
 import { readEventStream } from "./stream";
 import { SettingsTab } from "./SettingsTab";
-import { Notifications, SearchBox, TABS } from "./TopBar";
 import type { StudioFeatures, StudioTab, StudioViewer } from "./types";
+import { BottomBar } from "./editor/BottomBar";
+import { DockPanel } from "./editor/DockPanel";
+import { EditorTopBar } from "./editor/EditorTopBar";
+import { PartsTree } from "./editor/PartsTree";
+import { MeasuredDimensions, PartInspector, PartMaterial, ProjectSummary, PropertiesPanel, type PropsTab } from "./editor/PropertiesPanel";
+import { Toolbar, type EditorTool, type ViewLayout } from "./editor/Toolbar";
+import { Viewports } from "./editor/Viewports";
+import { useDesignEditor } from "./useDesignEditor";
 import { useModelAutosave } from "./useModelAutosave";
 import { usePrefs } from "./usePrefs";
 import { ViewerPanel } from "./ViewerPanel";
@@ -54,17 +62,40 @@ export interface StudioProps {
   initialSelectedId: string | null;
   /** Conception de la galerie à reprendre comme point de départ (/studio?depart=<id>). */
   startFrom?: { prompt: string; design: unknown; title: string } | null;
+  siteName?: string;
+  logoDataUrl?: string | null;
+  /** Solde de crédits (barre du haut), null sans compte ou sans le script SQL de la phase 5. */
+  credits?: CreditsSnapshot | null;
 }
+
+const LAYOUT_KEY = "forma3d:editor-layout";
 
 const TEMP_PREFIX = "tmp-";
 const SELECTED_KEY = "forma3d:selected";
 /** Signalé au bouton « Mettre à jour » : on ne recharge pas pendant une génération. */
 export const BUSY_EVENT = "forma3d:busy";
 
-export function Studio({ initialItems, samples, viewer, features, demoMode, initialSelectedId, startFrom = null }: StudioProps) {
+export function Studio({
+  initialItems,
+  samples: baseSamples,
+  viewer,
+  features,
+  demoMode,
+  initialSelectedId,
+  startFrom = null,
+  siteName = "Forma3D",
+  logoDataUrl = null,
+  credits = null,
+}: StudioProps) {
   const tr = useT();
   const [userItems, setUserItems] = useState<RequestItem[]>(initialItems);
   const [guestItems, setGuestItems] = useState<RequestItem[]>([]);
+  // Exemples modifiés dans l'éditeur (gardés pour la session, et sur l'appareil).
+  const [sampleEdits, setSampleEdits] = useState<Record<string, Design>>({});
+  const samples = useMemo(
+    () => baseSamples.map((s) => (sampleEdits[s.id] ? { ...s, design: sampleEdits[s.id], title: sampleEdits[s.id].title } : s)),
+    [baseSamples, sampleEdits],
+  );
   const items = useMemo(() => {
     if (demoMode) return [...userItems, ...samples];
     if (viewer) return userItems.length ? userItems : samples;
@@ -93,10 +124,54 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
   const [shareFor, setShareFor] = useState<string | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const busy = userItems.some((i) => i.id.startsWith(TEMP_PREFIX));
+  /* ---------------- État de l'éditeur ---------------- */
+  const viewerHandle = useRef<ViewerHandle>(null);
+  const [selection, setSelection] = useState<string | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [tool, setTool] = useState<EditorTool>("select");
+  const [layout, setLayout] = useState<ViewLayout>(1);
+  const [showAxes, setShowAxes] = useState(false);
+  const [showRuler, setShowRuler] = useState(false);
+  const [propsTab, setPropsTab] = useState<PropsTab>("object");
+  // Grand écran : panneaux ancrés ; iPad et téléphone : tiroirs (fermés au départ).
+  const [wide, setWide] = useState(false);
+  const [partsOpen, setPartsOpen] = useState(false);
+  const [propsOpen, setPropsOpen] = useState(false);
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent(BUSY_EVENT, { detail: busy }));
-  }, [busy]);
+    const media = window.matchMedia("(min-width: 1280px)");
+    const update = () => {
+      setWide(media.matches);
+      setPartsOpen(media.matches);
+      setPropsOpen(media.matches);
+    };
+    update();
+    media.addEventListener("change", update);
+    try {
+      const saved = Number(localStorage.getItem(LAYOUT_KEY));
+      if (saved === 1 || saved === 2 || saved === 4) setLayout(saved);
+    } catch {
+      // ignoré
+    }
+    return () => media.removeEventListener("change", update);
+  }, []);
+  const chooseLayout = useCallback((n: ViewLayout) => {
+    setLayout(n);
+    try {
+      localStorage.setItem(LAYOUT_KEY, String(n));
+    } catch {
+      // ignoré
+    }
+  }, []);
+  const toggleParts = useCallback(() => {
+    setPartsOpen((o) => !o);
+    if (!wide) setPropsOpen(false);
+  }, [wide]);
+  const toggleProps = useCallback(() => {
+    setPropsOpen((o) => !o);
+    if (!wide) setPartsOpen(false);
+  }, [wide]);
+
+  const busy = userItems.some((i) => i.id.startsWith(TEMP_PREFIX));
 
   useEffect(() => {
     setSettings((s) => ({ ...s, mode: prefs.mode, autoRotate: prefs.autoRotate, showGrid: prefs.showGrid }));
@@ -140,17 +215,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     [items, selectedIndex],
   );
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (jsonOpen || authPrompt || clarify || compare || tab !== "overview") return;
-      const target = e.target as HTMLElement | null;
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-      if (e.key === "ArrowLeft") step(-1);
-      if (e.key === "ArrowRight") step(1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [jsonOpen, authPrompt, clarify, compare, tab, step]);
+
 
   /* ---------------- Essai sans compte → import après inscription ---------------- */
 
@@ -295,6 +360,86 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     useCallback((id: string, path: string) => patchItem(id, { modelPath: path }), [patchItem]),
   );
 
+  /* ---------------- Modifications dans l'éditeur ---------------- */
+
+  const applyDesign = useCallback(
+    (id: string, design: Design) => {
+      const patch = (list: RequestItem[]) => list.map((i) => (i.id === id ? { ...i, design, title: design.title || i.title } : i));
+      setUserItems((prev) => (prev.some((i) => i.id === id) ? patch(prev) : prev));
+      setGuestItems((prev) => {
+        if (!prev.some((i) => i.id === id)) return prev;
+        const next = patch(prev);
+        saveGuestItems(next);
+        return next;
+      });
+      if (baseSamples.some((s) => s.id === id)) setSampleEdits((prev) => ({ ...prev, [id]: design }));
+    },
+    [baseSamples],
+  );
+  const canSaveOnline = useCallback(
+    (i: RequestItem) => Boolean(viewer && !demoMode && !i.sample && !i.guest && !i.id.startsWith(TEMP_PREFIX) && i.status === "ready"),
+    [viewer, demoMode],
+  );
+  const editor = useDesignEditor({
+    item: selected,
+    items,
+    cloud: canSaveOnline,
+    apply: applyDesign,
+    onSaved: useCallback((id: string) => patchItem(id, { modelPath: null }), [patchItem]),
+  });
+  const editable = Boolean(selected?.design && selected.status === "ready");
+  const selectedPart = selection ? selected?.design?.model.parts.find((p) => p.id === selection) ?? null : null;
+
+  // Nouvelle pièce / nouveau projet : sélection et pièces masquées remises à zéro.
+  useEffect(() => {
+    setSelection(null);
+    setHiddenIds([]);
+  }, [selected?.id]);
+  useEffect(() => {
+    if (selection && !selected?.design?.model.parts.some((p) => p.id === selection)) setSelection(null);
+  }, [selection, selected?.design]);
+
+  const patchPart = useCallback(
+    (patch: PartPatch, key: string) => {
+      if (!selection) return;
+      editor.edit((d) => updatePart(d, selection, patch), `${selection}:${key}`);
+    },
+    [editor, selection],
+  );
+  const renamePart = useCallback((id: string, name: string) => editor.edit((d) => updatePart(d, id, { name })), [editor]);
+  const duplicateSelectedPart = useCallback(
+    (id: string | null = selection) => {
+      if (!id) return;
+      let copy: string | null = null;
+      editor.edit((d) => {
+        const r = duplicatePart(d, id);
+        copy = r.id;
+        return r.design;
+      });
+      if (copy) setSelection(copy);
+    },
+    [editor, selection],
+  );
+  const deleteSelectedPart = useCallback(
+    (id: string | null = selection) => {
+      if (!id) return;
+      editor.edit((d) => deletePart(d, id));
+      setSelection(null);
+    },
+    [editor, selection],
+  );
+  const toggleHidden = useCallback((id: string) => setHiddenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])), []);
+  const frame = useCallback(() => {
+    const h = viewerHandle.current;
+    if (h?.frame) h.frame(selection);
+    else h?.resetView();
+  }, [selection]);
+
+  // Le bouton « Mettre à jour » attend la fin d'une génération et des sauvegardes en cours.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(BUSY_EVENT, { detail: busy || editor.pending }));
+  }, [busy, editor.pending]);
+
   /* ---------------- Création d'une demande ---------------- */
 
   const askQuestions = useCallback(async (prompt: string, image: ImagePayload | null): Promise<ClarifyQuestion[]> => {
@@ -344,6 +489,7 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
       setUserItems((prev) => [placeholder, ...prev]);
       setSelectedId(tempId);
       setTab("overview");
+      setPropsTab("analysis");
 
       try {
         // 1. Assistant de questions (uniquement si la demande est floue).
@@ -549,146 +695,272 @@ export function Studio({ initialItems, samples, viewer, features, demoMode, init
     [updatePrefs, viewer],
   );
 
+  /* ---------------- Raccourcis clavier (Mac) ---------------- */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (jsonOpen || authPrompt || clarify || compare || shareFor) return;
+      const target = e.target as HTMLElement | null;
+      const typing = Boolean(target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable));
+      const mod = e.metaKey || e.ctrlKey;
+      const k = e.key.toLowerCase();
+      if (mod && k === "s") {
+        e.preventDefault();
+        editor.flush();
+        return;
+      }
+      if (typing || tab !== "overview") return;
+      if (mod && k === "z") {
+        e.preventDefault();
+        if (e.shiftKey) editor.redo();
+        else editor.undo();
+        return;
+      }
+      if (mod && k === "y") {
+        e.preventDefault();
+        editor.redo();
+        return;
+      }
+      if (mod && k === "d") {
+        e.preventDefault();
+        if (editable) duplicateSelectedPart();
+        return;
+      }
+      if (mod || e.altKey) return;
+      if ((k === "delete" || k === "backspace") && selection && editable) {
+        e.preventDefault();
+        deleteSelectedPart();
+        return;
+      }
+      if (k === "escape") return setSelection(null);
+      if (k === "f") return frame();
+      if (k === "v" || k === "q") return setTool("select");
+      if (k === "w") return setTool("move");
+      if (k === "e") return setTool("rotate");
+      if (k === "r") return setTool("scale");
+      if (k === "g") return setSettings((s) => ({ ...s, showGrid: !s.showGrid }));
+      if (k === "m") return setShowRuler((v) => !v);
+      if (k === "h" && selection) return toggleHidden(selection);
+      if (k === "arrowleft" && !selection) step(-1);
+      if (k === "arrowright" && !selection) step(1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [jsonOpen, authPrompt, clarify, compare, shareFor, tab, editor, editable, selection, duplicateSelectedPart, deleteSelectedPart, frame, toggleHidden, step]);
+
+  const reveal = revealId !== null && revealId === selected?.id;
+  const focusPrompt = () => window.dispatchEvent(new Event("forma3d:focus-prompt"));
+  const leftPanel = (
+    <div className="flex flex-col gap-2.5">
+      <LeftColumn
+        only={["card", "notice", "saved"]}
+        hideTitle
+        item={selected}
+        items={items}
+        onSelect={select}
+        onNew={focusPrompt}
+        onToggleFavorite={toggleFavorite}
+        onSignupPrompt={() => setAuthPrompt(tr("auth.prompt.save"))}
+        demoMode={demoMode}
+        signedIn={Boolean(viewer)}
+        onShare={viewer && selected ? () => setShareFor(selected.id) : undefined}
+      />
+      <PartsTree
+        design={selected?.design ?? null}
+        selection={selection}
+        onSelect={setSelection}
+        hiddenIds={hiddenIds}
+        onToggleHidden={toggleHidden}
+        onRename={renamePart}
+        onDuplicate={(id) => duplicateSelectedPart(id)}
+        onDelete={(id) => deleteSelectedPart(id)}
+        editable={editable}
+      />
+      <LeftColumn only={["recent"]} item={selected} items={items} onSelect={select} onNew={focusPrompt} onToggleFavorite={toggleFavorite} onSignupPrompt={() => {}} demoMode={demoMode} signedIn={Boolean(viewer)} />
+    </div>
+  );
+  const rightCommon = {
+    design: selected?.design ?? null,
+    settings,
+    onSettings: patchSettings,
+    unit: prefs.unit,
+    favoriteMaterials,
+    onToggleFavoriteMaterial: toggleFavoriteMaterial,
+    reveal,
+  };
+  const rightPanel = (
+    <PropertiesPanel tab={propsTab} onTab={setPropsTab}>
+      {propsTab === "object" &&
+        (selectedPart ? (
+          <PartInspector part={selectedPart} onPatch={patchPart} tool={tool} editable={editable} />
+        ) : (
+          <>
+            {selected && <ProjectSummary item={selected} />}
+            <RightColumn {...rightCommon} only={["modes"]} />
+          </>
+        ))}
+      {propsTab === "material" && (
+        <>
+          {selectedPart && <PartMaterial part={selectedPart} onPatch={patchPart} editable={editable} />}
+          <RightColumn {...rightCommon} only={["modes", "materials"]} />
+        </>
+      )}
+      {propsTab === "dimensions" && (
+        <>
+          {selected?.design && <MeasuredDimensions design={selected.design} unit={prefs.unit} selection={selection} onSelect={setSelection} />}
+          <RightColumn {...rightCommon} only={["dimensions"]} />
+        </>
+      )}
+      {propsTab === "analysis" && (
+        <LeftColumn
+          only={["analysis", "adjust"]}
+          item={selected}
+          items={items}
+          onSelect={select}
+          onNew={focusPrompt}
+          onToggleFavorite={toggleFavorite}
+          onSignupPrompt={() => setAuthPrompt(tr("auth.prompt.save"))}
+          demoMode={demoMode}
+          signedIn={Boolean(viewer)}
+          reveal={reveal}
+          busy={busy}
+          onAdjust={adjust}
+          onCompare={openCompare}
+          canCompare={canCompare}
+        />
+      )}
+      {propsTab === "fabrication" && (
+        <>
+          <button type="button" onClick={() => setTab("fabrication")} className="btn-neon w-full !rounded-xl !py-2.5 !text-xs">
+            <IconSteps size={14} /> {tr("editor.openWorkshop")}
+          </button>
+          <RightColumn {...rightCommon} only={["steps", "cost", "recommendations"]} />
+        </>
+      )}
+    </PropertiesPanel>
+  );
+
   return (
     <>
-      {/* Barre de demande + navigation */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
-          <PromptBar onSubmit={create} busy={busy} allowImage={features.imageUpload} restore={restore} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <nav aria-label={tr("tabs.label")} className="flex flex-1 gap-1 rounded-full bg-surface/90 p-1 shadow-soft lg:flex-none">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                aria-current={tab === t.id ? "page" : undefined}
-                className={`relative flex-1 rounded-full px-2 py-2 text-xs font-semibold transition sm:px-3.5 lg:flex-none ${
-                  tab === t.id ? "text-white" : "text-ink-soft hover:text-ink"
-                }`}
-              >
-                {tab === t.id && (
-                  <motion.span
-                    layoutId="studio-tab"
-                    className="absolute inset-0 rounded-full bg-brand-accent"
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                  />
-                )}
-                <span className="relative">{tr(t.label)}</span>
-              </button>
-            ))}
-          </nav>
-          <span className="flex gap-1.5 rounded-full bg-surface/90 p-1 shadow-soft">
-            <SearchBox items={items} onSelect={select} />
-            <Notifications items={items} onSelect={select} />
-          </span>
-        </div>
-      </div>
-
-      {/* Fil d'Ariane + projet précédent / suivant */}
-      {tab === "overview" && (
-        <div className="flex items-center gap-2 text-[12px] font-medium text-fg/75">
-          <button type="button" onClick={() => setTab("history")} className="hover:text-fg">
-            {tr("studio.projects")}
-          </button>
-          <IconChevronRight size={12} />
-          <span className="min-w-0 truncate text-fg">{selected?.title ?? selected?.prompt ?? "—"}</span>
-          {items.length > 1 && (
-            <span className="ms-auto flex items-center gap-1">
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label={tr("studio.prev")} onClick={() => step(-1)}>
-                <IconChevronLeft size={14} />
-              </button>
-              <span className="tabular-nums">
-                {selectedIndex + 1}/{items.length}
-              </span>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label={tr("studio.next")} onClick={() => step(1)}>
-                <IconChevronRight size={14} />
-              </button>
-            </span>
-          )}
-        </div>
-      )}
+      <EditorTopBar
+        siteName={siteName}
+        logoDataUrl={logoDataUrl}
+        item={selected}
+        items={items}
+        onSelect={select}
+        tab={tab}
+        onTab={setTab}
+        canUndo={editor.canUndo}
+        canRedo={editor.canRedo}
+        onUndo={editor.undo}
+        onRedo={editor.redo}
+        saveState={editor.saveState}
+        onSave={() => editor.flush()}
+        onRename={(title) => editor.edit((d) => renameDesign(d, title))}
+        editable={editable}
+        features={features}
+        viewerHandle={viewerHandle}
+        onToast={showToast}
+        viewer={viewer}
+        demoMode={demoMode}
+        credits={credits}
+      />
 
       {/* Zone de travail */}
-      <div className="min-h-0 flex-1">
-        {tab === "overview" && (
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_300px] lg:h-full lg:grid-cols-[272px_minmax(0,1fr)_300px] 2xl:grid-cols-[300px_minmax(0,1fr)_340px]">
-            <div className="order-2 min-h-0 md:order-3 md:col-span-2 lg:order-1 lg:col-span-1 lg:h-full">
-              <LeftColumn
+      <div className="relative flex min-h-0 flex-1">
+        {tab === "overview" ? (
+          <>
+            <Toolbar
+              tool={tool}
+              onTool={setTool}
+              layout={layout}
+              onLayout={chooseLayout}
+              showGrid={settings.showGrid}
+              onGrid={() => patchSettings({ showGrid: !settings.showGrid })}
+              showAxes={showAxes}
+              onAxes={() => setShowAxes((v) => !v)}
+              showRuler={showRuler}
+              onRuler={() => setShowRuler((v) => !v)}
+              onFrame={frame}
+              onToggleParts={toggleParts}
+              onToggleProps={toggleProps}
+              partsOpen={partsOpen}
+              propsOpen={propsOpen}
+            />
+            <DockPanel
+              side="left"
+              docked={wide}
+              open={partsOpen}
+              onClose={() => setPartsOpen(false)}
+              title={tr("editor.parts")}
+              storageKey="forma3d:panel-left"
+              defaultWidth={272}
+              closeLabel={tr("menu.close")}
+              resizeLabel={tr("editor.resize")}
+            >
+              {leftPanel}
+            </DockPanel>
+            <div className="min-h-0 min-w-0 flex-1 pe-2 sm:pe-3 xl:px-0">
+              <Viewports layout={layout} design={selected?.design ?? null} selection={selection} onSelect={setSelection} hiddenIds={hiddenIds} showGrid={settings.showGrid} showAxes={showAxes}>
+                <ViewerPanel
+                  item={selected}
+                  settings={settings}
+                  onSettings={patchSettings}
+                  features={features}
+                  onNew={focusPrompt}
+                  onShowJson={() => setJsonOpen(true)}
+                  onToast={showToast}
+                  selection={selection}
+                  onSelection={setSelection}
+                  handleRef={viewerHandle}
+                  hiddenIds={hiddenIds}
+                  showAxes={showAxes}
+                  showRuler={showRuler}
+                  editor
+                  className="relative h-full min-h-[240px] overflow-hidden rounded-[20px] ring-1 ring-fg/10"
+                />
+              </Viewports>
+            </div>
+            <DockPanel
+              side="right"
+              docked={wide}
+              open={propsOpen}
+              onClose={() => setPropsOpen(false)}
+              title={tr("editor.properties")}
+              storageKey="forma3d:panel-right"
+              defaultWidth={320}
+              closeLabel={tr("menu.close")}
+              resizeLabel={tr("editor.resize")}
+            >
+              {rightPanel}
+            </DockPanel>
+          </>
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 sm:px-4">
+            {tab === "fabrication" && (
+              <FabricationTab
                 item={selected}
                 items={items}
-                onSelect={select}
-                onNew={() => window.dispatchEvent(new Event("forma3d:focus-prompt"))}
-                onToggleFavorite={toggleFavorite}
-                onSignupPrompt={() => setAuthPrompt(tr("auth.prompt.save"))}
-                demoMode={demoMode}
-                signedIn={Boolean(viewer)}
-                reveal={revealId !== null && revealId === selected?.id}
+                prefs={prefs}
+                onPrefs={updatePrefs}
+                features={features}
                 busy={busy}
                 onAdjust={adjust}
                 onCompare={openCompare}
-                canCompare={canCompare}
-                onShare={viewer && selected ? () => setShareFor(selected.id) : undefined}
-              />
-            </div>
-            <div className="order-1 min-h-0 lg:order-2 lg:h-full">
-              <ViewerPanel
-                item={selected}
-                settings={settings}
-                onSettings={patchSettings}
-                features={features}
-                onNew={() => window.dispatchEvent(new Event("forma3d:focus-prompt"))}
-                onShowJson={() => setJsonOpen(true)}
+                onSelect={(id) => setSelectedId(id)}
                 onToast={showToast}
               />
-            </div>
-            <div className="order-3 min-h-0 md:order-2 md:h-[62dvh] lg:order-3 lg:h-full">
-              <RightColumn
-                design={selected?.design ?? null}
-                settings={settings}
-                onSettings={patchSettings}
-                unit={prefs.unit}
-                favoriteMaterials={favoriteMaterials}
-                onToggleFavoriteMaterial={toggleFavoriteMaterial}
-                reveal={revealId !== null && revealId === selected?.id}
-              />
-            </div>
-          </div>
-        )}
-        {tab === "fabrication" && (
-          <div className="h-full min-h-[60dvh] rounded-[24px] bg-paper/95 p-3 shadow-card sm:p-4 lg:min-h-0">
-            <FabricationTab
-              item={selected}
-              items={items}
-              prefs={prefs}
-              onPrefs={updatePrefs}
-              features={features}
-              busy={busy}
-              onAdjust={adjust}
-              onCompare={openCompare}
-              onSelect={(id) => setSelectedId(id)}
-              onToast={showToast}
-            />
-          </div>
-        )}
-        {tab === "history" && (
-          <div className="h-full rounded-[24px] bg-paper/95 p-3 shadow-card sm:p-4">
-            <HistoryTab
-              items={items}
-              selectedId={selected?.id ?? null}
-              onOpen={select}
-              onDelete={remove}
-              canDelete={demoMode || Boolean(viewer) || guestItems.length > 0}
-            />
-          </div>
-        )}
-        {tab === "settings" && (
-          <div className="h-full rounded-[24px] bg-paper/95 p-3 shadow-card sm:p-4">
-            <SettingsTab prefs={prefs} onPrefs={onPrefs} viewer={viewer} demoMode={demoMode} />
+            )}
+            {tab === "history" && (
+              <HistoryTab items={items} selectedId={selected?.id ?? null} onOpen={select} onDelete={remove} canDelete={demoMode || Boolean(viewer) || guestItems.length > 0} />
+            )}
+            {tab === "settings" && <SettingsTab prefs={prefs} onPrefs={onPrefs} viewer={viewer} demoMode={demoMode} />}
           </div>
         )}
       </div>
+
+      <BottomBar item={selected} items={items} onSelect={select} onCompare={canCompare ? openCompare : undefined}>
+        <PromptBar onSubmit={create} busy={busy} allowImage={features.imageUpload} restore={restore} placement="above" />
+      </BottomBar>
 
       <JsonDrawer item={jsonOpen ? selected : null} localRaw={selected ? rawById[selected.id] ?? null : null} onClose={() => setJsonOpen(false)} />
       <AuthPrompt message={authPrompt} onClose={() => setAuthPrompt(null)} />

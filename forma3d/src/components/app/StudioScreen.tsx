@@ -1,6 +1,6 @@
-import { AppHeader } from "@/components/app/AppHeader";
-import { Backdrop } from "@/components/landing/Backdrop";
 import { Studio } from "@/components/studio/Studio";
+import type { CreditsSnapshot } from "@/components/app/CreditsBadge";
+import { getMyCredits } from "@/lib/credits";
 import type { StudioViewer } from "@/components/studio/types";
 import { validateDesign } from "@/lib/design/schema";
 import { REQUEST_COLUMNS, sampleRequests, toRequestItem, type RequestItem } from "@/lib/requests";
@@ -16,6 +16,7 @@ export async function StudioScreen({ p, depart }: { p?: string; depart?: string 
   let viewer: StudioViewer | null = null;
   let items: RequestItem[] = [];
   let startFrom: { prompt: string; design: unknown; title: string } | null = null;
+  let credits: CreditsSnapshot | null = null;
 
   if (!demoMode) {
     const session = await getSession();
@@ -36,6 +37,8 @@ export async function StudioScreen({ p, depart }: { p?: string; depart?: string 
         .order("created_at", { ascending: false })
         .limit(60);
       items = (data ?? []).map(toRequestItem);
+      // Solde de crédits (phase 5) : masqué sans le script SQL correspondant.
+      credits = await getMyCredits(session.supabase);
 
       // Lien « Ouvrir » depuis Mon espace vers une demande plus ancienne que la liste chargée.
       if (p && !items.some((i) => i.id === p) && /^[0-9a-f-]{36}$/i.test(p)) {
@@ -52,22 +55,14 @@ export async function StudioScreen({ p, depart }: { p?: string; depart?: string 
     }
   }
 
+  // Éditeur plein écran : barre du haut, outils, vue 3D, panneaux et barre de saisie tiennent dans l'écran (iPad, Mac, iPhone).
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-x-clip pt-[env(safe-area-inset-top)] lg:h-dvh">
-      <Backdrop />
-      <AppHeader
-        siteName={site.siteName}
-        logoDataUrl={site.logoDataUrl}
-        pill={site.heroPill}
-        title={site.heroTitle}
-        line2={site.heroTitleLine2}
-        subtitle={site.heroSubtitle}
-        viewer={viewer}
-        demoMode={demoMode}
-        variant="bar"
-      />
-      <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3 sm:px-5 lg:pb-4">
+    <main className="editor-shell relative flex h-dvh flex-col overflow-hidden pt-[env(safe-area-inset-top)]">
+      <h1 className="sr-only">{[site.heroPill, site.heroTitle, site.heroTitleLine2].filter(Boolean).join(" ")}</h1>
         <Studio
+          siteName={site.siteName}
+          logoDataUrl={site.logoDataUrl}
+          credits={credits}
           initialItems={items}
           samples={sampleRequests()}
           viewer={viewer}
@@ -84,7 +79,6 @@ export async function StudioScreen({ p, depart }: { p?: string; depart?: string 
             devMode: demoMode || (viewer?.role === "admin" && features.devMode),
           }}
         />
-      </div>
     </main>
   );
 }

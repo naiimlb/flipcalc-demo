@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Edges, Environment, Grid, Lightformer, OrbitControls, PerformanceMonitor, useGLTF } from "@react-three/drei";
+import { ContactShadows, Edges, Environment, Grid, Html, Lightformer, Line, OrbitControls, PerformanceMonitor, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { Design, Part } from "@/lib/design/schema";
@@ -29,6 +29,12 @@ interface ViewerProps {
   /** Maillage externe (fournisseur text-to-3D), affiché à la place des primitives. */
   meshUrl?: string | null;
   handleRef?: Ref<ViewerHandle>;
+  /** Pièces masquées dans l'éditeur (arborescence). */
+  hiddenIds?: string[];
+  /** Repère X / Y / Z à l'origine. */
+  showAxes?: boolean;
+  /** Règle : cotes de l'encombrement (largeur, profondeur, hauteur). */
+  showRuler?: boolean;
 }
 
 export default function ModelViewer(props: ViewerProps) {
@@ -50,7 +56,7 @@ export default function ModelViewer(props: ViewerProps) {
   );
 }
 
-function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, quality }: ViewerProps & { quality: ViewerQuality }) {
+function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, quality, hiddenIds, showAxes = false, showRuler = false }: ViewerProps & { quality: ViewerQuality }) {
   const { camera, gl, scene, size, invalidate } = useThree();
   const controls = useRef<OrbitControlsImpl>(null);
   const explode = useRef(0);
@@ -66,29 +72,51 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
   }, [bounds]);
   const sphere = useMemo(() => sceneBox.getBoundingSphere(new THREE.Sphere()), [sceneBox]);
 
-  const fit = useCallback(() => {
+  const fit = useCallback(
+    (target: THREE.Sphere = sphere) => {
     const persp = camera as THREE.PerspectiveCamera;
     const fov = (persp.fov * Math.PI) / 180;
     const aspect = size.width / Math.max(size.height, 1);
-    const radius = Math.max(sphere.radius, 0.05);
+    const radius = Math.max(target.radius, 0.05);
     const distance = (radius / Math.sin(fov / 2)) * (aspect < 1 ? 1 / aspect : 1) * 1.08;
     const direction = new THREE.Vector3(0.95, 0.6, 1.3).normalize();
-    camera.position.copy(sphere.center).addScaledVector(direction, distance);
+    camera.position.copy(target.center).addScaledVector(direction, distance);
     persp.near = distance / 100;
     persp.far = distance * 30;
     persp.updateProjectionMatrix();
     if (controls.current) {
-      controls.current.target.copy(sphere.center);
-      controls.current.minDistance = radius * 0.6;
-      controls.current.maxDistance = distance * 4;
+      controls.current.target.copy(target.center);
+      controls.current.minDistance = Math.min(radius * 0.6, sphere.radius * 0.3);
+      controls.current.maxDistance = Math.max(distance * 4, sphere.radius * 12);
       controls.current.update();
     }
     invalidate();
-  }, [camera, size.width, size.height, sphere, invalidate]);
+    },
+    [camera, size.width, size.height, sphere, invalidate],
+  );
 
+  // Recadrage automatique seulement quand on change de projet (pas à chaque retouche d'une pièce).
+  const fitKey = design ? `${design.title}|${design.model.parts.length}` : "vide";
+  const fitKeyRef = useRef<string | null>(null);
   useEffect(() => {
+    if (fitKeyRef.current === fitKey && fitKeyRef.current !== null) return;
+    fitKeyRef.current = fitKey;
     fit();
-  }, [fit]);
+  }, [fit, fitKey]);
+
+  const frame = useCallback(
+    (partId: string | null) => {
+      const part = partId ? design?.model.parts.find((p) => p.id === partId) : null;
+      if (!part) return fit();
+      const geometry = createPartGeometry(part, "low");
+      geometry.computeBoundingSphere();
+      const local = geometry.boundingSphere ?? new THREE.Sphere();
+      geometry.dispose();
+      const center = new THREE.Vector3(part.position.x, part.position.y, part.position.z).multiplyScalar(SCENE_SCALE);
+      fit(new THREE.Sphere(center, Math.max(local.radius * SCENE_SCALE, 0.02)));
+    },
+    [design, fit],
+  );
 
   const dolly = useCallback(
     (factor: number) => {
@@ -101,7 +129,7 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
   );
 
   // Double-tap (ou double-clic) : recentre la vue. Ignoré pour un glissement ou un geste à deux doigts (pincement).
-  const fitRef = useRef(fit);
+  const fitRef = useRef<(target?: THREE.Sphere) => void>(fit);
   useEffect(() => {
     fitRef.current = fit;
   }, [fit]);
@@ -134,7 +162,7 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
         }
         if (last && now - last.t < 320 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 40) {
           last = null;
-          fitRef.current();
+          fitRef.current(undefined);
         } else {
           last = { x: e.clientX, y: e.clientY, t: now };
         }
@@ -161,14 +189,15 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
   // En mode « image fixe », tout changement de réglage doit déclencher un nouveau rendu.
   useEffect(() => {
     invalidate();
-  }, [invalidate, design, settings, focusId, meshUrl, quality]);
+  }, [invalidate, design, settings, focusId, meshUrl, quality, hiddenIds, showAxes, showRuler]);
 
   useImperativeHandle(
     handleRef,
     () => ({
       zoomIn: () => dolly(0.8),
       zoomOut: () => dolly(1.25),
-      resetView: fit,
+      resetView: () => fit(),
+      frame,
       // Capture de qualité : rendu temporaire en haute résolution (2 à 3 fois la taille affichée).
       capturePng: async () => {
         const previous = gl.getPixelRatio();
@@ -183,7 +212,7 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
         return blob;
       },
     }),
-    [dolly, fit, gl, scene, camera, settings.mode, size.width, size.height, invalidate],
+    [dolly, fit, frame, gl, scene, camera, settings.mode, size.width, size.height, invalidate],
   );
 
   useFrame((_, delta) => {
@@ -219,7 +248,8 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
       ) : (
         design && (
           <group scale={SCENE_SCALE}>
-            {design.model.parts.map((part, index) => (
+            {design.model.parts.map((part, index) =>
+              hiddenIds?.includes(part.id) ? null : (
               <PartMesh
                 key={part.id}
                 part={part}
@@ -232,7 +262,8 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
                 detail={quality}
                 onSelect={() => onFocusChange(part.id)}
               />
-            ))}
+              ),
+            )}
           </group>
         )
       )}
@@ -251,6 +282,8 @@ function Scene({ design, settings, focusId, onFocusChange, meshUrl, handleRef, q
           fadeStrength={1.5}
         />
       )}
+      {showAxes && <axesHelper args={[Math.max(sphere.radius * 1.4, 0.2)]} position={[0, 0.0008, 0]} />}
+      {showRuler && bounds && !bounds.isEmpty() && <Ruler bounds={bounds} />}
       {real && (
         <ContactShadows
           position={[sphere.center.x, 0.0005, sphere.center.z]}
@@ -412,6 +445,37 @@ function PartMesh({ part, index, offset, explode, settings, focused, dimmed, det
         )}
         {neon && !settings.wireframe && <Edges threshold={20} color={edgeColor} />}
       </mesh>
+    </group>
+  );
+}
+
+/* ----------------------------- Règle ----------------------------- */
+
+/** Cotes de l'encombrement (en millimètres) le long des arêtes de la boîte englobante. */
+function Ruler({ bounds }: { bounds: THREE.Box3 }) {
+  const min = bounds.min.clone().multiplyScalar(SCENE_SCALE);
+  const max = bounds.max.clone().multiplyScalar(SCENE_SCALE);
+  const size = bounds.getSize(new THREE.Vector3());
+  const gap = Math.max(size.x, size.y, size.z) * SCENE_SCALE * 0.08;
+  const fmt = (mm: number) => `${Math.round(mm)} mm`;
+  const lines: { from: [number, number, number]; to: [number, number, number]; label: string; color: string }[] = [
+    { from: [min.x, 0.001, max.z + gap], to: [max.x, 0.001, max.z + gap], label: fmt(size.x), color: "#ff5a5a" },
+    { from: [max.x + gap, 0.001, min.z], to: [max.x + gap, 0.001, max.z], label: fmt(size.z), color: "#3d7aff" },
+    { from: [min.x - gap, min.y, max.z], to: [min.x - gap, max.y, max.z], label: fmt(size.y), color: "#3ddc84" },
+  ];
+  return (
+    <group>
+      {lines.map((l) => {
+        const mid: [number, number, number] = [(l.from[0] + l.to[0]) / 2, (l.from[1] + l.to[1]) / 2, (l.from[2] + l.to[2]) / 2];
+        return (
+          <group key={l.label + l.color}>
+            <Line points={[l.from, l.to]} color={l.color} lineWidth={2} />
+            <Html position={mid} center zIndexRange={[20, 0]}>
+              <span className="pointer-events-none whitespace-nowrap rounded-full bg-night/85 px-2 py-0.5 text-[10.5px] font-semibold tabular-nums text-white">{l.label}</span>
+            </Html>
+          </group>
+        );
+      })}
     </group>
   );
 }

@@ -29,7 +29,7 @@ export const TABS: { id: StudioTab; label: "tab.overview" | "tab.fabrication" | 
 
 const SEEN_KEY = "forma3d:notifications-seen";
 
-function useOutsideClose(open: boolean, close: () => void) {
+export function useOutsideClose(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -47,7 +47,7 @@ function useOutsideClose(open: boolean, close: () => void) {
   return ref;
 }
 
-const dropdown = {
+export const dropdown = {
   initial: { opacity: 0, y: -6, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
   exit: { opacity: 0, y: -6, scale: 0.98 },

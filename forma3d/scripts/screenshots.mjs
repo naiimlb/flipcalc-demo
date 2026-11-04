@@ -48,7 +48,8 @@ await session("desktop", { width: 1440, height: 900 }, async (page) => {
   await aboveFold(page, "Bureau 1440×900");
   await page.screenshot({ path: join(out, "desktop.png") });
 
-  // Clic sur une matière conseillée : le modèle prend sa couleur et son aspect.
+  // Clic sur une matière conseillée (onglet « Matière » des propriétés) : le modèle prend sa couleur et son aspect.
+  await page.getByRole("tab", { name: "Matière" }).click();
   const materials = page.getByTitle("Appliquer cette matière au modèle 3D");
   check((await materials.count()) >= 3, "Bureau : au moins 3 matières conseillées");
   check(await page.getByText("Recommandé", { exact: true }).first().isVisible(), "Bureau : badge « Recommandé »");
@@ -69,6 +70,82 @@ await session("desktop", { width: 1440, height: 900 }, async (page) => {
   await page.getByRole("button", { name: "Historique" }).click();
   await page.waitForTimeout(800);
   await page.screenshot({ path: join(out, "desktop-historique.png") });
+});
+
+// Refonte phase 2 : structure de l'éditeur (arborescence, propriétés, annuler / rétablir, raccourcis, vues, règle, panneaux).
+await session("editeur", { width: 1440, height: 900 }, async (page) => {
+  await ready(page);
+  const tree = page.getByRole("tree", { name: "Pièces" });
+  const items = tree.getByRole("treeitem");
+  const count = await items.count();
+  check(count >= 3, `Éditeur : arborescence des pièces (${count} pièces)`);
+  for (const name of ["Objet", "Matière", "Dimensions", "Analyse", "Fabrication"]) {
+    check(await page.getByRole("tab", { name, exact: true }).isVisible(), `Éditeur : onglet de propriétés « ${name} »`);
+  }
+  check(await page.getByRole("toolbar", { name: "Outils de l'éditeur" }).isVisible(), "Éditeur : barre d'outils à gauche");
+  check(await page.getByRole("button", { name: /^Annuler/ }).isDisabled(), "Éditeur : « Annuler » inactif avant toute modification");
+
+  // Sélection d'une pièce, puis modification de sa position (mm).
+  await items.nth(1).getByRole("button").first().click();
+  const nameField = page.getByLabel("Nom de la pièce");
+  await nameField.waitFor({ timeout: 5000 });
+  check(true, "Éditeur : la pièce choisie s'ouvre dans l'onglet Objet");
+  const posX = page.locator("fieldset input").first();
+  const before = await posX.inputValue();
+  await posX.fill(String(Number(before) + 40));
+  await posX.blur();
+  await page.waitForTimeout(400);
+  check(await page.getByRole("button", { name: /^Annuler/ }).isEnabled(), "Éditeur : modification enregistrée dans l'historique");
+  await page.keyboard.press("Control+z");
+  await page.waitForTimeout(300);
+  check((await page.locator("fieldset input").first().inputValue()) === before, "Raccourci ⌘Z / Ctrl+Z : annuler");
+  await page.keyboard.press("Control+Shift+z");
+  await page.waitForTimeout(300);
+  check((await page.locator("fieldset input").first().inputValue()) !== before, "Raccourci ⇧⌘Z / Ctrl+Maj+Z : rétablir");
+
+  // Dupliquer (Ctrl+D) puis supprimer (Suppr) la pièce sélectionnée.
+  await page.keyboard.press("Control+d");
+  await page.waitForTimeout(300);
+  check((await items.count()) === count + 1, "Raccourci ⌘D / Ctrl+D : dupliquer la pièce");
+  await page.keyboard.press("Delete");
+  await page.waitForTimeout(300);
+  check((await items.count()) === count, "Raccourci Suppr : supprimer la pièce");
+  await page.waitForTimeout(1800);
+  check(await page.getByText(/Enregistré/).first().isVisible(), "Sauvegarde automatique (sur l'appareil pour un exemple)");
+
+  // Masquer une pièce, raccourcis W/E/R, règle, 4 vues.
+  await tree.getByRole("button", { name: /^Masquer / }).first().click();
+  check((await tree.getByRole("button", { name: /^Afficher / }).count()) === 1, "Arborescence : masquer / afficher une pièce");
+  await page.keyboard.press("e");
+  check((await page.getByRole("button", { name: "Tourner (E)" }).getAttribute("aria-pressed")) === "true", "Raccourci E : outil Tourner");
+  await page.keyboard.press("w");
+  check((await page.getByRole("button", { name: "Déplacer (W)" }).getAttribute("aria-pressed")) === "true", "Raccourci W : outil Déplacer");
+  await page.getByRole("button", { name: "Règle (cotes) (M)" }).click();
+  await page.waitForTimeout(600);
+  check((await page.getByText(/^\d+ mm$/).count()) >= 3, "Règle : cotes largeur, profondeur, hauteur");
+  await page.getByRole("button", { name: "4 vue(s)" }).click();
+  await page.waitForTimeout(3000);
+  check((await page.locator("canvas").count()) === 4, "Vues multiples : 4 vues (perspective, dessus, face, droite)");
+  await page.screenshot({ path: join(out, "editeur-4-vues.png") });
+  await page.getByRole("button", { name: "2 vue(s)" }).click();
+  await page.waitForTimeout(1500);
+  check((await page.locator("canvas").count()) === 2, "Vues multiples : 2 vues");
+  await page.getByRole("button", { name: "1 vue(s)" }).click();
+
+  // Panneau redimensionnable au clavier (poignée).
+  const handle = page.getByRole("separator", { name: "Redimensionner le panneau" }).first();
+  const w0 = Number(await handle.getAttribute("aria-valuenow"));
+  await handle.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  check(Number(await handle.getAttribute("aria-valuenow")) > w0, "Panneaux redimensionnables (souris, trackpad, clavier)");
+
+  // Renommer le projet depuis la barre du haut.
+  await page.getByRole("button", { name: "Renommer le projet" }).click();
+  await page.getByLabel("Renommer le projet").fill("Mon projet renommé");
+  await page.keyboard.press("Enter");
+  check(await page.locator("h2", { hasText: "Mon projet renommé" }).isVisible(), "Barre du haut : nom du projet modifiable");
+  await page.screenshot({ path: join(out, "editeur.png") });
 });
 
 // Assistant de questions : demande floue → boutons de réponse → conception ; « Modifier ma demande » remet le texte.
@@ -271,6 +348,12 @@ await session("ipad-portrait", { width: 820, height: 1180 }, async (page) => {
   await ready(page);
   await aboveFold(page, "iPad portrait");
   await page.screenshot({ path: join(out, "ipad-portrait.png") });
+  await page.getByRole("button", { name: "Propriétés" }).click();
+  const drawer = page.getByRole("dialog", { name: "Propriétés" });
+  await drawer.waitFor({ timeout: 5000 });
+  check(await drawer.getByRole("tab", { name: "Matière" }).isVisible(), "iPad : panneau de propriétés en tiroir");
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(out, "ipad-tiroir.png") });
 });
 
 await session("ipad-paysage", { width: 1180, height: 820 }, async (page) => {
