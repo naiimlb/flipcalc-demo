@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AppHeader } from "@/components/app/AppHeader";
 import { getViewer } from "@/lib/viewer";
@@ -10,12 +11,15 @@ import { isDemoMode } from "@/lib/supabase/env";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { IconCamera, IconCube, IconDownload, IconHistory, IconRuler, IconShield, IconSparkles, IconSteps } from "../icons";
 import { Backdrop } from "./Backdrop";
-import { BeforeAfter } from "./BeforeAfter";
-import { EditorPreview } from "./EditorPreview";
 import { HeroStage } from "./HeroStage";
 import { LandingChrome, type LandingSection } from "./LandingChrome";
 import { Reveal } from "./Reveal";
-import { Showcase } from "./Showcase";
+
+// Sections sous la ligne de flottaison : rendues par le serveur, mais hydratées dans des morceaux de code séparés,
+// après le héros (le premier écran reste léger).
+const BeforeAfter = dynamic(() => import("./BeforeAfter").then((m) => m.BeforeAfter));
+const EditorPreview = dynamic(() => import("./EditorPreview").then((m) => m.EditorPreview));
+const Showcase = dynamic(() => import("./Showcase").then((m) => m.Showcase));
 
 /** Titre de section : très gras, serré, avec un numéro discret. */
 function SectionTitle({ n, id, title, lead }: { n: number; id: string; title: string; lead?: string }) {

@@ -71,8 +71,8 @@ await session("ipad", ipad, async (page) => {
   check(await menu.isVisible(), "iPad Safari : le menu Ajouter s'ouvre au toucher");
   await menu.getByRole("menuitem", { name: "Cylindre" }).tap();
   await page.waitForTimeout(600);
-  const count = await page.getByRole("tree", { name: "Pièces" }).getByRole("treeitem").count();
-  check(count >= 2, "iPad Safari : une forme s'ajoute au toucher");
+  // La liste des pièces est dans un tiroir sur iPad : on lit la pastille « N pièces » de la vue 3D (12 → 13).
+  await page.getByText("13 pièces").first().waitFor({ timeout: 5000 }).then(() => check(true, "iPad Safari : une forme s'ajoute au toucher"), () => check(false, "iPad Safari : une forme s'ajoute au toucher"));
   // Cibles tactiles d'au moins 44 px sur les boutons de la barre d'outils.
   const small = await page.getByRole("toolbar", { name: "Outils de l'éditeur" }).getByRole("button").evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.width < 44 || r.height < 44); }).length);
   check(small === 0, "iPad Safari : boutons de la barre d'outils d'au moins 44 px");
