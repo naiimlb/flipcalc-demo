@@ -47,7 +47,7 @@ export function PropertiesPanel({
           </button>
         ))}
       </div>
-      <div role="tabpanel" id="props-panel" aria-labelledby={`props-tab-${tab}`} className="flex min-h-0 flex-col gap-3">
+      <div key={tab} role="tabpanel" id="props-panel" aria-labelledby={`props-tab-${tab}`} className="tab-enter flex min-h-0 flex-col gap-3">
         {children}
       </div>
     </div>

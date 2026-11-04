@@ -49,6 +49,15 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
           node scripts/screenshots.mjs http://localhost:3100 "$RUNNER_TEMP/screens"
+      # Safari : le même parcours dans WebKit (accueil, éditeur au toucher sur iPad émulé, PWA). Informatif : WebKit sous
+      # Linux n'est pas un vrai Safari (ni Pencil, ni capteurs), donc un échec ici ne bloque pas la CI.
+      - name: Safari (WebKit)
+        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
+        continue-on-error: true
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps webkit
+          node scripts/webkit.mjs http://localhost:3100 "$RUNNER_TEMP/screens"
       # Performance mobile (Lighthouse, informatif : le score est publié avec les captures, il ne bloque pas la CI).
       - name: Lighthouse (mobile)
         if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')

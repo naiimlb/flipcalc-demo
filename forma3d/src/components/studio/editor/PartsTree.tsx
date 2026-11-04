@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Design } from "@/lib/design/schema";
 import { IconChevronDown, IconChevronRight, IconCopy, IconCube, IconTrash } from "../../icons";
 import { useT } from "../../app/Preferences";
+import { EmptyState, LoadingRegion, Skeleton } from "../../ui/Skeleton";
 
 const eye = (open: boolean) => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -33,6 +34,7 @@ export function PartsTree({
   onDuplicate,
   onDelete,
   editable,
+  loading = false,
 }: {
   design: Design | null;
   selection: string | null;
@@ -45,6 +47,8 @@ export function PartsTree({
   onDuplicate(id: string): void;
   onDelete(id: string): void;
   editable: boolean;
+  /** Une conception est en cours de génération : squelette au lieu de l'état vide. */
+  loading?: boolean;
 }) {
   const t = useT();
   const [open, setOpen] = useState(true);
@@ -58,7 +62,22 @@ export function PartsTree({
     list.current?.querySelector<HTMLElement>(`[data-part="${CSS.escape(selection)}"]`)?.scrollIntoView({ block: "nearest" });
   }, [selection]);
 
-  if (!design) return <p className="px-2 py-3 text-xs text-ink-mute">{t("panel.empty")}</p>;
+  if (!design) {
+    return (
+      <section className="panel overflow-hidden p-1.5" aria-label={t("editor.parts")}>
+        {loading ? (
+          <LoadingRegion label={t("state.loading")} className="space-y-1.5 p-1.5">
+            <Skeleton className="h-6 w-2/3" />
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </LoadingRegion>
+        ) : (
+          <EmptyState icon={<IconCube size={20} />} title={t("empty.parts.title")} hint={t("empty.parts.hint")} />
+        )}
+      </section>
+    );
+  }
 
   const move = (dir: 1 | -1) => {
     const index = parts.findIndex((p) => p.id === selection);

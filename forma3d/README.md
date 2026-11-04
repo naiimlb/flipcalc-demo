@@ -25,7 +25,7 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | Refonte 1 | Identité visuelle néon (sombre par défaut) et nouvelle page d'accueil | **fait** (voir « Refonte — phase 1 ») |
 | Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | **fait** (voir « Refonte — phase 2 ») |
 | Refonte 3 | Outils de création + génération Meshy (coûts affichés) | **fait** (voir « Refonte — phase 3 ») |
-| Refonte 4 | Finitions, Lighthouse > 90 sur l'accueil, tests Safari | à venir |
+| Refonte 4 | Finitions, écran de génération Meshy, PWA, tests Safari, performance de l'accueil | **fait** (voir « Refonte — phase 4 ») |
 
 Meshy est le service de génération 3D détaillée (voir « Refonte — phase 3 ») : il reste masqué tant que `MESHY_API_KEY`
 et la migration 7 ne sont pas en place, et chaque action affiche son coût en crédits avant confirmation.
@@ -333,8 +333,7 @@ Raccourcis (Mac : ⌘ ; Windows : Ctrl) : **⌘Z** annuler, **⇧⌘Z** ou **Ctr
 **G** grille, **M** règle, **H** masquer la pièce, **Échap** désélectionner, **← →** projet précédent / suivant.
 Tactile : un doigt tourne, deux doigts déplacent et pincent pour zoomer, double-tap recentre.
 
-Les poignées 3D de déplacement / rotation / échelle et le magnétisme arrivent en phase 3 (les outils W / E / R
-mettent déjà en avant les champs correspondants de l'onglet Objet).
+Les poignées 3D de déplacement / rotation / échelle et le magnétisme sont décrits dans « Refonte — phase 3 ».
 
 **Configuration** : exécuter `supabase/migrations/20261106000000_refonte2_editeur.sql` dans Supabase › SQL Editor
 pour la sauvegarde dans le compte (sans lui, tout fonctionne avec la sauvegarde sur l'appareil).
@@ -392,6 +391,51 @@ environnement Production) puis redéployer, ou la saisir dans /admin/cles ; 2) e
 `supabase/migrations/20261107000000_refonte3_outils.sql`. Tant que l'un des deux manque, les panneaux Meshy sont masqués.
 
 Raccourcis ajoutés : **U** mesurer, **L** verrouiller, **⌘G** assembler, **⇧⌘G** séparer, **⌘D** / **Suppr** sur la sélection multiple.
+
+## Raccourcis clavier et gestes
+
+Mac : **⌘** ; Windows / Linux : **Ctrl**. Les raccourcis à une touche sont désactivés pendant la saisie dans un champ.
+
+| Raccourci | Action |
+| --- | --- |
+| **⌘S** | Enregistrer maintenant |
+| **⌘Z** · **⇧⌘Z** ou **Ctrl+Y** | Annuler · rétablir |
+| **⌘D** | Dupliquer la pièce (ou la sélection) |
+| **⌘G** · **⇧⌘G** | Assembler · séparer les pièces sélectionnées |
+| **Suppr** ou **⌫** | Supprimer la sélection |
+| **V** (ou **Q**) · **W** · **E** · **R** | Sélectionner · déplacer · pivoter · redimensionner |
+| **U** | Règle : mesurer entre deux points du modèle |
+| **L** | Verrouiller / déverrouiller la pièce |
+| **H** | Masquer la pièce |
+| **F** | Recadrer la vue (sur la pièce sélectionnée) |
+| **G** · **M** | Grille · règle des dimensions globales |
+| **Échap** | Désélectionner, fermer le menu Ajouter |
+| **←** **→** | Projet précédent / suivant (sans pièce sélectionnée) |
+| **Maj** ou **⌘** + clic (liste ou vue 3D) | Ajouter une pièce à la sélection |
+| **Double-clic** sur un nom de pièce | Renommer |
+
+Tactile (iPad, iPhone) et Apple Pencil : un doigt tourne la vue, deux doigts déplacent et pincent pour zoomer, double-tap
+recentre ; les poignées se saisissent au doigt ou au Pencil ; la forme libre se trace au doigt ou au Pencil.
+
+## Refonte — phase 4 : finitions, PWA et performance
+
+- **Écran de génération Meshy** : sur la vue 3D, une carte « Analyse → Génération → Texturage → Prêt » avec barre
+  d'avancement et nom de l'action. Elle ne masque pas le modèle et reste « Prêt » quelques secondes. En cas d'échec, le
+  panneau Meshy indique « aucun crédit débité ».
+- **Chargement** : squelettes (vue 3D, liste des pièces, galerie, Mon espace, éditeur) et états vides avec une phrase
+  qui explique quoi faire. Les animations se figent quand le système demande de les réduire.
+- **Transitions** : fondu entre les pages, apparition douce des onglets de propriétés.
+- **Application installable (PWA)** : plein écran sur iPad, iPhone, Mac et Android, démarrage sur l'éditeur, icônes,
+  écrans de lancement iOS, page hors ligne, et raccourcis (appui long sur l'icône) vers « Nouvelle conception » et
+  « Galerie ». Sur iPad / iPhone : Safari › Partager › *Sur l'écran d'accueil*. Sur Mac : Safari › Fichier › *Ajouter au
+  Dock*, ou Chrome / Edge › *Installer*.
+- **Performance de l'accueil** : le moteur 3D du héros (le plus gros script du site, ≈ 4 à 6 s de calcul sur un
+  téléphone modeste) ne se charge qu'à la première interaction (souris, doigt, clavier, défilement), et jamais en mode
+  « économie de données ». Avant cela, le titre et les lueurs s'affichent seuls.
+- **Tests** : la CI rejoue le parcours dans **WebKit** (le moteur de Safari) : accueil, éditeur au toucher sur un iPad Pro 11"
+  émulé, manifeste PWA. Résultats publiés avec les captures (`webkit.txt`). Limite : c'est WebKit sous Linux, pas un
+  vrai Safari (ni Pencil, ni capteur d'inclinaison), donc un essai sur un vrai iPad reste à faire. Le score Lighthouse
+  (mobile) est publié à chaque envoi (`lighthouse.txt`).
 
 ## Mon espace et administration
 

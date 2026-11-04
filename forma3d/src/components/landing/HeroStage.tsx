@@ -9,8 +9,8 @@ const HeroScene = dynamic(() => import("./HeroScene"), { ssr: false });
 type OrientationPermission = { requestPermission?: () => Promise<"granted" | "denied"> };
 
 /**
- * Scène du héros : le titre (rendu par le serveur) s'affiche tout de suite ; la 3D se charge ensuite,
- * quand la page est prête et le navigateur au repos, ou dès que l'on touche l'écran.
+ * Scène du héros : le titre (rendu par le serveur) s'affiche tout de suite ; la 3D ne se charge qu'à la première
+ * interaction (souris, doigt, clavier, défilement).
  * Le pointeur, le doigt et l'inclinaison de l'appareil alimentent la même position (-1 à 1).
  */
 export function HeroStage({ children, tiltLabel }: { children: React.ReactNode; tiltLabel: string }) {
@@ -20,20 +20,25 @@ export function HeroStage({ children, tiltLabel }: { children: React.ReactNode; 
   const [ready, setReady] = useState(false);
   const [askTilt, setAskTilt] = useState(false);
 
+  // Le moteur 3D (le plus gros script du site) ne se charge qu'à la première interaction : souris, doigt, clavier ou défilement.
+  // Tant que personne n'a touché la page, le titre et les lueurs suffisent : l'affichage reste instantané, même sur un
+  // téléphone modeste ou une connexion lente, et rien n'est téléchargé en pure perte (mode « économie de données » compris).
   useEffect(() => {
-    let cancelled = false;
-    const arm = () => !cancelled && setArmed(true);
-    const start = () => {
-      if ("requestIdleCallback" in window) window.requestIdleCallback(arm, { timeout: 2500 });
-      else setTimeout(arm, 400);
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+    const events = ["pointerdown", "pointermove", "touchstart", "keydown", "wheel", "scroll"] as const;
+    let armedOnce = false;
+    const arm = () => {
+      if (armedOnce) return;
+      armedOnce = true;
+      for (const name of events) window.removeEventListener(name, arm);
+      // Après l'interaction, on laisse le navigateur finir ce qu'il fait avant de charger la scène.
+      if ("requestIdleCallback" in window) window.requestIdleCallback(() => setArmed(true), { timeout: 1200 });
+      else setTimeout(() => setArmed(true), 200);
     };
-    if (document.readyState === "complete") start();
-    else window.addEventListener("load", start, { once: true });
-    window.addEventListener("pointerdown", arm, { once: true, passive: true });
+    if (saveData) return;
+    for (const name of events) window.addEventListener(name, arm, { passive: true, once: false });
     return () => {
-      cancelled = true;
-      window.removeEventListener("load", start);
-      window.removeEventListener("pointerdown", arm);
+      for (const name of events) window.removeEventListener(name, arm);
     };
   }, []);
 

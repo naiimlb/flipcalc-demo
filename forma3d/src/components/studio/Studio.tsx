@@ -1100,6 +1100,7 @@ export function Studio({
         onDuplicate={(id) => (selectedIds.length > 1 ? runOp({ type: "duplicate" }) : duplicateSelectedPart(id))}
         onDelete={(id) => (selectedIds.length > 1 ? runOp({ type: "delete" }) : deleteSelectedPart(id))}
         editable={editable}
+        loading={selected?.status === "processing"}
       />
       <LeftColumn only={["recent"]} item={selected} items={items} onSelect={select} onNew={focusPrompt} onToggleFavorite={toggleFavorite} onSignupPrompt={() => {}} demoMode={demoMode} signedIn={Boolean(viewer)} />
     </div>

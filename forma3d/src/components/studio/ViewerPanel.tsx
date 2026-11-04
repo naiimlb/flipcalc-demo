@@ -27,15 +27,25 @@ import {
 import { Portal } from "../Portal";
 import { usePreferences, useT } from "../app/Preferences";
 import type { StudioFeatures } from "./types";
+import { MeshyProgress } from "./MeshyProgress";
+import { Skeleton } from "../ui/Skeleton";
 
 const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
   ssr: false,
-  loading: () => (
-    <div className="absolute inset-0 flex items-center justify-center text-white/80">
-      <Spinner size={22} />
-    </div>
-  ),
+  loading: () => <ViewerSkeleton />,
 });
+
+/** Squelette de la vue 3D : silhouette d'un objet posé sur un sol, pendant le chargement du moteur 3D. */
+function ViewerSkeleton() {
+  const t = useT();
+  return (
+    <div role="status" aria-busy="true" className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+      <span className="sr-only">{t("state.loading")}</span>
+      <Skeleton className="h-28 w-28 !rounded-3xl !bg-white/15" />
+      <Skeleton className="h-3 w-40 !bg-white/15" />
+    </div>
+  );
+}
 
 const STAGES = ["stage.analysis", "stage.design", "stage.check", "stage.ready"] as const;
 
@@ -234,11 +244,7 @@ export function ViewerPanel({
       {/* Halo décoratif */}
       <div className="pointer-events-none absolute -left-1/4 top-1/3 h-2/3 w-[150%] rounded-[100%] border border-white/15" />
 
-      {design && !armed && (
-        <div className="absolute inset-0 flex items-center justify-center text-white/80">
-          <Spinner size={22} />
-        </div>
-      )}
+      {design && !armed && <ViewerSkeleton />}
       {design && armed && (
         <ModelViewer
           design={design}
@@ -343,6 +349,9 @@ export function ViewerPanel({
       )}
 
       {design && armed && <GestureHint />}
+
+      {/* Génération Meshy en cours : Analyse → Génération → Texturage → Prêt */}
+      {design && <MeshyProgress asset={item?.asset} />}
 
       {/* Navigation entre les pièces */}
       {design && parts.length > 1 && (

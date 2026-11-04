@@ -132,6 +132,7 @@ assert(tooMany.status === 400, "plus de 3 réponses sont refusées (400)");
 const manifest = await fetch(`${base}/manifest.webmanifest`);
 const manifestBody = await manifest.json();
 assert(manifest.ok && manifestBody.display === "standalone" && manifestBody.icons.length >= 3, "le manifeste PWA est valide (plein écran, icônes)");
+assert(Array.isArray(manifestBody.shortcuts) && manifestBody.shortcuts.length >= 2, "le manifeste PWA propose des raccourcis (éditeur, galerie)");
 assert(manifestBody.icons.some((i) => i.purpose === "maskable"), "une icône « maskable » est fournie");
 for (const path of ["/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/splash/2048x2732.png"]) {
   const r = await fetch(`${base}${path}`);

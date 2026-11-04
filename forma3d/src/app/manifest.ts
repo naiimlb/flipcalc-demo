@@ -19,6 +19,11 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     background_color: "#05060a",
     theme_color: "#05060a",
     categories: ["productivity", "utilities", "design"],
+    // Appui long sur l'icône (iPad, Mac, Android) : accès direct à l'éditeur ou à la galerie.
+    shortcuts: [
+      { name: "Nouvelle conception", short_name: "Nouveau", description: "Décrire un objet et obtenir son modèle 3D", url: "/studio", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }] },
+      { name: "Galerie", short_name: "Galerie", description: "Parcourir les créations publiées", url: "/galerie", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }] },
+    ],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

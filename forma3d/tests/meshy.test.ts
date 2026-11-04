@@ -87,3 +87,18 @@ describe("« Modifie la pièce » sans IA", () => {
     expect(applyEditLocally(WALL_KEY_SHELF, "chante une chanson", null)).toBeNull();
   });
 });
+
+describe("étapes de l'écran de génération Meshy", () => {
+  it("fait avancer Analyse → Génération → Texturage → Prêt", async () => {
+    const { meshyStageIndex, clampProgress } = await import("@/lib/meshy-stages");
+    expect(meshyStageIndex("preview", "pending", 0)).toBe(0);
+    expect(meshyStageIndex("preview", "running", 35)).toBe(1);
+    expect(meshyStageIndex("remesh", "running", 10)).toBe(1);
+    expect(meshyStageIndex("refine", "running", 10)).toBe(2);
+    expect(meshyStageIndex("retexture", "running", 80)).toBe(2);
+    expect(meshyStageIndex("retexture", "succeeded", 100)).toBe(3);
+    expect(clampProgress(142)).toBe(100);
+    expect(clampProgress(-5)).toBe(0);
+    expect(clampProgress(Number.NaN)).toBe(0);
+  });
+});
