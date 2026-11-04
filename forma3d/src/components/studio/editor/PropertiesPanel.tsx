@@ -31,7 +31,7 @@ export function PropertiesPanel({
   const t = useT();
   return (
     <div className="flex min-h-0 flex-col gap-2.5">
-      <div role="tablist" aria-label={t("editor.properties")} className="flex flex-wrap gap-1 rounded-2xl bg-surface p-1 ring-1 ring-line">
+      <div role="tablist" aria-label={t("editor.properties")} className="flex gap-0.5 overflow-x-auto rounded-2xl bg-surface p-1 ring-1 ring-line scrollbar-none">
         {PROPS_TABS.map((id) => (
           <button
             key={id}
@@ -41,7 +41,7 @@ export function PropertiesPanel({
             aria-selected={tab === id}
             aria-controls="props-panel"
             onClick={() => onTab(id)}
-            className={`tap flex-1 rounded-xl px-2 py-1.5 text-[11.5px] font-semibold transition ${tab === id ? "bg-fg text-canvas" : "text-ink-soft hover:text-ink"}`}
+            className={`tap flex-1 whitespace-nowrap rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${tab === id ? "bg-fg text-canvas" : "text-ink-soft hover:text-ink"}`}
           >
             {t(`props.${id}`)}
           </button>

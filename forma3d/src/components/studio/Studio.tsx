@@ -927,7 +927,7 @@ export function Studio({
               onClose={() => setPropsOpen(false)}
               title={tr("editor.properties")}
               storageKey="forma3d:panel-right"
-              defaultWidth={320}
+              defaultWidth={344}
               closeLabel={tr("menu.close")}
               resizeLabel={tr("editor.resize")}
             >
