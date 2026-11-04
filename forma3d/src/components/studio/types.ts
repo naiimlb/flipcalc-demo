@@ -36,7 +36,8 @@ export interface StudioPrefs {
 }
 
 export const DEFAULT_PREFS: StudioPrefs = {
-  mode: "neon",
+  // Rendu réaliste par défaut (neutre) ; le rendu néon reste un choix dans Paramètres.
+  mode: "real",
   autoRotate: true,
   showGrid: true,
   unit: "mm",

@@ -709,7 +709,7 @@ function Measurements({ points, dot }: { points: THREE.Vector3[]; dot: number })
           <group key={i}>
             <Line points={[a, b]} color="#ffb020" lineWidth={2.5} />
             <Html position={mid} center zIndexRange={[30, 0]}>
-              <span className="pointer-events-none whitespace-nowrap rounded-md bg-[#ffb020] px-2 py-0.5 text-xs font-bold tabular-nums text-night">
+              <span className="pointer-events-none whitespace-nowrap rounded bg-[#ffb020] px-1.5 py-0.5 font-mono text-xs font-medium text-night">
                 {mm < 100 ? mm.toFixed(1) : Math.round(mm)} mm
               </span>
             </Html>
@@ -742,7 +742,7 @@ function Ruler({ bounds }: { bounds: THREE.Box3 }) {
           <group key={l.label + l.color}>
             <Line points={[l.from, l.to]} color={l.color} lineWidth={2} />
             <Html position={mid} center zIndexRange={[20, 0]}>
-              <span className="pointer-events-none whitespace-nowrap rounded-md bg-night/85 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">{l.label}</span>
+              <span className="pointer-events-none whitespace-nowrap rounded bg-night/85 px-1.5 py-0.5 font-mono text-xs text-white">{l.label}</span>
             </Html>
           </group>
         );
