@@ -550,7 +550,7 @@ export function drillHole(design: Design, id: string, diameter: number, u: numbe
   let rotation = part.rotation;
   let holes = part.holes;
   // Coordonnées du trou dans le plan du profil.
-  let hx = u;
+  const hx = u;
   let hy = v;
   if (part.shape === "extrusion") {
     if (along !== "z") return { error: "unsupported" };
