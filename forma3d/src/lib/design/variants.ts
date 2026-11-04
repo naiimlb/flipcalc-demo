@@ -40,12 +40,20 @@ export function isVariantId(value: unknown): value is VariantId {
 }
 
 /** Consigne envoyée à l'IA : la conception actuelle (JSON) et l'objectif de la nouvelle version. */
-export function variantInstruction(variant: VariantId, base: Design): string {
+/** Intensité des curseurs de personnalisation : 1 léger, 2 moyen (défaut), 3 fort. */
+export type VariantIntensity = 1 | 2 | 3;
+const INTENSITY_TEXT: Record<VariantIntensity, string> = {
+  1: "Intensité LÉGÈRE : un ajustement discret (environ 10 %), la solution reste très proche de l'actuelle.",
+  2: "Intensité MOYENNE : un ajustement net (environ 25 %).",
+  3: "Intensité FORTE : un changement marqué (environ 40 %), tant que la fonction et la fabricabilité sont préservées.",
+};
+
+export function variantInstruction(variant: VariantId, base: Design, intensity: VariantIntensity = 2): string {
   const { variante: _ignored, ...rest } = base;
   void _ignored;
   return (
     `Voici la conception actuelle (JSON) :\n<conception_actuelle>\n${JSON.stringify(rest)}\n</conception_actuelle>\n\n` +
-    `Objectif de la nouvelle version : ${VARIANTS[variant].goal}\n` +
+    `Objectif de la nouvelle version : ${VARIANTS[variant].goal}\n${INTENSITY_TEXT[intensity]}\n` +
     "Garde le même problème à résoudre et la même logique de solution ; renvoie l'objet JSON COMPLET de la nouvelle version " +
     "(analyse, dimensions, matières, étapes, coût et modèle 3D mis à jour), dans le même format."
   );
@@ -92,13 +100,13 @@ const PALETTE = ["#5b6ee1", "#7b5ce6", "#f2f2f5", "#22232b", "#c9cdf5"];
  * Version déterministe, calculée localement : utilisée quand l'IA n'est pas disponible.
  * Moins fine qu'une version de l'IA, mais toujours cohérente (dimensions, coût, masse).
  */
-export function applyVariantLocally(base: Design, variant: VariantId): Design {
+export function applyVariantLocally(base: Design, variant: VariantId, intensity: VariantIntensity = 2): Design {
   const design: Design = structuredClone(base);
   const v = VARIANTS[variant];
   design.title = `${base.title.replace(/\s*\((plus compacte|renforcée|économique|plus élégante)\)$/i, "")} (${v.short})`.slice(0, 120);
 
   if (variant === "smaller") {
-    const k = 0.8;
+    const k = intensity === 1 ? 0.9 : intensity === 3 ? 0.65 : 0.8;
     design.model.parts = design.model.parts.map((p) => scalePart(p, k));
     design.dimensions = {
       ...design.dimensions,
@@ -109,7 +117,7 @@ export function applyVariantLocally(base: Design, variant: VariantId): Design {
     };
     design.cost = scaleCost(design, 0.75);
     design.fabrication = design.fabrication.map((f) => ({ ...f, durationMin: Math.max(1, Math.round(f.durationMin * 0.7)) }));
-    design.recommendations = ["Version réduite de 20 % : vérifiez que l'objet à ranger ou à tenir y entre toujours.", ...design.recommendations];
+    design.recommendations = [`Version réduite de ${Math.round((1 - k) * 100)} % : vérifiez que l'objet à ranger ou à tenir y entre toujours.`, ...design.recommendations];
   } else if (variant === "stronger") {
     design.model.parts = design.model.parts.map(thicken);
     design.dimensions = { ...design.dimensions, weightGrams: Math.round(design.dimensions.weightGrams * 1.3) };

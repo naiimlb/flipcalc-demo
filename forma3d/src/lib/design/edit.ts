@@ -1,4 +1,4 @@
-import { LIMITS, MATERIALS, type Design, type MaterialKind, type Part } from "./schema";
+import { FINISHES, LIMITS, MATERIALS, type Design, type Finish, type MaterialKind, type Part } from "./schema";
 
 /**
  * Modifications d'une conception dans l'éditeur. Fonctions pures : elles renvoient une nouvelle conception
@@ -23,6 +23,9 @@ export type PartPatch = Partial<{
   size: Vec;
   color: string;
   material: MaterialKind;
+  cornerRadius: number;
+  finish: Finish | null;
+  locked: boolean;
 }>;
 
 function withParts(design: Design, parts: Part[]): Design {
@@ -42,12 +45,19 @@ export function updatePart(design: Design, id: string, patch: PartPatch): Design
     if (patch.size) next.size = clampVec(patch.size, LIMITS.minSize, LIMITS.maxSize);
     if (patch.color !== undefined && HEX.test(patch.color)) next.color = patch.color.toLowerCase();
     if (patch.material && (MATERIALS as readonly string[]).includes(patch.material)) next.material = patch.material;
+    if (patch.cornerRadius !== undefined) next.cornerRadius = round(clamp(patch.cornerRadius, 0, Math.min(next.size.x, next.size.y, next.size.z) / 2));
+    if (patch.finish === null) delete next.finish;
+    else if (patch.finish && (FINISHES as readonly string[]).includes(patch.finish)) next.finish = patch.finish;
+    if (patch.locked !== undefined) {
+      if (patch.locked) next.locked = true;
+      else delete next.locked;
+    }
     return next;
   });
   return changed ? withParts(design, parts) : design;
 }
 
-function uniqueId(base: string, taken: Set<string>): string {
+export function uniqueId(base: string, taken: Set<string>): string {
   const stem = base.replace(/-copie(-\d+)?$/, "").slice(0, 28) || "piece";
   let n = 1;
   let id = `${stem}-copie`;

@@ -3,7 +3,7 @@ import { generateDesignWithClaude, type ClaudeUsage, type ImageMediaType } from 
 import { demoDesign } from "./design/demo";
 import { languageInstruction } from "./design/prompt";
 import type { Design } from "./design/schema";
-import { VARIANTS, applyVariantLocally, variantInstruction, type VariantId } from "./design/variants";
+import { VARIANTS, applyVariantLocally, variantInstruction, type VariantId, type VariantIntensity } from "./design/variants";
 import { getSecret } from "./secrets";
 import type { AiSettings } from "./settings";
 
@@ -38,13 +38,13 @@ export async function generateDesign(params: {
   onText?: (snapshot: string) => void;
   onRestart?: () => void;
   /** Nouvelle version d'une conception existante (« Plus petit », « Plus solide »…). */
-  variant?: { id: VariantId; base: Design } | null;
+  variant?: { id: VariantId; base: Design; intensity?: VariantIntensity } | null;
 }): Promise<GenerationOutcome> {
   const started = Date.now();
   const variant = params.variant ?? null;
   // Version : l'IA reçoit la conception actuelle et l'objectif ; sans IA, la version est calculée localement.
   const fallbackDesign = (note: string) =>
-    variant ? applyVariantLocally(variant.base, variant.id) : demoDesign(params.prompt, note);
+    variant ? applyVariantLocally(variant.base, variant.id, variant.intensity) : demoDesign(params.prompt, note);
   const markVariant = (design: Design): Design =>
     variant ? { ...design, variante: { objectif: variant.id, libelle: VARIANTS[variant.id].label, base: variant.base.title } } : design;
   const apiKey = params.forceDemo ? null : await getSecret("ANTHROPIC_API_KEY");
@@ -89,7 +89,7 @@ export async function generateDesign(params: {
     model: params.ai.model,
     effort: params.ai.effort,
     maxTokens: params.ai.maxTokens,
-    prompt: variant ? `${params.prompt}\n\n${variantInstruction(variant.id, variant.base)}` : params.prompt,
+    prompt: variant ? `${params.prompt}\n\n${variantInstruction(variant.id, variant.base, variant.intensity)}` : params.prompt,
     image: variant ? null : (params.image ?? null),
     onText: params.onText,
     onRestart: params.onRestart,

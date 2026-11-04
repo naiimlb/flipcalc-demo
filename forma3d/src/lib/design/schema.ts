@@ -15,12 +15,16 @@ export const MATERIALS = ["plastic", "metal", "wood", "glass", "rubber", "fabric
 export const DIFFICULTIES = ["facile", "moyen", "avancé"] as const;
 
 export type Shape = (typeof SHAPES)[number];
+/** Bibliothèque de matières de l'éditeur (aspect réaliste ; la matière « material » reste celle des exports). */
+export const FINISHES = ["pla", "petg", "abs", "resin", "wood", "metal", "glass", "rubber"] as const;
+export type Finish = (typeof FINISHES)[number];
 export type MaterialKind = (typeof MATERIALS)[number];
 
 export const LIMITS = {
   maxParts: 60,
-  maxProfilePoints: 64,
-  maxHoles: 8,
+  // Relevés en phase 3 de la refonte : texte (contours de lettres) et formes libres tracées au doigt.
+  maxProfilePoints: 160,
+  maxHoles: 24,
   maxCoord: 5000, // mm
   minSize: 0.5, // mm
   maxSize: 5000, // mm
@@ -89,6 +93,13 @@ export const PartSchema = z.object({
     .transform((h) => h.filter((ring) => ring.length >= 3).slice(0, LIMITS.maxHoles)),
   color,
   material: z.enum(MATERIALS),
+  // Éditeur (refonte phase 3), facultatifs : assemblage, verrou, finition de la bibliothèque de matières.
+  group: z
+    .string()
+    .transform((s) => s.trim().slice(0, 40))
+    .optional(),
+  locked: z.boolean().optional(),
+  finish: z.enum(FINISHES).optional(),
 });
 
 export const DesignSchema = z.object({

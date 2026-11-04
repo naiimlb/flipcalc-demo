@@ -8,7 +8,8 @@ import { detectAr, type ArMode } from "@/lib/ar-detect";
 import type { Design } from "@/lib/design/schema";
 import type { RequestItem } from "@/lib/requests";
 import { downloadBlob, exportGlb, exportStl, fileBaseName } from "@/lib/three/export";
-import { viewerBackgroundCss, type ViewerHandle, type ViewerSettings } from "../viewer/settings";
+import { viewerBackgroundCss, viewerBackgroundStops, type ViewerHandle, type ViewerSettings } from "../viewer/settings";
+import type { TransformChange, TransformMode } from "../viewer/ModelViewer";
 import {
   IconCamera,
   IconChevronLeft,
@@ -54,6 +55,13 @@ export function ViewerPanel({
   showRuler = false,
   editor = false,
   className,
+  selectedIds,
+  transformMode = null,
+  snap = null,
+  uniformScale = false,
+  onTransform,
+  measure = false,
+  meshControl,
 }: {
   item: RequestItem | null;
   settings: ViewerSettings;
@@ -64,7 +72,15 @@ export function ViewerPanel({
   onToast(message: string): void;
   /** Pièce sélectionnée, partagée avec l'arborescence et le panneau de propriétés (éditeur). */
   selection?: string | null;
-  onSelection?: (id: string | null) => void;
+  onSelection?: (id: string | null, additive?: boolean) => void;
+  selectedIds?: string[];
+  transformMode?: TransformMode | null;
+  snap?: { translate: number; rotate: number; scale: number } | null;
+  uniformScale?: boolean;
+  onTransform?: (id: string, change: TransformChange) => void;
+  measure?: boolean;
+  /** Maillage Meshy affiché (piloté par l'éditeur) : affichage et version choisie. */
+  meshControl?: { show: boolean; key: string | null; onShow(v: boolean): void };
   /** Commandes de la vue (export PNG, recadrage) utilisées par la barre du haut de l'éditeur. */
   handleRef?: React.RefObject<ViewerHandle | null>;
   hiddenIds?: string[];
@@ -82,21 +98,27 @@ export function ViewerPanel({
   const [armed, setArmed] = useState(false);
   const [ownFocus, setOwnFocus] = useState<string | null>(null);
   const focusId = selection !== undefined ? selection : ownFocus;
-  const setFocusId = (id: string | null) => (onSelection ? onSelection(id) : setOwnFocus(id));
+  const setFocusId = (id: string | null, additive = false) => (onSelection ? onSelection(id, additive) : setOwnFocus(id));
   const [exportOpen, setExportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [showMesh, setShowMesh] = useState(false);
+  const [ownShowMesh, setOwnShowMesh] = useState(false);
+  const showMesh = meshControl ? meshControl.show : ownShowMesh;
+  const setShowMesh = (v: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof v === "function" ? v(showMesh) : v;
+    if (meshControl) meshControl.onShow(next);
+    else setOwnShowMesh(next);
+  };
   const design = item?.design ?? null;
   const parts = design?.model.parts ?? [];
   const focusIndex = focusId ? parts.findIndex((p) => p.id === focusId) : -1;
   const meshReady = item?.asset?.status === "succeeded" && !item.sample;
   // Fond clair en mode réaliste : boutons et pastilles foncés pour rester lisibles.
-  const light = Boolean(design) && settings.mode === "real" && !dark;
+  const light = Boolean(design) && (settings.background === "light" || ((settings.background ?? "auto") === "auto" && settings.mode === "real" && !dark));
   const chip = light ? "bg-ink/10 text-ink" : "bg-white/20 text-white";
 
   useEffect(() => {
     setOwnFocus(null);
-    setShowMesh(false);
+    setOwnShowMesh(false);
   }, [item?.id]);
 
   useEffect(() => {
@@ -207,7 +229,7 @@ export function ViewerPanel({
     <div
       ref={wrap}
       className={className ?? "relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"}
-      style={{ background: viewerBackgroundCss(design ? settings.mode : "neon", dark) }}
+      style={{ background: viewerBackgroundCss(design ? settings.mode : "neon", dark, settings.background) }}
     >
       {/* Halo décoratif */}
       <div className="pointer-events-none absolute -left-1/4 top-1/3 h-2/3 w-[150%] rounded-[100%] border border-white/15" />
@@ -224,10 +246,17 @@ export function ViewerPanel({
           focusId={focusId}
           onFocusChange={setFocusId}
           handleRef={handle}
-          meshUrl={showMesh && meshReady && item ? `/api/requests/${item.id}/asset/file` : null}
+          meshUrl={showMesh && meshReady && item ? `/api/requests/${item.id}/asset/file?k=${meshControl?.key ?? item.asset?.key ?? ""}` : null}
           hiddenIds={hiddenIds}
           showAxes={showAxes}
           showRuler={showRuler}
+          selectedIds={selectedIds}
+          transformMode={transformMode}
+          snap={snap}
+          uniformScale={uniformScale}
+          onTransform={onTransform}
+          measure={measure}
+          backgroundStops={viewerBackgroundStops(settings.mode, dark, settings.background)}
         />
       )}
 
@@ -296,12 +325,12 @@ export function ViewerPanel({
           </span>
           {meshReady && (
             <button type="button" onClick={() => setShowMesh((s) => !s)} className="chip bg-surface/90 text-brand-accent">
-              {showMesh ? "Voir les primitives" : "Voir le maillage IA"}
+              {showMesh ? t("meshy.showParts") : t("meshy.showMesh")}
             </button>
           )}
           {item?.asset && !meshReady && item.asset.status !== "failed" && (
             <span className={`chip ${chip}`}>
-              <Spinner size={11} /> Maillage {item.asset.progress}%
+              <Spinner size={11} /> {t("meshy.progress", { n: item.asset.progress })}
             </span>
           )}
           {armed && <ArButton design={design} onToast={onToast} />}

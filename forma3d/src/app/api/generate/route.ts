@@ -6,14 +6,12 @@ import { cacheLookup, cacheStore, computeCacheKey, type CachedDesign } from "@/l
 import { AnswersSchema, composePrompt } from "@/lib/clarify-types";
 import { progressChanged, progressFromText, type StreamProgress } from "@/lib/design/partial-json";
 import { validateDesign, type Design } from "@/lib/design/schema";
-import { VARIANT_IDS, type VariantId } from "@/lib/design/variants";
+import { VARIANT_IDS, type VariantId, type VariantIntensity } from "@/lib/design/variants";
 import { generateDesign, type GenerationOutcome } from "@/lib/generation";
 import { isSameOrigin, jsonError } from "@/lib/http";
 import { logEvent } from "@/lib/logs";
-import { getModelProvider } from "@/lib/providers";
 import { ipHash } from "@/lib/request-ip";
 import { REQUEST_COLUMNS, toRequestItem, type RequestItem } from "@/lib/requests";
-import { getSecret } from "@/lib/secrets";
 import { DEFAULT_AI } from "@/lib/settings";
 import { getAiSettings, getPublicSettings } from "@/lib/settings.server";
 import { consumeCredits, getMyCredits, refundCredits } from "@/lib/credits";
@@ -36,6 +34,8 @@ const BodySchema = z.object({
   answers: AnswersSchema.optional().default([]),
   /** Nouvelle version d'une conception : objectif + conception de départ (revalidée ci-dessous). */
   variant: z.enum(VARIANT_IDS as [VariantId, ...VariantId[]]).optional(),
+  /** Curseurs de personnalisation : 1 léger, 2 moyen, 3 fort. */
+  intensity: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
   base: z.unknown().optional(),
   image: z
     .object({
@@ -129,7 +129,7 @@ function progressReporter(emit: Emit) {
   };
 }
 
-async function run(request: Request, body: Body, emit: Emit, variant: { id: VariantId; base: Design } | null): Promise<Result> {
+async function run(request: Request, body: Body, emit: Emit, variant: { id: VariantId; base: Design; intensity?: VariantIntensity } | null): Promise<Result> {
   const started = Date.now();
   const composed = composePrompt(body.prompt, body.answers);
   const reporter = progressReporter(emit);
@@ -168,7 +168,7 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
         answers: body.answers,
         language,
         ai,
-        extra: variant ? `${variant.id}:${createHash("sha256").update(JSON.stringify(variant.base)).digest("hex")}` : undefined,
+        extra: variant ? `${variant.id}:${variant.intensity ?? 2}:${createHash("sha256").update(JSON.stringify(variant.base)).digest("hex")}` : undefined,
       });
 
   /* ---------- Essai sans compte : résultat renvoyé, non enregistré ---------- */
@@ -260,26 +260,9 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
   // Pas de crédit pour une génération échouée ou servie sans IA (modèle d'exemple, version calculée localement).
   if (!outcome.ok || outcome.provider !== "claude") await refundCredits(session.supabase, ledgerId);
 
-  // Fournisseur 3D externe (expérimental) : lance la tâche, la suite se fait par sondage.
-  let modelAsset: unknown = null;
-  if (!hit && outcome.ok && outcome.design && ai.provider3d !== "primitives") {
-    const provider = getModelProvider(ai.provider3d);
-    const key = provider?.secretName ? await getSecret(provider.secretName) : null;
-    // Service text-to-3D (futur) : plus coûteux en crédits qu'une conception simple.
-    const meshCredits = provider && key ? await consumeCredits(session.supabase, "model3d", requestId) : null;
-    if (provider && key && meshCredits?.ok) {
-      try {
-        modelAsset = await provider.start({ prompt: body.prompt, design: outcome.design, apiKey: key });
-      } catch (err) {
-        await refundCredits(session.supabase, meshCredits.ledgerId);
-        await logEvent("warn", `provider:${provider.id}`, "Lancement du maillage impossible.", {
-          details: String(err),
-          requestId,
-          supabase: session.supabase,
-        });
-      }
-    }
-  }
+  // Maillage Meshy : plus de lancement automatique ici. Chaque action Meshy est lancée depuis l'éditeur,
+  // après affichage de son coût en crédits et confirmation (route /api/meshy).
+  const modelAsset: unknown = null;
 
   // Écriture du résultat avec la session de l'utilisateur (fonction SQL : sa propre demande uniquement).
   const { error: completeError } = await session.supabase.rpc("complete_design_request", {
@@ -338,12 +321,12 @@ export async function POST(request: Request) {
   }
 
   // Version d'une conception : la conception de départ vient du navigateur, elle est revalidée et bornée.
-  let variant: { id: VariantId; base: Design } | null = null;
+  let variant: { id: VariantId; base: Design; intensity?: VariantIntensity } | null = null;
   if (body.variant) {
     const raw = JSON.stringify(body.base ?? null);
     const validated = raw.length <= 200_000 ? validateDesign(body.base) : null;
     if (!validated?.ok) return jsonError(400, "Conception de départ invalide.", "invalid_base");
-    variant = { id: body.variant, base: validated.design };
+    variant = { id: body.variant, base: validated.design, intensity: body.intensity ?? 2 };
     body.image = null;
   }
 

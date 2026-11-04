@@ -22,6 +22,23 @@ export interface ModelAsset {
   glbUrl?: string | null;
   error?: string | null;
   updatedAt: string;
+  /** Meshy : action qui a produit ce maillage (aperçu, texture, retexture, remesh, échelle, réparation). */
+  kind?: string;
+  /** Description de texture (retexture). */
+  prompt?: string;
+  /** Copie du GLB dans Supabase Storage (les liens Meshy expirent). */
+  storedPath?: string | null;
+  /** Maillages Meshy précédents du projet (variantes), du plus récent au plus ancien. */
+  history?: { taskId: string; kind: string; glbUrl?: string | null; storedPath?: string | null; createdAt: string }[];
+  /** Dernière analyse d'imprimabilité Meshy. */
+  analysis?: {
+    taskId: string;
+    status: AssetStatus;
+    progress: number;
+    result?: { status: string; issueCount: number; errorCount: number; warningCount: number; metrics: Record<string, number | boolean | null> } | null;
+    error?: string | null;
+    updatedAt: string;
+  } | null;
 }
 
 export interface ModelProvider {

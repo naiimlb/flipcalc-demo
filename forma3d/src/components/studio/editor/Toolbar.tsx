@@ -3,7 +3,7 @@
 import { IconGrid, IconLayers, IconRefocus, IconRotate, IconRuler, IconSettings } from "../../icons";
 import { useT } from "../../app/Preferences";
 
-export type EditorTool = "select" | "move" | "rotate" | "scale";
+export type EditorTool = "select" | "move" | "rotate" | "scale" | "measure";
 export type ViewLayout = 1 | 2 | 4;
 
 const svg = (d: string) => (
@@ -16,6 +16,8 @@ const ICONS = {
   move: svg("M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"),
   scale: svg("M4 20h7v-7H4zM14 4h6v6M20 4l-8 8"),
   axes: svg("M5 19V5M5 19h14M5 19l9-9"),
+  measure: svg("M3 17l14-14 4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2"),
+  add: svg("M12 5v14M5 12h14"),
 };
 
 function layoutIcon(n: ViewLayout) {
@@ -48,7 +50,13 @@ export function Toolbar({
   onToggleProps,
   partsOpen,
   propsOpen,
+  onAdd,
+  addOpen = false,
+  canAdd = true,
 }: {
+  onAdd(): void;
+  addOpen?: boolean;
+  canAdd?: boolean;
   tool: EditorTool;
   onTool(tool: EditorTool): void;
   layout: ViewLayout;
@@ -71,11 +79,15 @@ export function Toolbar({
     { id: "move", key: "W", icon: ICONS.move },
     { id: "rotate", key: "E", icon: <IconRotate size={17} /> },
     { id: "scale", key: "R", icon: ICONS.scale },
+    { id: "measure", key: "U", icon: ICONS.measure },
   ];
   return (
     <div role="toolbar" aria-orientation="vertical" aria-label={t("editor.toolbar")} className="flex w-12 shrink-0 flex-col items-center gap-1 overflow-y-auto py-2 scrollbar-none sm:w-14">
       <Btn label={t("editor.parts")} active={partsOpen} onClick={onToggleParts}>
         <IconLayers size={17} />
+      </Btn>
+      <Btn label={t("editor.add")} active={addOpen} onClick={onAdd} disabled={!canAdd}>
+        {ICONS.add}
       </Btn>
       <Sep />
       {tools.map((x) => (
@@ -114,15 +126,30 @@ function Sep() {
   return <span aria-hidden className="my-1 h-px w-6 shrink-0 bg-fg/10" />;
 }
 
-function Btn({ label, active = false, pressed = false, onClick, children }: { label: string; active?: boolean; pressed?: boolean; onClick(): void; children: React.ReactNode }) {
+function Btn({
+  label,
+  active = false,
+  pressed = false,
+  disabled = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  active?: boolean;
+  pressed?: boolean;
+  disabled?: boolean;
+  onClick(): void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       title={label}
       aria-label={label}
       aria-pressed={pressed ? active : undefined}
-      className={`tap flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition sm:h-10 sm:w-10 ${
+      className={`tap flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-30 sm:h-10 sm:w-10 ${
         active ? "bg-neon-blue-strong text-white shadow-neon" : "text-fg/70 hover:bg-fg/10 hover:text-fg"
       }`}
     >

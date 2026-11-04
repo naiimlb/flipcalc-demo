@@ -5,11 +5,26 @@ import { SAMPLE_DESIGNS } from "./design/samples";
 /** Une demande telle qu'affichée par le tableau de bord (jamais de données sensibles). */
 export type RequestStatus = "processing" | "ready" | "error";
 
+type AssetState = "pending" | "running" | "succeeded" | "failed";
+
 export interface PublicAsset {
   provider: string;
-  status: "pending" | "running" | "succeeded" | "failed";
+  status: AssetState;
   progress: number;
   error: string | null;
+  /** Action Meshy qui a produit le maillage affiché. */
+  kind?: string;
+  /** Clé de version (change à chaque nouveau maillage : évite le cache du navigateur). */
+  key?: string;
+  /** Maillages Meshy précédents (variantes), affichables. */
+  history?: { key: string; kind: string; createdAt: string }[];
+  /** Dernière analyse d'imprimabilité Meshy. */
+  analysis?: {
+    status: AssetState;
+    progress: number;
+    error: string | null;
+    result: { status: string; issueCount: number; errorCount: number; warningCount: number; metrics: Record<string, number | boolean | null> } | null;
+  } | null;
 }
 
 export interface RequestItem {
@@ -65,11 +80,29 @@ function toPublicAsset(value: unknown): PublicAsset | null {
   const a = value as Record<string, unknown>;
   const status = a.status;
   if (status !== "pending" && status !== "running" && status !== "succeeded" && status !== "failed") return null;
+  const states = ["pending", "running", "succeeded", "failed"];
+  const analysis = a.analysis && typeof a.analysis === "object" ? (a.analysis as Record<string, unknown>) : null;
+  const history = Array.isArray(a.history) ? (a.history as Record<string, unknown>[]) : [];
   return {
     provider: String(a.provider ?? ""),
     status,
     progress: typeof a.progress === "number" ? a.progress : 0,
     error: typeof a.error === "string" ? a.error : null,
+    kind: typeof a.kind === "string" ? a.kind : undefined,
+    key: typeof a.taskId === "string" && a.taskId ? a.taskId.slice(0, 12) : undefined,
+    history: history
+      .filter((h) => typeof h.taskId === "string")
+      .slice(0, 8)
+      .map((h) => ({ key: String(h.taskId).slice(0, 12), kind: String(h.kind ?? ""), createdAt: String(h.createdAt ?? "") })),
+    analysis:
+      analysis && states.includes(String(analysis.status))
+        ? {
+            status: analysis.status as AssetState,
+            progress: typeof analysis.progress === "number" ? analysis.progress : 0,
+            error: typeof analysis.error === "string" ? analysis.error : null,
+            result: (analysis.result as NonNullable<PublicAsset["analysis"]>["result"]) ?? null,
+          }
+        : null,
   };
 }
 

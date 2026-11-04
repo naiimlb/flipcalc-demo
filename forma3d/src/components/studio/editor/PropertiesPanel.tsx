@@ -247,3 +247,35 @@ export function ProjectSummary({ item }: { item: RequestItem }) {
     </section>
   );
 }
+
+/** « Mettre à l'échelle réelle » : la plus grande dimension du modèle prend la valeur saisie (mm). */
+export function RealScaleBox({ longest, editable, onApply }: { longest: number; editable: boolean; onApply(mm: number): void }) {
+  const t = useT();
+  const [mm, setMm] = useState(Math.round(longest));
+  useEffect(() => setMm(Math.round(longest)), [longest]);
+  return (
+    <section className="panel space-y-2 p-3">
+      <p className="text-[12.5px] font-semibold text-ink">{t("scale.title")}</p>
+      <p className="text-[11px] text-ink-mute">{t("scale.hint", { n: Math.round(longest) })}</p>
+      <div className="flex gap-1.5">
+        <label className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-paper px-2.5 ring-1 ring-line">
+          <span className="sr-only">{t("scale.target")}</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={mm}
+            min={1}
+            onChange={(e) => setMm(Number(e.target.value))}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="h-10 w-full min-w-0 bg-transparent font-mono text-sm outline-none"
+            aria-label={t("scale.target")}
+          />
+          <span className="text-[11px] text-ink-mute">mm</span>
+        </label>
+        <button type="button" className="btn-neon tap shrink-0 !rounded-xl !px-3 !text-xs" disabled={!editable || !(mm > 0) || Math.round(mm) === Math.round(longest)} onClick={() => onApply(mm)}>
+          {t("scale.apply")}
+        </button>
+      </div>
+    </section>
+  );
+}

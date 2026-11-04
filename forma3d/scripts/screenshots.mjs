@@ -148,6 +148,105 @@ await session("editeur", { width: 1440, height: 900 }, async (page) => {
   await page.screenshot({ path: join(out, "editeur.png") });
 });
 
+// Refonte phase 3 : outils de création (formes, opérations, texte, forme libre, mesure, matières, rendu, « Modifie la pièce »).
+await session("outils", { width: 1440, height: 900 }, async (page) => {
+  await ready(page);
+  const tree = page.getByRole("tree", { name: "Pièces" });
+  const items = tree.getByRole("treeitem");
+  const count0 = await items.count();
+  check(await page.getByText("Personnalisation guidée").isVisible(), "Personnalisation guidée : curseurs de variantes");
+  check((await page.locator('input[type="range"]').count()) >= 4, "Personnalisation guidée : 4 curseurs (petit, solide, cher, esthétique)");
+  check((await page.getByText("Modèle 3D détaillé (Meshy)").count()) === 0, "Meshy masqué tant qu'il n'est pas configuré (mode démo)");
+
+  // Ajouter une forme.
+  await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Cylindre" }).click();
+  await page.waitForTimeout(400);
+  check((await items.count()) === count0 + 1, "Ajouter : cylindre ajouté (et sélectionné)");
+  check((await page.getByRole("button", { name: "Déplacer (W)" }).getAttribute("aria-pressed")) === "true", "Poignées : outil Déplacer activé sur la nouvelle pièce");
+  await page.screenshot({ path: join(out, "outils-poignees.png") });
+
+  // Répétition en ligne sur la pièce ajoutée.
+  await page.getByLabel("Opération", { exact: true }).selectOption({ label: "Répétition en ligne" });
+  await page.getByRole("button", { name: "Appliquer l'opération" }).click();
+  await page.waitForTimeout(400);
+  check((await items.count()) === count0 + 4, "Opérations : répétition en ligne (4 exemplaires)");
+  await page.keyboard.press("Control+z");
+  await page.waitForTimeout(300);
+  check((await items.count()) === count0 + 1, "Annuler une opération (Ctrl+Z)");
+
+  // Cube percé (devient un profilé avec un trou).
+  await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Cube" }).click();
+  await page.getByLabel("Opération", { exact: true }).selectOption({ label: "Percer un trou" });
+  await page.getByRole("button", { name: "Appliquer l'opération" }).click();
+  await page.waitForTimeout(400);
+  check((await tree.getByText("Profilé").count()) >= 1, "Opérations : perçage d'un trou au diamètre exact");
+
+  // Texte en relief sur le cube.
+  const before = await items.count();
+  await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Texte" }).click();
+  const textDialog = page.getByRole("dialog", { name: "Ajouter un texte" });
+  await textDialog.getByLabel("Texte", { exact: true }).fill("AB");
+  await textDialog.getByRole("button", { name: "Ajouter le texte" }).click();
+  await textDialog.waitFor({ state: "detached", timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  check((await items.count()) >= before + 2, "Texte en relief (police chargée à la demande)");
+
+  // Forme libre tracée.
+  const beforeDraw = await items.count();
+  await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Forme libre" }).click();
+  const pad = page.getByLabel("Zone de tracé");
+  const box = await pad.boundingBox();
+  if (box) {
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx + 120, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 48; i++) {
+      const a = (i / 48) * Math.PI * 2;
+      await page.mouse.move(cx + Math.cos(a) * 120, cy + Math.sin(a) * 80, { steps: 2 });
+    }
+    await page.mouse.up();
+  }
+  await page.getByRole("button", { name: "Extruder la forme" }).click();
+  await page.waitForTimeout(500);
+  check((await items.count()) === beforeDraw + 1, "Forme libre : tracé extrudé");
+  await page.screenshot({ path: join(out, "outils-formes.png") });
+
+  // Matières et rendu.
+  await page.getByRole("tab", { name: "Matière", exact: true }).click();
+  await page.getByRole("button", { name: "Résine", exact: true }).click();
+  await page.waitForTimeout(300);
+  check((await page.getByRole("button", { name: "Résine", exact: true }).getAttribute("aria-pressed")) === "true", "Bibliothèque de matières : résine appliquée à la pièce");
+  await page.getByRole("radio", { name: "Néon bleu/orange" }).click();
+  await page.waitForTimeout(1500);
+  check((await page.getByRole("radio", { name: "Néon bleu/orange" }).getAttribute("aria-checked")) === "true", "Éclairage : préréglage néon bleu/orange");
+  check(await page.getByRole("button", { name: /Vidéo 360/ }).isVisible(), "Rendu : vidéo de rotation à 360°");
+  await page.screenshot({ path: join(out, "outils-rendu.png") });
+
+  // « Modifie la pièce » sur un pavé (consignes simples sans IA en mode démo).
+  await page.getByRole("tab", { name: "Objet", exact: true }).click();
+  await tree.getByRole("treeitem").filter({ hasText: "Pavé" }).first().getByRole("button").first().click();
+  await page.getByRole("textbox", { name: "Modifie la pièce" }).fill("arrondis les angles");
+  await page.getByRole("button", { name: "Appliquer", exact: true }).first().click();
+  await page.getByText("Angles arrondis.").waitFor({ timeout: 10000 }).then(() => check(true, "« Modifie la pièce » : consigne appliquée"), () => check(false, "« Modifie la pièce » : consigne appliquée"));
+
+  // Mesure entre deux points du modèle.
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("u");
+  const canvas = await page.locator("canvas").first().boundingBox();
+  if (canvas) {
+    await page.mouse.click(canvas.x + canvas.width * 0.45, canvas.y + canvas.height * 0.5);
+    await page.mouse.click(canvas.x + canvas.width * 0.55, canvas.y + canvas.height * 0.52);
+  }
+  await page.waitForTimeout(800);
+  check((await page.getByText(/^\d+(\.\d)? mm$/).count()) >= 1, "Outil de mesure : distance entre deux points");
+  await page.screenshot({ path: join(out, "outils-mesure.png") });
+});
+
 // Assistant de questions : demande floue → boutons de réponse → conception ; « Modifier ma demande » remet le texte.
 await session("assistant", { width: 1280, height: 800 }, async (page) => {
   await ready(page);

@@ -9,6 +9,14 @@ const ACTIONS: { key: keyof CreditSettings["costs"]; label: string; hint: string
   { key: "design", label: "Conception", hint: "Une nouvelle demande traitée par l'IA" },
   { key: "variant", label: "Nouvelle version", hint: "Plus petit, plus solide, moins cher, plus esthétique" },
   { key: "model3d", label: "Maillage 3D (futur service text-to-3D)", hint: "Plus coûteux qu'une conception simple" },
+  { key: "ai_edit", label: "« Modifie la pièce » (IA)", hint: "Une consigne appliquée par Claude dans l'éditeur" },
+  { key: "meshy_preview", label: "Meshy : modèle 3D / variante", hint: "Meshy facture 20 crédits par aperçu" },
+  { key: "meshy_refine", label: "Meshy : texture du modèle", hint: "Meshy facture 10 crédits (2K)" },
+  { key: "meshy_retexture", label: "Meshy : retexturer", hint: "Meshy facture 10 crédits (2K)" },
+  { key: "meshy_remesh", label: "Meshy : simplifier le maillage", hint: "Meshy facture 5 crédits" },
+  { key: "meshy_resize", label: "Meshy : mettre à l'échelle réelle", hint: "Meshy facture 1 crédit" },
+  { key: "meshy_repair", label: "Meshy : réparer pour l'impression", hint: "Meshy facture 10 crédits" },
+  { key: "meshy_analyze", label: "Meshy : analyser l'imprimabilité", hint: "Gratuit chez Meshy" },
 ];
 
 /** Allocation mensuelle et coût de chaque action. */

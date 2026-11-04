@@ -24,7 +24,7 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | 5 | Crédits et quotas (sans paiement) | **fait** (voir « Phase 5 ») |
 | Refonte 1 | Identité visuelle néon (sombre par défaut) et nouvelle page d'accueil | **fait** (voir « Refonte — phase 1 ») |
 | Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | **fait** (voir « Refonte — phase 2 ») |
-| Refonte 3 | Outils de création + génération Meshy (coûts affichés) | à venir |
+| Refonte 3 | Outils de création + génération Meshy (coûts affichés) | **fait** (voir « Refonte — phase 3 ») |
 | Refonte 4 | Finitions, Lighthouse > 90 sur l'accueil, tests Safari | à venir |
 
 Aucun service text-to-3D payant n'est branché : l'interface `ModelProvider` est conservée pour plus tard.
@@ -59,6 +59,9 @@ valeurs (voir ci-dessous), puis `npm run dev`.
       d'administration). Sans lui, aucune limite de crédits ne s'applique et le solde n'est pas affiché.
    6. `20261106000000_refonte2_editeur.sql` : **sauvegarde des modifications de l'éditeur** dans le compte
       (fonction `save_design_edit`, quotas). Sans lui, les modifications restent sur l'appareil ;
+   7. `20261107000000_refonte3_outils.sql` : **coûts des actions Meshy et de « Modifie la pièce »**, facturation Meshy
+      à la réussite (`charge_meshy_task`), limite de lancements (`meshy_start_check`), remboursements limités.
+      Sans lui, les actions Meshy restent masquées ;
    Les scripts sont rejouables sans danger. L'application fonctionne même si le 3ᵉ n'est pas appliqué
    (le cache est alors simplement désactivé et la limite de débit se fait en mémoire).
 3. **Authentication → URL Configuration** : *Site URL* = l'URL du site et, dans *Redirect URLs*,
@@ -334,6 +337,60 @@ mettent déjà en avant les champs correspondants de l'onglet Objet).
 
 **Configuration** : exécuter `supabase/migrations/20261106000000_refonte2_editeur.sql` dans Supabase › SQL Editor
 pour la sauvegarde dans le compte (sans lui, tout fonctionne avec la sauvegarde sur l'appareil).
+
+## Refonte — phase 3 : outils de création et de personnalisation
+
+Tous les outils marchent au doigt, à l'Apple Pencil, au trackpad et à la souris ; chaque modification s'annule (⌘Z).
+
+**Transformation.** Poignées visibles sur la pièce sélectionnée : Déplacer (W), Tourner (E), Échelle (R).
+Magnétisme réglable (pas en mm, angle en degrés), échelle uniforme ou non, saisie exacte en mm / degrés dans l'onglet Objet,
+« Mettre à l'échelle réelle » (onglet Dimensions : la plus grande dimension prend la valeur saisie).
+Sélection multiple (Maj / ⌘ + clic, dans la vue ou la liste) ; une pièce assemblée se sélectionne avec tout son assemblage.
+
+**Ajouter (bouton + de la barre d'outils).** Cube, cylindre, sphère, cône, anneau, tube ; **texte** en relief (posé sur la pièce
+sélectionnée) ou **gravé** (creusé dans un pavé), 4 polices ; **forme libre** tracée au doigt ou au Pencil puis extrudée.
+
+**Opérations (onglet Objet, pièce sélectionnée).** Dupliquer, miroir (copie symétrique), répétition en ligne ou en cercle,
+couper en deux, évider (boîte ouverte / tube avec fond, épaisseur réglable), percer un trou au diamètre exact, congé, chanfrein,
+assembler / séparer, verrouiller (une pièce verrouillée ne se sélectionne plus dans la vue). Les opérations travaillent sur des
+formes paramétriques : quand une opération ne s'applique pas à une forme (ex. couper une sphère), elle est grisée et la raison s'affiche.
+
+**Matières et rendu (onglet Matière).** Bibliothèque PLA, PETG, ABS, résine, bois, métal, verre, caoutchouc (aspect réaliste,
+appliquée à la pièce ou au modèle), couleur par pièce, matières conseillées par l'analyse, rendu néon en option.
+Éclairage studio / néon bleu-orange / jour, fond au choix, ombres douces, image HD et **vidéo 360°** (MP4 sur Safari, WebM sur Chrome).
+
+**Mesure.** Outil Mesurer (U) : deux points touchés sur le modèle donnent leur distance ; règle et encombrement en continu.
+
+**Personnalisation guidée.** Curseurs « Plus petit / Plus solide / Moins cher / Plus esthétique » (léger, moyen, fort) qui créent
+une nouvelle version ; champ **« Modifie la pièce »** (ex. « agrandis le trou de 2 mm », « arrondis les angles ») : Claude
+modifie la scène (coût `ai_edit`, 1 crédit par défaut, remboursé en cas d'échec ; résultat revalidé côté serveur). Sans compte ou
+sans clé, quelques consignes simples sont appliquées localement (trous, angles, pourcentages, épaisseur).
+
+**Meshy (service 3D principal).** Points d'accès et coûts lus dans la documentation officielle (https://docs.meshy.ai —
+pages Text to 3D, Retexture, Remesh, Resize, Analyze / Repair Printability, Balance, Pricing) :
+
+| Action dans Forma3D | API Meshy | Coût Meshy |
+| --- | --- | --- |
+| Générer le modèle détaillé / Régénérer une variante | `POST /openapi/v2/text-to-3d` (`mode: preview`) | 20 crédits |
+| Ajouter la texture | `POST /openapi/v2/text-to-3d` (`mode: refine`) | 10 crédits (2K) |
+| Retexturer (« Décris la texture ») | `POST /openapi/v1/retexture` (`text_style_prompt`) | 10 crédits (2K) |
+| Simplifier le maillage | `POST /openapi/v1/remesh` (`target_polycount`) | 5 crédits |
+| Mettre à l'échelle réelle | `POST /openapi/v1/resize` (`resize_height`) | 1 crédit |
+| Analyser l'imprimabilité | `POST /openapi/v1/print/analyze` | gratuit |
+| Réparer pour l'impression | `POST /openapi/v1/print/repair` | 10 crédits |
+
+Le coût en crédits Forma3D de chaque action (réglable dans /admin/credits, par défaut égal au coût Meshy) s'affiche avant
+confirmation, avec le solde avant / après ; le serveur vérifie le solde Forma3D, la fréquence (4 lancements / 10 min, 40 / jour)
+et le solde du compte Meshy (`GET /openapi/v1/balance`). **Les crédits ne sont débités que si la tâche Meshy réussit**
+(une seule fois par tâche). Le résultat s'affiche dans la vue 3D (« Voir le modèle Meshy »), les versions Meshy précédentes restent
+accessibles, et le GLB est copié dans Supabase Storage (les liens Meshy expirent). La clé reste côté serveur.
+Le lancement automatique de Meshy à chaque conception est supprimé (il facturait sans confirmation).
+
+**Configuration** : 1) ajouter `MESHY_API_KEY` dans Vercel (Settings › Environment Variables, type *Sensitive*,
+environnement Production) puis redéployer, ou la saisir dans /admin/cles ; 2) exécuter
+`supabase/migrations/20261107000000_refonte3_outils.sql`. Tant que l'un des deux manque, les panneaux Meshy sont masqués.
+
+Raccourcis ajoutés : **U** mesurer, **L** verrouiller, **⌘G** assembler, **⇧⌘G** séparer, **⌘D** / **Suppr** sur la sélection multiple.
 
 ## Mon espace et administration
 

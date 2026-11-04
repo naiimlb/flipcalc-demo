@@ -25,6 +25,7 @@ const eye = (open: boolean) => (
 export function PartsTree({
   design,
   selection,
+  selectedIds,
   onSelect,
   hiddenIds,
   onToggleHidden,
@@ -35,7 +36,9 @@ export function PartsTree({
 }: {
   design: Design | null;
   selection: string | null;
-  onSelect(id: string | null): void;
+  /** Sélection multiple (Maj / ⌘). */
+  selectedIds?: string[];
+  onSelect(id: string | null, additive?: boolean): void;
   hiddenIds: string[];
   onToggleHidden(id: string): void;
   onRename(id: string, name: string): void;
@@ -93,7 +96,7 @@ export function PartsTree({
           }}
         >
           {parts.map((part) => {
-            const selected = part.id === selection;
+            const selected = selectedIds ? selectedIds.includes(part.id) : part.id === selection;
             const hidden = hiddenIds.includes(part.id);
             return (
               <li key={part.id} role="treeitem" aria-selected={selected} data-part={part.id} className={`group flex items-center gap-1 rounded-xl ps-5 pe-1 ${selected ? "bg-neon-blue/15" : "hover:bg-paper"}`}>
@@ -119,12 +122,21 @@ export function PartsTree({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => onSelect(selected ? null : part.id)}
+                    onClick={(e) => {
+                      const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+                      onSelect(selected && !additive && selectedIds?.length === 1 ? null : part.id, additive);
+                    }}
                     onDoubleClick={() => editable && setRenaming(part.id)}
                     className={`tap flex min-h-9 min-w-0 flex-1 items-center gap-1.5 text-start text-[12px] ${hidden ? "text-ink-mute line-through" : selected ? "font-semibold text-ink" : "text-ink-soft"}`}
                     title={part.role || part.name}
                   >
                     <span className="truncate">{part.name}</span>
+                    {part.locked && (
+                      <span className="shrink-0 text-[10px]" aria-label={t("ops.locked")} title={t("ops.locked")}>
+                        🔒
+                      </span>
+                    )}
+                    {part.group && <span className="shrink-0 rounded bg-neon-violet/15 px-1 text-[9px] font-bold text-neon-violet">{t("ops.groupBadge")}</span>}
                     <span className="ms-auto shrink-0 text-[10px] text-ink-mute">{t(`shape.${part.shape}`)}</span>
                   </button>
                 )}

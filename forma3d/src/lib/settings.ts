@@ -125,7 +125,20 @@ export function hexToRgbTriplet(hexColor: string): string {
 /* ------------------------------ Crédits (phase 5, sans paiement) ------------------------------ */
 
 /** Coût en crédits de chaque action ; « model3d » prépare le futur service text-to-3D (plus coûteux). */
-export const CREDIT_ACTIONS = ["design", "variant", "model3d"] as const;
+export const CREDIT_ACTIONS = [
+  "design",
+  "variant",
+  "model3d",
+  // Refonte phase 3 : « Modifie la pièce » (IA) et actions Meshy (coûts par défaut = coûts Meshy documentés).
+  "ai_edit",
+  "meshy_preview",
+  "meshy_refine",
+  "meshy_retexture",
+  "meshy_remesh",
+  "meshy_resize",
+  "meshy_repair",
+  "meshy_analyze",
+] as const;
 export type CreditAction = (typeof CREDIT_ACTIONS)[number];
 
 export const CreditSettingsSchema = z.object({
@@ -134,8 +147,31 @@ export const CreditSettingsSchema = z.object({
     design: z.number().int().min(0).max(1000),
     variant: z.number().int().min(0).max(1000),
     model3d: z.number().int().min(0).max(1000),
+    ai_edit: z.number().int().min(0).max(1000).default(1),
+    meshy_preview: z.number().int().min(0).max(1000).default(20),
+    meshy_refine: z.number().int().min(0).max(1000).default(10),
+    meshy_retexture: z.number().int().min(0).max(1000).default(10),
+    meshy_remesh: z.number().int().min(0).max(1000).default(5),
+    meshy_resize: z.number().int().min(0).max(1000).default(1),
+    meshy_repair: z.number().int().min(0).max(1000).default(10),
+    meshy_analyze: z.number().int().min(0).max(1000).default(0),
   }),
 });
 export type CreditSettings = z.infer<typeof CreditSettingsSchema>;
 
-export const DEFAULT_CREDITS: CreditSettings = { monthlyFree: 30, costs: { design: 1, variant: 1, model3d: 5 } };
+export const DEFAULT_CREDITS: CreditSettings = {
+  monthlyFree: 30,
+  costs: {
+    design: 1,
+    variant: 1,
+    model3d: 5,
+    ai_edit: 1,
+    meshy_preview: 20,
+    meshy_refine: 10,
+    meshy_retexture: 10,
+    meshy_remesh: 5,
+    meshy_resize: 1,
+    meshy_repair: 10,
+    meshy_analyze: 0,
+  },
+};
