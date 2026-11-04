@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app/AppHeader";
-import { Backdrop } from "@/components/landing/Backdrop";
 import { EspaceClient, type Folder } from "@/components/espace/EspaceClient";
 import { REQUEST_COLUMNS, toRequestItem } from "@/lib/requests";
 import { getPublicSettings } from "@/lib/settings.server";
@@ -40,7 +39,6 @@ export default async function EspacePage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="pt-nav relative min-h-dvh">
-      <Backdrop />
       <AppHeader
         siteName={site.siteName}
         logoDataUrl={site.logoDataUrl}

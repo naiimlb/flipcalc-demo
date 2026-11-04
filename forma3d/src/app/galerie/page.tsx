@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppHeader } from "@/components/app/AppHeader";
-import { Backdrop } from "@/components/landing/Backdrop";
 import { IconCube, IconSearch } from "@/components/icons";
 import { getTranslator } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/settings.server";
@@ -59,11 +58,10 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
 
   return (
     <main className="pt-nav relative min-h-dvh overflow-x-clip">
-      <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={isDemoMode()} />
       <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
         <h1 className="mt-6 font-display text-4xl font-black tracking-tight text-fg sm:text-6xl">{t("gallery.title")}</h1>
-        <p className="mt-2 max-w-2xl text-sm text-fg/65 sm:text-base">{t("gallery.lead")}</p>
+        <p className="mt-2 max-w-2xl text-sm text-ink-mute sm:text-base">{t("gallery.lead")}</p>
 
         <form className="mt-5 flex flex-wrap gap-2" role="search">
           <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md bg-surface px-4 py-2.5 shadow-soft">

@@ -1271,7 +1271,7 @@ export function Studio({
             >
               {leftPanel}
             </DockPanel>
-            <div className="min-h-0 min-w-0 flex-1 pe-2 sm:pe-3 xl:px-0">
+            <div className="min-h-0 min-w-0 flex-1">
               <Viewports layout={layout} design={selected?.design ?? null} selection={selection} onSelect={(id) => selectPart(id, false, true)} hiddenIds={hiddenIds} showGrid={settings.showGrid} showAxes={showAxes}>
                 <ViewerPanel
                   item={selected}
@@ -1295,7 +1295,7 @@ export function Studio({
                   showAxes={showAxes}
                   showRuler={showRuler}
                   editor
-                  className="relative h-full min-h-[240px] overflow-hidden rounded-lg ring-1 ring-fg/10"
+                  className="relative h-full min-h-[240px] overflow-hidden"
                 />
               </Viewports>
             </div>

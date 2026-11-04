@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Backdrop } from "./landing/Backdrop";
 import { LogoMark } from "./icons";
 
 /** Mise en page des écrans d'authentification et d'installation. */
@@ -18,8 +17,7 @@ export function AuthShell({
 }) {
   return (
     <main className="relative flex min-h-dvh items-center justify-center px-4 py-10">
-      <Backdrop />
-      <div className="w-full max-w-md rounded-card bg-paper/95 p-6 shadow-card backdrop-blur sm:p-9">
+      <div className="w-full max-w-md rounded-card bg-paper/95 p-6 border border-line backdrop-blur sm:p-9">
         <Link href="/" className="inline-flex items-center gap-2 font-semibold">
           {logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

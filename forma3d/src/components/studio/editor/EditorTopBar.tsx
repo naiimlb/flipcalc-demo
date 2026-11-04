@@ -6,20 +6,14 @@ import { AnimatePresence, m as motion } from "framer-motion";
 import type { RequestItem } from "@/lib/requests";
 import { downloadBlob, exportGlb, exportStl, fileBaseName } from "@/lib/three/export";
 import type { ViewerHandle } from "../../viewer/settings";
-import { IconCamera, IconCheck, IconDownload, IconPencil, LogoMark, Spinner } from "../../icons";
+import { IconCamera, IconCheck, IconDownload, IconPencil, IconRedo, IconUndo, LogoMark, Spinner } from "../../icons";
+import { Tooltip } from "../../ui/Tooltip";
 import { CreditsBadge, type CreditsSnapshot } from "../../app/CreditsBadge";
 import { PreferenceMenuButton } from "../../app/PreferencePicker";
 import { useT } from "../../app/Preferences";
 import { AccountMenu, Notifications, SearchBox, TABS, dropdown, useOutsideClose } from "../TopBar";
 import type { StudioFeatures, StudioTab, StudioViewer } from "../types";
 import type { SaveState } from "../useDesignEditor";
-
-const undoIcon = (redo = false) => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={redo ? { transform: "scaleX(-1)" } : undefined}>
-    <path d="M9 14L4 9l5-5" />
-    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
-  </svg>
-);
 
 /**
  * Barre du haut de l'éditeur : accueil, nom du projet (renommable), annuler / rétablir, enregistrer, exporter,
@@ -136,13 +130,13 @@ export function EditorTopBar({
   const title = item ? item.title ?? t("left.newRequest") : t("left.none");
 
   return (
-    <header className="relative z-30 flex flex-wrap items-center gap-x-1.5 gap-y-1 px-2 py-1.5 sm:px-3">
-      <Link href="/" aria-label={`${siteName} · ${t("nav.home")}`} title={t("nav.home")} className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-xl hover:bg-fg/10">
+    <header className="relative z-30 flex flex-wrap items-center gap-x-1.5 gap-y-1 border-b border-line bg-surface px-2 py-1 sm:px-3">
+      <Link href="/" aria-label={`${siteName} · ${t("nav.home")}`} title={t("nav.home")} className="tap flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink hover:bg-paper">
         {logoDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoDataUrl} alt="" className="h-7 w-7 rounded-lg object-contain" />
+          <img src={logoDataUrl} alt="" className="h-6 w-6 rounded object-contain" />
         ) : (
-          <LogoMark size={26} />
+          <LogoMark size={22} />
         )}
       </Link>
 
@@ -153,7 +147,7 @@ export function EditorTopBar({
             autoFocus
             defaultValue={title}
             aria-label={t("editor.renameProject")}
-            className="input !h-9 !py-1 !text-sm"
+            className="input !min-h-7 !py-0.5 !text-sm"
             onKeyDown={(e) => {
               e.stopPropagation();
               if (e.key === "Enter") {
@@ -168,33 +162,39 @@ export function EditorTopBar({
           />
         ) : (
           <>
-            <h2 className="truncate text-base font-bold tracking-tight text-fg" title={title}>
+            <h2 className="truncate text-sm font-medium text-ink" title={title}>
               {title}
             </h2>
             {editable && (
-              <button type="button" onClick={() => setRenaming(true)} aria-label={t("editor.renameProject")} title={t("editor.renameProject")} className="tap flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg/60 hover:bg-fg/10 hover:text-fg">
-                <IconPencil size={14} />
-              </button>
+              <Tooltip label={t("editor.renameProject")}>
+                <button type="button" onClick={() => setRenaming(true)} aria-label={t("editor.renameProject")} className="icon-btn tap">
+                  <IconPencil />
+                </button>
+              </Tooltip>
             )}
           </>
         )}
       </div>
 
       {/* Annuler / rétablir / enregistrer */}
-      <div className="flex shrink-0 items-center gap-0.5 rounded-xl bg-fg/[0.05] p-0.5 ring-1 ring-inset ring-fg/10">
-        <button type="button" onClick={onUndo} disabled={!canUndo} aria-label={`${t("editor.undo")} (${mod}Z)`} title={`${t("editor.undo")} (${mod}Z)`} className="tap flex h-8 w-8 items-center justify-center rounded-lg text-fg/80 hover:bg-fg/10 disabled:opacity-30">
-          {undoIcon()}
-        </button>
-        <button type="button" onClick={onRedo} disabled={!canRedo} aria-label={`${t("editor.redo")} (⇧${mod}Z)`} title={`${t("editor.redo")} (⇧${mod}Z)`} className="tap flex h-8 w-8 items-center justify-center rounded-lg text-fg/80 hover:bg-fg/10 disabled:opacity-30">
-          {undoIcon(true)}
-        </button>
+      <div className="flex shrink-0 items-center gap-0.5 border-s border-line ps-1.5">
+        <Tooltip label={t("editor.undo")} shortcut={`${mod}Z`}>
+          <button type="button" onClick={onUndo} disabled={!canUndo} aria-label={`${t("editor.undo")} (${mod}Z)`} className="icon-btn tap">
+            <IconUndo />
+          </button>
+        </Tooltip>
+        <Tooltip label={t("editor.redo")} shortcut={`⇧${mod}Z`}>
+          <button type="button" onClick={onRedo} disabled={!canRedo} aria-label={`${t("editor.redo")} (⇧${mod}Z)`} className="icon-btn tap">
+            <IconRedo />
+          </button>
+        </Tooltip>
         {editable && (
           <button
             type="button"
             onClick={onSave}
             title={`${t("editor.save")} (${mod}S)`}
             aria-live="polite"
-            className={`tap flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold ${saveState === "error" ? "text-danger" : "text-fg/75"} hover:bg-fg/10`}
+            className={`tap flex h-8 items-center gap-1 rounded-md px-2 text-xs ${saveState === "error" ? "text-danger" : "text-ink-mute"} hover:bg-paper hover:text-ink`}
           >
             {saveState === "saving" || saveState === "pending" ? <Spinner size={12} /> : saveState === "saved" || saveState === "local" ? <IconCheck size={13} /> : null}
             <span className="hidden sm:inline">{saveLabel}</span>
@@ -203,14 +203,14 @@ export function EditorTopBar({
       </div>
 
       {/* Onglets */}
-      <nav aria-label={t("tabs.label")} className="order-last flex w-full gap-0.5 overflow-x-auto rounded-xl bg-fg/[0.05] p-0.5 ring-1 ring-inset ring-fg/10 scrollbar-none md:order-none md:mx-auto md:w-auto">
+      <nav aria-label={t("tabs.label")} className="order-last flex w-full gap-0.5 overflow-x-auto scrollbar-none md:order-none md:mx-auto md:w-auto">
         {TABS.map((x) => (
           <button
             key={x.id}
             type="button"
             onClick={() => onTab(x.id)}
             aria-current={tab === x.id ? "page" : undefined}
-            className={`tap flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition md:flex-none ${tab === x.id ? "bg-fg text-canvas" : "text-fg/70 hover:text-fg"}`}
+            className={`tap flex-1 whitespace-nowrap rounded-md px-2.5 py-1 text-sm transition-colors md:flex-none ${tab === x.id ? "bg-paper font-medium text-ink" : "text-ink-mute hover:text-ink"}`}
           >
             {t(x.label)}
           </button>
@@ -228,16 +228,16 @@ export function EditorTopBar({
               type="button"
               onClick={() => setExportOpen((o) => !o)}
               aria-expanded={exportOpen}
-              className="btn-neon tap !rounded-xl !px-3 !py-1.5 !text-xs"
+              className="btn-primary tap"
             >
-              {exporting ? <Spinner size={13} /> : <IconDownload size={14} />}
+              {exporting ? <Spinner size={16} /> : <IconDownload />}
               <span className="hidden sm:inline">{t("viewer.export")}</span>
             </button>
             <AnimatePresence>
               {exportOpen && (
-                <motion.div {...dropdown} className="absolute end-0 top-11 z-40 w-56 rounded-2xl border border-line bg-surface p-1.5 shadow-float">
+                <motion.div {...dropdown} className="menu absolute end-0 top-10 z-40 w-56">
                   {exportItems.map((e) => (
-                    <button key={e.label} type="button" onClick={e.run} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-xs font-semibold text-ink hover:bg-paper">
+                    <button key={e.label} type="button" onClick={e.run} className="list-item">
                       {e.icon}
                       {e.label}
                     </button>
@@ -248,7 +248,7 @@ export function EditorTopBar({
           </div>
         )}
         {credits && <CreditsBadge initial={credits} />}
-        <Link href="/galerie" className="btn tap hidden !px-2.5 !py-1.5 !text-xs text-fg/75 hover:bg-fg/10 hover:text-fg xl:inline-flex">
+        <Link href="/galerie" className="btn-subtle tap hidden xl:inline-flex">
           {t("nav.gallery")}
         </Link>
         <PreferenceMenuButton />

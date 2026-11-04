@@ -12,12 +12,15 @@ import { MATERIAL_PRESETS, applyPartTransform, createPartGeometry, disposeGroup 
 type Pointer = { x: number; y: number };
 
 /** Construit un objet centré et ramené à une taille de 1 unité. */
-function buildObject(obj: HeroObject): THREE.Group {
+const NEUTRALS = ["#9aa0aa", "#c3c7ce", "#6e737c", "#b1b5bd"];
+
+function buildObject(obj: HeroObject, tint?: string): THREE.Group {
   const inner = new THREE.Group();
   for (const part of obj.parts) {
     const preset = MATERIAL_PRESETS[part.material];
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(part.color),
+      // Teintes neutres (gris) ; seul le premier objet garde la couleur d'accent.
+      color: new THREE.Color(tint ?? NEUTRALS[obj.parts.indexOf(part) % NEUTRALS.length]),
       metalness: preset.metalness,
       roughness: Math.min(preset.roughness, 0.6),
       transparent: preset.opacity < 1,
@@ -52,7 +55,7 @@ const SLOTS_TALL = [
 ];
 
 function Floater({ obj, index, pointer, animate }: { obj: HeroObject; index: number; pointer: React.MutableRefObject<Pointer>; animate: boolean }) {
-  const object = useMemo(() => buildObject(obj), [obj]);
+  const object = useMemo(() => buildObject(obj, index === 0 ? "#2563eb" : undefined), [obj, index]);
   useEffect(() => () => disposeGroup(object), [object]);
   const { viewport } = useThree();
   const tall = viewport.aspect < 0.9;
@@ -164,12 +167,11 @@ export default function HeroScene({ pointer, reduceMotion, onReady }: { pointer:
           onFallback={() => setDpr(0.85)}
         />
         <LocalEnvironment />
-        <ambientLight intensity={0.18} />
-        <directionalLight position={[1.5, 3, 5]} intensity={0.9} color="#ffffff" />
-        {/* Lumières de contour néon */}
-        <directionalLight position={[-6, 1.5, -2]} intensity={5} color="#2f6bff" />
-        <directionalLight position={[6, -1, -2]} intensity={4.2} color="#ff6b4a" />
-        <directionalLight position={[0, 5, -4]} intensity={1.6} color="#8b5cf6" />
+        {/* Éclairage de studio neutre : clé, remplissage et contour blancs. */}
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[1.5, 3, 5]} intensity={1.2} color="#ffffff" />
+        <directionalLight position={[-5, 2, -3]} intensity={1.4} color="#ffffff" />
+        <directionalLight position={[5, -1, -2]} intensity={0.6} color="#e6e8ec" />
         {HERO_OBJECTS.map((obj, i) => (
           <Floater key={obj.id} obj={obj} index={i} pointer={pointer} animate={!reduceMotion} />
         ))}

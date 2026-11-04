@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { IconCube, LogoMark } from "@/components/icons";
+import { LogoMark } from "@/components/icons";
 import { DEFAULT_SITE, type SiteSettings } from "@/lib/settings";
 import { saveSiteSettings } from "../actions";
 import { ResultMessage, useSave } from "../useSave";
@@ -28,12 +28,6 @@ const TEXT_FIELDS: { key: keyof SiteSettings; label: string; max: number; long?:
   { key: "heroTitleLine2", label: "Titre (ligne 2)", max: 60 },
   { key: "heroSubtitle", label: "Sous-titre", max: 260, long: true },
   { key: "footerText", label: "Pied de page", max: 160 },
-];
-
-const COLOR_FIELDS: { key: "colorFrom" | "colorTo" | "accent"; label: string }[] = [
-  { key: "colorFrom", label: "Dégradé : début" },
-  { key: "colorTo", label: "Dégradé : fin" },
-  { key: "accent", label: "Couleur d'accent" },
 ];
 
 export function AppearanceForm({ initial }: { initial: SiteSettings }) {
@@ -71,19 +65,13 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
           </div>
         ))}
 
-        <div className="grid grid-cols-3 gap-3">
-          {COLOR_FIELDS.map((c) => (
-            <div key={c.key}>
-              <label className="label" htmlFor={c.key}>
-                {c.label}
-              </label>
-              <div className="flex items-center gap-2 rounded-xl border border-line bg-surface p-1.5">
-                <input id={c.key} type="color" value={site[c.key]} onChange={(e) => set(c.key, e.target.value)} className="h-8 w-10 cursor-pointer rounded-lg border-0 bg-transparent" />
-                <span className="font-mono text-xs">{site[c.key]}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Les couleurs ne se règlent plus ici : le système de design fixe un accent unique et des surfaces neutres (voir /design-system). */}
+        <p className="text-xs text-ink-mute">
+          Couleurs : fixées par le système de design (accent unique, surfaces neutres, contraste vérifié).{" "}
+          <a href="/design-system" className="text-accent underline-offset-2 hover:underline">
+            Voir /design-system
+          </a>
+        </p>
 
         <div>
           <p className="label">Logo</p>
@@ -137,8 +125,8 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
       {/* Aperçu en direct */}
       <div className="xl:sticky xl:top-6 xl:self-start">
         <p className="label">Aperçu en direct</p>
-        <div className="overflow-hidden rounded-3xl p-5" style={{ background: `linear-gradient(135deg, ${site.colorFrom}, ${site.colorTo})` }}>
-          <div className="rounded-lg bg-paper p-6 text-center shadow-card">
+        <div className="overflow-hidden rounded-lg border border-line bg-canvas p-5">
+          <div className="rounded-lg bg-paper p-6 text-center border border-line">
             <div className="flex items-center gap-2 text-left text-sm font-semibold">
               {site.logoDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -149,17 +137,10 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
               {site.siteName}
             </div>
             <p className="mt-6 text-3xl font-semibold leading-[1.08] tracking-tight">
-              {site.heroPill && (
-                <span className="mr-2 inline-flex items-center gap-1.5 rounded-md bg-night px-3 py-0.5 text-white">
-                  {site.heroPill}
-                  <IconCube size={22} strokeWidth={1.5} />
-                </span>
-              )}
-              {site.heroTitle}
-              <span className="block">{site.heroTitleLine2}</span>
+              {site.heroPill} {site.heroTitle} {site.heroTitleLine2}
             </p>
             <p className="mx-auto mt-3 max-w-sm text-sm text-ink-mute">{site.heroSubtitle}</p>
-            <span className="btn mt-4 text-white" style={{ background: site.accent }}>
+            <span className="btn-primary mt-4">
               Nouvelle demande
             </span>
           </div>

@@ -26,12 +26,12 @@ function assert(condition, message) {
 const home = await waitForServer();
 const landing = await home.text();
 assert(landing.includes("Forma3D"), "la page d'accueil s'affiche");
-assert(landing.includes("Essayer") && landing.includes("Comment ça marche"), "accueil des visiteurs : boutons et explication en 3 étapes");
+assert(/Ouvrir l('|&#x27;)éditeur/.test(landing) && landing.includes("Comment ça marche"), "accueil des visiteurs : bouton « Ouvrir l'éditeur » et explication en 3 étapes");
 const studio = await fetch(`${base}/studio`);
 const html = await studio.text();
 assert(studio.ok && html.includes('id="prompt"') && html.includes("Outils de l&#x27;éditeur"), "l'éditeur (/studio) : barre de saisie et barre d'outils");
 const english = await (await fetch(`${base}/`, { headers: { "Accept-Language": "en-US,en;q=0.9" } })).text();
-assert(english.includes('lang="en"') && english.includes("Try it"), "détection automatique de la langue (anglais)");
+assert(english.includes('lang="en"') && english.includes("Open the editor"), "détection automatique de la langue (anglais)");
 const arabic = await (await fetch(`${base}/`, { headers: { "Accept-Language": "ar" } })).text();
 assert(arabic.includes('dir="rtl"'), "arabe : lecture de droite à gauche");
 const dark = await (await fetch(`${base}/studio`, { headers: { Cookie: "forma3d-theme=dark" } })).text();
@@ -44,6 +44,9 @@ assert(landing.includes('aria-label="Navigation principale"') && landing.include
 const oldLink = await fetch(`${base}/?p=00000000-0000-0000-0000-000000000000`, { redirect: "manual" });
 assert(oldLink.status >= 300 && oldLink.status < 400 && (oldLink.headers.get("location") ?? "").includes("/studio?p="), "anciens liens /?p= redirigés vers l'éditeur");
 assert((await fetch(`${base}/galerie`)).ok, "la galerie publique répond");
+const ds = await fetch(`${base}/design-system`);
+const dsHtml = await ds.text();
+assert(ds.ok && dsHtml.includes("Système de design") && dsHtml.includes("--accent"), "la page /design-system répond (couleurs, composants)");
 const shared = await fetch(`${base}/p/lien-inexistant-0123456789`);
 assert(shared.ok && (await shared.text()).includes("lien de partage"), "un lien de partage inconnu affiche un message clair");
 const badComment = await fetch(`${base}/api/share/comment`, {

@@ -105,9 +105,9 @@ export function PromptBar({
           e.preventDefault();
           submit();
         }}
-        className="flex items-end gap-2 rounded-lg bg-surface p-1.5 pl-3 shadow-card ring-1 ring-black/5"
+        className="flex items-end gap-2 rounded-lg border border-line bg-surface p-1 ps-3 transition-colors focus-within:border-accent"
       >
-        <span className="mb-2.5 hidden text-brand-accent sm:block">
+        <span className="mb-2 hidden text-ink-mute sm:block">
           <IconSparkles size={18} />
         </span>
         <label htmlFor="prompt" className="sr-only">
@@ -129,12 +129,12 @@ export function PromptBar({
             }
           }}
           placeholder={t("prompt.placeholder")}
-          className="min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base leading-6 outline-none placeholder:text-ink-mute"
+          className="min-w-0 flex-1 resize-none bg-transparent py-1.5 text-base outline-none placeholder:text-ink-mute"
         />
         {image && (
           <span className="relative mb-1 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image.previewUrl} alt={t("prompt.photo")} className="h-9 w-9 rounded-xl object-cover" />
+            <img src={image.previewUrl} alt={t("prompt.photo")} className="h-8 w-8 rounded object-cover" />
             <button
               type="button"
               onClick={() => setImage(null)}
@@ -153,7 +153,7 @@ export function PromptBar({
             <button
               type="button"
               onClick={() => cameraInput.current?.click()}
-              className="icon-btn mb-0.5 hidden !h-10 !w-10 shrink-0 [@media(pointer:coarse)]:flex"
+              className="icon-btn tap hidden shrink-0 [@media(pointer:coarse)]:flex"
               aria-label={t("prompt.takePhoto")}
               title={t("prompt.takePhoto")}
             >
@@ -162,7 +162,7 @@ export function PromptBar({
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
-              className="icon-btn mb-0.5 !h-10 !w-10 shrink-0"
+              className="icon-btn tap shrink-0"
               aria-label={t("prompt.attachPhoto")}
               title={t("prompt.attachPhoto")}
             >
@@ -170,19 +170,19 @@ export function PromptBar({
             </button>
           </>
         )}
-        <button type="submit" disabled={busy && prompt.trim().length < 3} className="btn-accent mb-0.5 shrink-0 !rounded-lg !px-4 !py-2.5">
+        <button type="submit" disabled={busy && prompt.trim().length < 3} className="btn-primary tap shrink-0">
           {busy ? <Spinner /> : <IconSparkles size={15} />}
           <span className="hidden sm:inline">{t("prompt.generate")}</span>
         </button>
       </form>
-      {error && <p className="mt-1.5 px-3 text-xs font-medium text-fg">{error}</p>}
+      {error && <p className="mt-1.5 px-3 text-xs text-danger">{error}</p>}
       <AnimatePresence>
         {focused && !prompt && (
           <motion.div
             initial={{ opacity: 0, y: placement === "above" ? 4 : -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: placement === "above" ? 4 : -4 }}
-            className={`absolute left-0 right-0 z-30 ${placement === "above" ? "bottom-full mb-2" : "top-full mt-2"} flex flex-wrap gap-1.5 rounded-2xl bg-surface p-2 shadow-float`}
+            className={`absolute left-0 right-0 z-30 ${placement === "above" ? "bottom-full mb-2" : "top-full mt-2"} flex flex-wrap gap-1 rounded-lg border border-line bg-surface p-1.5 shadow-float`}
           >
             {EXAMPLES.map((key) => (
               <button
@@ -193,7 +193,7 @@ export function PromptBar({
                   setPrompt(t(key));
                   area.current?.focus();
                 }}
-                className="rounded-md bg-paper px-3 py-1.5 text-xs text-ink-soft transition hover:bg-brand-accent/10 hover:text-brand-accent"
+                className="rounded-md border border-line px-2.5 py-1 text-xs text-ink-soft transition-colors hover:bg-paper hover:text-ink"
               >
                 {t(key)}
               </button>

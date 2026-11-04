@@ -87,12 +87,7 @@ export function HeroStage({ children, tiltLabel }: { children: React.ReactNode; 
 
   return (
     <>
-      {/* Lueurs de repli, visibles pendant le chargement de la 3D (et sans WebGL). */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -start-[10%] top-[18%] h-[38vmax] w-[38vmax] rounded-full bg-[radial-gradient(closest-side,rgb(var(--neon-blue)/0.28),transparent)]" />
-        <div className="absolute -end-[8%] bottom-[8%] h-[34vmax] w-[34vmax] rounded-full bg-[radial-gradient(closest-side,rgb(var(--neon-coral)/0.22),transparent)]" />
-      </div>
-      <div aria-hidden className={`pointer-events-none absolute inset-0 transition-opacity duration-1000 ${ready ? "opacity-100" : "opacity-0"}`}>
+      <div aria-hidden className={`pointer-events-none absolute inset-0 transition-opacity duration-200 ${ready ? "opacity-100" : "opacity-0"}`}>
         {armed && <HeroScene pointer={pointer} reduceMotion={reduceMotion} onReady={() => setReady(true)} />}
       </div>
       {children}
@@ -100,7 +95,7 @@ export function HeroStage({ children, tiltLabel }: { children: React.ReactNode; 
         <button
           type="button"
           onClick={requestTilt}
-          className="btn-line tap absolute bottom-[calc(env(safe-area-inset-bottom)+20px)] start-4 z-20 !py-2 !text-xs backdrop-blur"
+          className="btn-secondary tap absolute bottom-[calc(env(safe-area-inset-bottom)+20px)] start-4 z-20 !text-xs"
         >
           {tiltLabel}
         </button>

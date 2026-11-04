@@ -27,7 +27,7 @@ export function AuthPrompt({ message, onClose }: { message: string | null; onClo
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
-              className="w-full max-w-md rounded-t-lg bg-surface p-6 shadow-card sm:rounded-lg"
+              className="w-full max-w-md rounded-t-lg bg-surface p-6 border border-line sm:rounded-lg"
             >
               <div className="flex items-start justify-between gap-4">
                 <h2 id="auth-prompt-title" className="text-xl font-semibold tracking-tight">

@@ -154,7 +154,7 @@ export function EspaceClient({
       <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-4">
         <div className="text-fg">
           <h2 className="font-display text-3xl font-black tracking-tight sm:text-5xl">Mon espace</h2>
-          <p className="mt-1 text-sm text-fg/65">
+          <p className="mt-1 text-sm text-ink-mute">
             {viewer.displayName ?? viewer.email} · {items.length} demande{items.length > 1 ? "s" : ""} · sauvegardé dans votre compte
           </p>
         </div>
@@ -190,7 +190,7 @@ export function EspaceClient({
           />
         )}
 
-        <section className="min-w-0 rounded-lg bg-paper p-3 shadow-card sm:p-4">
+        <section className="min-w-0 rounded-lg bg-paper p-3 border border-line sm:p-4">
           {showFolders && (
             <div className="mb-3 flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-2">
               <IconSearch size={14} className="text-ink-mute" />
@@ -341,7 +341,7 @@ function FolderSidebar({
     </li>
   );
   return (
-    <aside className="rounded-lg bg-surface p-3 shadow-card lg:self-start">
+    <aside className="rounded-lg bg-surface p-3 border border-line lg:self-start">
       <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-ink-mute">Dossiers (projets)</p>
       <ul className="space-y-0.5">
         {entry("all", "Toutes les demandes")}

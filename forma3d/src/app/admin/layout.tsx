@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { site } = await getPublicSettings();
   return (
     <main className="min-h-dvh px-3 py-4 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-[1280px] rounded-card bg-paper p-4 shadow-card sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-[1280px] rounded-card bg-paper p-4 border border-line sm:p-6 lg:p-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             {site.logoDataUrl ? (

@@ -43,8 +43,8 @@ export function Showcase({ examples }: { examples: { title: string; category: st
   const current = examples[index];
   if (!current) return null;
   return (
-    <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(260px,0.8fr)_2fr] lg:gap-12">
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none lg:flex-col lg:gap-1 lg:overflow-visible" role="tablist">
+    <div className="grid w-full items-stretch gap-4 lg:grid-cols-[minmax(220px,0.7fr)_2fr] lg:gap-6">
+      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none lg:flex-col lg:overflow-visible" role="tablist">
         {examples.map((e, i) => (
             <button
               key={e.title}
@@ -55,14 +55,14 @@ export function Showcase({ examples }: { examples: { title: string; category: st
                 setIndex(i);
                 setPaused(true);
               }}
-              className={`group flex min-h-11 w-full shrink-0 items-center gap-4 rounded-2xl px-4 py-3 text-start transition ${
-                i === index ? "bg-fg/[0.07] text-fg" : "text-fg/55 hover:text-fg"
+              className={`group flex min-h-11 w-full shrink-0 items-center gap-3 rounded-md border px-3 py-2 text-start transition-colors ${
+                i === index ? "border-line bg-surface text-ink" : "border-transparent text-ink-mute hover:bg-paper hover:text-ink"
               }`}
             >
-              <span className={`font-display text-sm font-black tabular-nums ${i === index ? "text-neon" : ""}`}>{String(i + 1).padStart(2, "0")}</span>
+              <span className={`font-mono text-xs ${i === index ? "text-accent" : ""}`}>{String(i + 1).padStart(2, "0")}</span>
               <span className="min-w-0">
-                <span className="block truncate text-base font-bold tracking-tight lg:text-lg">{e.title}</span>
-                <span className="block truncate text-xs text-fg/50">{e.category}</span>
+                <span className="block truncate text-base font-medium">{e.title}</span>
+                <span className="block truncate text-xs text-ink-mute">{e.category}</span>
               </span>
             </button>
         ))}
@@ -70,12 +70,12 @@ export function Showcase({ examples }: { examples: { title: string; category: st
       <div
         ref={ref}
         onPointerDown={() => setPaused(true)}
-        className="relative h-[52dvh] min-h-[320px] w-full overflow-hidden rounded-lg bg-[radial-gradient(circle_at_30%_20%,rgb(var(--neon-blue)/0.22),transparent_55%),radial-gradient(circle_at_80%_90%,rgb(var(--neon-coral)/0.18),transparent_55%)] ring-1 ring-fg/10 lg:h-[64dvh]"
+        className="relative h-[48dvh] min-h-[320px] w-full overflow-hidden rounded-lg border border-line bg-paper lg:h-[56dvh]"
       >
         {armed ? (
           <ModelViewer design={current.design} settings={{ ...DEFAULT_VIEWER_SETTINGS, showGrid: false }} focusId={null} onFocusChange={() => {}} />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-fg/60">
+          <div className="absolute inset-0 flex items-center justify-center text-ink-mute">
             <Spinner size={22} />
           </div>
         )}

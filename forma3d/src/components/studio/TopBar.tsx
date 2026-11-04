@@ -80,8 +80,8 @@ export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div {...dropdown} className="absolute end-0 top-10 z-30 w-[min(300px,80vw)] rounded-2xl border border-line bg-surface p-2 shadow-float">
-            <div className="flex items-center gap-2 rounded-xl bg-paper px-3 py-2">
+          <motion.div {...dropdown} className="absolute end-0 top-10 z-30 w-[min(300px,80vw)] rounded-lg border border-line bg-surface p-1 shadow-float">
+            <div className="flex items-center gap-2 rounded-md border border-line bg-paper px-2.5 py-1.5">
               <IconSearch size={14} className="text-ink-mute" />
               <input
                 autoFocus
@@ -101,10 +101,10 @@ export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(
                   <button
                     type="button"
                     onClick={() => pick(item.id)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start hover:bg-paper"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start hover:bg-paper"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{item.title ?? item.prompt}</span>
+                      <span className="block truncate text-sm font-medium">{item.title ?? item.prompt}</span>
                       <span className="block truncate text-xs text-ink-mute">{item.prompt}</span>
                     </span>
                     <StatusChip status={item.status} compact />
@@ -159,8 +159,8 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div {...dropdown} className="absolute end-0 top-10 z-30 w-[min(300px,80vw)] rounded-2xl border border-line bg-surface p-2 shadow-float">
-            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-mute">{tr("notif.activity")}</p>
+          <motion.div {...dropdown} className="absolute end-0 top-10 z-30 w-[min(300px,80vw)] rounded-lg border border-line bg-surface p-1 shadow-float">
+            <p className="px-2 pb-1 pt-1.5 text-xs font-medium text-ink-mute">{tr("notif.activity")}</p>
             {recent.length === 0 ? (
               <p className="px-3 py-4 text-center text-xs text-ink-mute">{tr("notif.empty")}</p>
             ) : (
@@ -173,11 +173,11 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
                         onSelect(item.id);
                         setOpen(false);
                       }}
-                      className="flex w-full items-start gap-2 rounded-xl px-3 py-2 text-start hover:bg-paper"
+                      className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-start hover:bg-paper"
                     >
                       <StatusChip status={item.status} compact />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold">{item.title ?? item.prompt}</span>
+                        <span className="block truncate text-sm font-medium">{item.title ?? item.prompt}</span>
                         <span className="block text-xs text-ink-mute">
                           {item.status === "ready"
                             ? tr("notif.ready")
@@ -216,10 +216,10 @@ export function AccountMenu({
     if (demoMode) return <span className="chip bg-warning/10 text-warning">{t("nav.demo")}</span>;
     return (
       <div className="flex items-center gap-1.5">
-        <Link href="/connexion" className="btn tap !px-3 !py-1.5 !text-xs text-fg/85 hover:bg-fg/10 hover:text-fg">
+        <Link href="/connexion" className="btn-subtle tap">
           {t("nav.login")}
         </Link>
-        <Link href="/connexion?mode=inscription" className="btn-fg tap !px-3.5 !py-1.5 !text-xs">
+        <Link href="/connexion?mode=inscription" className="btn-primary tap">
           {t("nav.signup")}
         </Link>
       </div>
@@ -238,7 +238,7 @@ export function AccountMenu({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="tap flex items-center gap-1 rounded-md py-0.5 pl-1.5 pr-0.5 text-fg/75 hover:text-fg"
+        className="tap flex items-center gap-1 rounded-md py-0.5 ps-0.5 pe-1 text-ink-mute hover:bg-paper hover:text-ink"
         aria-label={t("menu.account")}
         aria-expanded={open}
       >
@@ -254,18 +254,18 @@ export function AccountMenu({
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div {...dropdown} className="absolute end-0 top-11 z-30 w-60 rounded-2xl border border-line bg-surface p-2 shadow-float">
+          <motion.div {...dropdown} className="absolute end-0 top-11 z-30 w-60 rounded-lg border border-line bg-surface p-1 shadow-float">
             <div className="px-3 py-2">
-              <p className="truncate text-sm font-semibold">{name}</p>
+              <p className="truncate text-sm font-medium">{name}</p>
               <p className="truncate text-xs text-ink-mute">{viewer.email}</p>
-              {viewer.role === "admin" && <span className="chip mt-1.5 bg-night text-white">{t("menu.administrator")}</span>}
+              {viewer.role === "admin" && <span className="chip mt-1.5 border border-line text-ink-soft">{t("menu.administrator")}</span>}
             </div>
             <div className="my-1 h-px bg-line" />
-            <Link href="/espace" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-paper">
+            <Link href="/espace" className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-paper">
               <IconUser size={15} /> {t("nav.space")}
             </Link>
             {viewer.role === "admin" && (
-              <Link href="/admin" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-paper">
+              <Link href="/admin" className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-paper">
                 <IconShield size={15} /> {t("menu.administration")}
               </Link>
             )}
@@ -276,13 +276,13 @@ export function AccountMenu({
                   onSettings();
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm hover:bg-paper"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm hover:bg-paper"
               >
                 <IconSettings size={15} /> {t("tab.settings")}
               </button>
             )}
             <form action={signOut}>
-              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-danger hover:bg-danger/10">
+              <button type="submit" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm text-danger hover:bg-danger/10">
                 <IconLogout size={15} /> {t("menu.logout")}
               </button>
             </form>

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/app/AppHeader";
 import { ProjectView } from "@/components/gallery/ProjectView";
-import { Backdrop } from "@/components/landing/Backdrop";
 import { validateDesign } from "@/lib/design/schema";
 import { getTranslator } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/settings.server";
@@ -28,10 +27,9 @@ export default async function GalleryItemPage({ params }: { params: Promise<{ id
 
   return (
     <main className="pt-nav relative min-h-dvh overflow-x-clip">
-      <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={false} />
       <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
-        <Link href="/galerie" className="tap inline-flex items-center text-sm font-semibold text-fg/70 hover:text-fg">
+        <Link href="/galerie" className="tap inline-flex items-center text-sm font-semibold text-ink-soft hover:text-fg">
           {t("gallery.back")}
         </Link>
         <ProjectView

@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root,
+.theme-light {
   /*
    * Système de design de Forma3D (référence : /design-system). Valeurs RGB (« r g b ») pour l'opacité Tailwind.
    * Contrastes vérifiés WCAG AA : texte courant ≥ 4,5:1 sur surface et toile, dans les deux thèmes.
@@ -20,12 +21,12 @@
   --ink-mute: 100 106 116; /* 5,5:1 */
   --fg: 22 24 29;
   /* Accent unique : sélection et action principale. */
-  --accent: 37 99 235; /* texte / icône d'accent : 5,2:1 sur surface */
+  --accent: 29 78 216; /* texte / icône d'accent : 6,7:1 sur surface, ≥ 4,5:1 sur fond d'accent teinté */
   --accent-strong: 29 78 216; /* fond des boutons principaux, texte blanc : 6,7:1 */
   /* Couleurs sémantiques, discrètes. */
-  --success: 21 128 61;
-  --warning: 180 83 9;
-  --danger: 200 30 30;
+  --success: 17 115 52;
+  --warning: 163 72 6;
+  --danger: 185 28 28;
   /* Couleurs des axes : réservées à la 3D. */
   --axis-x: 230 57 70;
   --axis-y: 46 160 67;

@@ -53,7 +53,7 @@ export function ProjectView({
 
   return (
     <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-      <div className="relative h-[52dvh] min-h-[320px] overflow-hidden rounded-lg shadow-card" style={{ background: viewerBackgroundCss(mode, dark) }}>
+      <div className="relative h-[52dvh] min-h-[320px] overflow-hidden rounded-lg border border-line" style={{ background: viewerBackgroundCss(mode, dark) }}>
         <ModelViewer design={design} settings={{ ...DEFAULT_VIEWER_SETTINGS, mode }} focusId={null} onFocusChange={() => {}} />
         <div className="absolute end-3 top-3 flex gap-1 rounded-md bg-black/25 p-1 backdrop-blur">
           {(["neon", "real"] as const).map((m) => (

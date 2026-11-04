@@ -238,7 +238,7 @@ export function ViewerPanel({
   return (
     <div
       ref={wrap}
-      className={className ?? "relative h-[52dvh] min-h-[300px] overflow-hidden rounded-lg shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"}
+      className={className ?? "relative h-[52dvh] min-h-[300px] overflow-hidden rounded-lg border border-line md:h-[62dvh] lg:h-full lg:min-h-0"}
       style={{ background: viewerBackgroundCss(design ? settings.mode : "neon", dark, settings.background) }}
     >
       {/* Halo décoratif */}

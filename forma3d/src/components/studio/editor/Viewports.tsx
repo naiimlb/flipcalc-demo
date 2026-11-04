@@ -10,7 +10,7 @@ import type { ViewLayout } from "./Toolbar";
 const OrthoViewer = dynamic(() => import("../../viewer/OrthoViewer"), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 flex items-center justify-center text-fg/50">
+    <div className="absolute inset-0 flex items-center justify-center text-ink-mute">
       <Spinner size={18} />
     </div>
   ),

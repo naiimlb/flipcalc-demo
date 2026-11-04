@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/app/AppHeader";
 import { ProjectView, type SharedComment } from "@/components/gallery/ProjectView";
-import { Backdrop } from "@/components/landing/Backdrop";
 import { validateDesign } from "@/lib/design/schema";
 import { getTranslator } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/settings.server";
@@ -36,7 +35,6 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
 
   return (
     <main className="pt-nav relative min-h-dvh overflow-x-clip">
-      <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={isDemoMode()} />
       <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
         {shared && validated?.ok ? (
