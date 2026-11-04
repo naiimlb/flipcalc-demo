@@ -50,7 +50,7 @@ export function SettingsTab({
         <div className="mt-4 space-y-4">
           <div>
             <p className="label">{t("settings.render")}</p>
-            <div className="flex gap-1 rounded-full bg-paper p-1">
+            <div className="flex gap-1 rounded-md bg-paper p-1">
               {(
                 [
                   ["neon", t("mode.neon")],
@@ -61,7 +61,7 @@ export function SettingsTab({
                   key={id}
                   type="button"
                   onClick={() => onPrefs({ mode: id })}
-                  className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold ${prefs.mode === id ? "bg-brand-accent text-white" : "text-ink-soft"}`}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium ${prefs.mode === id ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft"}`}
                 >
                   {label}
                 </button>
@@ -70,13 +70,13 @@ export function SettingsTab({
           </div>
           <div>
             <p className="label">{t("settings.units")}</p>
-            <div className="flex gap-1 rounded-full bg-paper p-1">
+            <div className="flex gap-1 rounded-md bg-paper p-1">
               {UNITS.map((u) => (
                 <button
                   key={u.id}
                   type="button"
                   onClick={() => onPrefs({ unit: u.id })}
-                  className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold ${prefs.unit === u.id ? "bg-brand-accent text-white" : "text-ink-soft"}`}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium ${prefs.unit === u.id ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft"}`}
                 >
                   {t(u.label)}
                 </button>

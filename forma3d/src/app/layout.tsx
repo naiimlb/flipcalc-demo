@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { PreferencesProvider } from "@/components/app/Preferences";
 import { RegisterServiceWorker } from "@/components/app/RegisterServiceWorker";
 import { UpdateNotifier } from "@/components/app/UpdateNotifier";
-import { hexToRgbTriplet } from "@/lib/settings";
 import { getPublicSettings } from "@/lib/settings.server";
 import { LANG_COOKIE, dirOf, isLocale, type Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
@@ -12,17 +11,17 @@ import { getSession } from "@/lib/supabase/server";
 import { DEFAULT_THEME, THEME_BOOT_SCRIPT, THEME_COOKIE, isThemeChoice, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
-const uiFont = Plus_Jakarta_Sans({
+// Interface : Inter (sans-serif sobre). Valeurs numériques et cotes : JetBrains Mono (chasse fixe).
+const uiFont = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
 });
-// Titres géants : Inter très gras (police variable, un seul fichier).
-const displayFont = Inter({
+const monoFont = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-display",
-  weight: ["800", "900"],
+  variable: "--font-mono",
+  weight: ["400", "500"],
 });
 
 /** Écrans de lancement iOS : un par taille d'appareil (largeur × hauteur en pixels CSS, densité). */
@@ -67,18 +66,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#05060a",
+  themeColor: "#111214",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { site } = await getPublicSettings();
-  // Couleurs choisies dans /admin/apparence, appliquées à tout le site.
-  const brandVars = {
-    "--brand-from": hexToRgbTriplet(site.colorFrom),
-    "--brand-to": hexToRgbTriplet(site.colorTo),
-    "--brand-accent": hexToRgbTriplet(site.accent),
-  } as React.CSSProperties;
-
   // Langue et thème : choix mémorisé (cookie), sinon celui du compte, sinon détection automatique.
   const store = await cookies();
   const themeCookie = store.get(THEME_COOKIE)?.value;
@@ -99,7 +90,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang={locale} dir={dirOf(locale)} className={`${uiFont.variable} ${displayFont.variable}${theme === "dark" ? " dark" : ""}`} style={brandVars} data-theme={theme} suppressHydrationWarning>
+    <html lang={locale} dir={dirOf(locale)} className={`${uiFont.variable} ${monoFont.variable}${theme === "dark" ? " dark" : ""}`} data-theme={theme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>

@@ -90,7 +90,7 @@ export function ShareDialog({ requestId, onClose, onToast }: { requestId: string
   return (
     <Portal>
       <div className="fixed inset-0 z-[60] flex items-end justify-center bg-night/55 p-3 backdrop-blur-sm sm:items-center" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-        <div role="dialog" aria-modal="true" aria-labelledby="share-title" className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-[24px] bg-surface p-5 shadow-float">
+        <div role="dialog" aria-modal="true" aria-labelledby="share-title" className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-lg bg-surface p-5 shadow-float">
           <div className="flex items-start justify-between gap-3">
             <h2 id="share-title" className="text-lg font-semibold">
               {t("share.title")}
@@ -102,9 +102,9 @@ export function ShareDialog({ requestId, onClose, onToast }: { requestId: string
 
           {/* Lien de partage */}
           <section className="mt-3">
-            <p className="text-[12.5px] text-ink-soft">{t("share.text")}</p>
+            <p className="text-sm text-ink-soft">{t("share.text")}</p>
             {shareError ? (
-              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">{t("share.unavailable")}</p>
+              <p className="mt-3 rounded-xl bg-warning/10 p-3 text-xs text-warning">{t("share.unavailable")}</p>
             ) : !share ? (
               <button type="button" onClick={() => createLink()} disabled={busy} className="btn-accent mt-3 !text-xs">
                 {busy ? <Spinner size={12} /> : null} {t("left.share")}
@@ -150,9 +150,9 @@ export function ShareDialog({ requestId, onClose, onToast }: { requestId: string
           {/* Galerie publique */}
           <section className="mt-5 border-t border-line pt-4">
             <h3 className="text-sm font-semibold">{t("gallery.publishTitle")}</h3>
-            <p className="mt-1 text-[12.5px] text-ink-soft">{t("gallery.publishText")}</p>
+            <p className="mt-1 text-sm text-ink-soft">{t("gallery.publishText")}</p>
             {galleryError ? (
-              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">{t("gallery.unavailable")}</p>
+              <p className="mt-3 rounded-xl bg-warning/10 p-3 text-xs text-warning">{t("gallery.unavailable")}</p>
             ) : published === null ? (
               <Spinner size={16} />
             ) : published ? (

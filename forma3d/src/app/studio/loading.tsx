@@ -12,14 +12,14 @@ export default async function Loading() {
           <Skeleton className="h-40" />
           <Skeleton className="h-64" />
         </div>
-        <Skeleton className="min-h-[300px] !rounded-[24px]" />
+        <Skeleton className="min-h-[300px] !rounded-lg" />
         <div className="hidden space-y-3 lg:block">
           <Skeleton className="h-10" />
           <Skeleton className="h-56" />
           <Skeleton className="h-32" />
         </div>
       </div>
-      <Skeleton className="h-14 w-full !rounded-full" />
+      <Skeleton className="h-14 w-full !rounded-md" />
     </LoadingRegion>
   );
 }

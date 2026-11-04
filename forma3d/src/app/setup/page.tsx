@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 function Check({ ok, label, hint }: { ok: boolean; label: string; hint?: string }) {
   return (
     <li className="flex items-start gap-2 text-sm">
-      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${ok ? "bg-emerald-500 text-white" : "bg-rose-100 text-rose-600"}`}>
+      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${ok ? "bg-success/15 text-success" : "bg-danger/10 text-danger"}`}>
         {ok ? <IconCheck size={12} strokeWidth={3} /> : <IconX size={12} strokeWidth={3} />}
       </span>
       <span>

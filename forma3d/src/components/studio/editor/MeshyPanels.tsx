@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { PublicAsset } from "@/lib/requests";
-import { Spinner } from "../../icons";
+import { IconCheck, IconCoin, IconX, Spinner } from "../../icons";
 import { useT } from "../../app/Preferences";
 import { Sheet } from "./Sheet";
 
@@ -31,16 +31,16 @@ export function CostConfirm({ label, cost, balance, onConfirm, onClose }: { labe
     <Sheet title={label} onClose={onClose}>
       <dl className="grid grid-cols-2 gap-2 text-sm">
         <div className="rounded-xl bg-paper p-3">
-          <dt className="text-[11px] font-semibold text-ink-mute">{t("meshy.cost")}</dt>
+          <dt className="text-xs font-semibold text-ink-mute">{t("meshy.cost")}</dt>
           <dd className="text-lg font-bold">{cost === 0 ? t("meshy.free") : t("credits.badge", { n: cost })}</dd>
         </div>
         <div className="rounded-xl bg-paper p-3">
-          <dt className="text-[11px] font-semibold text-ink-mute">{t("meshy.after")}</dt>
+          <dt className="text-xs font-semibold text-ink-mute">{t("meshy.after")}</dt>
           <dd className="text-lg font-bold">{balance === null || balance === undefined ? "∞" : t("credits.badge", { n: Math.max(0, balance - cost) })}</dd>
         </div>
       </dl>
-      <p className="mt-3 text-[12px] leading-snug text-ink-mute">{t("meshy.chargeOnSuccess")}</p>
-      {!enough && <p className="mt-2 rounded-xl bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-500">{t("meshy.notEnough")}</p>}
+      <p className="mt-3 text-xs leading-snug text-ink-mute">{t("meshy.chargeOnSuccess")}</p>
+      {!enough && <p className="mt-2 rounded-xl bg-danger/10 px-3 py-2 text-xs font-semibold text-danger">{t("meshy.notEnough")}</p>}
       <div className="mt-4 flex gap-2">
         <button type="button" className="btn-ghost flex-1" onClick={onClose}>
           {t("meshy.cancel")}
@@ -68,9 +68,9 @@ export function CostConfirm({ label, cost, balance, onConfirm, onClose }: { labe
 function CostButton({ label, cost, onClick, disabled }: { label: string; cost: number | undefined; onClick(): void; disabled?: boolean }) {
   const t = useT();
   return (
-    <button type="button" className="btn-ghost tap w-full justify-between !rounded-xl !px-3 !py-2 !text-[11.5px]" onClick={onClick} disabled={disabled}>
+    <button type="button" className="btn-ghost tap w-full justify-between !rounded-xl !px-3 !py-2 !text-xs" onClick={onClick} disabled={disabled}>
       <span>{label}</span>
-      <span className="chip bg-neon-blue/15 text-neon-blue">{cost === 0 ? t("meshy.free") : `⚡ ${cost ?? "?"}`}</span>
+      <span className="chip gap-1 border border-line font-mono text-ink-soft">{cost === 0 ? t("meshy.free") : <><IconCoin size={16} className="h-3.5 w-3.5" />{cost ?? "?"}</>}</span>
     </button>
   );
 }
@@ -120,16 +120,16 @@ export function MeshyModelPanel({
   return (
     <section className="panel space-y-2.5 p-3" aria-label={t("meshy.title")}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[12.5px] font-semibold text-ink">{t("meshy.title")}</p>
+        <p className="text-sm font-semibold text-ink">{t("meshy.title")}</p>
         {hasMesh && (
-          <label className="flex items-center gap-1.5 text-[11px] text-ink-soft">
+          <label className="flex items-center gap-1.5 text-xs text-ink-soft">
             <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--neon-blue))]" checked={showMesh} onChange={(e) => onShowMesh(e.target.checked)} />
             {t("meshy.showMesh")}
           </label>
         )}
       </div>
       {info && (
-        <p className="flex items-center gap-2 rounded-xl bg-paper px-3 py-2 text-[11.5px] text-ink-soft" aria-live="polite">
+        <p className="flex items-center gap-2 rounded-xl bg-paper px-3 py-2 text-xs text-ink-soft" aria-live="polite">
           {running && <Spinner size={12} />} {info}
         </p>
       )}
@@ -139,7 +139,7 @@ export function MeshyModelPanel({
         {hasMesh && (
           <>
             <div className="flex items-center gap-1.5">
-              <select className="input !w-auto !py-1.5 !text-[11px]" value={poly} onChange={(e) => setPoly(Number(e.target.value))} aria-label={t("meshy.polycount")}>
+              <select className="input !w-auto !py-1.5 !text-xs" value={poly} onChange={(e) => setPoly(Number(e.target.value))} aria-label={t("meshy.polycount")}>
                 {[5_000, 15_000, 30_000, 100_000].map((n) => (
                   <option key={n} value={n}>
                     {n.toLocaleString()} {t("meshy.faces")}
@@ -158,7 +158,7 @@ export function MeshyModelPanel({
         <label className="block">
           <span className="label !mb-1">{t("meshy.describeTexture")}</span>
           <textarea
-            className="input min-h-[64px] !py-2 !text-[12px]"
+            className="input min-h-[64px] !py-2 !text-xs"
             maxLength={600}
             value={texture}
             placeholder={t("meshy.texturePlaceholder")}
@@ -170,7 +170,7 @@ export function MeshyModelPanel({
       </div>
       {asset?.history && asset.history.length > 0 && (
         <div className="border-t border-line pt-2.5">
-          <p className="mb-1 text-[11px] font-semibold text-ink-mute">{t("meshy.versions")}</p>
+          <p className="mb-1 text-xs font-semibold text-ink-mute">{t("meshy.versions")}</p>
           <div className="flex flex-wrap gap-1">
             {[{ key: asset.key ?? "", kind: asset.kind ?? "preview", current: true }, ...asset.history.map((h) => ({ ...h, current: false }))].map((v, i) => (
               <button
@@ -180,7 +180,7 @@ export function MeshyModelPanel({
                   onMeshKey(v.current ? null : v.key);
                   onShowMesh(true);
                 }}
-                className={`tap rounded-lg px-2 py-1 text-[10.5px] font-semibold ${(meshKey ?? asset.key) === v.key ? "bg-neon-blue-strong text-white" : "bg-paper text-ink-soft"}`}
+                className={`tap rounded-lg px-2 py-1 text-xs font-semibold ${(meshKey ?? asset.key) === v.key ? "bg-neon-blue-strong text-white" : "bg-paper text-ink-soft"}`}
               >
                 {t(`meshy.kind.${asKind(v.kind)}`)}
               </button>
@@ -199,33 +199,33 @@ export function MeshyPrintPanel({ status, asset, busy, onRun }: { status: MeshyS
   const running = analysis?.status === "pending" || analysis?.status === "running";
   const meshRunning = asset?.status === "pending" || asset?.status === "running";
   const result = analysis?.result ?? null;
-  const tone = result?.status === "healthy" ? "text-emerald-500" : result?.status === "error" ? "text-rose-500" : "text-amber-500";
+  const tone = result?.status === "healthy" ? "text-success" : result?.status === "error" ? "text-danger" : "text-warning";
   return (
     <section className="panel space-y-2.5 p-3" aria-label={t("meshy.printTitle")}>
-      <p className="text-[12.5px] font-semibold text-ink">{t("meshy.printTitle")}</p>
+      <p className="text-sm font-semibold text-ink">{t("meshy.printTitle")}</p>
       <CostButton label={t("meshy.analyze")} cost={status.costs?.analyze} onClick={() => onRun({ kind: "analyze" })} disabled={busy || running} />
       {running && (
-        <p className="flex items-center gap-2 text-[11.5px] text-ink-soft">
+        <p className="flex items-center gap-2 text-xs text-ink-soft">
           <Spinner size={12} /> {t("meshy.analyzing", { n: analysis?.progress ?? 0 })}
         </p>
       )}
       {result && (
-        <div className="rounded-xl bg-paper p-2.5 text-[11.5px]">
+        <div className="rounded-xl bg-paper p-2.5 text-xs">
           <p className={`font-bold ${tone}`}>{t(`meshy.health.${asHealth(result.status)}`)}</p>
           <p className="mt-0.5 text-ink-soft">{t("meshy.issues", { e: result.errorCount, w: result.warningCount })}</p>
           <ul className="mt-1 space-y-0.5 text-ink-mute">
             {Object.entries(result.metrics).map(([k, v]) => (
               <li key={k} className="flex justify-between gap-2">
                 <span>{k.replace(/_/g, " ")}</span>
-                <span className="font-mono">{v === true ? "✓" : v === false ? "✗" : v ?? "—"}</span>
+                <span className="font-mono">{v === true ? <IconCheck size={16} className="h-3.5 w-3.5 text-success" /> : v === false ? <IconX size={16} className="h-3.5 w-3.5 text-danger" /> : v ?? "—"}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
-      {analysis?.status === "failed" && <p className="text-[11.5px] text-rose-500">{analysis.error ?? t("meshy.failedShort")}</p>}
+      {analysis?.status === "failed" && <p className="text-xs text-danger">{analysis.error ?? t("meshy.failedShort")}</p>}
       <CostButton label={t("meshy.repair")} cost={status.costs?.repair} onClick={() => onRun({ kind: "repair" })} disabled={busy || meshRunning} />
-      <p className="text-[11px] leading-snug text-ink-mute">{t("meshy.repairHint")}</p>
+      <p className="text-xs leading-snug text-ink-mute">{t("meshy.repairHint")}</p>
     </section>
   );
 }

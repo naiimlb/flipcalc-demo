@@ -104,8 +104,8 @@ export function SearchBox({ items, onSelect }: { items: RequestItem[]; onSelect(
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start hover:bg-paper"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-semibold">{item.title ?? item.prompt}</span>
-                      <span className="block truncate text-[11px] text-ink-mute">{item.prompt}</span>
+                      <span className="block truncate text-sm font-semibold">{item.title ?? item.prompt}</span>
+                      <span className="block truncate text-xs text-ink-mute">{item.prompt}</span>
                     </span>
                     <StatusChip status={item.status} compact />
                   </button>
@@ -152,7 +152,7 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
       <button type="button" className="icon-btn relative" aria-label={tr("notif.label", { n: unread })} onClick={toggle}>
         <IconBell size={15} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-strong px-1 text-xs font-medium text-white">
             {unread}
           </span>
         )}
@@ -177,8 +177,8 @@ export function Notifications({ items, onSelect }: { items: RequestItem[]; onSel
                     >
                       <StatusChip status={item.status} compact />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold">{item.title ?? item.prompt}</span>
-                        <span className="block text-[11px] text-ink-mute">
+                        <span className="block truncate text-sm font-semibold">{item.title ?? item.prompt}</span>
+                        <span className="block text-xs text-ink-mute">
                           {item.status === "ready"
                             ? tr("notif.ready")
                             : item.status === "processing"
@@ -213,7 +213,7 @@ export function AccountMenu({
   const ref = useOutsideClose(open, () => setOpen(false));
 
   if (!viewer) {
-    if (demoMode) return <span className="chip bg-amber-100 text-amber-800">{t("nav.demo")}</span>;
+    if (demoMode) return <span className="chip bg-warning/10 text-warning">{t("nav.demo")}</span>;
     return (
       <div className="flex items-center gap-1.5">
         <Link href="/connexion" className="btn tap !px-3 !py-1.5 !text-xs text-fg/85 hover:bg-fg/10 hover:text-fg">
@@ -238,16 +238,16 @@ export function AccountMenu({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="tap flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-0.5 text-fg/75 hover:text-fg"
+        className="tap flex items-center gap-1 rounded-md py-0.5 pl-1.5 pr-0.5 text-fg/75 hover:text-fg"
         aria-label={t("menu.account")}
         aria-expanded={open}
       >
         <IconChevronDown size={14} />
         {viewer.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={viewer.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-fg/20" />
+          <img src={viewer.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-line" />
         ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-[11px] font-bold text-white ring-2 ring-fg/20">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-paper text-xs font-medium text-ink ring-1 ring-line">
             {initials || "?"}
           </span>
         )}
@@ -257,7 +257,7 @@ export function AccountMenu({
           <motion.div {...dropdown} className="absolute end-0 top-11 z-30 w-60 rounded-2xl border border-line bg-surface p-2 shadow-float">
             <div className="px-3 py-2">
               <p className="truncate text-sm font-semibold">{name}</p>
-              <p className="truncate text-[11px] text-ink-mute">{viewer.email}</p>
+              <p className="truncate text-xs text-ink-mute">{viewer.email}</p>
               {viewer.role === "admin" && <span className="chip mt-1.5 bg-night text-white">{t("menu.administrator")}</span>}
             </div>
             <div className="my-1 h-px bg-line" />
@@ -282,7 +282,7 @@ export function AccountMenu({
               </button>
             )}
             <form action={signOut}>
-              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-rose-600 hover:bg-rose-50">
+              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-danger hover:bg-danger/10">
                 <IconLogout size={15} /> {t("menu.logout")}
               </button>
             </form>

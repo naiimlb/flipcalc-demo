@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FINISH_PRESETS } from "@/lib/design/finishes";
 import { FINISHES, type Finish, type Part } from "@/lib/design/schema";
 import type { LightingPreset, ViewerBackground, ViewerSettings } from "../../viewer/settings";
-import { IconCamera, Spinner } from "../../icons";
+import { IconCamera, IconVideo, Spinner } from "../../icons";
 import { useT } from "../../app/Preferences";
 import { Choice } from "./Sheet";
 
@@ -14,7 +14,7 @@ export function MaterialLibrary({ part, editable, onApply }: { part: Part | null
   const [withColor, setWithColor] = useState(true);
   return (
     <section className="panel space-y-2.5 p-3" aria-label={t("lib.title")}>
-      <p className="text-[12.5px] font-semibold text-ink">{part ? t("lib.forPart", { name: part.name }) : t("lib.forModel")}</p>
+      <p className="text-sm font-semibold text-ink">{part ? t("lib.forPart", { name: part.name }) : t("lib.forModel")}</p>
       <div className="grid grid-cols-4 gap-1.5">
         {FINISHES.map((id) => {
           const preset = FINISH_PRESETS[id];
@@ -26,7 +26,7 @@ export function MaterialLibrary({ part, editable, onApply }: { part: Part | null
               disabled={!editable}
               aria-pressed={active}
               onClick={() => onApply(id, withColor)}
-              className={`tap flex flex-col items-center gap-1 rounded-xl p-1.5 text-[10.5px] font-semibold transition disabled:opacity-50 ${active ? "bg-neon-blue/15 text-ink ring-1 ring-neon-blue/50" : "text-ink-soft hover:bg-paper"}`}
+              className={`tap flex flex-col items-center gap-1 rounded-xl p-1.5 text-xs font-semibold transition disabled:opacity-50 ${active ? "bg-neon-blue/15 text-ink ring-1 ring-neon-blue/50" : "text-ink-soft hover:bg-paper"}`}
             >
               <span
                 aria-hidden
@@ -41,7 +41,7 @@ export function MaterialLibrary({ part, editable, onApply }: { part: Part | null
           );
         })}
       </div>
-      <label className="flex items-center justify-between gap-2 text-[11.5px] text-ink-soft">
+      <label className="flex items-center justify-between gap-2 text-xs text-ink-soft">
         {t("lib.withColor")}
         <input type="checkbox" className="h-5 w-5 accent-[rgb(var(--neon-blue))]" checked={withColor} onChange={(e) => setWithColor(e.target.checked)} />
       </label>
@@ -75,8 +75,8 @@ export function RenderPanel({
   };
   return (
     <section className="panel space-y-2.5 p-3" aria-label={t("render.title")}>
-      <p className="text-[12.5px] font-semibold text-ink">{t("render.title")}</p>
-      <p className="text-[11px] font-semibold text-ink-mute">{t("render.lighting")}</p>
+      <p className="text-sm font-semibold text-ink">{t("render.title")}</p>
+      <p className="text-xs font-semibold text-ink-mute">{t("render.lighting")}</p>
       <Choice<LightingPreset>
         label={t("render.lighting")}
         value={settings.mode === "real" ? settings.lighting ?? "studio" : "studio"}
@@ -87,7 +87,7 @@ export function RenderPanel({
           { id: "day", label: t("render.day") },
         ]}
       />
-      <p className="text-[11px] font-semibold text-ink-mute">{t("render.background")}</p>
+      <p className="text-xs font-semibold text-ink-mute">{t("render.background")}</p>
       <Choice<ViewerBackground>
         label={t("render.background")}
         value={settings.background ?? "auto"}
@@ -99,17 +99,17 @@ export function RenderPanel({
           { id: "neon", label: t("render.bgNeon") },
         ]}
       />
-      <label className="flex items-center justify-between gap-2 text-[11.5px] text-ink-soft">
+      <label className="flex items-center justify-between gap-2 text-xs text-ink-soft">
         {t("render.shadows")}
         <input type="checkbox" className="h-5 w-5 accent-[rgb(var(--neon-blue))]" checked={settings.shadows !== false} onChange={(e) => onSettings({ shadows: e.target.checked, mode: "real" })} />
       </label>
       <div className="grid grid-cols-2 gap-1.5 pt-1">
-        <button type="button" className="btn-ghost tap !px-2 !py-2 !text-[11px]" disabled={busy !== null} onClick={() => run("capture", onCapture)}>
+        <button type="button" className="btn-ghost tap !px-2 !py-2 !text-xs" disabled={busy !== null} onClick={() => run("capture", onCapture)}>
           {busy === "capture" ? <Spinner size={12} /> : <IconCamera size={13} />} {t("render.capture")}
         </button>
         {canVideo && (
-          <button type="button" className="btn-ghost tap !px-2 !py-2 !text-[11px]" disabled={busy !== null} onClick={() => run("video", () => onVideo(8))}>
-            {busy === "video" ? <Spinner size={12} /> : "▶"} {busy === "video" ? t("render.recording") : t("render.video")}
+          <button type="button" className="btn-ghost tap !px-2 !py-2 !text-xs" disabled={busy !== null} onClick={() => run("video", () => onVideo(8))}>
+            {busy === "video" ? <Spinner size={12} /> : <IconVideo />} {busy === "video" ? t("render.recording") : t("render.video")}
           </button>
         )}
       </div>

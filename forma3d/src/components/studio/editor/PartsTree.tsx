@@ -2,22 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Design } from "@/lib/design/schema";
-import { IconChevronDown, IconChevronRight, IconCopy, IconCube, IconTrash } from "../../icons";
+import { IconChevronDown, IconChevronRight, IconCopy, IconCube, IconEye, IconEyeOff, IconLock, IconTrash } from "../../icons";
 import { useT } from "../../app/Preferences";
 import { EmptyState, LoadingRegion, Skeleton } from "../../ui/Skeleton";
 
-const eye = (open: boolean) => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    {open ? (
-      <>
-        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
-        <circle cx="12" cy="12" r="3" />
-      </>
-    ) : (
-      <path d="M3 3l18 18M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7c1.6 0 3-.4 4.3-1" />
-    )}
-  </svg>
-);
+const eye = (open: boolean) => (open ? <IconEye /> : <IconEyeOff />);
 
 /**
  * Arborescence des pièces : l'assemblage puis chaque pièce (sélection, masquer / afficher, renommer d'un double-clic,
@@ -92,12 +81,12 @@ export function PartsTree({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="tap flex min-w-0 flex-1 items-center gap-1.5 rounded-lg py-1 text-start text-[12.5px] font-semibold text-ink"
+          className="tap flex min-w-0 flex-1 items-center gap-1.5 rounded-lg py-1 text-start text-sm font-semibold text-ink"
         >
           {open ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
           <IconCube size={14} className="text-neon-blue" />
           <span className="truncate">{t("editor.assembly")}</span>
-          <span className="ms-auto text-[11px] font-medium text-ink-mute">{parts.length}</span>
+          <span className="ms-auto text-xs font-medium text-ink-mute">{parts.length}</span>
         </button>
       </div>
       {open && (
@@ -125,7 +114,7 @@ export function PartsTree({
                     autoFocus
                     defaultValue={part.name}
                     aria-label={t("editor.renamePart")}
-                    className="input !h-8 !rounded-lg !px-2 !py-1 !text-[12px]"
+                    className="input !h-8 !rounded-lg !px-2 !py-1 !text-xs"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         onRename(part.id, e.currentTarget.value);
@@ -146,17 +135,17 @@ export function PartsTree({
                       onSelect(selected && !additive && selectedIds?.length === 1 ? null : part.id, additive);
                     }}
                     onDoubleClick={() => editable && setRenaming(part.id)}
-                    className={`tap flex min-h-9 min-w-0 flex-1 items-center gap-1.5 text-start text-[12px] ${hidden ? "text-ink-mute line-through" : selected ? "font-semibold text-ink" : "text-ink-soft"}`}
+                    className={`tap flex min-h-9 min-w-0 flex-1 items-center gap-1.5 text-start text-xs ${hidden ? "text-ink-mute line-through" : selected ? "font-semibold text-ink" : "text-ink-soft"}`}
                     title={part.role || part.name}
                   >
                     <span className="truncate">{part.name}</span>
                     {part.locked && (
-                      <span className="shrink-0 text-[10px]" aria-label={t("ops.locked")} title={t("ops.locked")}>
-                        🔒
+                      <span className="shrink-0 text-ink-mute" aria-label={t("ops.locked")} title={t("ops.locked")}>
+                        <IconLock size={16} className="h-3.5 w-3.5" />
                       </span>
                     )}
-                    {part.group && <span className="shrink-0 rounded bg-neon-violet/15 px-1 text-[9px] font-bold text-neon-violet">{t("ops.groupBadge")}</span>}
-                    <span className="ms-auto shrink-0 text-[10px] text-ink-mute">{t(`shape.${part.shape}`)}</span>
+                    {part.group && <span className="shrink-0 rounded border border-line px-1 text-xs text-ink-mute">{t("ops.groupBadge")}</span>}
+                    <span className="ms-auto shrink-0 text-xs text-ink-mute">{t(`shape.${part.shape}`)}</span>
                   </button>
                 )}
                 <button
@@ -175,17 +164,17 @@ export function PartsTree({
       )}
       {editable && selection && (
         <div className="mt-1.5 flex gap-1.5 border-t border-line px-1 pt-2">
-          <button type="button" onClick={() => setRenaming(selection)} className="btn-ghost tap flex-1 !px-2 !py-1.5 !text-[11px]">
+          <button type="button" onClick={() => setRenaming(selection)} className="btn-ghost tap flex-1 !px-2 !py-1.5 !text-xs">
             {t("editor.rename")}
           </button>
-          <button type="button" onClick={() => onDuplicate(selection)} className="btn-ghost tap !px-2.5 !py-1.5 !text-[11px]" title={`${t("editor.duplicate")} (⌘D)`}>
+          <button type="button" onClick={() => onDuplicate(selection)} className="btn-ghost tap !px-2.5 !py-1.5 !text-xs" title={`${t("editor.duplicate")} (⌘D)`}>
             <IconCopy size={13} /> {t("editor.duplicate")}
           </button>
           <button
             type="button"
             onClick={() => onDelete(selection)}
             disabled={parts.length <= 1}
-            className="btn tap !px-2.5 !py-1.5 !text-[11px] text-rose-500 hover:bg-rose-500/10"
+            className="btn tap !px-2.5 !py-1.5 !text-xs text-danger hover:bg-danger/10"
             aria-label={`${t("editor.delete")} (⌫)`}
             title={`${t("editor.delete")} (⌫)`}
           >

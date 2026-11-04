@@ -124,7 +124,7 @@ export function ViewerPanel({
   const meshReady = item?.asset?.status === "succeeded" && !item.sample;
   // Fond clair en mode réaliste : boutons et pastilles foncés pour rester lisibles.
   const light = Boolean(design) && (settings.background === "light" || ((settings.background ?? "auto") === "auto" && settings.mode === "real" && !dark));
-  const chip = light ? "bg-ink/10 text-ink" : "bg-white/20 text-white";
+  const chip = "border border-line bg-surface/90 text-ink-soft";
 
   useEffect(() => {
     setOwnFocus(null);
@@ -238,7 +238,7 @@ export function ViewerPanel({
   return (
     <div
       ref={wrap}
-      className={className ?? "relative h-[52dvh] min-h-[300px] overflow-hidden rounded-[24px] shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"}
+      className={className ?? "relative h-[52dvh] min-h-[300px] overflow-hidden rounded-lg shadow-card md:h-[62dvh] lg:h-full lg:min-h-0"}
       style={{ background: viewerBackgroundCss(design ? settings.mode : "neon", dark, settings.background) }}
     >
       {/* Halo décoratif */}
@@ -341,7 +341,7 @@ export function ViewerPanel({
           )}
           {armed && <ArButton design={design} onToast={onToast} />}
           {features.devMode && (
-            <button type="button" onClick={onShowJson} className="chip bg-black/40 text-white hover:bg-black/60">
+            <button type="button" onClick={onShowJson} className="chip border border-line bg-surface/90 text-ink-soft hover:text-ink">
               <IconCode size={12} /> JSON
             </button>
           )}
@@ -355,11 +355,11 @@ export function ViewerPanel({
 
       {/* Navigation entre les pièces */}
       {design && parts.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-full bg-surface px-1 py-1 shadow-float">
+        <div className="absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-md bg-surface px-1 py-1 shadow-float">
           <button type="button" aria-label={t("viewer.prevPart")} onClick={() => stepPart(-1)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-paper">
             <IconChevronLeft size={15} />
           </button>
-          <span className="min-w-0 truncate px-1 text-[11px] font-semibold text-ink-soft">
+          <span className="min-w-0 truncate px-1 text-xs font-semibold text-ink-soft">
             {focusIndex >= 0 ? `${focusIndex + 1}/${parts.length} · ${parts[focusIndex].name}` : t("viewer.allParts")}
           </span>
           <button type="button" aria-label={t("viewer.nextPart")} onClick={() => stepPart(1)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-paper">
@@ -368,7 +368,7 @@ export function ViewerPanel({
         </div>
       )}
       {focusIndex >= 0 && parts[focusIndex].role && (
-        <p className="pointer-events-none absolute bottom-14 left-1/2 w-max max-w-[80%] -translate-x-1/2 rounded-full bg-black/35 px-3 py-1 text-center text-[11px] text-white backdrop-blur">
+        <p className="pointer-events-none absolute bottom-14 left-1/2 w-max max-w-[80%] -translate-x-1/2 rounded-md border border-line bg-surface/95 px-2.5 py-1 text-center text-xs text-ink-soft">
           {parts[focusIndex].role}
         </p>
       )}
@@ -379,18 +379,18 @@ export function ViewerPanel({
       {/* États vides / erreur */}
       {!item && (
         <Centered>
-          <p className="text-sm font-semibold text-white">{t("viewer.empty")}</p>
-          <p className="mt-1 text-xs text-white/75">{t("viewer.emptyHint")}</p>
-          <button type="button" onClick={onNew} className="btn mt-4 bg-surface !text-xs text-brand-accent">
+          <p className="text-sm font-medium text-ink">{t("viewer.empty")}</p>
+          <p className="mt-1 text-xs text-ink-mute">{t("viewer.emptyHint")}</p>
+          <button type="button" onClick={onNew} className="btn-secondary mt-4">
             <IconPlus size={14} /> {t("left.newRequest")}
           </button>
         </Centered>
       )}
       {item?.status === "error" && !design && (
         <Centered>
-          <p className="text-sm font-semibold text-white">{t("viewer.noModel")}</p>
-          <p className="mx-auto mt-1 max-w-xs text-xs text-white/80">{item.error}</p>
-          <button type="button" onClick={onNew} className="btn mt-4 bg-surface !text-xs text-brand-accent">
+          <p className="text-sm font-medium text-ink">{t("viewer.noModel")}</p>
+          <p className="mx-auto mt-1 max-w-xs text-xs text-ink-mute">{item.error}</p>
+          <button type="button" onClick={onNew} className="btn-secondary mt-4">
             {t("viewer.retry")}
           </button>
         </Centered>
@@ -466,11 +466,11 @@ function ArButton({ design, onToast }: { design: Design; onToast(message: string
       {session && (
         <Portal>
           <div ref={overlay} className="fixed inset-0 z-[70] flex flex-col items-center justify-between p-6 text-white">
-            <p className="mt-10 rounded-full bg-black/55 px-4 py-2 text-sm font-medium">{t("ar.place")}</p>
+            <p className="mt-10 rounded-md bg-black/55 px-4 py-2 text-sm font-medium">{t("ar.place")}</p>
             <button
               type="button"
               onClick={() => (stop.current ? stop.current() : setSession(false))}
-              className="mb-8 rounded-full bg-surface px-6 py-3 text-sm font-semibold text-ink"
+              className="mb-8 rounded-md bg-surface px-6 py-3 text-sm font-semibold text-ink"
             >
               {t("ar.close")}
             </button>
@@ -512,7 +512,7 @@ function GestureHint() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
           role="status"
-          className="pointer-events-none absolute left-3 right-14 top-12 rounded-2xl bg-black/45 px-3 py-2 text-center text-[11px] font-medium text-white backdrop-blur"
+          className="pointer-events-none absolute left-3 right-14 top-12 rounded-md border border-line bg-surface/95 px-3 py-1.5 text-center text-xs text-ink-soft"
         >
           {t("viewer.gestures")}
         </motion.p>
@@ -525,12 +525,12 @@ function ToolButton({
   label,
   onClick,
   active,
-  light,
   children,
 }: {
   label: string;
   onClick(): void;
   active?: boolean;
+  /** Conservé pour compatibilité : le style suit désormais le thème. */
   light?: boolean;
   children: React.ReactNode;
 }) {
@@ -541,14 +541,8 @@ function ToolButton({
       aria-label={label}
       aria-pressed={active}
       onClick={onClick}
-      className={`flex h-8 w-8 items-center justify-center rounded-full backdrop-blur transition ${
-        active
-          ? light
-            ? "bg-brand-accent text-white"
-            : "bg-surface text-brand-accent"
-          : light
-            ? "bg-ink/[0.07] text-ink-soft hover:bg-ink/15"
-            : "bg-white/25 text-white hover:bg-white/40"
+      className={`tap flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+        active ? "border-accent/40 bg-accent/15 text-accent" : "border-line bg-surface/90 text-ink-soft hover:bg-paper hover:text-ink"
       }`}
     >
       {children}
@@ -597,39 +591,23 @@ function Processing({ startedAt, stream }: { startedAt: string; stream: StreamPr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden px-4"
+      transition={{ duration: 0.15 }}
+      className="absolute inset-0 flex items-center justify-center bg-canvas/60 px-4"
     >
-      <motion.div
-        className="absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-white/25 to-transparent"
-        initial={{ top: "-20%" }}
-        animate={{ top: "110%" }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="h-20 w-20 rounded-2xl border-2 border-white/70"
-        animate={{ rotateX: [0, 180, 360], rotateY: [0, 180, 360] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-        style={{ boxShadow: "0 0 40px rgba(255,120,220,.55), inset 0 0 30px rgba(120,200,255,.5)" }}
-      />
-      <ol className="mt-6 flex items-center gap-1.5" aria-label={label}>
-        {STAGES.map((key, i) => (
-          <li key={key} className="flex items-center gap-1.5">
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                i < stage ? "bg-white text-brand-accent" : i === stage ? "bg-white/40 text-white ring-1 ring-white/70" : "bg-white/15 text-white/70"
-              }`}
-            >
-              {i < stage ? "✓ " : ""}
-              {t(key)}
-            </span>
-            {i < STAGES.length - 1 && <span className="text-white/60" aria-hidden>→</span>}
-          </li>
-        ))}
-      </ol>
-      <p className="mt-3 text-sm font-semibold text-white" role="status">
-        {label}
-      </p>
-      <p className="mt-1 text-xs text-white/75">{t("stage.elapsed", { s: elapsed })}</p>
+      <div className="w-full max-w-sm rounded-lg border border-line bg-surface p-4 shadow-float">
+        <p className="flex items-center gap-2 text-sm font-medium text-ink" role="status">
+          <Spinner size={16} className="text-accent" /> {label}
+        </p>
+        <ol className="mt-3 grid grid-cols-4 gap-1" aria-label={label}>
+          {STAGES.map((key, i) => (
+            <li key={key} className="flex min-w-0 flex-col gap-1">
+              <span className={`h-0.5 rounded-full ${i <= stage ? "bg-accent" : "bg-line"}`} />
+              <span className={`truncate text-xs ${i === stage ? "font-medium text-ink" : i < stage ? "text-ink-soft" : "text-ink-mute"}`}>{t(key)}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-2 font-mono text-xs text-ink-mute">{t("stage.elapsed", { s: elapsed })}</p>
+      </div>
     </motion.div>
   );
 }

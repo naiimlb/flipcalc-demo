@@ -35,7 +35,7 @@ export function EmptyState({ icon, title, hint, action, className = "" }: { icon
           {icon}
         </span>
       )}
-      <p className="text-[13px] font-semibold text-ink">{title}</p>
+      <p className="text-sm font-semibold text-ink">{title}</p>
       {hint && <p className="mt-1 max-w-[16rem] text-xs leading-snug text-ink-mute">{hint}</p>}
       {action && <div className="mt-3">{action}</div>}
     </div>

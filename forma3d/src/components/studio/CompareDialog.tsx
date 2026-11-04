@@ -78,10 +78,10 @@ function facts(design: Design, prefs: StudioPrefs, unit: LengthUnit, t: Translat
 function Delta({ a, b, lowerIsBetter = true }: { a: number | null; b: number | null; lowerIsBetter?: boolean }) {
   if (a === null || b === null || a <= 0) return null;
   const pct = Math.round(((b - a) / a) * 100);
-  if (pct === 0) return <span className="ms-1 text-[10.5px] text-ink-mute">=</span>;
+  if (pct === 0) return <span className="ms-1 text-xs text-ink-mute">=</span>;
   const good = lowerIsBetter ? pct < 0 : pct > 0;
   return (
-    <span className={`ms-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${good ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"}`}>
+    <span className={`ms-1 rounded-md px-1.5 py-0.5 text-xs font-semibold ${good ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
       {pct > 0 ? "+" : ""}
       {pct} %
     </span>
@@ -151,10 +151,10 @@ export default function CompareDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="compare-title"
-          className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-[24px] bg-surface shadow-float"
+          className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-surface shadow-float"
         >
           <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-            <h2 id="compare-title" className="flex-1 text-[15px] font-semibold">
+            <h2 id="compare-title" className="flex-1 text-base font-semibold">
               {t("compare.title")}
             </h2>
             <button type="button" onClick={onClose} className="icon-btn" aria-label={t("menu.close")}>
@@ -187,7 +187,7 @@ export default function CompareDialog({
                   </select>
                   <div
                     className="relative mt-2 h-44 overflow-hidden rounded-2xl sm:h-64"
-                    style={{ background: "radial-gradient(120% 90% at 25% 10%, #f6f7ff 0%, #e2e4f8 55%, #d3d6f2 100%)" }}
+                    style={{ background: "rgb(var(--paper))" }}
                   >
                     {current?.design && (
                       <ModelViewer design={current.design} settings={VIEWER} focusId={null} onFocusChange={() => {}} />
@@ -196,9 +196,9 @@ export default function CompareDialog({
                 </div>
               ))}
             </div>
-            <table className="mt-4 w-full table-fixed border-collapse text-start text-[12px]">
+            <table className="mt-4 w-full table-fixed border-collapse text-start text-xs">
               <thead>
-                <tr className="text-[10.5px] uppercase tracking-wide text-ink-mute">
+                <tr className="text-xs uppercase tracking-wide text-ink-mute">
                   <th className="w-[30%] pb-2 font-semibold"> </th>
                   <th className="pb-2 font-semibold">{t("compare.version", { v: "A" })}</th>
                   <th className="pb-2 font-semibold">{t("compare.version", { v: "B" })}</th>
@@ -216,7 +216,7 @@ export default function CompareDialog({
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-[10.5px] text-ink-mute">{t("compare.note")}</p>
+            <p className="mt-3 text-xs text-ink-mute">{t("compare.note")}</p>
           </div>
         </div>
       </div>

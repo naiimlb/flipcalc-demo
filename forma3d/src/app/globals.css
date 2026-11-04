@@ -3,46 +3,53 @@
 @tailwind utilities;
 
 :root {
-  /* Remplacées par les couleurs choisies dans /admin/apparence (layout racine). */
-  --brand-from: 91 110 225;
-  --brand-to: 123 92 230;
-  --brand-accent: 91 110 225;
-  /* Surfaces et textes (mode clair). */
-  --surface: 255 255 255;
-  --paper: 244 244 246;
-  --ink: 17 17 20;
-  --ink-soft: 59 59 68;
-  --ink-mute: 122 122 134;
-  --line: 230 230 236;
-  --night: 17 17 20;
-  /* Fond de page et texte posé directement dessus (hors panneaux). */
-  --canvas: 244 245 250;
-  --fg: 12 13 20;
-  /* Palette néon de l'identité Forma3D : bleu électrique, corail, touches de violet. */
-  --neon-blue: 47 107 255;
-  --neon-coral: 255 107 74;
-  --neon-violet: 139 92 246;
-  /* Bleu des boutons pleins : assez foncé pour un texte blanc lisible (contraste ≥ 4,5:1). */
-  --neon-blue-strong: 37 93 235;
-  --glow-strength: 0.18;
+  /*
+   * Système de design de Forma3D (référence : /design-system). Valeurs RGB (« r g b ») pour l'opacité Tailwind.
+   * Contrastes vérifiés WCAG AA : texte courant ≥ 4,5:1 sur surface et toile, dans les deux thèmes.
+   */
+  /* Surfaces neutres (clair : gris très clair). */
+  --canvas: 245 246 248; /* fond de l'application */
+  --surface: 255 255 255; /* panneaux */
+  --paper: 240 241 244; /* champs, survol, zones secondaires */
+  --surface-raised: 232 234 238; /* éléments en relief (ancien « dégradé ») */
+  --line: 222 224 229; /* filets et bordures (1 px) */
+  --night: 22 24 29;
+  /* Textes. */
+  --ink: 22 24 29; /* 16,9:1 sur surface */
+  --ink-soft: 66 71 80; /* 9,3:1 */
+  --ink-mute: 100 106 116; /* 5,5:1 */
+  --fg: 22 24 29;
+  /* Accent unique : sélection et action principale. */
+  --accent: 37 99 235; /* texte / icône d'accent : 5,2:1 sur surface */
+  --accent-strong: 29 78 216; /* fond des boutons principaux, texte blanc : 6,7:1 */
+  /* Couleurs sémantiques, discrètes. */
+  --success: 21 128 61;
+  --warning: 180 83 9;
+  --danger: 200 30 30;
+  /* Couleurs des axes : réservées à la 3D. */
+  --axis-x: 230 57 70;
+  --axis-y: 46 160 67;
+  --axis-z: 47 111 235;
   color-scheme: light;
 }
 
-/* Mode sombre : mêmes couleurs de marque (bleu-violet), surfaces nuit et textes clairs. */
+/* Thème sombre : gris anthracite. */
 .dark {
-  --surface: 17 18 26;
-  --paper: 11 12 18;
-  --ink: 240 241 248;
-  --ink-soft: 200 202 216;
-  --ink-mute: 140 143 162;
-  --line: 40 42 56;
-  --night: 4 5 9;
-  --canvas: 5 6 10;
-  --fg: 246 247 252;
-  --neon-blue: 61 122 255;
-  --neon-coral: 255 112 80;
-  --neon-violet: 150 104 255;
-  --glow-strength: 0.32;
+  --canvas: 17 18 20;
+  --surface: 24 25 28;
+  --paper: 32 34 38;
+  --surface-raised: 40 42 47;
+  --line: 48 50 56;
+  --night: 12 13 15;
+  --ink: 236 237 240; /* 15,1:1 sur surface */
+  --ink-soft: 186 189 196; /* 9,6:1 */
+  --ink-mute: 142 146 155; /* 5,8:1 */
+  --fg: 236 237 240;
+  --accent: 96 150 255; /* 6,2:1 sur surface */
+  --accent-strong: 37 99 235; /* texte blanc : 5,2:1 */
+  --success: 74 196 112;
+  --warning: 230 160 60;
+  --danger: 248 96 96;
   color-scheme: dark;
 }
 
@@ -51,18 +58,20 @@ html {
   text-rendering: optimizeLegibility;
 }
 
-/* Fond de page : noir profond (sombre) ou blanc cassé (clair), avec deux lueurs néon discrètes. */
+/* Fond uni, sans décor. */
 body {
-  @apply bg-canvas font-sans text-ink antialiased;
-  background-image:
-    radial-gradient(60rem 40rem at 0% 0%, rgb(var(--neon-blue) / var(--glow-strength)), transparent 60%),
-    radial-gradient(50rem 36rem at 100% 100%, rgb(var(--neon-coral) / calc(var(--glow-strength) * 0.7)), transparent 60%);
-  background-attachment: fixed;
+  @apply bg-canvas font-sans text-base text-ink antialiased;
   min-height: 100dvh;
+  font-feature-settings: "cv11", "ss01";
 }
 /* Texte arabe : polices système adaptées (la police du site n'a pas de glyphes arabes). */
 html[lang="ar"] body {
   font-family: var(--font-sans), "Noto Sans Arabic", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
+}
+/* Valeurs numériques et cotes : chiffres de même largeur. */
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Application installée (plein écran) : le contenu évite l'encoche et la barre d'accueil. */
@@ -80,97 +89,115 @@ html[lang="ar"] body {
     padding-bottom: 0;
   }
 }
-/* Pages sous la navigation flottante : espace réservé à sa hauteur + zone sûre. */
+/* Pages sous la barre de navigation : espace réservé à sa hauteur + zone sûre. */
 .pt-nav {
-  padding-top: calc(72px + env(safe-area-inset-top));
+  padding-top: calc(56px + env(safe-area-inset-top));
 }
 
 ::selection {
-  background: rgb(var(--neon-blue) / 0.3);
+  background: rgb(var(--accent) / 0.25);
 }
 
-/* Contour néon (bleu à gauche, corail à droite), utilisé pour le badge du titre et les cartes mises en avant. */
-.neon-rim {
-  position: relative;
-  isolation: isolate;
+/* Focus clavier visible partout (anneau d'accent de 2 px), jamais au clic souris. */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
 }
-.neon-rim::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  z-index: -1;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(100deg, rgb(var(--neon-blue)), rgb(var(--neon-violet)) 50%, rgb(var(--neon-coral)));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+
+/* Alias historiques, désormais sobres : simple filet et texte d'accent. */
+.neon-rim {
+  border: 1px solid rgb(var(--line));
 }
 .text-neon {
-  background: linear-gradient(100deg, rgb(var(--neon-blue)), rgb(var(--neon-violet)) 55%, rgb(var(--neon-coral)));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: rgb(var(--accent));
 }
 
 @layer components {
+  /* Étiquette (statut, catégorie) : petite, rectangulaire, jamais en pilule. */
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none;
+    @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium leading-4;
   }
+  /* Panneau : surface + filet de 1 px, sans ombre. */
   .panel {
-    @apply rounded-2xl border border-line/70 bg-surface shadow-soft;
+    @apply rounded-lg border border-line bg-surface;
   }
+  /* Boutons : principal (accent), secondaire (filet), discret (sans fond). Hauteur 32 px. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition
-      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent
-      disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-8 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium
+      transition-colors duration-150 disabled:pointer-events-none disabled:opacity-45;
   }
-  .btn-dark {
-    @apply btn bg-night text-white hover:bg-night/80;
+  .btn-primary {
+    @apply btn bg-accent-strong text-white hover:bg-accent-strong/90 active:bg-accent-strong/80;
   }
-  .dark .btn-dark {
-    @apply bg-white/10 ring-1 ring-inset ring-white/15 hover:bg-white/15;
+  .btn-secondary {
+    @apply btn border border-line bg-surface text-ink hover:bg-paper active:bg-line/60;
   }
-  /* Bouton principal de l'identité : bleu électrique avec halo. */
-  .btn-neon {
-    @apply btn bg-neon-blue-strong text-white shadow-neon hover:brightness-110;
+  .btn-subtle {
+    @apply btn text-ink-soft hover:bg-paper hover:text-ink active:bg-line/60;
   }
-  /* Bouton lumineux sur fond de page (texte = couleur du fond). */
+  .btn-danger {
+    @apply btn border border-line bg-surface text-danger hover:bg-danger/10;
+  }
+  /* Noms historiques → variantes ci-dessus. */
+  .btn-neon,
+  .btn-accent,
   .btn-fg {
-    @apply btn bg-fg text-canvas hover:bg-fg/90;
+    @apply btn-primary;
   }
-  .btn-line {
-    @apply btn border border-fg/20 text-fg hover:border-fg/40 hover:bg-fg/5;
-  }
-  .btn-accent {
-    @apply btn bg-brand-accent text-white hover:brightness-110;
-  }
-  .btn-ghost {
-    @apply btn border border-line bg-surface text-ink hover:border-brand-accent/40 hover:text-brand-accent;
-  }
+  .btn-dark,
+  .btn-line,
+  .btn-ghost,
   .btn-outline-accent {
-    @apply btn border-[1.5px] border-brand-accent/70 bg-surface text-brand-accent hover:bg-brand-accent/5;
+    @apply btn-secondary;
   }
+  /* Champ de saisie : 32 px, filet, anneau d'accent au focus. */
   .input {
-    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition
-      placeholder:text-ink-mute focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15;
+    @apply min-h-8 w-full rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink outline-none transition-colors duration-150
+      placeholder:text-ink-mute hover:border-ink-mute/60 focus:border-accent focus:ring-2 focus:ring-accent/25 disabled:opacity-45;
   }
   .label {
-    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-mute;
+    @apply mb-1 block text-xs font-medium text-ink-mute;
   }
+  /* Bouton icône carré (32 px), discret. */
   .icon-btn {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ink-soft transition
-      hover:border-brand-accent/40 hover:text-brand-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-accent;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-soft transition-colors duration-150
+      hover:bg-paper hover:text-ink active:bg-line/60 disabled:pointer-events-none disabled:opacity-45 aria-pressed:bg-accent/15 aria-pressed:text-accent;
+  }
+  /* Onglets soulignés. */
+  .tab {
+    @apply relative inline-flex h-8 items-center px-2.5 text-sm font-medium text-ink-mute transition-colors duration-150 hover:text-ink
+      aria-selected:text-ink aria-selected:after:absolute aria-selected:after:inset-x-2 aria-selected:after:-bottom-px aria-selected:after:h-0.5 aria-selected:after:bg-accent;
+  }
+  /* Élément de liste ou de menu : survol gris, sélection en accent. */
+  .list-item {
+    @apply flex min-h-8 w-full items-center gap-2 rounded-md px-2 text-start text-sm text-ink-soft transition-colors duration-100
+      hover:bg-paper hover:text-ink aria-selected:bg-accent/10 aria-selected:text-ink aria-[current=page]:bg-accent/10 aria-[current=page]:text-ink;
+  }
+  /* Menu flottant (contextuel, déroulant). */
+  .menu {
+    @apply min-w-[180px] rounded-lg border border-line bg-surface p-1 shadow-float;
+  }
+  /* Filet de séparation horizontal. */
+  .rule {
+    @apply border-t border-line;
+  }
+  /* Colonnes de l'éditeur : sections séparées par des filets plutôt que par des cartes. */
+  .editor-dock .panel {
+    @apply rounded-none border-0 border-b border-line bg-transparent;
+  }
+  /* Titre de section dans un panneau. */
+  .section-title {
+    @apply text-xs font-medium text-ink-mute;
   }
 }
 
 /* Apparition au défilement (composant Reveal) et entrée de page. */
 [data-reveal] {
-  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 [data-reveal="hidden"] {
   opacity: 0;
-  transform: translateY(28px);
+  transform: translateY(8px);
 }
 @keyframes page-enter {
   from {
@@ -181,14 +208,14 @@ html[lang="ar"] body {
   }
 }
 .page-enter {
-  animation: page-enter 0.25s ease-out both;
+  animation: page-enter 0.15s ease-out both;
 }
 
 /* Changement d'onglet : le contenu apparaît en douceur (quelques pixels de glissement, sans décaler la mise en page). */
 @keyframes tab-enter {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(2px);
   }
   to {
     opacity: 1;
@@ -196,7 +223,7 @@ html[lang="ar"] body {
   }
 }
 .tab-enter {
-  animation: tab-enter 0.22s ease-out both;
+  animation: tab-enter 0.15s ease-out both;
 }
 
 /* Squelettes de chargement : un reflet qui traverse le bloc (figé si l'on demande de réduire les animations). */
@@ -234,7 +261,7 @@ html[lang="ar"] body {
   }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(17 17 20 / 0.15) transparent;
+    scrollbar-color: rgb(var(--ink-mute) / 0.35) transparent;
   }
   .scrollbar-none {
     scrollbar-width: none;
@@ -244,71 +271,7 @@ html[lang="ar"] body {
   }
 }
 
-/* Sphères « cellulaires » translucides de l'arrière-plan. */
-.cell-sphere {
-  position: absolute;
-  border-radius: 9999px;
-  background:
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.6), transparent 34%),
-    radial-gradient(circle at 72% 78%, rgba(255, 112, 196, 0.75), transparent 58%),
-    radial-gradient(circle at 50% 50%, #c39bff 0%, #9b78f4 42%, #7a64e6 68%, #5a4fd0 100%);
-  box-shadow:
-    inset -18px -26px 60px rgba(58, 30, 140, 0.55),
-    inset 18px 18px 46px rgba(255, 255, 255, 0.28),
-    0 40px 90px -20px rgba(70, 30, 170, 0.45);
-  overflow: hidden;
-}
-.cell-sphere::before,
-.cell-sphere::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-.cell-sphere::before {
-  background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.42) 0 26%, rgba(255, 255, 255, 0) 32%) 0 0 / 8% 8%,
-    radial-gradient(circle, rgba(255, 255, 255, 0.25) 0 22%, rgba(255, 255, 255, 0) 30%) 3% 5% / 11% 11%;
-  mix-blend-mode: overlay;
-  -webkit-mask-image: radial-gradient(circle at 42% 40%, #000 30%, transparent 75%);
-  mask-image: radial-gradient(circle at 42% 40%, #000 30%, transparent 75%);
-  opacity: 0.7;
-}
-.cell-sphere::after {
-  background: radial-gradient(circle, rgba(255, 140, 210, 0.6) 0 30%, transparent 34%) 4% 4% / 13% 13%;
-  mix-blend-mode: soft-light;
-  -webkit-mask-image: radial-gradient(circle at 60% 70%, #000 25%, transparent 70%);
-  mask-image: radial-gradient(circle at 60% 70%, #000 25%, transparent 70%);
-}
-
-/* Accueil : étiquette flottante près du titre et cube du badge qui tourne lentement. */
-@keyframes landing-float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-5deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(-3deg);
-  }
-}
-@keyframes landing-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.landing-tag {
-  animation: landing-float 5s ease-in-out infinite;
-}
-.landing-spin {
-  animation: landing-spin 14s linear infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .landing-tag,
-  .landing-spin {
-    animation: none !important;
-  }
-
   *,
   *::before,
   *::after {

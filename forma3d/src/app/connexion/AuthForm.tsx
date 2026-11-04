@@ -36,7 +36,7 @@ export function AuthForm({
   return (
     <div>
       {signupsOpen && (
-        <div className="mb-5 flex gap-1 rounded-full bg-surface p-1 ring-1 ring-line">
+        <div className="mb-5 flex gap-1 rounded-md bg-surface p-1 ring-1 ring-line">
           {(
             [
               ["login", "Connexion"],
@@ -47,7 +47,7 @@ export function AuthForm({
               key={id}
               type="button"
               onClick={() => setMode(id)}
-              className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${mode === id ? "bg-night text-white" : "text-ink-soft"}`}
+              className={`flex-1 rounded-md py-2 text-sm font-medium transition ${mode === id ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft"}`}
             >
               {label}
             </button>
@@ -107,8 +107,8 @@ export function AuthForm({
             className="input"
           />
         </div>
-        {state.error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{state.error}</p>}
-        {state.info && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{state.info}</p>}
+        {state.error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{state.error}</p>}
+        {state.info && <p className="rounded-xl bg-success/10 px-3 py-2 text-sm text-success">{state.info}</p>}
         <button type="submit" disabled={pending} className="btn-dark w-full !py-3">
           {pending && <Spinner />}
           {mode === "login" ? "Se connecter" : "Créer mon compte"}

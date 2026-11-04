@@ -70,7 +70,7 @@ export function AiForm({ initial, samplePrompt }: { initial: AiSettings; sampleP
             <label htmlFor="systemPrompt" className="label">
               Prompt système envoyé à Claude
             </label>
-            <span className="mb-1.5 text-[11px] text-ink-mute">{ai.systemPrompt.length.toLocaleString("fr-FR")} / 20 000</span>
+            <span className="mb-1.5 text-xs text-ink-mute">{ai.systemPrompt.length.toLocaleString("fr-FR")} / 20 000</span>
           </div>
           <textarea
             id="systemPrompt"
@@ -78,7 +78,7 @@ export function AiForm({ initial, samplePrompt }: { initial: AiSettings; sampleP
             maxLength={20000}
             value={ai.systemPrompt}
             onChange={(e) => setAi({ ...ai, systemPrompt: e.target.value })}
-            className="input font-mono !text-[12.5px] leading-relaxed"
+            className="input font-mono !text-sm leading-relaxed"
           />
           <p className="mt-1 text-xs text-ink-mute">
             Le format de sortie (schéma JSON) est imposé par l&apos;API : le prompt règle le style, le niveau de détail et les règles métier.
@@ -157,27 +157,27 @@ export function AiForm({ initial, samplePrompt }: { initial: AiSettings; sampleP
             {testing && <Spinner />} Tester
           </button>
         </div>
-        {testError && <p className="mt-3 text-sm text-rose-600">{testError}</p>}
+        {testError && <p className="mt-3 text-sm text-danger">{testError}</p>}
         {test && (
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <div>
-              <p className={`text-sm font-semibold ${test.ok ? "text-emerald-600" : "text-rose-600"}`}>
-                {test.ok ? `✓ ${test.design?.title}` : `✗ ${test.error}`}
+              <p className={`text-sm font-semibold ${test.ok ? "text-success" : "text-danger"}`}>
+                {test.ok ? `OK · ${test.design?.title}` : `Erreur · ${test.error}`}
               </p>
               <p className="mt-1 text-xs text-ink-mute">
                 {test.model ?? "—"} · {(test.durationMs / 1000).toFixed(1)} s
                 {test.usage && ` · ${test.usage.input_tokens} + ${test.usage.output_tokens} jetons`}
                 {test.stopReason && ` · ${test.stopReason}`}
               </p>
-              {test.detail && <p className="mt-1 text-xs text-rose-500">{test.detail}</p>}
+              {test.detail && <p className="mt-1 text-xs text-danger">{test.detail}</p>}
               {test.validationErrors && (
-                <ul className="mt-2 list-disc pl-5 text-xs text-rose-600">
+                <ul className="mt-2 list-disc pl-5 text-xs text-danger">
                   {test.validationErrors.map((e, i) => (
                     <li key={i}>{e}</li>
                   ))}
                 </ul>
               )}
-              <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-[#0f1020] p-3 font-mono text-[11px] text-emerald-200 scrollbar-thin">
+              <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-[#0f1020] p-3 font-mono text-xs text-success scrollbar-thin">
                 {test.raw ?? "(pas de réponse)"}
               </pre>
             </div>

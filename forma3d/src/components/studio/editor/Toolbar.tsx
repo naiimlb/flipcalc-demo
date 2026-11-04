@@ -1,34 +1,13 @@
 "use client";
 
-import { IconGrid, IconLayers, IconRefocus, IconRotate, IconRuler, IconSettings } from "../../icons";
+import { IconAxes, IconGrid, IconLayers, IconMove, IconPlus, IconPointer, IconRefocus, IconRotate, IconRuler, IconScale, IconSettings, IconView1, IconView2, IconView4 } from "../../icons";
+import { Tooltip } from "../../ui/Tooltip";
 import { useT } from "../../app/Preferences";
 
 export type EditorTool = "select" | "move" | "rotate" | "scale" | "measure";
 export type ViewLayout = 1 | 2 | 4;
 
-const svg = (d: string) => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d={d} />
-  </svg>
-);
-const ICONS = {
-  select: svg("M5 3l13 7-6 1.5L9.5 18z"),
-  move: svg("M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"),
-  scale: svg("M4 20h7v-7H4zM14 4h6v6M20 4l-8 8"),
-  axes: svg("M5 19V5M5 19h14M5 19l9-9"),
-  measure: svg("M3 17l14-14 4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2"),
-  add: svg("M12 5v14M5 12h14"),
-};
-
-function layoutIcon(n: ViewLayout) {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-      <rect x="3.5" y="4" width="17" height="16" rx="2.5" />
-      {n >= 2 && <path d="M12 4v16" />}
-      {n === 4 && <path d="M3.5 12h17" />}
-    </svg>
-  );
-}
+const LAYOUT_ICON: Record<ViewLayout, React.ReactNode> = { 1: <IconView1 />, 2: <IconView2 />, 4: <IconView4 /> };
 
 /**
  * Barre d'outils verticale de l'éditeur : outils (raccourcis V, W, E, R), affichage (1, 2 ou 4 vues,
@@ -75,85 +54,91 @@ export function Toolbar({
 }) {
   const t = useT();
   const tools: { id: EditorTool; key: string; icon: React.ReactNode }[] = [
-    { id: "select", key: "V", icon: ICONS.select },
-    { id: "move", key: "W", icon: ICONS.move },
-    { id: "rotate", key: "E", icon: <IconRotate size={17} /> },
-    { id: "scale", key: "R", icon: ICONS.scale },
-    { id: "measure", key: "U", icon: ICONS.measure },
+    { id: "select", key: "V", icon: <IconPointer /> },
+    { id: "move", key: "W", icon: <IconMove /> },
+    { id: "rotate", key: "E", icon: <IconRotate /> },
+    { id: "scale", key: "R", icon: <IconScale /> },
+    { id: "measure", key: "U", icon: <IconRuler /> },
   ];
   return (
-    <div role="toolbar" aria-orientation="vertical" aria-label={t("editor.toolbar")} className="flex w-12 shrink-0 flex-col items-center gap-1 overflow-y-auto py-2 scrollbar-none sm:w-14">
+    <div role="toolbar" aria-orientation="vertical" aria-label={t("editor.toolbar")} className="flex w-11 shrink-0 flex-col items-center gap-0.5 overflow-y-auto border-e border-line bg-surface py-2 scrollbar-none">
       <Btn label={t("editor.parts")} active={partsOpen} onClick={onToggleParts}>
-        <IconLayers size={17} />
+        <IconLayers />
       </Btn>
-      <Btn label={t("editor.add")} active={addOpen} onClick={onAdd} disabled={!canAdd}>
-        {ICONS.add}
+      <Btn label={t("editor.add")} active={addOpen} onClick={onAdd} disabled={!canAdd} dataAddToggle>
+        <IconPlus />
       </Btn>
       <Sep />
       {tools.map((x) => (
-        <Btn key={x.id} label={`${t(`editor.tool.${x.id}`)} (${x.key})`} active={tool === x.id} onClick={() => onTool(x.id)} pressed>
+        <Btn key={x.id} label={t(`editor.tool.${x.id}`)} shortcut={x.key} active={tool === x.id} onClick={() => onTool(x.id)} pressed>
           {x.icon}
         </Btn>
       ))}
       <Sep />
       {([1, 2, 4] as ViewLayout[]).map((n) => (
         <Btn key={n} label={t("editor.views", { n })} active={layout === n} onClick={() => onLayout(n)} pressed>
-          {layoutIcon(n)}
+          {LAYOUT_ICON[n]}
         </Btn>
       ))}
       <Sep />
-      <Btn label={`${t("viewer.grid")} (G)`} active={showGrid} onClick={onGrid} pressed>
-        <IconGrid size={17} />
+      <Btn label={t("viewer.grid")} shortcut="G" active={showGrid} onClick={onGrid} pressed>
+        <IconGrid />
       </Btn>
       <Btn label={t("editor.axes")} active={showAxes} onClick={onAxes} pressed>
-        {ICONS.axes}
+        <IconAxes />
       </Btn>
-      <Btn label={`${t("editor.ruler")} (M)`} active={showRuler} onClick={onRuler} pressed>
-        <IconRuler size={17} />
+      <Btn label={t("editor.ruler")} shortcut="M" active={showRuler} onClick={onRuler} pressed>
+        <IconRuler />
       </Btn>
-      <Btn label={`${t("editor.frame")} (F)`} onClick={onFrame}>
-        <IconRefocus size={17} />
+      <Btn label={t("editor.frame")} shortcut="F" onClick={onFrame}>
+        <IconRefocus />
       </Btn>
       <span className="flex-1" />
       <Btn label={t("editor.properties")} active={propsOpen} onClick={onToggleProps}>
-        <IconSettings size={17} />
+        <IconSettings />
       </Btn>
     </div>
   );
 }
 
 function Sep() {
-  return <span aria-hidden className="my-1 h-px w-6 shrink-0 bg-fg/10" />;
+  return <span aria-hidden className="my-1 h-px w-6 shrink-0 bg-line" />;
 }
 
 function Btn({
   label,
+  shortcut,
   active = false,
   pressed = false,
   disabled = false,
+  dataAddToggle = false,
   onClick,
   children,
 }: {
   label: string;
+  shortcut?: string;
   active?: boolean;
   pressed?: boolean;
   disabled?: boolean;
+  dataAddToggle?: boolean;
   onClick(): void;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={label}
-      aria-label={label}
-      aria-pressed={pressed ? active : undefined}
-      className={`tap flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-30 sm:h-10 sm:w-10 ${
-        active ? "bg-neon-blue-strong text-white shadow-neon" : "text-fg/70 hover:bg-fg/10 hover:text-fg"
-      }`}
-    >
-      {children}
-    </button>
+    <Tooltip label={label} shortcut={shortcut} side="right">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        data-add-toggle={dataAddToggle || undefined}
+        aria-label={shortcut ? `${label} (${shortcut})` : label}
+        aria-pressed={pressed ? active : undefined}
+        className={`tap flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-30 ${
+          active ? "bg-accent/15 text-accent" : "text-ink-soft hover:bg-paper hover:text-ink"
+        }`}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }

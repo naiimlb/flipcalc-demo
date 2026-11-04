@@ -77,7 +77,7 @@ export function JsonDrawer({
                 <p className="text-xs uppercase tracking-wide text-white/50">Mode Dev</p>
                 <p className="truncate font-semibold">{item.title ?? item.prompt}</p>
               </div>
-              <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-white/10" aria-label="Fermer">
+              <button type="button" onClick={onClose} className="rounded-md p-2 hover:bg-white/10" aria-label="Fermer">
                 <IconX size={16} />
               </button>
             </header>
@@ -87,7 +87,7 @@ export function JsonDrawer({
                   key={v}
                   type="button"
                   onClick={() => setView(v)}
-                  className={`rounded-full px-3 py-1 font-semibold ${view === v ? "bg-surface text-ink" : "bg-white/10"}`}
+                  className={`rounded-md px-3 py-1 font-medium ${view === v ? "bg-surface text-ink" : "bg-white/10"}`}
                 >
                   {v === "raw" ? "Réponse brute de l'IA" : "Conception validée"}
                 </button>
@@ -102,13 +102,13 @@ export function JsonDrawer({
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(content)}
-                className="ml-auto rounded-full bg-white/10 px-3 py-1 font-semibold hover:bg-white/20"
+                className="ml-auto rounded-md bg-white/10 px-3 py-1 font-semibold hover:bg-white/20"
               >
                 Copier
               </button>
             </div>
             {debug?.validation_errors && debug.validation_errors.length > 0 && (
-              <div className="mx-5 mb-3 rounded-xl bg-rose-500/15 p-3 text-xs text-rose-200">
+              <div className="mx-5 mb-3 rounded-xl bg-danger/15 p-3 text-xs text-danger">
                 <p className="font-semibold">Erreurs de validation</p>
                 <ul className="mt-1 list-disc pl-4">
                   {debug.validation_errors.map((e, i) => (
@@ -117,7 +117,7 @@ export function JsonDrawer({
                 </ul>
               </div>
             )}
-            <pre className="mx-5 mb-5 flex-1 overflow-auto rounded-xl bg-black/40 p-4 font-mono text-[11.5px] leading-relaxed text-emerald-200 scrollbar-thin">
+            <pre className="mx-5 mb-5 flex-1 overflow-auto rounded-xl bg-black/40 p-4 font-mono text-xs leading-relaxed text-success scrollbar-thin">
               {content}
             </pre>
           </motion.aside>

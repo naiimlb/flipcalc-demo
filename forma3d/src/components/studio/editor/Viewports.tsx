@@ -50,7 +50,7 @@ export function Viewports({
       <div className="relative min-h-0 min-w-0">{children}</div>
       {design &&
         sides.map((side) => (
-          <div key={side} className="relative min-h-0 min-w-0 overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_50%_30%,rgb(var(--neon-blue)/0.12),transparent_70%)] ring-1 ring-fg/10">
+          <div key={side} className="relative min-h-0 min-w-0 overflow-hidden rounded-lg bg-paper ring-1 ring-fg/10">
             <OrthoViewer design={design} side={side} selection={selection} hiddenIds={hiddenIds} showGrid={showGrid} showAxes={showAxes} onSelect={onSelect} />
             <span className="chip pointer-events-none absolute start-2.5 top-2.5 bg-night/70 text-white">{t(`editor.view.${side}`)}</span>
           </div>

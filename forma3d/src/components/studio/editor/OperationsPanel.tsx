@@ -96,8 +96,8 @@ export function OperationsPanel({
     <section className="panel space-y-3 p-3" aria-label={t("ops.title")}>
       {/* Poignées */}
       <div className="space-y-2">
-        <p className="text-[12px] font-semibold text-ink">{t("ops.handles")}</p>
-        <label className="flex items-center justify-between gap-2 text-[12px] text-ink-soft">
+        <p className="text-xs font-semibold text-ink">{t("ops.handles")}</p>
+        <label className="flex items-center justify-between gap-2 text-xs text-ink-soft">
           {t("ops.snap")}
           <input type="checkbox" className="h-5 w-5 accent-[rgb(var(--neon-blue))]" checked={snap.on} onChange={(e) => onSnap({ ...snap, on: e.target.checked })} />
         </label>
@@ -107,7 +107,7 @@ export function OperationsPanel({
             <NumInput label={t("ops.snapAngle")} value={snap.angle} onChange={(angle) => onSnap({ ...snap, angle: Math.max(1, angle || 15) })} unit="°" min={1} max={90} />
           </div>
         )}
-        <label className="flex items-center justify-between gap-2 text-[12px] text-ink-soft">
+        <label className="flex items-center justify-between gap-2 text-xs text-ink-soft">
           {t("ops.uniform")}
           <input type="checkbox" className="h-5 w-5 accent-[rgb(var(--neon-blue))]" checked={uniform} onChange={(e) => onUniform(e.target.checked)} />
         </label>
@@ -116,23 +116,23 @@ export function OperationsPanel({
       <fieldset disabled={!editable} className="space-y-2 border-t border-line pt-3 disabled:opacity-60">
         <legend className="sr-only">{t("ops.title")}</legend>
         <div className="flex flex-wrap gap-1.5">
-          <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-[11px]" onClick={() => onOp({ type: "duplicate" })}>
+          <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-xs" onClick={() => onOp({ type: "duplicate" })}>
             {t("editor.duplicate")}
           </button>
           {count > 1 && (
-            <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-[11px]" onClick={() => onOp({ type: "group" })}>
+            <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-xs" onClick={() => onOp({ type: "group" })}>
               {t("ops.group")} ({count})
             </button>
           )}
           {grouped && (
-            <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-[11px]" onClick={() => onOp({ type: "ungroup" })}>
+            <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-xs" onClick={() => onOp({ type: "ungroup" })}>
               {t("ops.ungroup")}
             </button>
           )}
-          <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-[11px]" aria-pressed={Boolean(part.locked)} onClick={() => onOp({ type: "lock", locked: !part.locked })}>
+          <button type="button" className="btn-ghost tap !px-2.5 !py-1.5 !text-xs" aria-pressed={Boolean(part.locked)} onClick={() => onOp({ type: "lock", locked: !part.locked })}>
             {part.locked ? t("ops.unlock") : t("ops.lock")}
           </button>
-          <button type="button" className="btn tap !px-2.5 !py-1.5 !text-[11px] text-rose-500 hover:bg-rose-500/10" onClick={() => onOp({ type: "delete" })}>
+          <button type="button" className="btn tap !px-2.5 !py-1.5 !text-xs text-danger hover:bg-danger/10" onClick={() => onOp({ type: "delete" })}>
             {t("editor.delete")}
           </button>
         </div>
@@ -178,7 +178,7 @@ export function OperationsPanel({
           </div>
         )}
         {(kind === "fillet" || kind === "chamfer") && <NumInput label={kind === "fillet" ? t("ops.radius") : t("ops.chamferSize")} value={radius} onChange={setRadius} unit="mm" min={0.2} step={0.2} />}
-        <p className="text-[11px] leading-snug text-ink-mute">{t(`ops.${kind}Hint`)}</p>
+        <p className="text-xs leading-snug text-ink-mute">{t(`ops.${kind}Hint`)}</p>
         <button type="button" className="btn-neon w-full !py-2 !text-xs" disabled={!supports[kind]} onClick={apply}>
           {t("ops.apply")}
         </button>

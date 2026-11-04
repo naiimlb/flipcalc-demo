@@ -6,9 +6,9 @@ import { removeSecret, setSecret } from "../actions";
 import { ResultMessage, useSave } from "../useSave";
 
 const SOURCE_LABEL: Record<SecretStatus["source"], [string, string]> = {
-  admin: ["Saisie dans l'admin (chiffrée)", "bg-emerald-100 text-emerald-700"],
-  env: ["Variable d'environnement", "bg-sky-100 text-sky-700"],
-  none: ["Non configurée", "bg-rose-100 text-rose-700"],
+  admin: ["Saisie dans l'admin (chiffrée)", "bg-success/10 text-success"],
+  env: ["Variable d'environnement", "bg-accent/10 text-accent"],
+  none: ["Non configurée", "bg-danger/10 text-danger"],
 };
 
 function SecretRow({ secret, canStore }: { secret: SecretStatus; canStore: boolean }) {
@@ -59,7 +59,7 @@ function SecretRow({ secret, canStore }: { secret: SecretStatus; canStore: boole
             <button
               type="button"
               disabled={pending}
-              className="btn-ghost shrink-0 !text-rose-600"
+              className="btn-ghost shrink-0 !text-danger"
               onClick={() => confirm("Supprimer cette clé ?") && run(() => removeSecret(secret.name))}
             >
               Supprimer

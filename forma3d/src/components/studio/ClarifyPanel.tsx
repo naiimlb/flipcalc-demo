@@ -54,20 +54,20 @@ export function ClarifyPanel({
           aria-labelledby="clarify-title"
           initial={{ opacity: 0, y: 24, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-[24px] bg-surface p-4 shadow-float sm:p-5"
+          transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}
+          className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-lg bg-surface p-4 shadow-float sm:p-5"
         >
-          <p className="flex items-center gap-1.5 text-[12px] font-semibold text-brand-accent">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-brand-accent">
             <IconSparkles size={14} /> {t("clarify.kicker")}
           </p>
-          <h2 id="clarify-title" className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-ink">
+          <h2 id="clarify-title" className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-ink">
             « {prompt} »
           </h2>
 
           <div className="mt-3 space-y-4">
             {questions.map((q) => (
               <fieldset key={q.id}>
-                <legend className="text-[13px] font-semibold text-ink">{q.question}</legend>
+                <legend className="text-sm font-semibold text-ink">{q.question}</legend>
                 {q.freeText && (
                   <input
                     type="text"
@@ -92,7 +92,7 @@ export function ClarifyPanel({
                         type="button"
                         aria-pressed={selected}
                         onClick={() => setChoices((c) => ({ ...c, [q.id]: selected ? undefined : option }))}
-                        className={`inline-flex items-center gap-1 rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition ${
+                        className={`inline-flex items-center gap-1 rounded-md border px-3.5 py-2 text-sm font-medium transition ${
                           selected
                             ? "border-brand-accent bg-brand-accent text-white"
                             : "border-line bg-paper text-ink-soft hover:border-brand-accent/50 hover:text-brand-accent"
@@ -107,7 +107,7 @@ export function ClarifyPanel({
                     type="button"
                     aria-pressed={choices[q.id] === null}
                     onClick={() => setChoices((c) => ({ ...c, [q.id]: c[q.id] === null ? undefined : null }))}
-                    className={`rounded-full border border-dashed px-3.5 py-2 text-[12.5px] font-medium transition ${
+                    className={`rounded-md border border-dashed px-3.5 py-2 text-sm font-medium transition ${
                       choices[q.id] === null ? "border-ink/40 bg-ink/10 text-ink" : "border-line text-ink-mute hover:text-ink"
                     }`}
                   >

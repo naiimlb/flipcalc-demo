@@ -20,7 +20,7 @@ export function NewPasswordForm() {
         </label>
         <input id="confirm" name="confirm" type="password" required minLength={8} maxLength={72} autoComplete="new-password" className="input" />
       </div>
-      {state.error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{state.error}</p>}
+      {state.error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{state.error}</p>}
       <button type="submit" disabled={pending} className="btn-dark w-full !py-3">
         {pending && <Spinner />} Enregistrer
       </button>

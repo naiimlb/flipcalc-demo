@@ -1,61 +1,93 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Système de design de Forma3D (référence : /design-system).
+ * Tout passe par des variables CSS (globals.css), redéfinies pour le thème sombre.
+ * Les noms historiques (neon-*, brand-*) pointent vers l'accent unique pour ne rien casser.
+ */
+const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   // Mode sombre piloté par la classe « dark » sur <html> (choix auto / clair / sombre).
   darkMode: "class",
   theme: {
+    // Échelle de tailles réduite : 12, 13, 14, 16, 20, 28 (+ 40 pour le seul titre de l'accueil).
+    fontSize: {
+      xs: ["12px", { lineHeight: "16px" }],
+      sm: ["13px", { lineHeight: "18px" }],
+      base: ["14px", { lineHeight: "20px" }],
+      lg: ["16px", { lineHeight: "24px" }],
+      xl: ["20px", { lineHeight: "28px" }],
+      "2xl": ["20px", { lineHeight: "28px" }],
+      "3xl": ["28px", { lineHeight: "34px" }],
+      "4xl": ["28px", { lineHeight: "34px" }],
+      "5xl": ["28px", { lineHeight: "34px" }],
+      "6xl": ["28px", { lineHeight: "34px" }],
+      "7xl": ["28px", { lineHeight: "34px" }],
+      "8xl": ["28px", { lineHeight: "34px" }],
+      "9xl": ["28px", { lineHeight: "34px" }],
+      display: ["40px", { lineHeight: "46px", letterSpacing: "-0.02em" }],
+    },
+    // Peu de graisses : normal (400), moyen (500), titres (600).
+    fontWeight: {
+      thin: "400",
+      extralight: "400",
+      light: "400",
+      normal: "400",
+      medium: "500",
+      semibold: "600",
+      bold: "600",
+      extrabold: "600",
+      black: "600",
+    },
+    // Coins peu arrondis : 4 à 8 px (cercles conservés pour les pastilles et avatars).
+    borderRadius: {
+      none: "0",
+      sm: "2px",
+      DEFAULT: "4px",
+      md: "6px",
+      lg: "6px",
+      xl: "8px",
+      "2xl": "8px",
+      "3xl": "8px",
+      card: "8px",
+      full: "9999px",
+    },
     extend: {
       colors: {
-        // Couleurs pilotées par l'admin (variables CSS posées dans le layout racine).
-        brand: {
-          from: "rgb(var(--brand-from) / <alpha-value>)",
-          to: "rgb(var(--brand-to) / <alpha-value>)",
-          accent: "rgb(var(--brand-accent) / <alpha-value>)",
-        },
-        // Couleurs de surface et de texte : variables CSS inversées en mode sombre (globals.css).
-        paper: "rgb(var(--paper) / <alpha-value>)",
-        surface: "rgb(var(--surface) / <alpha-value>)",
-        ink: {
-          DEFAULT: "rgb(var(--ink) / <alpha-value>)",
-          soft: "rgb(var(--ink-soft) / <alpha-value>)",
-          mute: "rgb(var(--ink-mute) / <alpha-value>)",
-        },
-        line: "rgb(var(--line) / <alpha-value>)",
-        // Toujours sombre (boutons noirs, badge du titre, toasts), dans les deux modes.
-        night: "rgb(var(--night) / <alpha-value>)",
-        // Fond de page et texte posé dessus (inversés entre clair et sombre).
-        canvas: "rgb(var(--canvas) / <alpha-value>)",
-        fg: "rgb(var(--fg) / <alpha-value>)",
-        // Palette néon de l'identité.
-        neon: {
-          blue: "rgb(var(--neon-blue) / <alpha-value>)",
-          "blue-strong": "rgb(var(--neon-blue-strong) / <alpha-value>)",
-          coral: "rgb(var(--neon-coral) / <alpha-value>)",
-          violet: "rgb(var(--neon-violet) / <alpha-value>)",
-        },
+        // Accent unique (sélection, action principale) et couleurs sémantiques discrètes.
+        accent: { DEFAULT: token("accent"), strong: token("accent-strong") },
+        success: token("success"),
+        warning: token("warning"),
+        danger: token("danger"),
+        // Alias historiques → accent.
+        brand: { from: token("surface-raised"), to: token("surface-raised"), accent: token("accent") },
+        neon: { blue: token("accent"), "blue-strong": token("accent-strong"), coral: token("accent"), violet: token("accent") },
+        // Surfaces neutres et textes.
+        canvas: token("canvas"),
+        surface: token("surface"),
+        paper: token("paper"),
+        line: token("line"),
+        night: token("night"),
+        fg: token("fg"),
+        ink: { DEFAULT: token("ink"), soft: token("ink-soft"), mute: token("ink-mute") },
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
-        display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        display: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
-      borderRadius: {
-        card: "32px",
-      },
+      // Ombres très légères, réservées aux menus et éléments flottants.
       boxShadow: {
-        card: "0 30px 80px -30px rgba(40, 30, 120, 0.45), 0 10px 30px -15px rgba(40, 30, 120, 0.25)",
-        soft: "0 1px 2px rgba(17,17,20,0.04), 0 8px 24px -12px rgba(17,17,20,0.12)",
-        float: "0 30px 60px -20px rgba(30, 20, 90, 0.35)",
-        neon: "0 0 0 1px rgb(var(--neon-blue) / 0.5), 0 10px 40px -8px rgb(var(--neon-blue) / 0.65)",
-        "neon-coral": "0 10px 40px -8px rgb(var(--neon-coral) / 0.6)",
+        card: "none",
+        soft: "none",
+        float: "0 4px 16px -4px rgb(0 0 0 / 0.24), 0 0 0 1px rgb(var(--line))",
+        neon: "none",
+        "neon-coral": "none",
       },
-      keyframes: {
-        shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
-      },
-      animation: {
-        shimmer: "shimmer 2.2s linear infinite",
-      },
+      transitionDuration: { DEFAULT: "150ms" },
+      transitionTimingFunction: { DEFAULT: "cubic-bezier(0.2, 0, 0, 1)" },
     },
   },
   plugins: [],

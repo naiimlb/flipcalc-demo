@@ -153,7 +153,7 @@ export function EspaceClient({
     <div className="w-full">
       <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-4">
         <div className="text-fg">
-          <h2 className="font-display text-3xl font-black tracking-[-0.04em] sm:text-5xl">Mon espace</h2>
+          <h2 className="font-display text-3xl font-black tracking-tight sm:text-5xl">Mon espace</h2>
           <p className="mt-1 text-sm text-fg/65">
             {viewer.displayName ?? viewer.email} · {items.length} demande{items.length > 1 ? "s" : ""} · sauvegardé dans votre compte
           </p>
@@ -163,14 +163,14 @@ export function EspaceClient({
         </Link>
       </div>
 
-      <nav className="mb-4 flex gap-1 overflow-x-auto rounded-full bg-surface/90 p-1 shadow-soft scrollbar-none" aria-label="Sections de Mon espace">
+      <nav className="mb-4 flex gap-1 overflow-x-auto rounded-md bg-surface/90 p-1 shadow-soft scrollbar-none" aria-label="Sections de Mon espace">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             aria-current={tab === t.id ? "page" : undefined}
-            className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${tab === t.id ? "bg-brand-accent text-white" : "text-ink-soft hover:text-ink"}`}
+            className={`shrink-0 rounded-md px-4 py-2 text-xs font-medium transition ${tab === t.id ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft hover:text-ink"}`}
           >
             {t.label}
           </button>
@@ -190,9 +190,9 @@ export function EspaceClient({
           />
         )}
 
-        <section className="min-w-0 rounded-[24px] bg-paper p-3 shadow-card sm:p-4">
+        <section className="min-w-0 rounded-lg bg-paper p-3 shadow-card sm:p-4">
           {showFolders && (
-            <div className="mb-3 flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2">
+            <div className="mb-3 flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-2">
               <IconSearch size={14} className="text-ink-mute" />
               <input
                 value={query}
@@ -234,14 +234,11 @@ export function EspaceClient({
               )}
               {filtered.map((item) => (
                 <article key={item.id} className="panel flex flex-col p-3">
-                  <div
-                    className="flex h-28 items-center justify-center rounded-xl text-white"
-                    style={{ background: `linear-gradient(135deg, ${item.design?.model.parts[0]?.color ?? "#5b6ee1"}, #7b5ce6 60%, #ff5fb5)` }}
-                  >
-                    <IconCube size={38} strokeWidth={1.4} />
+                  <div className="flex h-28 items-center justify-center rounded-md border border-line bg-paper" style={{ color: item.design?.model.parts[0]?.color ?? "rgb(var(--ink-mute))" }}>
+                    <IconCube size={20} />
                   </div>
                   <p className="mt-2 truncate text-sm font-semibold">{item.title ?? item.prompt}</p>
-                  <p className="text-[11px] text-ink-mute">
+                  <p className="text-xs text-ink-mute">
                     {formatDateTime(item.createdAt)} · {item.design?.model.parts.length ?? 0} pièces
                   </p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -284,7 +281,7 @@ export function EspaceClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="pointer-events-auto rounded-full bg-night px-5 py-3 text-sm font-medium text-white shadow-float"
+                className="pointer-events-auto rounded-md border border-line bg-surface px-5 py-3 text-sm font-medium text-ink shadow-float"
               >
                 {toast}
               </motion.div>
@@ -336,7 +333,7 @@ function FolderSidebar({
           <button type="button" onClick={() => onRename(folder)} className="rounded-lg p-1.5 text-ink-mute hover:text-ink" aria-label={`Renommer ${folder.name}`}>
             <IconPencil size={13} />
           </button>
-          <button type="button" onClick={() => onDelete(folder)} className="rounded-lg p-1.5 text-ink-mute hover:text-rose-600" aria-label={`Supprimer ${folder.name}`}>
+          <button type="button" onClick={() => onDelete(folder)} className="rounded-lg p-1.5 text-ink-mute hover:text-danger" aria-label={`Supprimer ${folder.name}`}>
             <IconTrash size={13} />
           </button>
         </span>
@@ -344,7 +341,7 @@ function FolderSidebar({
     </li>
   );
   return (
-    <aside className="rounded-[24px] bg-surface p-3 shadow-card lg:self-start">
+    <aside className="rounded-lg bg-surface p-3 shadow-card lg:self-start">
       <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-ink-mute">Dossiers (projets)</p>
       <ul className="space-y-0.5">
         {entry("all", "Toutes les demandes")}
@@ -402,11 +399,8 @@ function RequestRow({
 
   return (
     <li className="panel flex flex-wrap items-center gap-3 p-3">
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
-        style={{ background: `linear-gradient(135deg, ${item.design?.model.parts[0]?.color ?? "#5b6ee1"}, #7b5ce6)` }}
-      >
-        <IconCube size={19} />
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-paper" style={{ color: item.design?.model.parts[0]?.color ?? "rgb(var(--ink-mute))" }}>
+        <IconCube size={16} />
       </span>
       <div className="min-w-0 flex-1 basis-56">
         {editing ? (
@@ -434,18 +428,18 @@ function RequestRow({
           </button>
         )}
         <p className="truncate text-xs text-ink-mute">{item.prompt}</p>
-        <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-mute">
+        <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-mute">
           {formatDateTime(item.createdAt)}
           {item.source === "duplicate" && <span className="chip !py-0.5 bg-paper text-ink-soft">copie</span>}
           {item.source === "import" && <span className="chip !py-0.5 bg-paper text-ink-soft">essai importé</span>}
-          {item.modelPath && <span className="chip !py-0.5 bg-emerald-50 text-emerald-700">modèle 3D sauvegardé</span>}
+          {item.modelPath && <span className="chip !py-0.5 bg-success/10 text-success">modèle 3D sauvegardé</span>}
         </p>
       </div>
       <StatusChip status={item.status} />
       <select
         value={item.folderId ?? ""}
         onChange={(e) => onFolder(e.target.value || null)}
-        className="input !w-auto !rounded-full !py-1.5 !text-xs"
+        className="input !w-auto !rounded-md !py-1.5 !text-xs"
         aria-label="Dossier"
       >
         <option value="">Sans dossier</option>
@@ -461,7 +455,7 @@ function RequestRow({
           onClick={onFavorite}
           aria-pressed={item.isFavorite}
           aria-label={item.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          className={`icon-btn ${item.isFavorite ? "!text-amber-500" : ""}`}
+          className={`icon-btn ${item.isFavorite ? "!text-warning" : ""}`}
         >
           <IconStar size={14} fill={item.isFavorite ? "currentColor" : "none"} />
         </button>
@@ -473,7 +467,7 @@ function RequestRow({
             <IconCopy size={14} />
           </button>
         )}
-        <button type="button" onClick={onDelete} className="icon-btn hover:!border-rose-200 hover:!text-rose-600" aria-label="Supprimer" title="Supprimer">
+        <button type="button" onClick={onDelete} className="icon-btn hover:!border-danger/30 hover:!text-danger" aria-label="Supprimer" title="Supprimer">
           <IconTrash size={14} />
         </button>
       </div>
@@ -507,13 +501,13 @@ function MaterialsTab({ viewer, items, notify }: { viewer: StudioViewer; items: 
     <div className="grid gap-4 md:grid-cols-2">
       <div className="panel p-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <IconHeart size={15} className="text-rose-500" /> Mes matières préférées
+          <IconHeart size={15} className="text-danger" /> Mes matières préférées
         </h3>
         <p className="mt-1 text-xs text-ink-mute">Ajoutez-en depuis le panneau « Matériaux » d&apos;une conception (cœur).</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {favorites.length === 0 && <p className="text-sm text-ink-mute">Aucune pour l&apos;instant.</p>}
           {favorites.map((name) => (
-            <span key={name} className="chip bg-rose-50 !py-1.5 text-rose-700">
+            <span key={name} className="chip bg-danger/10 !py-1.5 text-danger">
               {name}
               <button type="button" onClick={() => save(favorites.filter((f) => f !== name))} aria-label={`Retirer ${name}`}>
                 <IconX size={11} strokeWidth={3} />
@@ -586,9 +580,9 @@ function SettingsPanel({ viewer, language, notify }: { viewer: StudioViewer; lan
       <div className="flex items-center gap-4">
         {avatar ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatar} alt="Ma photo" className="h-16 w-16 rounded-full object-cover ring-2 ring-white" />
+          <img src={avatar} alt="Ma photo" className="h-16 w-16 rounded-full object-cover ring-1 ring-line" />
         ) : (
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-lg font-bold text-white">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-paper text-lg font-medium text-ink ring-1 ring-line">
             {(viewer.displayName ?? viewer.email)[0]?.toUpperCase()}
           </span>
         )}
@@ -608,7 +602,7 @@ function SettingsPanel({ viewer, language, notify }: { viewer: StudioViewer; lan
             Changer la photo
           </button>
           {avatar && (
-            <button type="button" onClick={() => setAvatar(null)} className="btn !text-xs text-rose-600">
+            <button type="button" onClick={() => setAvatar(null)} className="btn !text-xs text-danger">
               Retirer
             </button>
           )}
@@ -700,8 +694,8 @@ function DataPanel() {
           <IconDownload size={14} /> Télécharger mes données
         </a>
       </div>
-      <div className="panel border-rose-200 p-5">
-        <h3 className="text-sm font-semibold text-rose-600">Supprimer mon compte</h3>
+      <div className="panel border-danger/30 p-5">
+        <h3 className="text-sm font-semibold text-danger">Supprimer mon compte</h3>
         <p className="mt-1 text-sm text-ink-soft">
           Supprime définitivement votre compte, vos demandes, dossiers, préférences, modèles 3D et photo. Cette action est irréversible.
         </p>
@@ -709,12 +703,12 @@ function DataPanel() {
           Tapez SUPPRIMER pour confirmer
         </label>
         <input id="confirm-delete" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} className="input" autoComplete="off" />
-        {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
+        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
         <button
           type="button"
           onClick={deleteAccount}
           disabled={confirmText !== "SUPPRIMER" || deleting}
-          className="btn mt-3 bg-rose-600 !text-xs text-white hover:bg-rose-700"
+          className="btn mt-3 bg-danger/10 !text-xs text-danger hover:bg-danger/15"
         >
           {deleting && <Spinner />} Supprimer définitivement
         </button>

@@ -61,15 +61,15 @@ export function LeftColumn({
       {show("card") && (
       <section className="panel p-3">
         <div className="flex items-start gap-2.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-white shadow-soft">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-paper text-ink-soft">
             <IconCube size={18} />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               {hideTitle ? (
-                <p className="line-clamp-2 text-[12px] font-semibold leading-tight text-ink-soft">{t("left.project")}</p>
+                <p className="line-clamp-2 text-xs font-semibold leading-tight text-ink-soft">{t("left.project")}</p>
               ) : (
-                <h2 className="line-clamp-2 text-[13.5px] font-semibold leading-tight">
+                <h2 className="line-clamp-2 text-sm font-semibold leading-tight">
                   {item ? item.title ?? t("left.newRequest") : t("left.none")}
                 </h2>
               )}
@@ -80,7 +80,7 @@ export function LeftColumn({
                     onClick={() => onToggleFavorite(item)}
                     aria-pressed={item.isFavorite}
                     aria-label={item.isFavorite ? t("left.favRemove") : t("left.favAdd")}
-                    className={`rounded-full p-1 transition ${item.isFavorite ? "text-amber-500" : "text-ink-mute hover:text-amber-500"}`}
+                    className={`rounded-md p-1 transition ${item.isFavorite ? "text-warning" : "text-ink-mute hover:text-warning"}`}
                   >
                     <IconStar size={15} fill={item.isFavorite ? "currentColor" : "none"} />
                   </button>
@@ -89,12 +89,12 @@ export function LeftColumn({
               </span>
             </div>
             {design && (
-              <p className="mt-0.5 text-[11px] text-ink-mute">
+              <p className="mt-0.5 text-xs text-ink-mute">
                 {design.category} · {design.difficulty}
               </p>
             )}
             {item && (
-              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-mute">
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-mute">
                 <IconPin size={11} /> {formatRelative(item.createdAt)}
               </p>
             )}
@@ -140,16 +140,16 @@ export function LeftColumn({
               <Field label={t("left.problem")}>{design.analysis.summary}</Field>
             </div>
             <div className="rounded-xl border border-line/80 p-2.5">
-              <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("left.needs")}</p>
+              <p className="mb-1 text-xs font-medium text-ink-mute">{t("left.needs")}</p>
               <BulletList items={design.analysis.needs} />
             </div>
             <div className="rounded-xl border border-line/80 p-2.5">
-              <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("left.constraints")}</p>
+              <p className="mb-1 text-xs font-medium text-ink-mute">{t("left.constraints")}</p>
               <BulletList items={design.analysis.constraints} />
             </div>
             {design.analysis.assumptions.length > 0 && (
               <div className="rounded-xl border border-line/80 p-2.5">
-                <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("left.assumptions")}</p>
+                <p className="mb-1 text-xs font-medium text-ink-mute">{t("left.assumptions")}</p>
                 <BulletList items={design.analysis.assumptions} />
               </div>
             )}
@@ -169,7 +169,7 @@ export function LeftColumn({
         <Reveal index={1} on={reveal}>
           <Panel icon={<IconHistory size={15} />} title={t("left.adjust")}>
             {design.variante && (
-              <p className="mb-2 text-[11px] text-ink-mute">
+              <p className="mb-2 text-xs text-ink-mute">
                 {t("left.versionOf", { label: t(`variant.${design.variante.objectif}`), base: design.variante.base })}
               </p>
             )}
@@ -182,7 +182,7 @@ export function LeftColumn({
       {show("notice") && <Notice item={item} demoMode={demoMode} signedIn={signedIn} onSignupPrompt={onSignupPrompt} />}
 
       {show("saved") && item && signedIn && !item.sample && (
-        <p className="px-1 text-[11px] text-fg/70">
+        <p className="px-1 text-xs text-fg/70">
           {item.modelPath ? t("left.saved") : ""}
           <Link href="/espace" className="font-semibold underline-offset-2 hover:underline">
             {t("nav.space")}
@@ -218,13 +218,13 @@ function LiveAnalysis({ item }: { item: RequestItem | null }) {
       )}
       {analysis.needs && analysis.needs.length > 0 && (
         <div className="rounded-xl border border-line/80 p-2.5">
-          <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("left.needs")}</p>
+          <p className="mb-1 text-xs font-medium text-ink-mute">{t("left.needs")}</p>
           <BulletList items={analysis.needs} />
         </div>
       )}
       {analysis.constraints && analysis.constraints.length > 0 && (
         <div className="rounded-xl border border-line/80 p-2.5">
-          <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("left.constraints")}</p>
+          <p className="mb-1 text-xs font-medium text-ink-mute">{t("left.constraints")}</p>
           <BulletList items={analysis.constraints} />
         </div>
       )}
@@ -251,10 +251,10 @@ function Notice({
   if (item?.guest) {
     return (
       <div className="rounded-2xl bg-surface p-3 shadow-soft ring-2 ring-brand-accent/40">
-        <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-brand-accent">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-brand-accent">
           <IconSparkles size={14} /> {t("notice.guestTitle")}
         </p>
-        <p className="mt-1 text-[11.5px] leading-snug text-ink-soft">{t("notice.guestBody")}</p>
+        <p className="mt-1 text-xs leading-snug text-ink-soft">{t("notice.guestBody")}</p>
         <button type="button" onClick={onSignupPrompt} className="btn-dark mt-2.5 w-full !py-2 !text-xs">
           {t("notice.guestCta")}
         </button>
@@ -285,13 +285,13 @@ function Notice({
   if (!title) return null;
 
   return (
-    <div className="rounded-2xl bg-rose-50 p-3 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:ring-rose-500/20">
-      <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-rose-600">
+    <div className="rounded-2xl bg-danger/10 p-3 ring-1 ring-danger/30 dark:bg-danger/10 dark:ring-danger/20">
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-danger">
         {item?.status === "error" ? <IconAlert size={14} /> : <IconSparkles size={14} />}
         {title}
       </p>
-      <p className="mt-1 text-[11.5px] leading-snug text-rose-500/90">{body}</p>
-      {meta && <p className="mt-1.5 text-[10.5px] text-rose-400">{meta}</p>}
+      <p className="mt-1 text-xs leading-snug text-danger/90">{body}</p>
+      {meta && <p className="mt-1.5 text-xs text-danger">{meta}</p>}
     </div>
   );
 }

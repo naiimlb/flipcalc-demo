@@ -22,7 +22,7 @@ export function RowAction({
         type="button"
         disabled={pending}
         onClick={() => (!confirmText || confirm(confirmText)) && run(action)}
-        className={`btn-ghost !px-3 !py-1 !text-xs ${tone === "danger" ? "!text-rose-600 hover:!border-rose-200" : ""}`}
+        className={`btn-ghost !px-3 !py-1 !text-xs ${tone === "danger" ? "!text-danger hover:!border-danger/30" : ""}`}
       >
         {pending ? "…" : label}
       </button>

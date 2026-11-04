@@ -71,20 +71,20 @@ export function RightColumn({
                 ] as const
               ).map(([label, value]) => (
                 <div key={label} className="rounded-xl bg-brand-accent/[0.07] px-2 py-2 text-center">
-                  <p className="text-[10px] font-semibold text-brand-accent">{label}</p>
-                  <p className="text-[12px] font-semibold tabular-nums">{formatLength(value, unit)}</p>
+                  <p className="text-xs font-semibold text-brand-accent">{label}</p>
+                  <p className="text-xs font-semibold tabular-nums">{formatLength(value, unit)}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-2 flex justify-between text-[11.5px] text-ink-soft">
+            <p className="mt-2 flex justify-between text-xs text-ink-soft">
               <span>{t("dim.weight")}</span>
               <span className="font-semibold text-ink">{formatWeight(design.dimensions.weightGrams)}</span>
             </p>
-            <p className="mt-1 flex justify-between text-[11.5px] text-ink-soft">
+            <p className="mt-1 flex justify-between text-xs text-ink-soft">
               <span>{t("dim.parts")}</span>
               <span className="font-semibold text-ink">{design.model.parts.length}</span>
             </p>
-            {design.dimensions.notes && <p className="mt-2 text-[11px] leading-snug text-ink-mute">{design.dimensions.notes}</p>}
+            {design.dimensions.notes && <p className="mt-2 text-xs leading-snug text-ink-mute">{design.dimensions.notes}</p>}
           </>
         ) : (
           <Empty />
@@ -107,27 +107,27 @@ export function RightColumn({
                 onToggleFavorite={onToggleFavoriteMaterial}
               />
             )}
-            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">{t("mat.bom")}</p>
+            <p className="mb-1.5 mt-3 text-xs font-medium text-ink-mute">{t("mat.bom")}</p>
             <ul className="space-y-2">
               {design.materials.map((m, i) => (
                 <li key={i} className="rounded-xl border border-line/80 p-2.5">
-                  <p className="flex items-center gap-2 text-[12px] font-semibold">
+                  <p className="flex items-center gap-2 text-xs font-semibold">
                     <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style={{ background: m.color }} />
                     {m.name}
-                    <span className="ms-auto text-[10.5px] font-medium text-ink-mute">{m.quantity}</span>
+                    <span className="ms-auto text-xs font-medium text-ink-mute">{m.quantity}</span>
                   </p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-ink-mute">{m.usage}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-ink-mute">{m.usage}</p>
                 </li>
               ))}
             </ul>
-            <p className="mb-1.5 mt-3 text-[10.5px] font-medium text-ink-mute">{t("mat.preview")}</p>
+            <p className="mb-1.5 mt-3 text-xs font-medium text-ink-mute">{t("mat.preview")}</p>
             <div className="flex flex-wrap gap-1">
               {MATERIAL_CHOICES.map((kind) => (
                 <button
                   key={kind ?? "origine"}
                   type="button"
                   onClick={() => onSettings({ materialOverride: kind, mode: kind ? "real" : settings.mode })}
-                  className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition ${
+                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                     settings.materialOverride === kind ? "bg-brand-accent text-white" : "bg-paper text-ink-soft hover:text-ink"
                   }`}
                 >
@@ -135,12 +135,12 @@ export function RightColumn({
                 </button>
               ))}
             </div>
-            <p className="mb-1.5 mt-2.5 text-[10.5px] font-medium text-ink-mute">{t("mat.color")}</p>
+            <p className="mb-1.5 mt-2.5 text-xs font-medium text-ink-mute">{t("mat.color")}</p>
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => onSettings({ colorOverride: null })}
-                className={`h-6 rounded-full px-2 text-[10px] font-semibold ${
+                className={`h-6 rounded-md px-2 text-xs font-semibold ${
                   settings.colorOverride === null ? "bg-night text-white" : "bg-paper text-ink-soft"
                 }`}
               >
@@ -173,19 +173,19 @@ export function RightColumn({
         icon={<IconSteps size={15} />}
         title={t("panel.fabrication")}
         defaultOpen={Boolean(only)}
-        aside={design ? <span className="text-[10.5px] font-semibold text-ink-mute">{formatDuration(totalMinutes)}</span> : null}
+        aside={design ? <span className="text-xs font-semibold text-ink-mute">{formatDuration(totalMinutes)}</span> : null}
       >
         {design ? (
           <ol className="space-y-2">
             {design.fabrication.map((step, i) => (
               <li key={i} className="flex gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-white">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-accent text-xs font-bold text-white">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold leading-tight">{step.title}</p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-ink-mute">{step.detail}</p>
-                  <p className="mt-0.5 text-[10.5px] text-brand-accent">
+                  <p className="text-xs font-semibold leading-tight">{step.title}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-ink-mute">{step.detail}</p>
+                  <p className="mt-0.5 text-xs text-brand-accent">
                     {step.tool} · {formatDuration(step.durationMin)}
                   </p>
                 </div>
@@ -213,20 +213,20 @@ export function RightColumn({
             <ul className="mt-2 space-y-1.5">
               {design.cost.items.map((it, i) => (
                 <li key={i}>
-                  <p className="flex justify-between text-[11px] text-ink-soft">
+                  <p className="flex justify-between text-xs text-ink-soft">
                     <span className="truncate pr-2">{it.label}</span>
                     <span className="font-semibold tabular-nums text-ink">{formatMoney(it.amount, design.cost.currency)}</span>
                   </p>
                   <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-paper">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-brand-from to-brand-to"
+                      className="h-full rounded-full bg-accent"
                       style={{ width: `${Math.max(4, (it.amount / maxItem) * 100)}%` }}
                     />
                   </div>
                 </li>
               ))}
             </ul>
-            {design.cost.notes && <p className="mt-2 text-[11px] text-ink-mute">{design.cost.notes}</p>}
+            {design.cost.notes && <p className="mt-2 text-xs text-ink-mute">{design.cost.notes}</p>}
           </>
         ) : (
           <Empty />
@@ -243,7 +243,7 @@ export function RightColumn({
             <BulletList items={design.recommendations} />
             {design.solution.keyFeatures.length > 0 && (
               <div className="rounded-xl bg-paper p-2.5">
-                <p className="mb-1 text-[10.5px] font-medium text-ink-mute">{t("rec.highlights")}</p>
+                <p className="mb-1 text-xs font-medium text-ink-mute">{t("rec.highlights")}</p>
                 <BulletList items={design.solution.keyFeatures} />
               </div>
             )}
@@ -277,13 +277,13 @@ function RecommendedMaterials({
   const isActive = (m: RecommendedMaterial) => settings.colorOverride === m.couleur && settings.materialOverride === m.aspect;
   return (
     <div>
-      <p className="mb-1.5 text-[10.5px] font-medium text-ink-mute">{t("mat.recommendedFor")}</p>
+      <p className="mb-1.5 text-xs font-medium text-ink-mute">{t("mat.recommendedFor")}</p>
       {criteria && (
         <div className="mb-2 flex flex-wrap gap-1">
           {[criteria.usage, criteria.charge, criteria.chaleur, criteria.contact_alimentaire ? t("mat.food") : "", criteria.budget, criteria.fabrication]
             .filter(Boolean)
             .map((c) => (
-              <span key={c} className="rounded-full bg-paper px-2 py-0.5 text-[10px] text-ink-soft">
+              <span key={c} className="rounded-md bg-paper px-2 py-0.5 text-xs text-ink-soft">
                 {c}
               </span>
             ))}
@@ -322,15 +322,15 @@ function RecommendedMaterials({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1">
-                        <span className="text-[12.5px] font-semibold">
+                        <span className="text-sm font-semibold">
                           {i + 1}. {m.nom}
                         </span>
-                        {i === 0 && <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-brand-accent text-white">{t("mat.recommended")}</span>}
+                        {i === 0 && <span className="chip !px-1.5 !py-0.5 !text-xs bg-brand-accent text-white">{t("mat.recommended")}</span>}
                         {m.alternative_economique && (
-                          <span className="chip !px-1.5 !py-0.5 !text-[9.5px] bg-emerald-100 text-emerald-700">{t("mat.cheap")}</span>
+                          <span className="chip !px-1.5 !py-0.5 !text-xs bg-success/10 text-success">{t("mat.cheap")}</span>
                         )}
                       </span>
-                      <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">{m.pourquoi}</span>
+                      <span className="mt-0.5 block text-xs leading-snug text-ink-soft">{m.pourquoi}</span>
                     </span>
                   </button>
                   <button
@@ -338,12 +338,12 @@ function RecommendedMaterials({
                     onClick={() => onToggleFavorite(m.nom)}
                     aria-pressed={favorite}
                     aria-label={favorite ? t("mat.favRemove", { name: m.nom }) : t("mat.favAdd", { name: m.nom })}
-                    className={`shrink-0 rounded-full p-1 transition ${favorite ? "text-rose-500" : "text-ink-mute hover:text-rose-500"}`}
+                    className={`shrink-0 rounded-md p-1 transition ${favorite ? "text-danger" : "text-ink-mute hover:text-danger"}`}
                   >
                     <IconHeart size={14} fill={favorite ? "currentColor" : "none"} />
                   </button>
                 </div>
-                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 ps-7 text-[10.5px] leading-snug">
+                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 ps-7 text-xs leading-snug">
                   <dt className="text-ink-mute">{t("mat.limits")}</dt>
                   <dd className="text-ink-soft">{m.limites}</dd>
                   <dt className="text-ink-mute">{t("mat.cost")}</dt>
@@ -376,7 +376,7 @@ function ModeButton({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11.5px] font-semibold transition ${
+      className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-semibold transition ${
         active
           ? "border-brand-accent/60 bg-brand-accent/[0.08] text-brand-accent"
           : "border-transparent bg-paper/70 text-ink-soft hover:text-ink"

@@ -20,7 +20,7 @@ export function EditorPreview({ label, tabs, title, prompt }: { label: string; t
               </span>
             ))}
           </span>
-          <span className="flex h-7 items-center gap-1 rounded-lg bg-paper px-2 text-[11px] text-ink-soft">
+          <span className="flex h-7 items-center gap-1 rounded-lg bg-paper px-2 text-xs text-ink-soft">
             <IconDownload size={12} /> STL
           </span>
           <span className="chip bg-neon-blue/15 text-neon-blue">⚡ 42</span>
@@ -67,7 +67,7 @@ export function EditorPreview({ label, tabs, title, prompt }: { label: string; t
           <div className="hidden border-s border-line p-3 sm:block">
             <div className="flex flex-wrap gap-1">
               {tabs.map((tab, i) => (
-                <span key={tab} className={`rounded-full px-2 py-1 text-[10px] font-semibold ${i === 0 ? "bg-fg text-canvas" : "bg-paper text-ink-soft"}`}>
+                <span key={tab} className={`rounded-full px-2 py-1 text-xs font-semibold ${i === 0 ? "bg-fg text-canvas" : "bg-paper text-ink-soft"}`}>
                   {tab}
                 </span>
               ))}
@@ -78,7 +78,7 @@ export function EditorPreview({ label, tabs, title, prompt }: { label: string; t
                 ["Y", "85"],
                 ["Z", "96"],
               ].map(([k, v]) => (
-                <div key={k} className="flex items-center gap-2 text-[11px]">
+                <div key={k} className="flex items-center gap-2 text-xs">
                   <span className="w-3 font-bold text-ink-mute">{k}</span>
                   <span className="flex-1 rounded-lg bg-paper px-2 py-1.5 font-mono tabular-nums">{v} mm</span>
                 </div>
@@ -98,11 +98,11 @@ export function EditorPreview({ label, tabs, title, prompt }: { label: string; t
         <div className="flex items-center gap-2 border-t border-line px-3 py-2.5 sm:px-4">
           <IconHistory size={14} className="text-ink-mute" />
           {["v1", "v2", "v3"].map((v, i) => (
-            <span key={v} className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${i === 2 ? "bg-neon-blue/15 text-neon-blue" : "bg-paper text-ink-soft"}`}>
+            <span key={v} className={`rounded-lg px-2 py-1 text-xs font-semibold ${i === 2 ? "bg-neon-blue/15 text-neon-blue" : "bg-paper text-ink-soft"}`}>
               {v}
             </span>
           ))}
-          <span className="ms-2 h-7 flex-1 rounded-full bg-paper px-3 text-[11px] leading-7 text-ink-mute">{prompt}</span>
+          <span className="ms-2 h-7 flex-1 rounded-full bg-paper px-3 text-xs leading-7 text-ink-mute">{prompt}</span>
         </div>
       </div>
     </figure>

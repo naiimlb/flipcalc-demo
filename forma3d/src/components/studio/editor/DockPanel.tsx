@@ -76,8 +76,8 @@ export function DockPanel({
     // Sens de la poignée : vers l'extérieur de l'écran = plus large (inversé en arabe).
     const sign = (side === "left" ? 1 : -1) * (rtl ? -1 : 1);
     return (
-      <aside aria-label={title} className="relative flex min-h-0 shrink-0 flex-col" style={{ width }}>
-        <div className="min-h-0 flex-1 overflow-y-auto p-2.5 scrollbar-thin">{children}</div>
+      <aside aria-label={title} className={`editor-dock relative flex min-h-0 shrink-0 flex-col bg-surface ${side === "left" ? "border-e" : "border-s"} border-line`} style={{ width }}>
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">{children}</div>
         <div
           role="separator"
           aria-orientation="vertical"
@@ -104,7 +104,7 @@ export function DockPanel({
           }}
           className={`group absolute inset-y-0 z-10 flex w-2 cursor-col-resize items-center justify-center outline-none ${side === "left" ? "-end-1" : "-start-1"}`}
         >
-          <span className="h-10 w-1 rounded-full bg-fg/10 transition group-hover:bg-neon-blue group-focus-visible:bg-neon-blue" />
+          <span className="h-full w-px bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" />
         </div>
       </aside>
     );
@@ -116,7 +116,7 @@ export function DockPanel({
         <>
           <motion.div
             key="backdrop"
-            className="absolute inset-0 z-30 bg-night/40 backdrop-blur-[2px]"
+            className="absolute inset-0 z-30 bg-night/30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -127,19 +127,19 @@ export function DockPanel({
             aria-label={title}
             role="dialog"
             aria-modal="false"
-            className={`absolute inset-y-0 z-40 flex w-[min(360px,92vw)] flex-col bg-canvas/95 shadow-float backdrop-blur-xl ${side === "left" ? "start-0" : "end-0"}`}
+            className={`editor-dock absolute inset-y-0 z-40 flex w-[min(360px,92vw)] flex-col bg-surface shadow-float ${side === "left" ? "start-0 border-e" : "end-0 border-s"} border-line`}
             initial={{ x: offscreen }}
             animate={{ x: 0 }}
             exit={{ x: offscreen }}
-            transition={{ type: "spring", stiffness: 380, damping: 38 }}
+            transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
           >
             <div className="flex items-center justify-between gap-2 px-3 pb-1 pt-3">
-              <p className="text-sm font-bold text-fg">{title}</p>
-              <button type="button" onClick={onClose} aria-label={closeLabel} className="tap flex h-9 w-9 items-center justify-center rounded-full text-fg/70 hover:bg-fg/10 hover:text-fg">
+              <p className="text-sm font-semibold text-ink">{title}</p>
+              <button type="button" onClick={onClose} aria-label={closeLabel} className="icon-btn tap">
                 <IconX size={16} />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-2.5 pb-[calc(env(safe-area-inset-bottom)+12px)] scrollbar-thin">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+12px)] scrollbar-thin">{children}</div>
           </motion.aside>
         </>
       )}

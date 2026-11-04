@@ -1,5 +1,6 @@
 "use client";
 
+import { NumberField as SharedNumberField } from "../../ui/NumberField";
 import { useEffect, useMemo, useState } from "react";
 import { MATERIALS, type Design, type MaterialKind, type Part } from "@/lib/design/schema";
 import type { PartPatch } from "@/lib/design/edit";
@@ -31,7 +32,7 @@ export function PropertiesPanel({
   const t = useT();
   return (
     <div className="flex min-h-0 flex-col gap-2.5">
-      <div role="tablist" aria-label={t("editor.properties")} className="flex gap-0.5 overflow-x-auto rounded-2xl bg-surface p-1 ring-1 ring-line scrollbar-none">
+      <div role="tablist" aria-label={t("editor.properties")} className="flex gap-0.5 overflow-x-auto border-b border-line px-1 scrollbar-none">
         {PROPS_TABS.map((id) => (
           <button
             key={id}
@@ -41,7 +42,7 @@ export function PropertiesPanel({
             aria-selected={tab === id}
             aria-controls="props-panel"
             onClick={() => onTab(id)}
-            className={`tap flex-1 whitespace-nowrap rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${tab === id ? "bg-fg text-canvas" : "text-ink-soft hover:text-ink"}`}
+            className="tab tap shrink-0 whitespace-nowrap !px-2 !text-xs"
           >
             {t(`props.${id}`)}
           </button>
@@ -54,35 +55,9 @@ export function PropertiesPanel({
   );
 }
 
-/** Champ numérique en millimètres / degrés : la valeur tapée est appliquée dès qu'elle est valide. */
+/** Champ numérique en millimètres / degrés : glisser sur X, Y ou Z ajuste la valeur, la saisie s'applique dès qu'elle est valide. */
 function NumberField({ label, value, unit, onCommit, highlight }: { label: string; value: number; unit: string; onCommit(v: number): void; highlight?: boolean }) {
-  const [text, setText] = useState(String(value));
-  const [focused, setFocused] = useState(false);
-  // Pendant la frappe, le texte n'est pas réécrit (valeur bornée affichée en sortant du champ).
-  useEffect(() => {
-    if (!focused) setText(String(Math.round(value * 100) / 100));
-  }, [value, focused]);
-  return (
-    <label className={`flex min-w-0 items-center gap-1 rounded-lg px-1.5 ring-1 ${highlight ? "bg-neon-blue/10 ring-neon-blue/40" : "bg-paper ring-transparent"}`}>
-      <span className="w-3 shrink-0 text-[10px] font-bold text-ink-mute">{label}</span>
-      <input
-        type="number"
-        inputMode="decimal"
-        step="any"
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          const n = Number(e.target.value.replace(",", "."));
-          if (e.target.value.trim() !== "" && Number.isFinite(n)) onCommit(n);
-        }}
-        onKeyDown={(e) => e.stopPropagation()}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        className="num-plain h-9 w-full min-w-0 bg-transparent text-end font-mono text-[12px] tabular-nums text-ink outline-none"
-      />
-      <span className="shrink-0 text-[10px] text-ink-mute">{unit}</span>
-    </label>
-  );
+  return <SharedNumberField label={label} value={value} unit={unit} onCommit={onCommit} highlight={highlight} step={unit === "°" ? 1 : 0.5} />;
 }
 
 function VecRow({
@@ -102,7 +77,7 @@ function VecRow({
 }) {
   return (
     <div>
-      <p className={`mb-1 text-[10.5px] font-semibold ${highlight ? "text-neon-blue" : "text-ink-mute"}`}>{title}</p>
+      <p className={`mb-1 text-xs font-medium ${highlight ? "text-accent" : "text-ink-mute"}`}>{title}</p>
       <div className="grid grid-cols-3 gap-1">
         {(["x", "y", "z"] as const).map((axis) => (
           <NumberField
@@ -134,8 +109,8 @@ export function PartInspector({ part, onPatch, tool, editable }: { part: Part; o
           onKeyDown={(e) => e.stopPropagation()}
         />
       </label>
-      {part.role && <p className="text-[11px] leading-snug text-ink-mute">{part.role}</p>}
-      <p className="text-[11px] text-ink-soft">
+      {part.role && <p className="text-xs leading-snug text-ink-mute">{part.role}</p>}
+      <p className="text-xs text-ink-soft">
         {t("editor.shape")} : <span className="font-semibold text-ink">{t(`shape.${part.shape}`)}</span>
       </p>
       <fieldset disabled={!editable} className="space-y-2.5 disabled:opacity-60">
@@ -143,7 +118,7 @@ export function PartInspector({ part, onPatch, tool, editable }: { part: Part; o
         <VecRow title={t("editor.rotation")} value={part.rotation} unit="°" field="rotation" onPatch={onPatch} highlight={tool === "rotate"} />
         <VecRow title={t("editor.size")} value={part.size} unit="mm" field="size" onPatch={onPatch} highlight={tool === "scale"} />
       </fieldset>
-      {!editable && <p className="text-[11px] text-ink-mute">{t("editor.readOnly")}</p>}
+      {!editable && <p className="text-xs text-ink-mute">{t("editor.readOnly")}</p>}
     </section>
   );
 }
@@ -153,7 +128,7 @@ export function PartMaterial({ part, onPatch, editable }: { part: Part; onPatch(
   const t = useT();
   return (
     <section className="panel space-y-2.5 p-3">
-      <p className="text-[12.5px] font-semibold text-ink">{t("editor.partMaterial", { name: part.name })}</p>
+      <p className="text-sm font-semibold text-ink">{t("editor.partMaterial", { name: part.name })}</p>
       <fieldset disabled={!editable} className="space-y-2.5 disabled:opacity-60">
         <div className="flex flex-wrap items-center gap-1.5">
           {PALETTE.map((c) => (
@@ -197,7 +172,7 @@ export function MeasuredDimensions({ design, unit, selection, onSelect }: { desi
   }, [design]);
   return (
     <section className="panel p-3">
-      <p className="mb-2 text-[12.5px] font-semibold text-ink">{t("editor.measured")}</p>
+      <p className="mb-2 text-sm font-semibold text-ink">{t("editor.measured")}</p>
       {size && (
         <div className="grid grid-cols-3 gap-1.5">
           {(
@@ -208,8 +183,8 @@ export function MeasuredDimensions({ design, unit, selection, onSelect }: { desi
             ] as const
           ).map(([k, v]) => (
             <div key={k} className="rounded-xl bg-neon-blue/10 px-2 py-2 text-center">
-              <p className="text-[10px] font-semibold text-neon-blue">{k}</p>
-              <p className="text-[12px] font-semibold tabular-nums">{formatLength(v, unit)}</p>
+              <p className="text-xs font-semibold text-neon-blue">{k}</p>
+              <p className="text-xs font-semibold tabular-nums">{formatLength(v, unit)}</p>
             </div>
           ))}
         </div>
@@ -220,7 +195,7 @@ export function MeasuredDimensions({ design, unit, selection, onSelect }: { desi
             <button
               type="button"
               onClick={() => onSelect(p.id)}
-              className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-[11px] ${p.id === selection ? "bg-neon-blue/15 text-ink" : "text-ink-soft hover:bg-paper"}`}
+              className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-xs ${p.id === selection ? "bg-neon-blue/15 text-ink" : "text-ink-soft hover:bg-paper"}`}
             >
               <span className="min-w-0 flex-1 truncate">{p.name}</span>
               <span className="shrink-0 font-mono tabular-nums">
@@ -243,7 +218,7 @@ export function ProjectSummary({ item }: { item: RequestItem }) {
         <span className="line-clamp-4">« {item.prompt} »</span>
       </Field>
       {item.design && <Field label={t("left.solution")}>{item.design.solution.concept}</Field>}
-      <p className="rounded-xl bg-paper px-2.5 py-2 text-[11px] leading-snug text-ink-mute">{t("editor.selectHint")}</p>
+      <p className="rounded-xl bg-paper px-2.5 py-2 text-xs leading-snug text-ink-mute">{t("editor.selectHint")}</p>
     </section>
   );
 }
@@ -255,8 +230,8 @@ export function RealScaleBox({ longest, editable, onApply }: { longest: number; 
   useEffect(() => setMm(Math.round(longest)), [longest]);
   return (
     <section className="panel space-y-2 p-3">
-      <p className="text-[12.5px] font-semibold text-ink">{t("scale.title")}</p>
-      <p className="text-[11px] text-ink-mute">{t("scale.hint", { n: Math.round(longest) })}</p>
+      <p className="text-sm font-semibold text-ink">{t("scale.title")}</p>
+      <p className="text-xs text-ink-mute">{t("scale.hint", { n: Math.round(longest) })}</p>
       <div className="flex gap-1.5">
         <label className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-paper px-2.5 ring-1 ring-line">
           <span className="sr-only">{t("scale.target")}</span>
@@ -270,7 +245,7 @@ export function RealScaleBox({ longest, editable, onApply }: { longest: number; 
             className="h-10 w-full min-w-0 bg-transparent font-mono text-sm outline-none"
             aria-label={t("scale.target")}
           />
-          <span className="text-[11px] text-ink-mute">mm</span>
+          <span className="text-xs text-ink-mute">mm</span>
         </label>
         <button type="button" className="btn-neon tap shrink-0 !rounded-xl !px-3 !text-xs" disabled={!editable || !(mm > 0) || Math.round(mm) === Math.round(longest)} onClick={() => onApply(mm)}>
           {t("scale.apply")}

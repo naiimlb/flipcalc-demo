@@ -54,32 +54,31 @@ export function MeshyProgress({ asset }: { asset: PublicAsset | null | undefined
           initial={{ opacity: 0, y: reduce ? 0 : -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: reduce ? 0 : -8 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+          transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}
           className="pointer-events-none absolute inset-x-3 top-14 z-20 mx-auto w-auto max-w-[26rem] rounded-2xl bg-night/80 p-3.5 text-white shadow-float ring-1 ring-white/15 backdrop-blur-md"
         >
-          <p className="flex items-center gap-2 text-[12.5px] font-semibold">
+          <p className="flex items-center gap-2 text-sm font-semibold">
             {ready ? <IconCheck size={14} strokeWidth={2.6} /> : <Spinner size={13} />}
             {ready ? t("meshy.work.ready") : t("meshy.work.title")}
           </p>
           <ol className="mt-2.5 flex items-center gap-1" aria-hidden>
             {MESHY_STAGE_KEYS.map((key, i) => (
               <li key={key} className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className={`h-1 rounded-full transition-colors duration-500 ${i < stage || (ready && i <= stage) ? "bg-neon-blue" : i === stage ? "bg-neon-blue/55" : "bg-white/20"}`} />
-                <span className={`truncate text-[10px] font-semibold ${i === stage ? "text-white" : i < stage ? "text-white/80" : "text-white/50"}`}>
-                  {i < stage ? "✓ " : ""}
+                <span className={`h-1 rounded-full transition-colors duration-200 ${i < stage || (ready && i <= stage) ? "bg-neon-blue" : i === stage ? "bg-neon-blue/55" : "bg-white/20"}`} />
+                <span className={`truncate text-xs font-semibold ${i === stage ? "text-white" : i < stage ? "text-white/80" : "text-white/50"}`}>
                   {t(key)}
                 </span>
               </li>
             ))}
           </ol>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label={action} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-            <div className="h-full rounded-full bg-gradient-to-r from-neon-blue to-neon-violet transition-[width] duration-500" style={{ width: `${progress}%` }} />
+            <div className="h-full rounded-full bg-accent transition-[width] duration-200" style={{ width: `${progress}%` }} />
           </div>
-          <p className="mt-1.5 flex justify-between gap-2 text-[10.5px] text-white/70">
+          <p className="mt-1.5 flex justify-between gap-2 text-xs text-white/70">
             <span className="truncate">{action}</span>
             <span className="shrink-0 tabular-nums">{progress} %</span>
           </p>
-          {!ready && <p className="mt-1.5 text-[10.5px] leading-snug text-white/60">{t("meshy.work.hint")}</p>}
+          {!ready && <p className="mt-1.5 text-xs leading-snug text-white/60">{t("meshy.work.hint")}</p>}
         </motion.div>
       )}
     </AnimatePresence>

@@ -9,7 +9,7 @@ export default async function Loading() {
       <LoadingRegion label={t("state.loading")} className="w-full px-4 pb-12 pt-6 sm:px-6 lg:px-10">
         <Skeleton className="h-12 w-2/3 max-w-md sm:h-16" />
         <Skeleton className="mt-3 h-4 w-full max-w-xl" />
-        <Skeleton className="mt-5 h-11 w-full max-w-lg !rounded-full" />
+        <Skeleton className="mt-5 h-11 w-full max-w-lg !rounded-md" />
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="panel p-4">

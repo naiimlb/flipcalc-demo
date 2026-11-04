@@ -67,7 +67,7 @@ export function LandingChrome({ sections, railLabel, nextLabel, topLabel }: { se
                   />
                 </span>
                 <span
-                  className={`whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.14em] transition-opacity duration-300 ${
+                  className={`whitespace-nowrap text-xs font-semibold uppercase tracking-normal transition-opacity duration-300 ${
                     // Sur le héros, le titre occupe toute la largeur : seuls les points restent visibles.
                     i === active && active > 0 ? "text-fg opacity-100" : "text-fg/60 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
                   }`}

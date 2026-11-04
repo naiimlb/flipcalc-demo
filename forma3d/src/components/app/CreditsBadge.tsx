@@ -1,5 +1,7 @@
 "use client";
 
+import { IconCoin } from "../icons";
+
 import { useEffect, useState } from "react";
 import { intlLocale } from "@/lib/i18n";
 import { usePreferences } from "./Preferences";
@@ -34,10 +36,10 @@ export function CreditsBadge({ initial }: { initial: CreditsSnapshot }) {
     <span
       title={title}
       aria-label={title}
-      className={`chip shrink-0 ${empty ? "bg-rose-500 text-white" : "bg-fg/10 text-fg ring-1 ring-inset ring-fg/10"}`}
+      className={`chip shrink-0 font-mono ${empty ? "bg-danger/15 text-danger" : "border border-line text-ink-soft"}`}
       role="status"
     >
-      ⚡ {credits.unlimited ? "∞" : t("credits.badge", { n: credits.total })}
+      <IconCoin size={16} className="h-3.5 w-3.5" /> {credits.unlimited ? "∞" : t("credits.badge", { n: credits.total })}
     </span>
   );
 }

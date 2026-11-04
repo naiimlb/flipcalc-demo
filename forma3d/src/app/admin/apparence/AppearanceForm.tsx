@@ -116,7 +116,7 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
               Choisir une image
             </button>
             {site.logoDataUrl && (
-              <button type="button" className="btn !text-xs text-rose-600" onClick={() => set("logoDataUrl", null)}>
+              <button type="button" className="btn !text-xs text-danger" onClick={() => set("logoDataUrl", null)}>
                 Retirer
               </button>
             )}
@@ -138,7 +138,7 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
       <div className="xl:sticky xl:top-6 xl:self-start">
         <p className="label">Aperçu en direct</p>
         <div className="overflow-hidden rounded-3xl p-5" style={{ background: `linear-gradient(135deg, ${site.colorFrom}, ${site.colorTo})` }}>
-          <div className="rounded-[24px] bg-paper p-6 text-center shadow-card">
+          <div className="rounded-lg bg-paper p-6 text-center shadow-card">
             <div className="flex items-center gap-2 text-left text-sm font-semibold">
               {site.logoDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -148,9 +148,9 @@ export function AppearanceForm({ initial }: { initial: SiteSettings }) {
               )}
               {site.siteName}
             </div>
-            <p className="mt-6 text-[1.9rem] font-semibold leading-[1.08] tracking-[-0.03em]">
+            <p className="mt-6 text-3xl font-semibold leading-[1.08] tracking-tight">
               {site.heroPill && (
-                <span className="mr-2 inline-flex items-center gap-1.5 rounded-full bg-night px-3 py-0.5 text-white">
+                <span className="mr-2 inline-flex items-center gap-1.5 rounded-md bg-night px-3 py-0.5 text-white">
                   {site.heroPill}
                   <IconCube size={22} strokeWidth={1.5} />
                 </span>

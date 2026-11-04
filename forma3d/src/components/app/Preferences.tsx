@@ -93,7 +93,9 @@ export function PreferencesProvider({
     <PreferencesContext.Provider value={value}>
       {/* Animations : version allégée (composants « m »), dont les fonctions complètes arrivent après le premier affichage. */}
       <LazyMotion features={loadMotionFeatures}>
-        <MotionConfig reducedMotion="user">{children}</MotionConfig>
+        <MotionConfig reducedMotion="user" transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}>
+          {children}
+        </MotionConfig>
       </LazyMotion>
     </PreferencesContext.Provider>
   );

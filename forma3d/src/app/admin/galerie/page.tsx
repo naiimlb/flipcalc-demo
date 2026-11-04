@@ -54,17 +54,17 @@ export default async function GalleryAdminPage() {
                   <Link href={`/galerie/${item.id}`} className="hover:text-brand-accent">
                     {item.title}
                   </Link>{" "}
-                  <span className={`chip ${item.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-night text-white"}`}>
+                  <span className={`chip ${item.status === "published" ? "bg-success/10 text-success" : "bg-night text-white"}`}>
                     {item.status === "published" ? "Publiée" : "Masquée"}
                   </span>{" "}
-                  {item.reports_count > 0 && <span className="chip bg-rose-100 text-rose-700">{item.reports_count} signalement(s)</span>}
+                  {item.reports_count > 0 && <span className="chip bg-danger/10 text-danger">{item.reports_count} signalement(s)</span>}
                 </p>
                 <p className="mt-0.5 text-xs text-ink-mute">
                   {item.category} · {item.author_name || "Anonyme"} · {new Date(item.created_at).toLocaleString("fr-FR")}
                 </p>
                 <p className="mt-1 line-clamp-2 text-sm text-ink-soft">« {item.prompt} »</p>
                 {(reasons.get(item.id) ?? []).length > 0 && (
-                  <ul className="mt-2 list-disc ps-5 text-xs text-rose-700">
+                  <ul className="mt-2 list-disc ps-5 text-xs text-danger">
                     {(reasons.get(item.id) ?? []).slice(0, 5).map((r, i) => (
                       <li key={i}>{r}</li>
                     ))}

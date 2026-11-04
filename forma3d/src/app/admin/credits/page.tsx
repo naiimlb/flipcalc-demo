@@ -89,7 +89,7 @@ export default async function CreditsAdminPage() {
             {days.map(([day, n]) => (
               <li key={day} className="flex items-center gap-3 text-sm">
                 <span className="w-24 shrink-0 tabular-nums text-ink-soft">{new Date(day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}</span>
-                <span className="h-2.5 rounded-full bg-gradient-to-r from-brand-from to-brand-to" style={{ width: `${Math.max(4, (n / maxDay) * 100)}%` }} />
+                <span className="h-2.5 rounded-sm bg-accent" style={{ width: `${Math.max(4, (n / maxDay) * 100)}%` }} />
                 <span className="tabular-nums">{n}</span>
               </li>
             ))}

@@ -62,15 +62,15 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
       <Backdrop />
       <AppHeader siteName={site.siteName} logoDataUrl={site.logoDataUrl} pill="" title="" line2="" subtitle="" viewer={await getViewer()} demoMode={isDemoMode()} />
       <div className="w-full px-4 pb-12 sm:px-6 lg:px-10">
-        <h1 className="mt-6 font-display text-4xl font-black tracking-[-0.04em] text-fg sm:text-6xl">{t("gallery.title")}</h1>
+        <h1 className="mt-6 font-display text-4xl font-black tracking-tight text-fg sm:text-6xl">{t("gallery.title")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-fg/65 sm:text-base">{t("gallery.lead")}</p>
 
         <form className="mt-5 flex flex-wrap gap-2" role="search">
-          <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-full bg-surface px-4 py-2.5 shadow-soft">
+          <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md bg-surface px-4 py-2.5 shadow-soft">
             <IconSearch size={15} className="text-ink-mute" />
             <input name="q" defaultValue={q} placeholder={t("gallery.search")} className="w-full bg-transparent text-sm outline-none placeholder:text-ink-mute" />
           </label>
-          <select name="cat" defaultValue={cat} className="input !w-auto !rounded-full" aria-label={t("gallery.allCategories")}>
+          <select name="cat" defaultValue={cat} className="input !w-auto !rounded-md" aria-label={t("gallery.allCategories")}>
             <option value="">{t("gallery.allCategories")}</option>
             {categories.map((c) => (
               <option key={c} value={c}>
@@ -91,16 +91,16 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
           <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {rows.map((r) => (
               <li key={r.id}>
-                <Link href={`/galerie/${r.id}`} className="panel group flex h-full flex-col p-4 transition hover:-translate-y-0.5 hover:shadow-float">
-                  <span className="flex h-28 items-center justify-center rounded-xl bg-gradient-to-br from-brand-from to-brand-to text-white/90">
-                    <IconCube size={44} strokeWidth={1.2} />
+                <Link href={`/galerie/${r.id}`} className="panel group flex h-full flex-col p-3 transition-colors hover:border-ink-mute/50">
+                  <span className="flex h-28 items-center justify-center rounded-md border border-line bg-paper text-ink-mute">
+                    <IconCube size={20} />
                   </span>
-                  <span className="mt-3 text-[15px] font-semibold leading-snug group-hover:text-brand-accent">{r.title}</span>
+                  <span className="mt-3 text-base font-semibold leading-snug group-hover:text-brand-accent">{r.title}</span>
                   <span className="mt-0.5 text-xs text-ink-mute">
                     {r.category} · {r.design?.model?.parts?.length ?? 0} {t("dim.parts").toLowerCase()}
                   </span>
-                  <span className="mt-2 line-clamp-2 text-[12.5px] text-ink-soft">« {r.prompt} »</span>
-                  <span className="mt-auto pt-3 text-[11px] text-ink-mute">
+                  <span className="mt-2 line-clamp-2 text-sm text-ink-soft">« {r.prompt} »</span>
+                  <span className="mt-auto pt-3 text-xs text-ink-mute">
                     {t("gallery.by", { name: r.author_name || t("gallery.anonymous") })} ·{" "}
                     {new Date(r.created_at).toLocaleDateString(locale === "ar" ? "ar" : locale === "en" ? "en-GB" : "fr-FR")}
                   </span>

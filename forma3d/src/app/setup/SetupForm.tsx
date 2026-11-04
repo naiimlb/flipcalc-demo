@@ -14,7 +14,7 @@ export function ClaimForm() {
         </label>
         <input id="token" name="token" type="password" required autoComplete="off" className="input" />
       </div>
-      {state.error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{state.error}</p>}
+      {state.error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{state.error}</p>}
       <button type="submit" disabled={pending} className="btn-dark w-full !py-3">
         {pending && <Spinner />} Devenir administrateur
       </button>
@@ -52,8 +52,8 @@ export function SetupForm({ needsToken }: { needsToken: boolean }) {
         </label>
         <input id="password" name="password" type="password" required minLength={10} maxLength={72} autoComplete="new-password" className="input" />
       </div>
-      {state.error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{state.error}</p>}
-      {state.info && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{state.info}</p>}
+      {state.error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{state.error}</p>}
+      {state.info && <p className="rounded-xl bg-success/10 px-3 py-2 text-sm text-success">{state.info}</p>}
       <button type="submit" disabled={pending} className="btn-dark w-full !py-3">
         {pending && <Spinner />} Créer le compte administrateur
       </button>

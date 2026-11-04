@@ -20,6 +20,12 @@ import { VIEWER_BACKGROUNDS, type LightingPreset, type ViewerHandle, type Viewer
 
 export type { RenderMode, ViewerHandle, ViewerSettings } from "./settings";
 
+/** Couleur de fond sombre (luminance relative < 0,4) : sert à choisir la teinte du quadrillage. */
+function isDarkColor(hex: string): boolean {
+  const c = new THREE.Color(hex);
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b < 0.4;
+}
+
 const NEON_RIMS = ["#ff5fd8", "#5fd6ff", "#b59bff", "#ff8fc7"];
 const DEG = Math.PI / 180;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -372,6 +378,8 @@ function Scene({
   });
 
   const real = settings.mode === "real";
+  // Plan de travail quadrillé : filets gris neutres, plus clairs sur fond sombre.
+  const bgDark = isDarkColor((backgroundStops ?? VIEWER_BACKGROUNDS[settings.mode])[0]);
 
   return (
     <>
@@ -418,8 +426,8 @@ function Scene({
           sectionSize={0.5}
           cellThickness={0.6}
           sectionThickness={1}
-          cellColor={real ? "#b9bde6" : "#8d9bff"}
-          sectionColor={real ? "#8c90c9" : "#d2c2ff"}
+          cellColor={real ? (bgDark ? "#3a3d44" : "#c9ccd3") : "#8d9bff"}
+          sectionColor={real ? (bgDark ? "#555963" : "#a7abb4") : "#d2c2ff"}
           fadeDistance={Math.max(sphere.radius * 14, 4)}
           fadeStrength={1.5}
         />
@@ -636,15 +644,15 @@ function Lights({ preset, real, quality }: { preset: LightingPreset; real: boole
     return (
       <>
         <ambientLight intensity={real ? 0.22 : 0.8} />
-        <hemisphereLight args={["#eef0ff", "#2b2266", real ? 0.45 : 0.3]} />
+        <hemisphereLight args={["#f4f5f7", "#3a3c42", real ? 0.45 : 0.3]} />
         <directionalLight position={[4, 6, 5]} intensity={real ? 1.6 : 0.6} />
-        {real && <directionalLight position={[-5, 3, 2]} intensity={0.55} color="#c9d4ff" />}
+        {real && <directionalLight position={[-5, 3, 2]} intensity={0.55} color="#f2f4f8" />}
         {real && <directionalLight position={[0, 4, -6]} intensity={0.9} color="#ffffff" />}
         <Environment key="studio" resolution={res}>
           <Lightformer form="rect" intensity={2.4} position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[8, 8, 1]} color="#ffffff" />
           <Lightformer intensity={2} position={[0, 5, -5]} scale={[10, 5, 1]} color="#ffffff" />
-          <Lightformer intensity={1.2} position={[-5, 1, 0]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} color="#c3b5ff" />
-          <Lightformer intensity={1.2} position={[5, 1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} color="#a6dcff" />
+          <Lightformer intensity={1.2} position={[-5, 1, 0]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} color="#ffffff" />
+          <Lightformer intensity={1.2} position={[5, 1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} color="#ffffff" />
           <Lightformer form="ring" intensity={1.5} position={[2, 2, 6]} scale={2} color="#ffffff" />
         </Environment>
       </>
@@ -701,7 +709,7 @@ function Measurements({ points, dot }: { points: THREE.Vector3[]; dot: number })
           <group key={i}>
             <Line points={[a, b]} color="#ffb020" lineWidth={2.5} />
             <Html position={mid} center zIndexRange={[30, 0]}>
-              <span className="pointer-events-none whitespace-nowrap rounded-full bg-[#ffb020] px-2 py-0.5 text-[11px] font-bold tabular-nums text-night">
+              <span className="pointer-events-none whitespace-nowrap rounded-md bg-[#ffb020] px-2 py-0.5 text-xs font-bold tabular-nums text-night">
                 {mm < 100 ? mm.toFixed(1) : Math.round(mm)} mm
               </span>
             </Html>
@@ -734,7 +742,7 @@ function Ruler({ bounds }: { bounds: THREE.Box3 }) {
           <group key={l.label + l.color}>
             <Line points={[l.from, l.to]} color={l.color} lineWidth={2} />
             <Html position={mid} center zIndexRange={[20, 0]}>
-              <span className="pointer-events-none whitespace-nowrap rounded-full bg-night/85 px-2 py-0.5 text-[10.5px] font-semibold tabular-nums text-white">{l.label}</span>
+              <span className="pointer-events-none whitespace-nowrap rounded-md bg-night/85 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">{l.label}</span>
             </Html>
           </group>
         );

@@ -5,12 +5,13 @@ import { AnimatePresence, m as motion } from "framer-motion";
 import { LOCALES, LOCALE_NAMES } from "@/lib/i18n";
 import type { ThemeChoice } from "@/lib/theme";
 import { usePreferences } from "./Preferences";
+import { IconMoon, IconSun } from "../icons";
 
 const THEMES: ThemeChoice[] = ["auto", "light", "dark"];
 
 function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string }[]; onChange(v: T): void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-full bg-paper p-1">
+    <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-md bg-paper p-1">
       {options.map((o) => (
         <button
           key={o.id}
@@ -18,7 +19,7 @@ function Segmented<T extends string>({ value, options, onChange, label }: { valu
           role="radio"
           aria-checked={value === o.id}
           onClick={() => onChange(o.id)}
-          className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition ${value === o.id ? "bg-brand-accent text-white" : "text-ink-soft hover:text-ink"}`}
+          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition ${value === o.id ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft hover:text-ink"}`}
         >
           {o.label}
         </button>
@@ -75,9 +76,9 @@ export function PreferenceMenuButton() {
         aria-expanded={open}
         aria-label={`${t("pref.theme")} · ${t("pref.language")} · ${locale}`}
         title={`${t("pref.theme")} · ${t("pref.language")}`}
-        className="tap flex h-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-bold uppercase text-fg/80 hover:bg-fg/10 hover:text-fg"
+        className="tap flex h-8 items-center justify-center gap-1.5 rounded-md px-2 font-mono text-xs uppercase text-ink-soft hover:bg-paper hover:text-ink"
       >
-        <span aria-hidden>{dark ? "☾" : "☀"}</span>
+        {dark ? <IconMoon /> : <IconSun />}
         <span>{locale}</span>
       </button>
       <AnimatePresence>

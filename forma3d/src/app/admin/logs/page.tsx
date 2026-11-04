@@ -7,8 +7,8 @@ import { AdminTitle, Card } from "../ui";
 
 const LEVELS = ["all", "error", "warn", "info"] as const;
 const LEVEL_STYLE: Record<string, string> = {
-  error: "bg-rose-500 text-white",
-  warn: "bg-amber-400 text-ink",
+  error: "bg-danger/15 text-danger",
+  warn: "bg-warning/15 text-warning",
   info: "bg-paper text-ink-soft",
 };
 
@@ -29,9 +29,9 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
     <div>
       <AdminTitle title="Mode Dev · logs" subtitle="Erreurs de génération, refus de l'IA, validations échouées et actions d'administration.">
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-full bg-surface p-1 ring-1 ring-line">
+          <div className="flex gap-1 rounded-md bg-surface p-1 ring-1 ring-line">
             {LEVELS.map((l) => (
-              <Link key={l} href={`/admin/logs?niveau=${l}`} className={`rounded-full px-3 py-1 text-xs font-semibold ${level === l ? "bg-night text-white" : "text-ink-soft"}`}>
+              <Link key={l} href={`/admin/logs?niveau=${l}`} className={`rounded-md px-3 py-1 text-xs font-medium ${level === l ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft"}`}>
                 {l === "all" ? "Tous" : l}
               </Link>
             ))}
@@ -42,7 +42,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
       <Card className="mb-3 !py-3">
         <p className="text-sm">
           Mode Dev dans le tableau de bord :{" "}
-          <strong className={features.devMode ? "text-emerald-600" : "text-ink-mute"}>{features.devMode ? "activé" : "désactivé"}</strong>{" "}
+          <strong className={features.devMode ? "text-success" : "text-ink-mute"}>{features.devMode ? "activé" : "désactivé"}</strong>{" "}
           — bouton « JSON » sur la visionneuse (admins uniquement).{" "}
           <Link href="/admin/fonctionnalites" className="font-semibold text-brand-accent">
             Modifier
@@ -63,7 +63,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
               {l.details != null && (
                 <details className="mt-1 text-xs">
                   <summary className="cursor-pointer text-brand-accent">Détails</summary>
-                  <pre className="mt-1 max-h-64 overflow-auto rounded-xl bg-[#0f1020] p-3 font-mono text-[11px] text-emerald-200 scrollbar-thin">
+                  <pre className="mt-1 max-h-64 overflow-auto rounded-xl bg-[#0f1020] p-3 font-mono text-xs text-success scrollbar-thin">
                     {JSON.stringify(l.details, null, 2)}
                   </pre>
                 </details>

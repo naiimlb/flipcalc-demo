@@ -33,7 +33,7 @@ function Card({ icon, title, aside, children, className = "" }: { icon: React.Re
     <section className={`panel flex flex-col p-4 ${className}`}>
       <header className="mb-3 flex items-center gap-2.5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-accent/10 text-brand-accent">{icon}</span>
-        <h3 className="flex-1 text-[13.5px] font-semibold text-ink">{title}</h3>
+        <h3 className="flex-1 text-sm font-semibold text-ink">{title}</h3>
         {aside}
       </header>
       {children}
@@ -42,14 +42,14 @@ function Card({ icon, title, aside, children, className = "" }: { icon: React.Re
 }
 
 const VERDICT = {
-  ok: { label: "fab.ok", cls: "bg-emerald-500 text-white" },
-  warning: { label: "fab.warn", cls: "bg-amber-400 text-night" },
-  error: { label: "fab.error", cls: "bg-rose-500 text-white" },
+  ok: { label: "fab.ok", cls: "bg-success/15 text-success" },
+  warning: { label: "fab.warn", cls: "bg-warning/15 text-warning" },
+  error: { label: "fab.error", cls: "bg-danger/15 text-danger" },
 } as const;
 
 const LEVEL = {
-  error: "border-rose-200 bg-rose-50 text-rose-700",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  error: "border-danger/30 bg-danger/10 text-danger",
+  warning: "border-warning/30 bg-warning/10 text-warning",
   info: "border-line bg-paper text-ink-soft",
 } as const;
 
@@ -119,7 +119,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
         <p className="label !mb-1">{t("fab.volume")}</p>
         <div className="grid grid-cols-3 gap-1.5">
           {(["x", "y", "z"] as const).map((axis) => (
-            <label key={axis} className="text-[10.5px] font-medium text-ink-mute">
+            <label key={axis} className="text-xs font-medium text-ink-mute">
               {t(axis === "x" ? "fab.width" : axis === "y" ? "fab.depth" : "fab.height")}
               <input
                 type="number"
@@ -138,29 +138,29 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
         </div>
         {report ? (
           <>
-            <p className="mt-3 text-[11.5px] text-ink-soft">
+            <p className="mt-3 text-xs text-ink-soft">
               {t("fab.object", {
                 size: `${Math.round(report.size.width)} × ${Math.round(report.size.depth)} × ${Math.round(report.size.height)}`,
                 supports: report.supportsNeeded ? t("fab.supports") : t("fab.noSupports"),
               })}
             </p>
             {report.issues.length === 0 ? (
-              <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[12px] text-emerald-800">{t("fab.allGood")}</p>
+              <p className="mt-2 rounded-xl border border-success/30 bg-success/10 p-2.5 text-xs text-success">{t("fab.allGood")}</p>
             ) : (
               <ul className="mt-2 space-y-2">
                 {report.issues.map((issue, i) => (
                   <li key={i} className={`rounded-xl border p-2.5 ${LEVEL[issue.level]}`}>
-                    <p className="flex items-center gap-1.5 text-[12px] font-semibold">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold">
                       {issue.level === "info" ? <IconCube size={13} /> : <IconAlert size={13} />}
                       {issue.title}
                     </p>
-                    <p className="mt-0.5 text-[11.5px] leading-snug">{issue.detail}</p>
-                    <p className="mt-1 text-[11.5px] font-medium leading-snug">→ {issue.fix}</p>
+                    <p className="mt-0.5 text-xs leading-snug">{issue.detail}</p>
+                    <p className="mt-1 text-xs font-medium leading-snug">→ {issue.fix}</p>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-2 text-[10.5px] text-ink-mute">{t("fab.checksNote")}</p>
+            <p className="mt-2 text-xs text-ink-mute">{t("fab.checksNote")}</p>
           </>
         ) : (
           <p className="mt-3 text-xs text-ink-mute">Analyse impossible pour cette conception.</p>
@@ -170,7 +170,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
       {/* Estimation */}
       <Card icon={<IconSteps size={15} />} title={t("fab.estimate")}>
         <div className="grid grid-cols-3 gap-1.5">
-          <label className="text-[10.5px] font-medium text-ink-mute">
+          <label className="text-xs font-medium text-ink-mute">
             {t("fab.material")}
             <select
               value={materialId}
@@ -184,7 +184,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
               ))}
             </select>
           </label>
-          <label className="text-[10.5px] font-medium text-ink-mute">
+          <label className="text-xs font-medium text-ink-mute">
             {t("fab.infill")}
             <select
               value={prefs.print.infill}
@@ -198,7 +198,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
               ))}
             </select>
           </label>
-          <label className="text-[10.5px] font-medium text-ink-mute">
+          <label className="text-xs font-medium text-ink-mute">
             {t("fab.layer")}
             <select
               value={prefs.print.layerHeight}
@@ -213,7 +213,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
             </select>
           </label>
         </div>
-        <p className="mt-2 text-[11px] text-ink-mute">{material.note}</p>
+        <p className="mt-2 text-xs text-ink-mute">{material.note}</p>
         {estimate ? (
           <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
             {[
@@ -222,21 +222,21 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
               [t("fab.cost"), `≈ ${formatMoney(estimate.cost.min)} – ${formatMoney(estimate.cost.max)}`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-paper px-1.5 py-2.5">
-                <p className="text-[10.5px] font-medium text-brand-accent">{label}</p>
-                <p className="mt-0.5 text-[12.5px] font-semibold tabular-nums">{value}</p>
+                <p className="text-xs font-medium text-brand-accent">{label}</p>
+                <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
               </div>
             ))}
           </div>
         ) : (
           <p className="mt-3 text-xs text-ink-mute">Estimation impossible pour cette conception.</p>
         )}
-        <p className="mt-2 rounded-xl bg-amber-50 p-2.5 text-[11px] leading-snug text-amber-800">{t("fab.estimateNote")}</p>
+        <p className="mt-2 rounded-xl bg-warning/10 p-2.5 text-xs leading-snug text-warning">{t("fab.estimateNote")}</p>
       </Card>
 
       {/* Versions */}
       <Card icon={<IconHistory size={15} />} title={t("fab.adjust")}>
         <VariantButtons onAdjust={onAdjust} onCompare={onCompare} disabled={busy} canCompare={comparable} />
-        <p className="mt-2 text-[11px] text-ink-mute">{t("fab.adjustNote")}</p>
+        <p className="mt-2 text-xs text-ink-mute">{t("fab.adjustNote")}</p>
         {versions.length > 1 && (
           <ul className="mt-3 space-y-1">
             {versions.map((v) => (
@@ -244,11 +244,11 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
                 <button
                   type="button"
                   onClick={() => onSelect(v.id)}
-                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start text-[12px] transition ${v.id === item.id ? "bg-brand-accent/10 text-brand-accent" : "hover:bg-paper"}`}
+                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start text-xs transition ${v.id === item.id ? "bg-brand-accent/10 text-brand-accent" : "hover:bg-paper"}`}
                 >
                   <span className="min-w-0 flex-1 truncate font-medium">{v.title ?? v.prompt}</span>
                   {v.design?.variante && <span className="chip bg-paper text-ink-soft">{t(`variant.${v.design.variante.objectif}`)}</span>}
-                  <span className="shrink-0 text-[10.5px] text-ink-mute">{formatRelative(v.createdAt)}</span>
+                  <span className="shrink-0 text-xs text-ink-mute">{formatRelative(v.createdAt)}</span>
                 </button>
               </li>
             ))}
@@ -270,10 +270,10 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
           {fabricationLinks(design, material.label).map((l) => (
             <li key={l.url}>
               <a href={l.url} target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-2.5 transition hover:border-brand-accent/50">
-                <span className="flex items-center gap-1.5 text-[12px] font-semibold text-brand-accent">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-accent">
                   {l.label} <IconExternal size={11} />
                 </span>
-                <span className="text-[11px] text-ink-mute">{l.description}</span>
+                <span className="text-xs text-ink-mute">{l.description}</span>
               </a>
             </li>
           ))}
@@ -281,7 +281,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
         <p className="label !mb-1 mt-4">{t("fab.shopping")}</p>
         <ul className="divide-y divide-line/70 rounded-xl border border-line">
           {shoppingList(design, estimate).map((s, i) => (
-            <li key={i} className="flex items-center gap-2 px-2.5 py-2 text-[11.5px]">
+            <li key={i} className="flex items-center gap-2 px-2.5 py-2 text-xs">
               <span className="min-w-0 flex-1">
                 <span className="font-medium text-ink">{s.item}</span>
                 <span className="block text-ink-mute">{s.quantity}</span>
@@ -293,7 +293,7 @@ export default function FabricationTab({ item, items, prefs, onPrefs, features, 
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-[10.5px] text-ink-mute">{t("fab.whereNote")}</p>
+        <p className="mt-2 text-xs text-ink-mute">{t("fab.whereNote")}</p>
       </Card>
     </div>
   );
@@ -366,7 +366,7 @@ function PlanCard({ design, allowed, onToast }: { design: Design; allowed: boole
           </button>
         </div>
       )}
-      <p className="mt-2 text-[10.5px] text-ink-mute">{t("fab.planNote")}</p>
+      <p className="mt-2 text-xs text-ink-mute">{t("fab.planNote")}</p>
     </Card>
   );
 }
@@ -420,8 +420,8 @@ function ExportButtons({ design, features, onToast }: { design: Design; features
           disabled={busy !== null}
           className="flex flex-col items-center rounded-xl border border-line bg-surface px-2 py-3 transition hover:border-brand-accent/50 disabled:opacity-50"
         >
-          <span className="text-[13px] font-bold text-brand-accent">{busy?.includes(b.label) ? <Spinner size={14} /> : b.label}</span>
-          <span className="mt-0.5 text-[10.5px] text-ink-mute">{b.hint}</span>
+          <span className="text-sm font-bold text-brand-accent">{busy?.includes(b.label) ? <Spinner size={14} /> : b.label}</span>
+          <span className="mt-0.5 text-xs text-ink-mute">{b.hint}</span>
         </button>
       ))}
     </div>

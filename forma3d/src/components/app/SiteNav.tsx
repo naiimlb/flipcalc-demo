@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, m as motion } from "framer-motion";
 import { AccountMenu } from "../studio/TopBar";
 import type { StudioViewer } from "../studio/types";
-import { IconX, LogoMark } from "../icons";
+import { IconMenu, IconX, LogoMark } from "../icons";
 import { CreditsBadge, type CreditsSnapshot } from "./CreditsBadge";
 import { PreferenceMenuButton } from "./PreferencePicker";
 import { useT } from "./Preferences";
@@ -68,44 +68,35 @@ export function SiteNav({
     <header
       className={
         floating
-          ? `fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,backdrop-filter] duration-300 ${
-              compact ? "bg-canvas/75 shadow-[0_1px_0_rgb(var(--fg)/0.08)] backdrop-blur-xl" : "bg-transparent"
-            }`
+          ? `fixed inset-x-0 top-0 z-50 border-b transition-colors duration-150 ${compact ? "border-line bg-canvas/95" : "border-transparent bg-canvas/0"}`
           : "relative z-30"
       }
       style={floating ? { paddingTop: "env(safe-area-inset-top)" } : undefined}
     >
       <div
-        className={`flex w-full items-center gap-2 px-4 transition-[height] duration-300 sm:px-6 lg:px-8 ${compact ? "h-14" : "h-[72px]"}`}
+        className="flex h-14 w-full items-center gap-2 px-4 sm:px-6 lg:px-8"
       >
-        <Link href="/" className="tap flex shrink-0 items-center gap-2 rounded-full pe-2 font-semibold text-fg" aria-label={siteName}>
+        <Link href="/" className="tap flex shrink-0 items-center gap-2 rounded-md pe-2 text-ink" aria-label={siteName}>
           {logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoDataUrl} alt="" className="h-7 w-7 rounded-lg object-contain" />
+            <img src={logoDataUrl} alt="" className="h-6 w-6 rounded object-contain" />
           ) : (
-            <LogoMark size={compact ? 24 : 28} />
+            <LogoMark size={22} />
           )}
-          <span className="text-[15px] font-bold tracking-tight">{siteName}</span>
+          <span className="text-base font-semibold">{siteName}</span>
         </Link>
 
         <nav aria-label={t("nav.main")} className="mx-auto hidden md:block">
-          <ul className="flex items-center gap-1 rounded-full bg-fg/[0.05] p-1 ring-1 ring-inset ring-fg/10">
+          <ul className="flex items-center gap-1">
             {links.map((l) => {
               const active = l.match(pathname);
               return (
                 <li key={l.href} className="relative">
-                  {active && (
-                    <motion.span
-                      layoutId="site-nav-active"
-                      className="absolute inset-0 rounded-full bg-fg"
-                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                    />
-                  )}
                   <Link
                     href={l.href}
                     aria-current={active ? "page" : undefined}
-                    className={`tap relative flex h-9 items-center rounded-full px-4 text-[13px] font-semibold transition-colors ${
-                      active ? "text-canvas" : "text-fg/70 hover:text-fg"
+                    className={`tap relative flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors ${
+                      active ? "bg-paper text-ink" : "text-ink-mute hover:bg-paper/60 hover:text-ink"
                     }`}
                   >
                     {t(l.key)}
@@ -120,7 +111,7 @@ export function SiteNav({
           {credits && <CreditsBadge initial={credits} />}
           <PreferenceMenuButton />
           {viewer?.role === "admin" && (
-            <Link href="/admin" className="btn tap hidden !px-3 !py-1.5 !text-xs text-fg/80 hover:bg-fg/10 hover:text-fg lg:inline-flex">
+            <Link href="/admin" className="btn-subtle tap hidden lg:inline-flex">
               {t("nav.admin")}
             </Link>
           )}
@@ -133,7 +124,7 @@ export function SiteNav({
           )}
           <button
             type="button"
-            className="tap flex h-10 w-10 items-center justify-center rounded-full text-fg hover:bg-fg/10 md:hidden"
+            className="icon-btn tap md:hidden"
             aria-label={t("nav.menu")}
             aria-expanded={menuOpen}
             aria-controls="site-menu"
@@ -142,9 +133,7 @@ export function SiteNav({
             {menuOpen ? (
               <IconX size={18} />
             ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                <path d="M4 8h16M4 16h16" />
-              </svg>
+              <IconMenu />
             )}
           </button>
         </div>
@@ -159,7 +148,7 @@ export function SiteNav({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="absolute inset-x-0 top-full border-b border-fg/10 bg-canvas/95 px-4 pb-4 pt-2 backdrop-blur-xl md:hidden"
+            className="absolute inset-x-0 top-full border-b border-line bg-canvas px-4 pb-4 pt-2 md:hidden"
           >
             <ul className="flex flex-col">
               {links.map((l) => {
@@ -169,7 +158,7 @@ export function SiteNav({
                     <Link
                       href={l.href}
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-12 items-center rounded-2xl px-4 text-lg font-bold tracking-tight ${active ? "bg-fg/10 text-fg" : "text-fg/75"}`}
+                      className={`flex min-h-11 items-center rounded-md px-3 text-base font-medium ${active ? "bg-paper text-ink" : "text-ink-soft"}`}
                     >
                       {t(l.key)}
                     </Link>

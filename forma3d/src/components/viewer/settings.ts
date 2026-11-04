@@ -23,7 +23,8 @@ export interface ViewerSettings {
 }
 
 export const DEFAULT_VIEWER_SETTINGS: ViewerSettings = {
-  mode: "neon",
+  // Rendu réaliste par défaut ; le rendu néon reste une option.
+  mode: "real",
   wireframe: false,
   exploded: false,
   autoRotate: true,
@@ -47,17 +48,18 @@ export interface ViewerHandle {
 }
 
 /** Fonds de la visionneuse (CSS et capture PNG partagent les mêmes couleurs). */
+// Fonds unis et neutres (gris clair / anthracite) ; seul le rendu néon, en option, garde un fond coloré.
 export const VIEWER_BACKGROUNDS: Record<RenderMode, string[]> = {
   neon: ["#5468e8", "#3a2ba6", "#7a45d6"],
-  real: ["#f6f7ff", "#e2e4f8", "#d3d6f2"],
+  real: ["#e9ebef", "#e9ebef", "#e9ebef"],
 };
 
-/** Studio sombre pour le rendu réaliste en mode sombre. */
-const REAL_DARK = ["#3a3d5c", "#24263d", "#191a2c"];
+/** Anthracite pour le rendu réaliste en thème sombre. */
+const REAL_DARK = ["#1c1d21", "#1c1d21", "#1c1d21"];
 
 const BACKGROUNDS: Record<Exclude<ViewerBackground, "auto">, string[]> = {
-  night: ["#1a1d2b", "#0d0f17", "#05060a"],
-  light: ["#ffffff", "#eef0f6", "#dfe3ee"],
+  night: ["#141518", "#141518", "#141518"],
+  light: ["#f3f4f6", "#f3f4f6", "#f3f4f6"],
   neon: VIEWER_BACKGROUNDS.neon,
 };
 
@@ -69,5 +71,6 @@ export function viewerBackgroundStops(mode: RenderMode, dark = false, background
 
 export function viewerBackgroundCss(mode: RenderMode, dark = false, background: ViewerBackground = "auto") {
   const [a, b, c] = viewerBackgroundStops(mode, dark, background);
+  if (a === b && b === c) return a;
   return `radial-gradient(120% 90% at 25% 10%, ${a} 0%, ${b} 55%, ${c} 100%)`;
 }

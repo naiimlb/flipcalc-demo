@@ -5,7 +5,7 @@ import { usePreferences } from "../app/Preferences";
 import { useEffect, useState } from "react";
 import { m as motion } from "framer-motion";
 import type { RequestItem } from "@/lib/requests";
-import { IconAlert, IconCheck, IconCube, Spinner } from "../icons";
+import { IconAlert, IconCheck, Spinner } from "../icons";
 
 const DAY = 86_400_000;
 
@@ -40,12 +40,12 @@ export function RecentCard({
     <motion.aside
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}
       className={`panel p-3.5 ${className}`}
       aria-label={t("recent.title")}
     >
-      <h2 className="text-[13px] font-semibold">{t("recent.title")}</h2>
-      <div className="mt-2 grid grid-cols-7 text-[9.5px] text-ink-mute">
+      <h2 className="text-sm font-semibold">{t("recent.title")}</h2>
+      <div className="mt-2 grid grid-cols-7 text-xs text-ink-mute">
         {days.map((d) => (
           <span key={d.getTime()} className="truncate">
             {d.toLocaleDateString(intlLocale(locale), { weekday: "short" }).replace(".", "")} {d.getDate()}
@@ -77,13 +77,8 @@ export function RecentCard({
                 }`}
                 style={{ marginLeft: `${offset * 100}%`, maxWidth: `${100 - offset * 100}%` }}
               >
-                <span
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white"
-                  style={{ background: `linear-gradient(135deg, ${item.design?.model.parts[0]?.color ?? "#5b6ee1"}, #ff5fb5)` }}
-                >
-                  <IconCube size={13} />
-                </span>
-                <span className="min-w-0 truncate text-[12px] font-medium">{item.title ?? item.prompt}</span>
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-black/10" style={{ background: item.design?.model.parts[0]?.color ?? "rgb(var(--ink-mute))" }} />
+                <span className="min-w-0 truncate text-xs font-medium">{item.title ?? item.prompt}</span>
                 <StatusPill item={item} />
               </button>
             </motion.li>
@@ -104,7 +99,7 @@ function StatusPill({ item }: { item: RequestItem }) {
   }
   if (item.status === "error") {
     return (
-      <span className="chip ml-1 shrink-0 bg-rose-500 text-white">
+      <span className="chip ml-1 shrink-0 bg-danger/15 text-danger">
         <IconAlert size={11} />
       </span>
     );

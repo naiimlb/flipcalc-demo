@@ -53,16 +53,16 @@ export function ProjectView({
 
   return (
     <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-      <div className="relative h-[52dvh] min-h-[320px] overflow-hidden rounded-[24px] shadow-card" style={{ background: viewerBackgroundCss(mode, dark) }}>
+      <div className="relative h-[52dvh] min-h-[320px] overflow-hidden rounded-lg shadow-card" style={{ background: viewerBackgroundCss(mode, dark) }}>
         <ModelViewer design={design} settings={{ ...DEFAULT_VIEWER_SETTINGS, mode }} focusId={null} onFocusChange={() => {}} />
-        <div className="absolute end-3 top-3 flex gap-1 rounded-full bg-black/25 p-1 backdrop-blur">
+        <div className="absolute end-3 top-3 flex gap-1 rounded-md bg-black/25 p-1 backdrop-blur">
           {(["neon", "real"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
               aria-pressed={mode === m}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${mode === m ? "bg-white text-brand-accent" : "text-white"}`}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${mode === m ? "bg-surface text-ink" : "text-white"}`}
             >
               {t(m === "neon" ? "mode.neon" : "mode.real")}
             </button>
@@ -72,11 +72,11 @@ export function ProjectView({
 
       <div className="flex flex-col gap-3">
         <section className="panel p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-accent">{kind === "share" ? t("share.readOnly") : design.category}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-accent">{kind === "share" ? t("share.readOnly") : design.category}</p>
           <h1 className="mt-1 text-xl font-semibold leading-snug">{title}</h1>
           {meta && <p className="mt-0.5 text-xs text-ink-mute">{meta}</p>}
-          <p className="mt-3 text-[13px] text-ink-soft">« {prompt} »</p>
-          <p className="mt-3 text-[13px] leading-relaxed">{design.solution.concept}</p>
+          <p className="mt-3 text-sm text-ink-soft">« {prompt} »</p>
+          <p className="mt-3 text-sm leading-relaxed">{design.solution.concept}</p>
           <dl className="mt-3 grid grid-cols-3 gap-1.5 text-center">
             {[
               [t("dim.width"), d.width],
@@ -84,13 +84,13 @@ export function ProjectView({
               [t("dim.height"), d.height],
             ].map(([label, value]) => (
               <div key={String(label)} className="rounded-xl bg-paper px-2 py-2">
-                <dt className="text-[10px] font-semibold text-brand-accent">{label}</dt>
-                <dd className="text-[12.5px] font-semibold tabular-nums">{Math.round(Number(value))} mm</dd>
+                <dt className="text-xs font-semibold text-brand-accent">{label}</dt>
+                <dd className="text-sm font-semibold tabular-nums">{Math.round(Number(value))} mm</dd>
               </div>
             ))}
           </dl>
           {design.materiaux_conseilles[0] && (
-            <p className="mt-3 text-[12px] text-ink-soft">
+            <p className="mt-3 text-xs text-ink-soft">
               <span className="font-semibold text-ink">{t("mat.recommended")} :</span> {design.materiaux_conseilles[0].nom} — {design.materiaux_conseilles[0].pourquoi}
             </p>
           )}
@@ -110,11 +110,11 @@ export function ProjectView({
 
         <section className="panel p-4">
           <h2 className="text-sm font-semibold">{t("left.analysis")}</h2>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">{design.analysis.summary}</p>
+          <p className="mt-1 text-sm leading-relaxed text-ink-soft">{design.analysis.summary}</p>
           {design.fabrication.length > 0 && (
             <>
               <h2 className="mt-3 text-sm font-semibold">{t("panel.fabrication")}</h2>
-              <ol className="mt-1 list-decimal space-y-1 ps-5 text-[12.5px] text-ink-soft">
+              <ol className="mt-1 list-decimal space-y-1 ps-5 text-sm text-ink-soft">
                 {design.fabrication.map((f, i) => (
                   <li key={i}>
                     <span className="font-medium text-ink">{f.title}</span> — {f.detail}
@@ -229,13 +229,13 @@ function Comments({ token, comments, allow }: { token: string; comments: SharedC
         <ul className="mt-2 space-y-2">
           {comments.map((c) => (
             <li key={c.id} className="rounded-xl bg-paper p-2.5">
-              <p className="text-[12px] font-semibold">
+              <p className="text-xs font-semibold">
                 {c.pseudo}{" "}
                 <span className="font-normal text-ink-mute">
                   · {new Date(c.created_at).toLocaleDateString(locale === "ar" ? "ar" : locale === "en" ? "en-GB" : "fr-FR")}
                 </span>
               </p>
-              <p className="mt-0.5 whitespace-pre-line text-[12.5px] text-ink-soft">{c.body}</p>
+              <p className="mt-0.5 whitespace-pre-line text-sm text-ink-soft">{c.body}</p>
             </li>
           ))}
         </ul>

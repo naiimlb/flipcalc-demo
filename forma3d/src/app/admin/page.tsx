@@ -34,7 +34,7 @@ export default async function AdminHome() {
   if (error || !stats) {
     return (
       <Card>
-        <p className="text-sm text-rose-600">Statistiques indisponibles : vérifiez que le script SQL a bien été exécuté.</p>
+        <p className="text-sm text-danger">Statistiques indisponibles : vérifiez que le script SQL a bien été exécuté.</p>
       </Card>
     );
   }
@@ -63,13 +63,13 @@ export default async function AdminHome() {
                   className="w-full rounded-t-[4px] bg-brand-accent transition group-hover:brightness-110"
                   style={{ height: `${d.count === 0 ? 0 : Math.max(3, (d.count / maxDay) * 100)}%` }}
                 />
-                <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-night px-2 py-1 text-[11px] text-white group-hover:block">
+                <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-night px-2 py-1 text-xs text-white group-hover:block">
                   {new Date(d.day).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} : {d.count}
                 </span>
               </div>
             ))}
           </div>
-          <div className="mt-1 flex justify-between text-[10.5px] text-ink-mute">
+          <div className="mt-1 flex justify-between text-xs text-ink-mute">
             <span>{s.perDay[0] && new Date(s.perDay[0].day).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
             <span>Aujourd&apos;hui</span>
           </div>

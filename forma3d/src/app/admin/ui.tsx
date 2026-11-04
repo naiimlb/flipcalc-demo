@@ -29,7 +29,7 @@ export function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     ready: "bg-brand-accent text-white",
     processing: "bg-brand-accent/10 text-brand-accent",
-    error: "bg-rose-500 text-white",
+    error: "bg-danger/15 text-danger",
   };
   const labels: Record<string, string> = { ready: "Prête", processing: "En cours", error: "Erreur" };
   return <span className={`chip ${styles[status] ?? "bg-paper text-ink-soft"}`}>{labels[status] ?? status}</span>;

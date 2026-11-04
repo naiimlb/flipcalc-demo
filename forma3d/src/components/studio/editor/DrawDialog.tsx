@@ -79,7 +79,7 @@ export function DrawDialog({ onClose, onSubmit }: { onClose(): void; onSubmit(pa
 
   return (
     <Sheet title={t("add.drawTitle")} onClose={onClose} wide>
-      <p className="mb-2 text-[12px] text-ink-mute">{t("draw.hint")}</p>
+      <p className="mb-2 text-xs text-ink-mute">{t("draw.hint")}</p>
       <canvas
         ref={canvas}
         aria-label={t("draw.canvas")}
@@ -107,7 +107,7 @@ export function DrawDialog({ onClose, onSubmit }: { onClose(): void; onSubmit(pa
         <NumInput label={t("draw.width")} value={width} onChange={setWidth} unit="mm" min={10} max={1000} />
         <NumInput label={t("draw.thickness")} value={thickness} onChange={setThickness} unit="mm" min={0.5} max={200} step={0.5} />
       </div>
-      {error && <p className="mt-2 rounded-xl bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-500">{error}</p>}
+      {error && <p className="mt-2 rounded-xl bg-danger/10 px-3 py-2 text-xs font-semibold text-danger">{error}</p>}
       <div className="mt-3 flex gap-2">
         <button type="button" className="btn-ghost flex-1" onClick={() => setPoints([])}>
           {t("draw.clear")}

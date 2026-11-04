@@ -37,12 +37,12 @@ export default async function RequestsAdminPage({ searchParams }: { searchParams
   return (
     <div>
       <AdminTitle title="Demandes" subtitle={`${count ?? 0} demande(s) au total.`}>
-        <div className="flex gap-1 rounded-full bg-surface p-1 ring-1 ring-line">
+        <div className="flex gap-1 rounded-md bg-surface p-1 ring-1 ring-line">
           {STATUSES.map((s) => (
             <Link
               key={s}
               href={`/admin/demandes?statut=${s}`}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${status === s ? "bg-night text-white" : "text-ink-soft"}`}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${status === s ? "bg-surface text-ink ring-1 ring-line" : "text-ink-soft"}`}
             >
               {STATUS_LABELS[s]}
             </Link>
@@ -65,7 +65,7 @@ export default async function RequestsAdminPage({ searchParams }: { searchParams
                     {r.duration_ms ? ` · ${(r.duration_ms / 1000).toFixed(1)} s` : ""}
                     {r.has_image ? " · avec photo" : ""}
                   </p>
-                  {r.error && <p className="mt-1 text-xs text-rose-600">{r.error}</p>}
+                  {r.error && <p className="mt-1 text-xs text-danger">{r.error}</p>}
                 </div>
                 <StatusBadge status={r.status} />
                 <RowAction label="Supprimer" tone="danger" confirmText="Supprimer cette demande ?" action={adminDeleteRequest.bind(null, r.id)} />
@@ -73,12 +73,12 @@ export default async function RequestsAdminPage({ searchParams }: { searchParams
               <details className="mt-3 text-xs">
                 <summary className="cursor-pointer font-semibold text-brand-accent">JSON (conception et réponse brute)</summary>
                 {d?.validation_errors && (
-                  <pre className="mt-2 whitespace-pre-wrap rounded-xl bg-rose-50 p-3 text-rose-700">{JSON.stringify(d.validation_errors, null, 2)}</pre>
+                  <pre className="mt-2 whitespace-pre-wrap rounded-xl bg-danger/10 p-3 text-danger">{JSON.stringify(d.validation_errors, null, 2)}</pre>
                 )}
                 <p className="mt-2 text-ink-mute">
                   stop_reason : {d?.stop_reason ?? "—"} · usage : {d?.usage ? JSON.stringify(d.usage) : "—"}
                 </p>
-                <pre className="mt-2 max-h-96 overflow-auto rounded-xl bg-[#0f1020] p-3 font-mono text-[11px] text-emerald-200 scrollbar-thin">
+                <pre className="mt-2 max-h-96 overflow-auto rounded-xl bg-[#0f1020] p-3 font-mono text-xs text-success scrollbar-thin">
                   {d?.raw_response ?? JSON.stringify(r.design, null, 2) ?? "—"}
                 </pre>
               </details>

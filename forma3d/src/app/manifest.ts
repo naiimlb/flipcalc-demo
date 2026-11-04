@@ -16,8 +16,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     // « standalone » : plein écran sans barre du navigateur, depuis l'écran d'accueil de l'iPad, du téléphone ou de l'ordinateur.
     display: "standalone",
     orientation: "any",
-    background_color: "#05060a",
-    theme_color: "#05060a",
+    background_color: "#111214",
+    theme_color: "#111214",
     categories: ["productivity", "utilities", "design"],
     // Appui long sur l'icône (iPad, Mac, Android) : accès direct à l'éditeur ou à la galerie.
     shortcuts: [

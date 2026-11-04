@@ -105,7 +105,7 @@ export function PromptBar({
           e.preventDefault();
           submit();
         }}
-        className="flex items-end gap-2 rounded-[22px] bg-surface p-1.5 pl-3 shadow-card ring-1 ring-black/5"
+        className="flex items-end gap-2 rounded-lg bg-surface p-1.5 pl-3 shadow-card ring-1 ring-black/5"
       >
         <span className="mb-2.5 hidden text-brand-accent sm:block">
           <IconSparkles size={18} />
@@ -129,7 +129,7 @@ export function PromptBar({
             }
           }}
           placeholder={t("prompt.placeholder")}
-          className="min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-6 outline-none placeholder:text-ink-mute"
+          className="min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base leading-6 outline-none placeholder:text-ink-mute"
         />
         {image && (
           <span className="relative mb-1 shrink-0">
@@ -170,7 +170,7 @@ export function PromptBar({
             </button>
           </>
         )}
-        <button type="submit" disabled={busy && prompt.trim().length < 3} className="btn-accent mb-0.5 shrink-0 !rounded-[16px] !px-4 !py-2.5">
+        <button type="submit" disabled={busy && prompt.trim().length < 3} className="btn-accent mb-0.5 shrink-0 !rounded-lg !px-4 !py-2.5">
           {busy ? <Spinner /> : <IconSparkles size={15} />}
           <span className="hidden sm:inline">{t("prompt.generate")}</span>
         </button>
@@ -193,7 +193,7 @@ export function PromptBar({
                   setPrompt(t(key));
                   area.current?.focus();
                 }}
-                className="rounded-full bg-paper px-3 py-1.5 text-xs text-ink-soft transition hover:bg-brand-accent/10 hover:text-brand-accent"
+                className="rounded-md bg-paper px-3 py-1.5 text-xs text-ink-soft transition hover:bg-brand-accent/10 hover:text-brand-accent"
               >
                 {t(key)}
               </button>

@@ -1295,7 +1295,7 @@ export function Studio({
                   showAxes={showAxes}
                   showRuler={showRuler}
                   editor
-                  className="relative h-full min-h-[240px] overflow-hidden rounded-[20px] ring-1 ring-fg/10"
+                  className="relative h-full min-h-[240px] overflow-hidden rounded-lg ring-1 ring-fg/10"
                 />
               </Viewports>
             </div>
@@ -1393,7 +1393,7 @@ export function Studio({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="pointer-events-auto max-w-full rounded-full bg-night px-5 py-3 text-sm font-medium text-white shadow-float"
+                className="pointer-events-auto max-w-full rounded-md border border-line bg-surface px-5 py-3 text-sm font-medium text-ink shadow-float"
               >
                 {toast}
               </motion.div>

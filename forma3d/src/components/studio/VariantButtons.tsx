@@ -34,7 +34,7 @@ export function VariantButtons({
             disabled={disabled}
             onClick={() => onAdjust(id)}
             title={t("variant.hint", { label: t(`variant.${id}`).toLowerCase() })}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-[11.5px] font-semibold text-ink-soft transition hover:border-brand-accent/50 hover:text-brand-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-xs font-semibold text-ink-soft transition hover:border-brand-accent/50 hover:text-brand-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             {ICONS[id]}
             {t(`variant.${id}`)}

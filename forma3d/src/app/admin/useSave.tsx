@@ -21,7 +21,7 @@ export function useSave() {
 export function ResultMessage({ result }: { result: ActionResult | null }) {
   if (!result) return null;
   return (
-    <span role="status" className={`text-sm ${result.ok ? "text-emerald-600" : "text-rose-600"}`}>
+    <span role="status" className={`text-sm ${result.ok ? "text-success" : "text-danger"}`}>
       {result.message}
     </span>
   );

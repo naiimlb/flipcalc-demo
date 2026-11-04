@@ -25,10 +25,10 @@ const Showcase = dynamic(() => import("./Showcase").then((m) => m.Showcase));
 function SectionTitle({ n, id, title, lead }: { n: number; id: string; title: string; lead?: string }) {
   return (
     <Reveal className="max-w-4xl">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-fg/45">
+      <p className="text-xs font-semibold uppercase tracking-normal text-fg/45">
         <span className="text-neon">{String(n).padStart(2, "0")}</span>
       </p>
-      <h2 id={id} className="mt-3 font-display text-[clamp(2.1rem,5.4vw,4.75rem)] font-black leading-[0.95] tracking-[-0.045em] text-fg">
+      <h2 id={id} className="mt-3 font-display text-[clamp(2.1rem,5.4vw,4.75rem)] font-black leading-[0.95] tracking-tight text-fg">
         {title}
       </h2>
       {lead && <p className="mt-4 max-w-2xl text-base leading-relaxed text-fg/60 sm:text-lg">{lead}</p>}
@@ -105,10 +105,10 @@ export async function Landing() {
       <section id="accueil" aria-labelledby="hero-title" className="relative flex min-h-[100svh] w-full items-center justify-center overflow-hidden px-5 pb-24 pt-28 sm:px-8">
         <HeroStage tiltLabel={t("landing.tilt")}>
           <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center text-center">
-            <h1 id="hero-title" className="relative font-display text-[clamp(2.75rem,7.2vw,7rem)] font-black leading-[0.9] tracking-[-0.055em] text-fg">
+            <h1 id="hero-title" className="relative font-display text-[clamp(2.75rem,7.2vw,7rem)] font-black leading-[0.9] tracking-tight text-fg">
               <span
                 aria-hidden
-                className="landing-tag absolute -top-10 end-0 hidden rotate-[-5deg] items-center gap-2 rounded-full bg-fg px-3.5 py-1.5 font-sans text-[12px] font-semibold tracking-normal text-canvas shadow-neon-coral sm:inline-flex lg:-top-12 lg:end-[4%]"
+                className="landing-tag absolute -top-10 end-0 hidden rotate-[-5deg] items-center gap-2 rounded-full bg-fg px-3.5 py-1.5 font-sans text-xs font-semibold tracking-normal text-canvas shadow-neon-coral sm:inline-flex lg:-top-12 lg:end-[4%]"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-neon-coral" />
                 {t("landing.tag")}
@@ -151,7 +151,7 @@ export async function Landing() {
             <li key={s.title}>
               <Reveal delay={i * 0.08}>
                 <div className="flex items-center gap-4">
-                  <span className="font-display text-6xl font-black leading-none tracking-[-0.06em] text-fg/15 lg:text-7xl">{i + 1}</span>
+                  <span className="font-display text-6xl font-black leading-none tracking-tight text-fg/15 lg:text-7xl">{i + 1}</span>
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-night text-white ring-1 ring-fg/10">{s.icon}</span>
                 </div>
                 <h3 className="mt-5 text-2xl font-bold tracking-tight text-fg">{s.title}</h3>
@@ -256,7 +256,7 @@ export async function Landing() {
       {/* 7. Appel à l'action final */}
       <section aria-labelledby="cta-title" id="commencer" className={`${section} pb-36 text-center`}>
         <Reveal className="mx-auto max-w-5xl">
-          <h2 id="cta-title" className="font-display text-[clamp(2.5rem,7.5vw,7rem)] font-black leading-[0.92] tracking-[-0.055em] text-fg">
+          <h2 id="cta-title" className="font-display text-[clamp(2.5rem,7.5vw,7rem)] font-black leading-[0.92] tracking-tight text-fg">
             {t("landing.ctaTitle")}
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg text-fg/60">{t("landing.ctaLead")}</p>

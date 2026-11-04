@@ -11,8 +11,8 @@ export default async function KeysPage() {
         subtitle="Stockées côté serveur, chiffrées en AES-256-GCM. Elles ne sont jamais renvoyées au navigateur : seuls les 4 derniers caractères s'affichent."
       />
       {!canStore && (
-        <Card className="mb-4 !bg-amber-50">
-          <p className="text-sm text-amber-800">
+        <Card className="mb-4 !bg-warning/10">
+          <p className="text-sm text-warning">
             Pour saisir des clés ici, définissez <code>SECRETS_ENCRYPTION_KEY</code> (32 octets en base64) et <code>SUPABASE_SECRET_KEY</code>
             dans les variables d&apos;environnement du serveur. En attendant, les clés sont lues depuis les variables d&apos;environnement.
           </p>

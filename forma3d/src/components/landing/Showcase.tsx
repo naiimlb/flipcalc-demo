@@ -70,7 +70,7 @@ export function Showcase({ examples }: { examples: { title: string; category: st
       <div
         ref={ref}
         onPointerDown={() => setPaused(true)}
-        className="relative h-[52dvh] min-h-[320px] w-full overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_30%_20%,rgb(var(--neon-blue)/0.22),transparent_55%),radial-gradient(circle_at_80%_90%,rgb(var(--neon-coral)/0.18),transparent_55%)] ring-1 ring-fg/10 lg:h-[64dvh]"
+        className="relative h-[52dvh] min-h-[320px] w-full overflow-hidden rounded-lg bg-[radial-gradient(circle_at_30%_20%,rgb(var(--neon-blue)/0.22),transparent_55%),radial-gradient(circle_at_80%_90%,rgb(var(--neon-coral)/0.18),transparent_55%)] ring-1 ring-fg/10 lg:h-[64dvh]"
       >
         {armed ? (
           <ModelViewer design={current.design} settings={{ ...DEFAULT_VIEWER_SETTINGS, showGrid: false }} focusId={null} onFocusChange={() => {}} />

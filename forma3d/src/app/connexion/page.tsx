@@ -28,10 +28,10 @@ export default async function LoginPage({
       subtitle="Votre espace : vos demandes, modèles 3D et préférences, sur tous vos appareils."
     >
       {params.erreur === "google" && (
-        <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">Connexion Google impossible pour le moment.</p>
+        <p className="mb-4 rounded-xl bg-warning/10 px-3 py-2 text-sm text-warning">Connexion Google impossible pour le moment.</p>
       )}
       {params.erreur === "lien" && (
-        <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">Lien expiré ou invalide : reconnectez-vous.</p>
+        <p className="mb-4 rounded-xl bg-warning/10 px-3 py-2 text-sm text-warning">Lien expiré ou invalide : reconnectez-vous.</p>
       )}
       <AuthForm initialMode={params.mode === "inscription" ? "signup" : "login"} next={next} signupsOpen={features.signupsOpen}
         googleEnabled={providers.google}

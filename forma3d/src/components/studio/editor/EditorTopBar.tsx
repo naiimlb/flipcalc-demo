@@ -168,7 +168,7 @@ export function EditorTopBar({
           />
         ) : (
           <>
-            <h2 className="truncate text-[14px] font-bold tracking-tight text-fg" title={title}>
+            <h2 className="truncate text-base font-bold tracking-tight text-fg" title={title}>
               {title}
             </h2>
             {editable && (
@@ -194,7 +194,7 @@ export function EditorTopBar({
             onClick={onSave}
             title={`${t("editor.save")} (${mod}S)`}
             aria-live="polite"
-            className={`tap flex h-8 items-center gap-1 rounded-lg px-2 text-[11.5px] font-semibold ${saveState === "error" ? "text-rose-500" : "text-fg/75"} hover:bg-fg/10`}
+            className={`tap flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold ${saveState === "error" ? "text-danger" : "text-fg/75"} hover:bg-fg/10`}
           >
             {saveState === "saving" || saveState === "pending" ? <Spinner size={12} /> : saveState === "saved" || saveState === "local" ? <IconCheck size={13} /> : null}
             <span className="hidden sm:inline">{saveLabel}</span>
@@ -210,7 +210,7 @@ export function EditorTopBar({
             type="button"
             onClick={() => onTab(x.id)}
             aria-current={tab === x.id ? "page" : undefined}
-            className={`tap flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[12px] font-semibold transition md:flex-none ${tab === x.id ? "bg-fg text-canvas" : "text-fg/70 hover:text-fg"}`}
+            className={`tap flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition md:flex-none ${tab === x.id ? "bg-fg text-canvas" : "text-fg/70 hover:text-fg"}`}
           >
             {t(x.label)}
           </button>
@@ -228,7 +228,7 @@ export function EditorTopBar({
               type="button"
               onClick={() => setExportOpen((o) => !o)}
               aria-expanded={exportOpen}
-              className="btn-neon tap !rounded-xl !px-3 !py-1.5 !text-[12px]"
+              className="btn-neon tap !rounded-xl !px-3 !py-1.5 !text-xs"
             >
               {exporting ? <Spinner size={13} /> : <IconDownload size={14} />}
               <span className="hidden sm:inline">{t("viewer.export")}</span>
@@ -248,7 +248,7 @@ export function EditorTopBar({
           </div>
         )}
         {credits && <CreditsBadge initial={credits} />}
-        <Link href="/galerie" className="btn tap hidden !px-2.5 !py-1.5 !text-[12px] text-fg/75 hover:bg-fg/10 hover:text-fg xl:inline-flex">
+        <Link href="/galerie" className="btn tap hidden !px-2.5 !py-1.5 !text-xs text-fg/75 hover:bg-fg/10 hover:text-fg xl:inline-flex">
           {t("nav.gallery")}
         </Link>
         <PreferenceMenuButton />

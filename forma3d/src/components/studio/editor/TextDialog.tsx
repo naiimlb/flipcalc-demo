@@ -79,7 +79,7 @@ export function TextDialog({
           <NumInput label={t("text.size")} value={size} onChange={setSize} unit="mm" min={2} max={200} />
           <NumInput label={mode === "engrave" ? t("text.engraveDepth") : t("text.height")} value={depth} onChange={setDepth} unit="mm" min={0.4} max={50} step={0.2} />
         </div>
-        <p className="text-[11.5px] leading-snug text-ink-mute">
+        <p className="text-xs leading-snug text-ink-mute">
           {mode === "engrave"
             ? supportIsBox
               ? t("text.engraveOn", { name: supportName ?? "" })
@@ -88,8 +88,8 @@ export function TextDialog({
               ? t("text.reliefOn", { name: supportName })
               : t("text.reliefGround")}
         </p>
-        <p className="text-[11px] text-ink-mute">{t("text.latinOnly")}</p>
-        {error && <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-500">{error}</p>}
+        <p className="text-xs text-ink-mute">{t("text.latinOnly")}</p>
+        {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-xs font-semibold text-danger">{error}</p>}
         <button type="button" onClick={submit} disabled={busy || (mode === "engrave" && !supportIsBox)} className="btn-neon w-full !py-2.5">
           {busy && <Spinner size={14} />} {t("text.add")}
         </button>
