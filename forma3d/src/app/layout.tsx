@@ -22,6 +22,8 @@ const monoFont = JetBrains_Mono({
   display: "swap",
   variable: "--font-mono",
   weight: ["400", "500"],
+  // Petites valeurs seulement : pas de préchargement (le premier affichage reste léger).
+  preload: false,
 });
 
 /** Écrans de lancement iOS : un par taille d'appareil (largeur × hauteur en pixels CSS, densité). */

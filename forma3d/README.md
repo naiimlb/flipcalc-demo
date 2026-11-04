@@ -437,6 +437,37 @@ recentre ; les poignées se saisissent au doigt ou au Pencil ; la forme libre se
   vrai Safari (ni Pencil, ni capteur d'inclinaison), donc un essai sur un vrai iPad reste à faire. Le score Lighthouse
   (mobile) est publié à chaque envoi (`lighthouse.txt`).
 
+## Design professionnel — phase 1 : identité d'outil d'ingénierie
+
+Référence vivante : **`/design-system`** (couleurs avec contrastes calculés, typographie, formes, icônes, mouvements et
+composants dans leurs états). Tout passe par des variables CSS (`src/app/globals.css`) redéfinies pour le thème sombre ;
+`src/lib/design/tokens.ts` les documente et le test `tests/design-tokens.test.ts` vérifie qu'elles restent identiques
+et que **chaque texte atteint 4,5:1 (WCAG AA)** sur surface, toile et champ, dans les deux thèmes.
+
+- **Couleurs** : surfaces neutres (anthracite en sombre, gris très clair en clair), **un seul accent bleu** pour la sélection
+  et l'action principale, vert / orange / rouge discrets pour validé / avertissement / erreur. Rouge, vert et bleu des axes
+  réservés à la 3D. Plus de dégradés de fond, de halos, de pilules ni d'émojis. Les couleurs de l'admin (dégradé, accent) ne
+  s'appliquent plus : leurs champs sont retirés de `/admin/apparence`.
+- **Typographie** : Inter pour l'interface, JetBrains Mono pour les cotes, positions, angles et crédits. Échelle 12, 13, 14,
+  16, 20, 28 px (40 px pour le seul titre de l'accueil), graisses 400 / 500 / 600.
+- **Formes** : coins de 4 à 8 px, filets de 1 px (les colonnes de l'éditeur sont séparées par des filets, sans cartes),
+  ombre légère réservée aux menus flottants, grille de 4 px.
+- **Icônes** : un seul jeu, Lucide (`lucide-react`), trait 1,5, en 16 ou 20 px. **Info-bulles** avec nom et raccourci
+  (`components/ui/Tooltip.tsx`) : au survol après 400 ms, immédiates au focus clavier, jamais au toucher.
+- **Composants** : boutons principal / secondaire / discret / danger, champ numérique **à glisser** (`components/ui/NumberField.tsx` :
+  glisser sur le libellé X, Y, Z… à la souris, au trackpad, au doigt ou au Pencil ; ×10 avec Maj, ×0,1 avec Alt ; flèches au
+  clavier), listes, onglets soulignés, menus, panneaux, dialogues, étiquettes, interrupteur, états vides et squelettes. Chacun
+  a ses états survol, actif, désactivé et focus visible (anneau d'accent de 2 px).
+- **Mouvements** : 120 à 200 ms, discrets, désactivés si « réduire les animations » est demandé.
+- **Vue 3D** : fond uni neutre qui suit le thème, quadrillage gris, éclairage studio blanc, rendu réaliste par défaut (le
+  rendu néon reste un choix dans Paramètres).
+- **Accueil** : fond sombre uni, titre de taille raisonnable, ce que fait le produit et pour qui, **capture réelle de
+  l'éditeur** (`public/landing/editeur.webp`, issue des captures de la CI, sans cadre d'appareil), sections courtes
+  (étapes, fonctions, exemples en 3D, galerie). Les objets 3D du héros sont gris, un seul à la couleur d'accent.
+
+La disposition de l'éditeur (barre d'actions, bibliothèque de formes, barre contextuelle, cube de vue) change en phase 2 ;
+la phase 1 n'en modifie que l'apparence.
+
 ## Mon espace et administration
 
 - `/espace` : demandes, modèles 3D (GLB dans Supabase Storage), favoris, dossiers, matières préférées,

@@ -91,11 +91,11 @@ export async function Landing() {
             <p className="mt-4 max-w-xl text-lg text-ink-soft">{subtitle}</p>
             <p className="mt-2 max-w-xl text-base text-ink-mute">{t("landing.audience")}</p>
             <div className="mt-8 flex flex-wrap justify-center gap-2">
-              <Link href="/studio" className="btn-primary tap !min-h-10 !px-4">
+              <Link href="/studio" className="btn-primary tap !min-h-11 !px-4">
                 {t("landing.try")} <IconChevronRight />
               </Link>
               {!viewer && (
-                <Link href="/connexion?mode=inscription" className="btn-secondary tap !min-h-10 !px-4">
+                <Link href="/connexion?mode=inscription" className="btn-secondary tap !min-h-11 !px-4">
                   {t("landing.signup")}
                 </Link>
               )}
@@ -202,11 +202,11 @@ export async function Landing() {
             <p className="mt-2 text-base text-ink-mute">{t("landing.ctaLead")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/studio" className="btn-primary tap !min-h-10 !px-4">
+            <Link href="/studio" className="btn-primary tap !min-h-11 !px-4">
               {t("landing.try")} <IconChevronRight />
             </Link>
             {!viewer && (
-              <Link href="/connexion?mode=inscription" className="btn-secondary tap !min-h-10 !px-4">
+              <Link href="/connexion?mode=inscription" className="btn-secondary tap !min-h-11 !px-4">
                 {t("landing.signup")}
               </Link>
             )}
