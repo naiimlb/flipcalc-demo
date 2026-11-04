@@ -534,7 +534,8 @@ interface PartMeshProps {
 
 function PartMesh({ part, index, offset, explode, settings, focused, dimmed, detail, onSelect, onMeasure, register, dragging }: PartMeshProps) {
   const group = useRef<THREE.Group>(null);
-  useEffect(() => {
+  // Enregistrée avant les effets du parent, qui y accroche les poignées dans la même passe.
+  useLayoutEffect(() => {
     register?.(group.current);
     return () => register?.(null);
   }, [register]);

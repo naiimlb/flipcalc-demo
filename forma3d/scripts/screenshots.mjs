@@ -238,12 +238,18 @@ await session("outils", { width: 1440, height: 900 }, async (page) => {
   await page.keyboard.press("Escape");
   await page.keyboard.press("u");
   const canvas = await page.locator("canvas").first().boundingBox();
+  // Un clic à côté du modèle est ignoré : on vise plusieurs endroits jusqu'à obtenir deux points sur des pièces.
+  const distance = page.getByText(/^\d+(\.\d)? mm$/);
   if (canvas) {
-    await page.mouse.click(canvas.x + canvas.width * 0.45, canvas.y + canvas.height * 0.5);
-    await page.mouse.click(canvas.x + canvas.width * 0.55, canvas.y + canvas.height * 0.52);
+    const spots = [[0.45, 0.5], [0.55, 0.52], [0.6, 0.55], [0.5, 0.6], [0.4, 0.55], [0.65, 0.5], [0.35, 0.45], [0.5, 0.45]];
+    for (const [fx, fy] of spots) {
+      await page.mouse.click(canvas.x + canvas.width * fx, canvas.y + canvas.height * fy);
+      await page.waitForTimeout(250);
+      if ((await distance.count()) >= 1) break;
+    }
   }
-  await page.waitForTimeout(800);
-  check((await page.getByText(/^\d+(\.\d)? mm$/).count()) >= 1, "Outil de mesure : distance entre deux points");
+  await page.waitForTimeout(500);
+  check((await distance.count()) >= 1, "Outil de mesure : distance entre deux points");
   await page.screenshot({ path: join(out, "outils-mesure.png") });
 });
 
