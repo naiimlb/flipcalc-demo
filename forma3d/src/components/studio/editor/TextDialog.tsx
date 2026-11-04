@@ -66,7 +66,7 @@ export function TextDialog({
             ))}
           </select>
         </label>
-        <Choice
+        <Choice<"relief" | "engrave">
           label={t("text.mode")}
           value={mode}
           onChange={setMode}

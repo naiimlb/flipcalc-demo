@@ -149,7 +149,7 @@ export function OperationsPanel({
           </select>
         </label>
 
-        {(kind === "mirror" || kind === "cut" || kind === "array-line") && <Choice label={t("ops.axis")} value={axis} onChange={setAxis} options={axes} />}
+        {(kind === "mirror" || kind === "cut" || kind === "array-line") && <Choice<Axis> label={t("ops.axis")} value={axis} onChange={setAxis} options={axes} />}
         {(kind === "array-line" || kind === "array-circle") && (
           <div className="grid grid-cols-2 gap-2">
             <NumInput label={t("ops.count")} value={n} onChange={(x) => setN(Math.round(x))} min={2} max={30} />
@@ -165,7 +165,7 @@ export function OperationsPanel({
               <NumInput label={t("ops.offsetV")} value={v} onChange={setV} unit="mm" />
             </div>
             {part.shape !== "extrusion" && (
-              <Choice
+              <Choice<"y" | "z">
                 label={t("ops.drillAxis")}
                 value={along}
                 onChange={setAlong}
