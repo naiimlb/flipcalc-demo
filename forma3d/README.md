@@ -27,7 +27,8 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | Refonte 3 | Outils de création + génération Meshy (coûts affichés) | **fait** (voir « Refonte — phase 3 ») |
 | Refonte 4 | Finitions, Lighthouse > 90 sur l'accueil, tests Safari | à venir |
 
-Aucun service text-to-3D payant n'est branché : l'interface `ModelProvider` est conservée pour plus tard.
+Meshy est le service de génération 3D détaillée (voir « Refonte — phase 3 ») : il reste masqué tant que `MESHY_API_KEY`
+et la migration 7 ne sont pas en place, et chaque action affiche son coût en crédits avant confirmation.
 Il n'y a aucun paiement en ligne dans ce projet.
 
 ## Lancer en local
@@ -93,7 +94,7 @@ verrouille (vérifié en base par `setup_required()`).
 | `CACHE_SECRET` | Secret du cache des demandes identiques (sinon dérivé de `SECRETS_ENCRYPTION_KEY` ou de la clé Claude) | non |
 | `CLARIFY_MODEL` | Modèle de l'assistant de questions (défaut `claude-haiku-5-5`) | non |
 | `NEXT_PUBLIC_SITE_URL` | URL publique (liens des emails) | recommandé |
-| `MESHY_API_KEY` | Fournisseur text-to-3D expérimental (non branché) | non |
+| `MESHY_API_KEY` | Clé Meshy (variable Vercel *Sensitive*, ou saisie dans `/admin/cles`) : modèle 3D détaillé, texture, remesh, échelle, imprimabilité. Sans elle, les actions Meshy sont masquées | non |
 
 ## Déployer sur Vercel
 
