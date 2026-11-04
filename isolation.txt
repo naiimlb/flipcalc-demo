@@ -1,0 +1,46 @@
+✓ Deux comptes distincts connectés
+✓ A : création d'une demande
+✓ A : résultat enregistré via la fonction SQL
+✓ A : création d'un dossier
+✓ A : fichier 3D envoyé dans son dossier Storage
+✓ A : voit sa propre demande
+✓ B ne voit aucune demande de A
+✓ B ne trouve pas la demande de A, même avec son identifiant
+✓ B ne voit pas les dossiers de A
+✓ B ne voit pas le profil de A
+✓ B ne voit pas les réponses brutes (réservées aux admins)
+✓ B ne voit pas le registre d'usage
+✓ B ne voit pas le journal
+✓ B ne peut pas modifier la demande de A
+✓ B ne peut pas supprimer la demande de A
+✓ La demande de A est intacte après ces tentatives
+✓ B ne peut pas renommer le dossier de A
+✓ B ne peut pas dupliquer la demande de A
+✓ B ne peut pas écrire un résultat dans la demande de A
+✓ B ne peut pas se promouvoir administrateur via l'API
+✓ B ne peut pas appeler set_user_role
+✓ B ne peut pas lire les statistiques admin
+✓ B ne devient pas admin avec un faux jeton
+✓ B ne peut pas lire les clés d'API
+✓ Les tables non exposées restent introuvables
+✓ B ne peut pas ranger sa demande dans le dossier de A
+✓ B ne peut pas lier le fichier 3D de A à sa demande
+✓ B ne peut pas télécharger le fichier 3D de A
+✓ B ne voit pas le contenu du dossier Storage de A
+✓ B ne peut pas écrire dans le dossier Storage de A
+✓ B peut écrire dans son propre dossier Storage
+✓ B ne peut pas déposer une photo de profil au nom de A
+✓ Visiteur : aucune demande lisible
+✓ Visiteur : aucun profil lisible
+✓ Visiteur : aucun dossier lisible
+✓ Visiteur : clés d'API illisibles
+✓ Visiteur : ne peut pas créer de demande
+✓ Visiteur : ne peut pas supprimer de compte
+✓ Visiteur : fichier 3D privé inaccessible, même par l'URL publique
+ℹ Visiteur : réglages lisibles = site, ai, features, credits (le prompt système « ai » est public sans clé secrète)
+✓ Essai invité : 2 essais par jour, le 3e refusé (true, true, false)
+✓ Essai invité : hash invalide refusé
+✓ A : export de ses propres données (1 demande)
+✓ A : suppression du compte
+✓ B : suppression du compte
+✓ Après suppression : connexion impossible

@@ -1,0 +1,23 @@
+✓ RLS : « design_requests » illisible sans compte
+✓ RLS : « profiles » illisible sans compte
+✓ RLS : « folders » illisible sans compte
+✓ RLS : « request_debug » illisible sans compte
+✓ RLS : « app_logs » illisible sans compte
+✓ Invité : une demande donne un modèle 3D, marqué « non sauvegardé »
+✓ Invité : on lui propose de créer un compte
+✓ Connexion : l'essai invité est ajouté au compte
+✓ Demande enregistrée et modèle 3D (GLB) envoyé dans Supabase Storage
+✓ Mon espace : 2 demandes (essai importé + nouvelle)
+✓ Dossiers : création et classement
+✓ Renommage
+✓ Duplication
+✓ Mes modèles 3D : téléchargement du GLB depuis Storage
+✓ Favoris
+✓ Matières préférées
+✓ Paramètres : nom et unités
+✓ Export : 3 demandes, 1 dossier(s)
+✓ Export : profil à jour
+✓ Export : lien de téléchargement du modèle 3D
+✓ Autre appareil : 3 demandes retrouvées
+✓ Suppression du compte
+✓ Après suppression : connexion impossible
