@@ -1,7 +1,17 @@
 import { CATEGORY_IDS, type CategoryId, type KeywordDict } from './categories';
-import { normalize, productKey } from './normalize';
+import { normalize, productKey, productLabel } from './normalize';
 
-export type LearnedRules = Record<string, CategoryId>;
+/** Classement mémorisé pour un produit (choisi par l'utilisateur, prioritaire sur les mots-clés). */
+export interface LearnedRule {
+  category: CategoryId;
+  /** Nom lisible, pour l'affichage dans les Réglages. */
+  name: string;
+  /** Date du dernier choix (ms). */
+  at: number;
+}
+
+/** Clé = productKey(nom). */
+export type LearnedRules = Record<string, LearnedRule>;
 
 interface CompiledKeyword {
   category: CategoryId;
@@ -55,8 +65,8 @@ export interface CategoryMatch {
  */
 export function categorize(name: string, dict: KeywordDict, learned: LearnedRules = {}): CategoryMatch {
   const key = productKey(name);
-  const learnedCat = learned[key];
-  if (learnedCat && CATEGORY_IDS.includes(learnedCat)) return { category: learnedCat, reason: 'appris' };
+  const rule = key ? learned[key] : undefined;
+  if (rule && CATEGORY_IDS.includes(rule.category)) return { category: rule.category, reason: 'appris' };
 
   const text = normalize(name);
   let best: { score: number; m: CompiledKeyword } | null = null;
@@ -72,8 +82,37 @@ export function categorize(name: string, dict: KeywordDict, learned: LearnedRule
 }
 
 /** Mémorise qu'un produit appartient à une catégorie (déplacement manuel). */
-export function learn(learned: LearnedRules, name: string, category: CategoryId): LearnedRules {
+export function learn(learned: LearnedRules, name: string, category: CategoryId, now = Date.now()): LearnedRules {
   const key = productKey(name);
   if (!key) return learned;
-  return { ...learned, [key]: category };
+  return { ...learned, [key]: { category, name: productLabel(name), at: now } };
+}
+
+/** Oublie le classement mémorisé d'un produit (par clé). */
+export function forget(learned: LearnedRules, key: string): LearnedRules {
+  if (!(key in learned)) return learned;
+  const next = { ...learned };
+  delete next[key];
+  return next;
+}
+
+/**
+ * Relit des règles stockées (ancien format « clé → catégorie » ou nouveau), les valide
+ * et recalcule les clés avec productKey (idempotent) : les anciennes données restent valables.
+ */
+export function normalizeLearned(raw: unknown): LearnedRules {
+  const out: LearnedRules = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const key = productKey(k);
+    if (!key) continue;
+    const obj: Partial<Record<keyof LearnedRule, unknown>> | null =
+      typeof v === 'string' ? { category: v } : v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+    const category = obj?.category as CategoryId | undefined;
+    if (!category || !CATEGORY_IDS.includes(category)) continue;
+    const at = typeof obj?.at === 'number' && Number.isFinite(obj.at) ? obj.at : 0;
+    const name = typeof obj?.name === 'string' && obj.name.trim() ? obj.name.trim() : productLabel(k);
+    if (!out[key] || at >= out[key].at) out[key] = { category, name, at };
+  }
+  return out;
 }

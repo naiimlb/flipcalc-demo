@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { CategorySection } from '../components/CategorySection';
-import { PrimaryButton, Segmented } from '../components/Controls';
+import { PrimaryButton, StorePicker } from '../components/Controls';
 import { IconClipboard, IconFlag, IconMore, IconPencil, IconPlus, IconX } from '../components/Icons';
 import { CoursesLogo } from '../components/Logo';
 import { toast } from '../components/Toast';
@@ -10,7 +10,7 @@ import type { CategoryId } from '../lib/categories';
 import { haptic } from '../lib/haptics';
 import { groupByCategory, missingItems, progress, storeLabel } from '../lib/lists';
 import { formatDate } from '../lib/message';
-import { STORES, type Item, type ShoppingList, type StoreId } from '../lib/types';
+import type { Item, ShoppingList, StoreId } from '../lib/types';
 import { actions, useAppState } from '../state/store';
 import { AddItemSheet, EditItemSheet } from './ItemSheets';
 
@@ -106,7 +106,7 @@ function ActiveCourses({
   onFinished: (finishedId: string, missingId: string | null) => void;
 }) {
   const order = useAppState((s) => s.settings.order);
-  const [collapsed, setCollapsed] = useState<Set<CategoryId>>(new Set());
+  const collapsed = useMemo(() => new Set(list.collapsed ?? []), [list.collapsed]);
   const [editing, setEditing] = useState<Item | null>(null);
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -130,14 +130,7 @@ function ActiveCourses({
     },
     [list.id],
   );
-  const toggleCollapse = useCallback((c: CategoryId) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(c)) next.delete(c);
-      else next.add(c);
-      return next;
-    });
-  }, []);
+  const toggleCollapse = useCallback((c: CategoryId) => actions.toggleCollapsed(list.id, c), [list.id]);
 
   const finish = () => {
     const r = actions.finish(list.id);
@@ -357,7 +350,7 @@ function StoreSheet({ open, list, onClose }: { open: boolean; list: ShoppingList
         </PrimaryButton>
       }
     >
-      <Segmented<StoreId> value={store} onChange={setStore} options={(Object.keys(STORES) as StoreId[]).map((id) => ({ value: id, label: STORES[id] }))} />
+      <StorePicker value={store} onChange={setStore} />
       {store === 'autre' && (
         <input
           value={name}

@@ -1,15 +1,19 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
-import { PrimaryButton, Segmented } from '../components/Controls';
+import { CategoryPicker, PrimaryButton, Segmented } from '../components/Controls';
 import { IconChevron, IconDown, IconPlus, IconUp, IconX } from '../components/Icons';
 import { CoursesLogo } from '../components/Logo';
 import { toast } from '../components/Toast';
 import { CATEGORIES, DEFAULT_ORDER, type CategoryId } from '../lib/categories';
+import { backupFileName, buildBackup, parseBackup, type ParsedBackup } from '../lib/backup';
 import { haptic } from '../lib/haptics';
+import { shareFile } from '../lib/share';
 import { normalize } from '../lib/normalize';
 import type { Theme } from '../lib/types';
-import { actions, useAppState } from '../state/store';
+import { useSaveStatus, whenSaved } from '../state/persistence';
+import { actions, getState, useAppState } from '../state/store';
+import { MEMORY_TOAST } from './ItemSheets';
 
 function Card({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
   return (
@@ -27,7 +31,52 @@ export function SettingsScreen() {
   const [openCat, setOpenCat] = useState<CategoryId | null>(null);
   const [draft, setDraft] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
-  const learned = Object.entries(settings.learned);
+  const rules = Object.entries(settings.learned).sort((x, y) => y[1].at - x[1].at);
+  const [ruleKey, setRuleKey] = useState<string | null>(null);
+  const rule = ruleKey ? settings.learned[ruleKey] : undefined;
+  const save = useSaveStatus();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<Extract<ParsedBackup, { ok: true }> | null>(null);
+
+  const forgetOne = (key: string, name: string) => {
+    const prev = actions.forgetLearned(key);
+    haptic();
+    toast(`${name} oublié`, { actionLabel: 'Annuler', onAction: () => actions.restoreLearned(prev) });
+  };
+  const resetRules = () => {
+    const prev = actions.forgetLearned();
+    haptic('medium');
+    toast('Catégories mémorisées réinitialisées', { actionLabel: 'Annuler', onAction: () => actions.restoreLearned(prev) });
+  };
+
+  const exportData = async () => {
+    haptic();
+    await whenSaved();
+    const json = JSON.stringify(buildBackup(getState()), null, 2);
+    const file = new File([json], backupFileName(), { type: 'application/json' });
+    const r = await shareFile(file, 'Sauvegarde Hashtagbangers Courses');
+    if (r === 'shared') toast('Sauvegarde partagée ✓');
+    if (r === 'downloaded') toast('Fichier de sauvegarde téléchargé ✓');
+    if (r === 'failed') toast('Export impossible sur ce navigateur');
+  };
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    const parsed = parseBackup(await file.text());
+    if (fileRef.current) fileRef.current.value = '';
+    if (!parsed.ok) {
+      haptic('medium');
+      toast(parsed.error);
+      return;
+    }
+    setPending(parsed);
+  };
+  const confirmImport = () => {
+    if (!pending) return;
+    const prev = actions.replaceState(pending.state);
+    setPending(null);
+    haptic('success');
+    toast('Sauvegarde importée ✓', { actionLabel: 'Annuler', onAction: () => actions.replaceState(prev) });
+  };
 
   const move = (index: number, delta: number) => {
     const order = [...settings.order];
@@ -201,31 +250,78 @@ export function SettingsScreen() {
         </Card>
 
         <Card
-          title="Classements appris"
-          hint="Quand tu déplaces un article dans une autre catégorie, l'app s'en souvient pour les prochaines listes."
+          title="Mes catégories mémorisées"
+          hint="Quand tu changes la catégorie d'un article, l'app s'en souvient pour ce produit : il passe avant les mots-clés. Touche une ligne pour la modifier."
         >
-          {learned.length === 0 ? (
-            <p className="text-[14px] text-black/45 dark:text-white/45">Rien d'appris pour l'instant.</p>
+          {rules.length === 0 ? (
+            <p className="text-[14px] leading-relaxed text-black/50 dark:text-white/50">
+              Rien de mémorisé pour l'instant. Appui long sur un article, puis « Changer de catégorie ».
+            </p>
           ) : (
             <ul className="space-y-1.5">
-              {learned.map(([key, c]) => (
-                <li key={key} className="flex min-h-12 items-center gap-2 rounded-2xl bg-black/[0.035] pl-3 dark:bg-white/[0.05]">
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{key}</span>
-                  <span className="text-[13px] text-black/55 dark:text-white/55">
-                    → {CATEGORIES[c].emoji} {CATEGORIES[c].label}
-                  </span>
-                  <button onClick={() => actions.forgetLearned(key)} className="press grid h-11 w-11 place-items-center rounded-xl text-black/40 dark:text-white/40" aria-label={`Oublier ${key}`}>
+              {rules.map(([key, r]) => (
+                <li key={key} className="flex min-h-14 items-center rounded-2xl bg-black/[0.035] dark:bg-white/[0.05]">
+                  <button
+                    onClick={() => (haptic(), setRuleKey(key))}
+                    className="press flex min-h-14 min-w-0 flex-1 items-center gap-2.5 rounded-2xl pl-3 text-left"
+                    aria-label={`Modifier ${r.name}`}
+                  >
+                    <span className="text-xl">{CATEGORIES[r.category].emoji}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-semibold">{r.name}</span>
+                      <span className="block truncate text-[13px] text-black/55 dark:text-white/55">{CATEGORIES[r.category].label}</span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => forgetOne(key, r.name)}
+                    className="press grid h-14 w-12 shrink-0 place-items-center text-black/40 dark:text-white/40"
+                    aria-label={`Oublier ${r.name}`}
+                  >
                     <IconX size={16} />
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          {learned.length > 0 && (
-            <button onClick={() => (actions.forgetLearned(), toast('Classements appris effacés'))} className="mt-2 px-1 py-2 text-[14px] font-semibold text-brand">
-              Tout oublier
+          {rules.length > 0 && (
+            <button onClick={resetRules} className="press mt-2 min-h-11 px-1 text-[15px] font-semibold text-brand">
+              Réinitialiser
             </button>
           )}
+        </Card>
+
+        <Card
+          title="Sauvegarde"
+          hint="Chaque action est enregistrée tout de suite sur ce téléphone, sans bouton. Exporte un fichier pour ne rien perdre si tu changes de téléphone."
+        >
+          <div className="mb-3 space-y-0.5 rounded-2xl bg-black/[0.035] px-4 py-3 text-[14px] leading-relaxed dark:bg-white/[0.05]" data-testid="save-status">
+            <p className="font-semibold">
+              {save.idb === 'error' ? '⚠️ IndexedDB indisponible : copie de secours seulement' : '✅ Enregistrement automatique actif'}
+            </p>
+            <p className="text-black/60 dark:text-white/60">
+              Dernière écriture :{' '}
+              {save.savedAt ? new Date(save.savedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'à ta prochaine action'}
+            </p>
+            <p className="text-black/60 dark:text-white/60">
+              Stockage persistant : {save.persisted === true ? 'accordé ✅' : save.persisted === false ? 'non accordé' : 'non géré ici'}
+            </p>
+          </div>
+          <div className="space-y-2.5">
+            <PrimaryButton variant="ink" onClick={exportData} className="text-[17px]">
+              Exporter mes données
+            </PrimaryButton>
+            <PrimaryButton variant="soft" onClick={() => fileRef.current?.click()} className="text-[17px]">
+              Importer une sauvegarde
+            </PrimaryButton>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              aria-label="Fichier de sauvegarde"
+              onChange={(e) => void onFile(e.target.files?.[0])}
+            />
+          </div>
         </Card>
 
         <Card title="Installer sur l'iPhone">
@@ -254,6 +350,54 @@ export function SettingsScreen() {
           <p className="text-[12px] text-black/40 dark:text-white/40">Hashtagbangers Courses · v1.0 · Roubaix</p>
         </div>
       </div>
+
+      <BottomSheet
+        open={!!rule}
+        onClose={() => setRuleKey(null)}
+        title={rule?.name ?? ''}
+        footer={
+          <PrimaryButton
+            variant="danger"
+            onClick={() => {
+              if (ruleKey && rule) forgetOne(ruleKey, rule.name);
+              setRuleKey(null);
+            }}
+          >
+            Oublier ce produit
+          </PrimaryButton>
+        }
+      >
+        <p className="mb-3 text-[14px] text-black/55 dark:text-white/55">Ce produit est toujours rangé dans :</p>
+        {rule && (
+          <CategoryPicker
+            value={rule.category}
+            order={settings.order}
+            onChange={(c) => {
+              if (ruleKey) actions.setLearnedCategory(ruleKey, c);
+              setRuleKey(null);
+              toast(MEMORY_TOAST);
+            }}
+          />
+        )}
+      </BottomSheet>
+
+      <BottomSheet
+        open={!!pending}
+        onClose={() => setPending(null)}
+        title="Importer ?"
+        footer={<PrimaryButton onClick={confirmImport}>Remplacer mes données</PrimaryButton>}
+      >
+        {pending && (
+          <div className="space-y-3 text-[16px] leading-relaxed text-black/70 dark:text-white/70">
+            <p>
+              Cette sauvegarde contient <b>{pending.listCount} liste{pending.listCount > 1 ? 's' : ''}</b> et{' '}
+              <b>{pending.learnedCount} catégorie{pending.learnedCount > 1 ? 's' : ''} mémorisée{pending.learnedCount > 1 ? 's' : ''}</b>
+              {pending.exportedAt ? ` (exportée le ${new Date(pending.exportedAt).toLocaleDateString('fr-FR')})` : ''}.
+            </p>
+            <p>Elle remplacera les listes, l'historique et les réglages de ce téléphone. Tu pourras annuler juste après.</p>
+          </div>
+        )}
+      </BottomSheet>
 
       <BottomSheet
         open={confirmReset}

@@ -16,6 +16,22 @@ export function missingQty(item: Item): number {
   return Math.max(0, item.qty - item.taken);
 }
 
+export interface ListStats {
+  /** Articles dont une quantité a été prise (même partiellement). */
+  taken: number;
+  /** Articles dont il manque encore au moins une unité. */
+  missing: number;
+  total: number;
+}
+
+export function listStats(items: Item[]): ListStats {
+  return {
+    taken: items.filter((it) => it.taken > 0).length,
+    missing: items.filter((it) => missingQty(it) > 0).length,
+    total: items.length,
+  };
+}
+
 export function buildItems(lines: ParsedLine[], dict: KeywordDict, learned: LearnedRules): Item[] {
   return lines.map((l) => ({
     id: uid(),
@@ -108,7 +124,7 @@ export interface FinishResult {
 export function finishList(list: ShoppingList, now = Date.now()): FinishResult {
   const finished: ShoppingList = { ...list, status: 'terminee', finishedAt: now, updatedAt: now };
   const missing = missingItems(list.items);
-  const takenCount = list.items.filter((it) => it.taken > 0).length;
+  const takenCount = listStats(list.items).taken;
   return {
     finished,
     takenCount,

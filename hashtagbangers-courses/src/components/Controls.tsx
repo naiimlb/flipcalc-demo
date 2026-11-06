@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { CATEGORIES, type CategoryId } from '../lib/categories';
 import { haptic } from '../lib/haptics';
+import { STORE_CHOICES, STORES, type StoreId } from '../lib/types';
 import { IconMinus, IconPlus } from './Icons';
 
 export function Segmented<T extends string>({
@@ -32,6 +33,36 @@ export function Segmented<T extends string>({
             }`}
           >
             {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Choix du magasin : Metro Lomme / Metro Wattrelos / Salamarket / Autre (+ l'ancien « Métro » si la liste l'utilise déjà). */
+export function StorePicker({ value, onChange }: { value: StoreId; onChange: (s: StoreId) => void }) {
+  const choices = STORE_CHOICES.includes(value) ? STORE_CHOICES : [value, ...STORE_CHOICES];
+  return (
+    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Magasin">
+      {choices.map((id) => {
+        const active = id === value;
+        return (
+          <button
+            key={id}
+            role="radio"
+            aria-checked={active}
+            onClick={() => {
+              if (!active) haptic();
+              onChange(id);
+            }}
+            className={`press min-h-[52px] rounded-2xl px-3 text-[16px] font-semibold transition-colors ${
+              active
+                ? 'bg-brand text-white shadow-[0_6px_16px_-6px_rgba(237,30,121,0.7)]'
+                : 'bg-black/[0.05] text-ink dark:bg-white/[0.08] dark:text-white'
+            }`}
+          >
+            {STORES[id]}
           </button>
         );
       })}

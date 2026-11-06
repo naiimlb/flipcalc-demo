@@ -3,11 +3,14 @@ import { BottomSheet } from '../components/BottomSheet';
 import { CategoryPicker, PrimaryButton, QtyStepper } from '../components/Controls';
 import { IconTrash } from '../components/Icons';
 import { toast } from '../components/Toast';
-import { CATEGORIES, type CategoryId } from '../lib/categories';
+import type { CategoryId } from '../lib/categories';
 import { categorize } from '../lib/categorize';
 import { haptic } from '../lib/haptics';
 import type { Item } from '../lib/types';
 import { actions, useAppState } from '../state/store';
+
+/** Petit message discret après un changement de catégorie. */
+export const MEMORY_TOAST = 'Je m’en souviendrai pour la prochaine fois ✅';
 
 const inputCls =
   'h-14 w-full rounded-2xl bg-black/[0.05] px-4 text-[17px] font-semibold outline-none focus:ring-2 focus:ring-brand dark:bg-white/[0.08]';
@@ -43,7 +46,7 @@ export function EditItemSheet({
     const trimmed = name.trim() || item.name;
     actions.editItem(listId, item.id, { name: trimmed, qty, category });
     haptic('success');
-    if (category !== item.category) toast(`Rangé dans ${CATEGORIES[category].label} · mémorisé ✓`);
+    if (category !== item.category) toast(MEMORY_TOAST);
     onClose();
   };
 
@@ -71,10 +74,10 @@ export function EditItemSheet({
       <input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} enterKeyHint="done" />
       <span className={labelCls}>Quantité demandée</span>
       <QtyStepper value={qty} onChange={setQty} label="Quantité demandée" />
-      <span className={labelCls}>Catégorie</span>
+      <span className={labelCls}>Changer de catégorie</span>
       <CategoryPicker value={category} onChange={setCategory} order={order} />
       <p className="mt-3 text-[13px] text-black/45 dark:text-white/45">
-        Le changement de catégorie est retenu pour les prochaines listes.
+        Ce produit sera rangé là automatiquement dans les prochaines listes, même renommé ou avec un autre format.
       </p>
     </BottomSheet>
   );
@@ -105,7 +108,7 @@ export function AddItemSheet({ listId, open, onClose }: { listId: string; open: 
     actions.addItem(listId, { name: finalName, qty, category });
     if (manual && manual !== auto) actions.learnCategory(finalName, manual);
     haptic('success');
-    toast(`${finalName} ajouté ✓`);
+    toast(manual && manual !== auto ? MEMORY_TOAST : `${finalName} ajouté ✓`);
     onClose();
   };
 

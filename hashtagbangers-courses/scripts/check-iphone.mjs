@@ -25,10 +25,34 @@ const ctx = await browser.newContext({
   colorScheme: 'light',
   permissions: ['clipboard-read', 'clipboard-write'],
 });
-const page = await ctx.newPage();
+let page = await ctx.newPage();
 const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+const watch = (p) => {
+  p.on('pageerror', (e) => errors.push(e.message));
+  p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+};
+watch(page);
+
+/** Contenu brut d'IndexedDB (vérifie que la sauvegarde est bien là, pas seulement à l'écran). */
+const readIdb = () =>
+  page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open('hb-courses');
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction(['lists', 'meta']);
+          const lists = tx.objectStore('lists').getAll();
+          const meta = tx.objectStore('meta').get('state');
+          const settings = tx.objectStore('meta').get('settings');
+          tx.oncomplete = () => {
+            db.close();
+            resolve({ lists: lists.result, meta: meta.result, settings: settings.result });
+          };
+        };
+      }),
+  );
 
 let n = 0;
 const shot = async (name) => {
@@ -164,7 +188,7 @@ const copied = await page.evaluate(() => navigator.clipboard.readText());
 console.log('--- message copié ---\n' + copied + '\n---------------------');
 const today = new Date();
 const dd = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
-check('message : titre « 🛒 Manquants Métro – JJ/MM »', copied.startsWith(`🛒 Manquants Métro – ${dd}`));
+check('message : titre « 🛒 Manquants Metro Lomme – JJ/MM »', copied.startsWith(`🛒 Manquants Metro Lomme – ${dd}`));
 check('message : frites partielles → x5', copied.includes('• Frites 2,5kg x5'));
 check('message : poulet pané (déplacé) dans Surgelés', /🧊 Surgelés\n(• .*\n)*• Poulet pané 5kg x3/.test(copied));
 const recapH = await page.locator('.fixed.inset-0.z-40 .scroll-area').evaluate((el) => el.scrollHeight);
@@ -188,14 +212,25 @@ await tap(page.getByRole('radio', { name: /Terminées/ }));
 await page.waitForTimeout(400);
 await shot('listes-terminees');
 await noHorizontalScroll('listes');
+const card = await page.locator('main li', { hasText: /Terminée/ }).first().textContent();
+check('liste terminée : magasin, statut, date et heure', /Metro Lomme/.test(card) && /Terminée/.test(card) && /\d{2}\/\d{2} · \d{2}:\d{2}/.test(card));
+check('liste terminée : « ✅ 5 pris » et « ⚠️ 7 manquants »', card.includes('✅ 5 pris') && card.includes('⚠️ 7 manquants'));
+await tap(page.getByRole('radio', { name: /En cours/ }));
+await page.waitForTimeout(500);
+const cardOngoing = await page.locator('main li', { hasText: /En cours/ }).first().textContent();
+check('liste en cours : statut « En cours » et compteurs', /En cours/.test(cardOngoing) && /✅ 0 pris/.test(cardOngoing) && /⚠️ 7 manquants/.test(cardOngoing));
 
 // Réglages
 await tap(page.getByRole('button', { name: 'Réglages' }));
 await page.waitForTimeout(500);
 await shot('reglages');
 await noHorizontalScroll('réglages');
-const learned = await page.getByText('poulet pane', { exact: true }).count();
-check('réglages : classement appris « poulet pane » visible', learned === 1);
+check('réglages : « Poulet pané » dans Mes catégories mémorisées', (await page.getByRole('button', { name: 'Modifier Poulet pané' }).count()) === 1);
+const saveStatus = await page.getByTestId('save-status').innerText();
+check('réglages : sauvegarde automatique + stockage persistant affichés', /Enregistrement automatique actif/.test(saveStatus) && /Stockage persistant/.test(saveStatus));
+await page.locator('main').evaluate((m) => m.scrollTo({ top: 1500 }));
+await page.waitForTimeout(300);
+await shot('reglages-sauvegarde');
 
 // Mode sombre
 await tap(page.getByRole('radio', { name: 'Sombre' }));
@@ -210,8 +245,123 @@ await shot('sombre-listes');
 await page.reload();
 await page.addStyleTag({ content: SAFE });
 await page.waitForTimeout(1500);
-const lists = await page.evaluate(() => JSON.parse(localStorage.getItem('hb-courses:v1')).lists.length);
-check('données conservées après rechargement (3 listes)', lists === 3);
+const idb3 = await readIdb();
+check('IndexedDB : 3 listes enregistrées, rechargement sans perte', idb3.lists.length === 3 && idb3.meta?.schema === 2);
+check('copie de secours localStorage présente', await page.evaluate(() => !!localStorage.getItem('hb-courses:v2')));
+
+// ───── Mémoire des catégories (interface) ─────
+await tap(page.getByRole('button', { name: 'Courses', exact: true }));
+await page.waitForTimeout(500);
+const longPress = async (locator) => {
+  await locator.scrollIntoViewIfNeeded();
+  const b = await locator.boundingBox();
+  await page.mouse.move(b.x + 60, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(650);
+  await page.mouse.up();
+  await page.waitForTimeout(450);
+};
+await longPress(row('Sauce algérienne'));
+await shot('memoire-changer-categorie');
+check('appui long : section « Changer de catégorie »', (await page.getByText('Changer de catégorie', { exact: true }).count()) === 1);
+await tap(page.getByRole('button', { name: /Épicerie sèche/ }).last());
+await tap(page.getByRole('button', { name: 'Enregistrer' }));
+await page.waitForTimeout(350);
+await shot('memoire-message');
+check('message discret « Je m’en souviendrai pour la prochaine fois ✅ »', (await page.getByText('Je m’en souviendrai pour la prochaine fois ✅').count()) === 1);
+check('« Sauce algérienne » rangée en Épicerie sèche', (await page.locator('section', { hasText: 'Épicerie sèche' }).locator('[role=checkbox]', { hasText: 'Sauce algérienne' }).count()) === 1);
+
+// Nouvelle liste : autre graphie, autre format = même produit
+await tap(page.getByRole('button', { name: 'Options de la liste' }));
+await page.waitForTimeout(400);
+await tap(page.getByRole('button', { name: /Coller une nouvelle liste/ }));
+await page.waitForTimeout(450);
+await page.getByPlaceholder(/Une ligne par produit/).fill('sauce algerienne 1L\npoulet pane 2kg x4\nFrites 5kg x3');
+await page.waitForTimeout(250);
+await shot('memoire-apercu-nouvelle-liste');
+await tap(page.getByRole('button', { name: /Créer la liste · 3 articles/ }));
+await page.waitForTimeout(700);
+check('nouvelle liste : « sauce algerienne 1L » dans Épicerie sèche (choix mémorisé)', (await page.locator('section', { hasText: 'Épicerie sèche' }).locator('[role=checkbox]', { hasText: 'Sauce algerienne 1L' }).count()) === 1);
+check('nouvelle liste : « poulet pane 2kg » dans Surgelés (mémorisé plus tôt)', (await page.locator('section', { hasText: 'Surgelés' }).locator('[role=checkbox]', { hasText: 'poulet pane 2kg' }).count()) === 1);
+
+// Réglages > Mes catégories mémorisées : modifier, supprimer, réinitialiser, annuler
+await tap(page.getByRole('button', { name: 'Réglages' }));
+await page.waitForTimeout(500);
+check('réglages : « Sauce algérienne » mémorisée', (await page.getByRole('button', { name: 'Modifier Sauce algérienne' }).count()) === 1);
+await tap(page.getByRole('button', { name: 'Modifier Sauce algérienne' }));
+await page.waitForTimeout(450);
+await shot('memoire-reglages-modifier');
+await tap(page.getByRole('dialog').getByRole('button', { name: /Sauces & Condiments/ }));
+await page.waitForTimeout(500);
+check('réglages : catégorie mémorisée modifiable', (await page.locator('main li', { hasText: 'Sauce algérienne' }).first().innerText()).includes('Sauces & Condiments'));
+await tap(page.getByRole('button', { name: 'Oublier Sauce algérienne' }));
+await page.waitForTimeout(300);
+check('réglages : suppression d’un produit mémorisé', (await page.getByRole('button', { name: 'Modifier Sauce algérienne' }).count()) === 0);
+await tap(page.getByRole('button', { name: 'Annuler' }));
+await page.waitForTimeout(300);
+check('réglages : « Annuler » le rétablit', (await page.getByRole('button', { name: 'Modifier Sauce algérienne' }).count()) === 1);
+await tap(page.getByRole('button', { name: 'Réinitialiser', exact: true }));
+await page.waitForTimeout(300);
+check('réglages : « Réinitialiser » vide la liste', (await page.getByRole('button', { name: /^Modifier / }).count()) === 0);
+await tap(page.getByRole('button', { name: 'Annuler' }));
+await page.waitForTimeout(300);
+check('réglages : « Annuler » restaure tout', (await page.getByRole('button', { name: /^Modifier / }).count()) === 2);
+
+// ───── Fermeture brutale en plein milieu des courses ─────
+await tap(page.getByRole('button', { name: 'Courses', exact: true }));
+await page.waitForTimeout(500);
+await tap(row('Frites'));
+for (let i = 0; i < 2; i++) await tap(row('poulet pane').getByRole('button', { name: /Prendre un/ }));
+await tap(page.locator('section', { hasText: 'Épicerie sèche' }).locator('button[aria-expanded]'));
+// L'onglet est tué tout de suite : pas d'attente, pas de bouton « Sauvegarder ».
+await page.close();
+page = await ctx.newPage();
+watch(page);
+await page.goto(url);
+await page.addStyleTag({ content: SAFE });
+await page.waitForTimeout(1600);
+await shot('apres-fermeture-brutale');
+check('rouvert : « Frites » toujours cochée', (await row('Frites').getAttribute('aria-checked')) === 'true');
+check('rouvert : « poulet pane » toujours à 2/4 (partiel)', (await row('poulet pane').getAttribute('aria-checked')) === 'mixed' && /2\/4/.test(await row('poulet pane').innerText()));
+check('rouvert : rayon Épicerie sèche toujours replié', (await page.locator('section', { hasText: 'Épicerie sèche' }).locator('button[aria-expanded]').getAttribute('aria-expanded')) === 'false');
+const idbAfter = await readIdb();
+const frites = idbAfter.lists.find((l) => l.id === idbAfter.meta.activeId)?.items.find((i) => i.name.startsWith('Frites'));
+check('IndexedDB contient bien la coche et la liste ouverte', frites?.taken === frites?.qty && frites?.taken === 3);
+
+// ───── Exporter / importer ─────
+await tap(page.getByRole('button', { name: 'Réglages' }));
+await page.waitForTimeout(500);
+const [download] = await Promise.all([page.waitForEvent('download'), tap(page.getByRole('button', { name: 'Exporter mes données' }))]);
+const { readFileSync } = await import('node:fs');
+const exportPath = await download.path();
+const exported = JSON.parse(readFileSync(exportPath, 'utf8'));
+console.log('   export :', download.suggestedFilename(), `(${exported.lists.length} listes)`);
+check('export : fichier JSON nommé avec la date', /^hashtagbangers-courses-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()));
+check('export : 4 listes + catégories mémorisées + réglages', exported.app === 'hashtagbangers-courses' && exported.lists.length === 4 && Object.keys(exported.settings.learned).length === 2 && exported.settings.theme === 'dark');
+
+await page.getByRole('button', { name: 'Effacer toutes les données' }).scrollIntoViewIfNeeded();
+await tap(page.getByRole('button', { name: 'Effacer toutes les données' }));
+await page.waitForTimeout(400);
+await tap(page.getByRole('button', { name: 'Oui, tout effacer' }));
+await page.waitForTimeout(500);
+check('tout effacé (IndexedDB vide)', (await readIdb()).lists.length === 0);
+
+await page.setInputFiles('input[type=file]', { name: 'faux.json', mimeType: 'application/json', buffer: Buffer.from('ceci n’est pas une sauvegarde') });
+await page.waitForTimeout(500);
+check('import d’un fichier invalide : message d’erreur, rien ne change', (await page.getByText(/illisible/).count()) === 1 && (await readIdb()).lists.length === 0);
+
+await page.setInputFiles('input[type=file]', exportPath);
+await page.waitForTimeout(600);
+await shot('import-confirmation');
+check('import : confirmation « 4 listes » et « 2 catégories mémorisées »', /4 listes/.test(await page.getByRole('dialog').innerText()) && /2 catégories mémorisées/.test(await page.getByRole('dialog').innerText()));
+await tap(page.getByRole('button', { name: 'Remplacer mes données' }));
+await page.waitForTimeout(700);
+const idbImported = await readIdb();
+check('import : 4 listes restaurées dans IndexedDB', idbImported.lists.length === 4);
+check('import : catégories mémorisées restaurées', (await page.getByRole('button', { name: /^Modifier / }).count()) === 2);
+await tap(page.getByRole('button', { name: 'Courses', exact: true }));
+await page.waitForTimeout(500);
+check('import : la liste ouverte est retrouvée avec ses coches', (await row('Frites').getAttribute('aria-checked')) === 'true');
 
 // PWA
 const manifest = await page.evaluate(async () => (await fetch('/manifest.json')).json());

@@ -59,6 +59,11 @@ body {
   color: #f5f3f6;
 }
 
+/* Pendant la lecture du stockage (quelques ms) : fond rose, pas de flash blanc */
+#root:empty {
+  background: var(--color-brand);
+}
+
 /* Trame de points du logo (halftone) */
 .halftone {
   background-color: var(--color-brand);

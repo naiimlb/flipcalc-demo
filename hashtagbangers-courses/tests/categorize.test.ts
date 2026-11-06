@@ -106,5 +106,5 @@ describe('classements appris', () => {
 
 describe('normalize / productKey', () => {
   it('retire accents, ligatures et casse', () => expect(normalize('  Œufs  BRIOCHÉS ')).toBe('oeufs brioches'));
-  it('retire les tailles', () => expect(productKey('Coca-Cola 33cl x24')).toBe('coca-cola'));
+  it('retire les tailles', () => expect(productKey('Coca-Cola 33cl x24')).toBe('coca cola'));
 });

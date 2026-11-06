@@ -5,7 +5,7 @@ import { Segmented } from '../components/Controls';
 import { IconChevronRight, IconDuplicate, IconMore, IconTrash } from '../components/Icons';
 import { toast } from '../components/Toast';
 import { haptic } from '../lib/haptics';
-import { progress, storeLabel } from '../lib/lists';
+import { listStats, storeLabel } from '../lib/lists';
 import type { ShoppingList } from '../lib/types';
 import { actions, getState, useAppState } from '../state/store';
 
@@ -85,7 +85,7 @@ export function ListsScreen({ onOpenCourses, onOpenMissing }: { onOpenCourses: (
         <ul className="mt-4 space-y-3">
           <AnimatePresence initial={false} mode="popLayout">
             {shown.map((l) => {
-              const p = progress(l.items);
+              const stats = listStats(l.items);
               const isMissing = l.kind === 'manquants';
               const store = storeLabel(l) || 'Courses';
               return (
@@ -114,17 +114,22 @@ export function ListsScreen({ onOpenCourses, onOpenMissing }: { onOpenCourses: (
                         {l.id === activeId && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white uppercase">Ouverte</span>}
                       </span>
                       <span className="block text-[13px] text-black/50 capitalize dark:text-white/50">{when(l.finishedAt ?? l.createdAt)}</span>
-                      <span className="mt-1 flex items-center gap-2 text-[13px] font-semibold text-black/65 dark:text-white/65">
-                        {isMissing ? (
-                          <>{l.items.length} article{l.items.length > 1 ? 's' : ''} à racheter</>
-                        ) : (
-                          <>
-                            <span className="h-1.5 w-16 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-                              <span className="block h-full rounded-full bg-brand" style={{ width: `${Math.round(p.ratio * 100)}%` }} />
-                            </span>
-                            {p.done}/{p.total} pris
-                          </>
-                        )}
+                      <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] font-bold">
+                        <span
+                          className={`rounded-full px-2 py-0.5 tracking-wide uppercase ${
+                            isMissing
+                              ? 'bg-partial-50 text-[#c25e00] dark:bg-[#2a2016] dark:text-partial'
+                              : l.status === 'terminee'
+                                ? 'bg-black/[0.07] text-black/65 dark:bg-white/10 dark:text-white/65'
+                                : 'bg-brand-50 text-brand-700 dark:bg-brand/15 dark:text-brand-200'
+                          }`}
+                        >
+                          {isMissing ? 'À racheter' : l.status === 'terminee' ? 'Terminée' : 'En cours'}
+                        </span>
+                        {!isMissing && <span className="rounded-full bg-black/[0.05] px-2 py-0.5 dark:bg-white/10">✅ {stats.taken} pris</span>}
+                        <span className="rounded-full bg-black/[0.05] px-2 py-0.5 dark:bg-white/10">
+                          ⚠️ {stats.missing} manquant{stats.missing > 1 ? 's' : ''}
+                        </span>
                       </span>
                     </span>
                     <IconChevronRight size={20} className="shrink-0 text-black/25 dark:text-white/30" />

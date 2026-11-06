@@ -1,13 +1,23 @@
 import type { CategoryId, KeywordDict } from './categories';
 import type { LearnedRules } from './categorize';
 
-export type StoreId = 'metro' | 'salamarket' | 'autre';
+/** « metro » = ancien choix unique (listes créées avant l'ajout des deux Metro), conservé pour l'affichage. */
+export type StoreId = 'metro-lomme' | 'metro-wattrelos' | 'salamarket' | 'autre' | 'metro';
 
 export const STORES: Record<StoreId, string> = {
-  metro: 'Métro',
+  'metro-lomme': 'Metro Lomme',
+  'metro-wattrelos': 'Metro Wattrelos',
   salamarket: 'Salamarket',
   autre: 'Autre',
+  metro: 'Métro',
 };
+
+/** Magasins proposés pour une nouvelle liste. */
+export const STORE_CHOICES: StoreId[] = ['metro-lomme', 'metro-wattrelos', 'salamarket', 'autre'];
+
+export function isStoreId(v: unknown): v is StoreId {
+  return typeof v === 'string' && v in STORES;
+}
 
 export interface Item {
   id: string;
@@ -35,6 +45,8 @@ export interface ShoppingList {
   items: Item[];
   /** Pour une liste de manquants : la liste de courses d'origine. */
   sourceId?: string;
+  /** Rayons repliés dans l'écran Courses (conservés si l'app est fermée en plein milieu). */
+  collapsed?: CategoryId[];
 }
 
 export type Theme = 'auto' | 'light' | 'dark';
@@ -47,4 +59,6 @@ export interface Settings {
   haptics: boolean;
   /** Numéro WhatsApp du responsable (facultatif), format international sans « + ». */
   managerPhone: string;
+  /** Dernier magasin choisi, proposé par défaut pour la prochaine liste. */
+  lastStore: StoreId;
 }

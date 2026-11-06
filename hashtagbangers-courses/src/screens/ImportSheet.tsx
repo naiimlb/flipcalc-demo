@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
-import { PrimaryButton, Segmented } from '../components/Controls';
+import { PrimaryButton, StorePicker } from '../components/Controls';
 import { IconClipboard } from '../components/Icons';
 import { toast } from '../components/Toast';
 import { CATEGORIES } from '../lib/categories';
@@ -9,7 +9,7 @@ import { haptic } from '../lib/haptics';
 import { buildItems, groupByCategory, newList } from '../lib/lists';
 import { parseList } from '../lib/parser';
 import { readClipboard } from '../lib/share';
-import { STORES, type StoreId } from '../lib/types';
+import type { StoreId } from '../lib/types';
 import { actions, useAppState } from '../state/store';
 
 export const EXEMPLE_LISTE = `2 x Huile de friture 10L
@@ -26,7 +26,7 @@ Liquide vaisselle`;
 export function ImportSheet({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const settings = useAppState((s) => s.settings);
   const [text, setText] = useState('');
-  const [store, setStore] = useState<StoreId>('metro');
+  const [store, setStore] = useState<StoreId>(settings.lastStore);
   const [storeName, setStoreName] = useState('');
 
   const items = useMemo(() => buildItems(parseList(text), settings.keywords, settings.learned), [text, settings.keywords, settings.learned]);
@@ -64,11 +64,7 @@ export function ImportSheet({ open, onClose, onCreated }: { open: boolean; onClo
       }
     >
       <p className="mb-2 text-[13px] font-semibold tracking-wide text-black/50 uppercase dark:text-white/50">Magasin</p>
-      <Segmented<StoreId>
-        value={store}
-        onChange={setStore}
-        options={(Object.keys(STORES) as StoreId[]).map((id) => ({ value: id, label: STORES[id] }))}
-      />
+      <StorePicker value={store} onChange={setStore} />
       <AnimatePresence initial={false}>
         {store === 'autre' && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
