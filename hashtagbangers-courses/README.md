@@ -4,6 +4,8 @@ PWA iPhone pour faire les courses du resto **Hashtagbangers** (Roubaix) chez Mé
 On colle la liste, elle se range par rayon, on coche en magasin, et ce qui manque devient une liste
 « Manquants » prête à envoyer au responsable (feuille de partage iOS, WhatsApp ou copier).
 
+**En ligne : <https://hashtagbangers-courses.vercel.app>** (projet Vercel `hashtagbangers-courses`, dossier racine `hashtagbangers-courses/`).
+
 Vite + React + TypeScript + Tailwind 4, sans backend : tout est stocké sur le téléphone (localStorage),
 et l'app marche hors ligne (service worker Workbox via `vite-plugin-pwa`).
 
