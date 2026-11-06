@@ -1,0 +1,41 @@
+name: Hashtagbangers Courses
+
+on:
+  push:
+    paths:
+      - "hashtagbangers-courses/**"
+      - ".github/workflows/hashtagbangers-courses.yml"
+  pull_request:
+    paths:
+      - "hashtagbangers-courses/**"
+      - ".github/workflows/hashtagbangers-courses.yml"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hashtagbangers-courses
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Typecheck + build
+        run: npm run build
+      - name: Parcours iPhone 390x844 (Playwright)
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:4173 && break; sleep 1; done
+          node scripts/check-iphone.mjs http://localhost:4173/ "$RUNNER_TEMP/captures"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures-iphone
+          path: ${{ runner.temp }}/captures

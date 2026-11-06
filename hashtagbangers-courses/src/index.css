@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand: #ed1e79;
+  --color-brand-600: #d0115f;
+  --color-brand-700: #a80c4c;
+  --color-brand-50: #fff0f6;
+  --color-brand-100: #ffdcea;
+  --color-brand-200: #ffb8d4;
+  --color-partial: #ff9500;
+  --color-partial-50: #fff5e6;
+  --color-ink: #0a0a0b;
+  --color-paper: #f6f1f3;
+  --color-night: #0c0b0d;
+  --color-night-card: #1b191d;
+  --color-night-line: #2c2a2f;
+  --color-whatsapp: #25d366;
+
+  --font-display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
+  --font-marker: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --tabbar-h: calc(64px + var(--safe-bottom));
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+:root.dark body {
+  background: var(--color-night);
+  color: #f5f3f6;
+}
+
+/* Trame de points du logo (halftone) */
+.halftone {
+  background-color: var(--color-brand);
+  background-image: radial-gradient(rgb(120 0 50 / 0.2) 1.15px, transparent 1.6px);
+  background-size: 7px 7px;
+}
+.halftone-soft {
+  background-image: radial-gradient(rgb(237 30 121 / 0.12) 1.1px, transparent 1.5px);
+  background-size: 8px 8px;
+}
+
+/* Pas de menu contextuel iOS ni de sélection sur les éléments tactiles */
+.touch-none-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Rebond léger au toucher */
+.press {
+  transition: transform 180ms var(--ease-spring), filter 150ms ease, background-color 150ms ease;
+  will-change: transform;
+}
+.press:active {
+  transform: scale(0.96);
+  filter: brightness(0.94);
+}
+
+.scroll-area {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px; /* évite le zoom automatique d'iOS */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
