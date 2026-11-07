@@ -86,30 +86,32 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* Texte coranique : taille réglable, interligne généreux pour les signes. */
-.quran-text {
-  font-size: var(--quran-size);
-  line-height: 2.1;
-  word-spacing: 0.04em;
-  text-align: right;
-  font-feature-settings: "calt", "liga";
-}
+@layer components {
+  /* Texte coranique : taille réglable, interligne généreux pour les signes. */
+  .quran-text {
+    font-size: var(--quran-size);
+    line-height: 2.1;
+    word-spacing: 0.04em;
+    text-align: right;
+    font-feature-settings: "calt", "liga";
+  }
 
-.quran-text[data-font="amiri"] {
-  font-family: var(--font-amiri);
-}
+  .quran-text[data-font="amiri"] {
+    font-family: var(--font-amiri-quran), "Amiri Quran", serif;
+  }
 
-.quran-text[data-font="scheherazade"] {
-  font-family: var(--font-scheherazade);
-  line-height: 2;
-}
+  .quran-text[data-font="scheherazade"] {
+    font-family: var(--font-scheherazade-new), "Scheherazade New", serif;
+    line-height: 2;
+  }
 
-.pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
-}
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
 
-.pt-safe {
-  padding-top: env(safe-area-inset-top);
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

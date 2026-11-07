@@ -39,21 +39,27 @@ export function isValidRange(surah: number, from: number, to: number): boolean {
 
 /** Recherche simple par numéro, translittération ou nom arabe (sans voyelles). */
 export function searchSurahs(query: string): SurahMeta[] {
-  const q = normalizeLatin(query);
-  if (!q) return [...surahs];
-  return surahs.filter((s) => {
-    if (String(s.number) === q) return true;
-    if (normalizeLatin(s.transliteration).includes(q)) return true;
-    return stripArabicMarks(s.nameAr).includes(stripArabicMarks(query.trim()));
-  });
+  const trimmed = query.trim();
+  if (!trimmed) return [...surahs];
+  if (/^\d{1,3}$/.test(trimmed)) return surahs.filter((s) => String(s.number).startsWith(trimmed));
+  const q = normalizeLatin(trimmed);
+  const arabic = stripArabicMarks(trimmed);
+  return surahs.filter(
+    (s) => (q.length > 0 && normalizeLatin(s.transliteration).includes(q)) || (arabic.length > 0 && stripArabicMarks(s.nameAr).includes(arabic)),
+  );
 }
 
+/** Translittération simplifiée : « Al-Faatiha », « fatiha » et « Fâtiha » se rejoignent. */
 function normalizeLatin(s: string): string {
   return s
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+    .replace(/[^a-z]/g, "")
+    .replace(/ee/g, "i")
+    .replace(/oo|ou/g, "u")
+    .replace(/q/g, "k")
+    .replace(/([a-z])\1+/g, "$1");
 }
 
 /** Pour la recherche uniquement : retire voyelles et signes (le texte affiché n'est jamais modifié). */

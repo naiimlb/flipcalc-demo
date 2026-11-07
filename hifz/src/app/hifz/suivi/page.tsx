@@ -1,5 +1,8 @@
-import { PageHeader } from "@/components/ui";
+import type { Metadata } from "next";
+import { StatsScreen } from "@/modules/hifz/StatsScreen";
+
+export const metadata: Metadata = { title: "Suivi" };
 
 export default function Page() {
-  return <PageHeader title="Suivi" />;
+  return <StatsScreen />;
 }

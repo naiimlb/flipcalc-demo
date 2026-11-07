@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Amiri_Quran, Scheherazade_New } from "next/font/google";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { SettingsProvider } from "@/components/providers/SettingsProvider";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorker";
 import { TabBar } from "@/components/TabBar";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import "./globals.css";
@@ -28,8 +31,8 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   icons: {
     icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
@@ -57,8 +60,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="antialiased">
-        <div className="pt-safe mx-auto min-h-dvh max-w-lg px-4 pb-32">{children}</div>
-        <TabBar />
+        <ServiceWorkerRegistration />
+        <SettingsProvider>
+          <div className="pt-safe mx-auto min-h-dvh max-w-lg px-4 pb-32">
+            <OfflineBanner />
+            {children}
+          </div>
+          <TabBar />
+        </SettingsProvider>
       </body>
     </html>
   );

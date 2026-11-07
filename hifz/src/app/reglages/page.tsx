@@ -1,5 +1,8 @@
-import { PageHeader } from "@/components/ui";
+import type { Metadata } from "next";
+import { SettingsScreen } from "./SettingsScreen";
+
+export const metadata: Metadata = { title: "Réglages" };
 
 export default function Page() {
-  return <PageHeader title="Réglages" />;
+  return <SettingsScreen />;
 }

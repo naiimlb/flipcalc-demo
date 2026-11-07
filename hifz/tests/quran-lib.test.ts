@@ -40,7 +40,14 @@ describe("catalogue", () => {
 
   it("recherche par numéro, translittération ou nom arabe", () => {
     expect(searchSurahs("18")[0]?.number).toBe(18);
+    expect(searchSurahs("11").map((s) => s.number)).toEqual([11, 110, 111, 112, 113, 114]);
     expect(searchSurahs("baqara").map((s) => s.number)).toContain(2);
+    expect(searchSurahs("Fatiha").map((s) => s.number)).toContain(1);
+    expect(searchSurahs("Fâtiha").map((s) => s.number)).toContain(1);
+    expect(searchSurahs("yasin").map((s) => s.number)).toContain(36);
+    expect(searchSurahs("rahman").map((s) => s.number)).toContain(55);
+    expect(searchSurahs("ikhlas").map((s) => s.number)).toContain(112);
+    expect(searchSurahs("bakara").map((s) => s.number)).toContain(2);
     expect(searchSurahs("كهف").map((s) => s.number)).toContain(18);
     expect(searchSurahs("")).toHaveLength(114);
   });

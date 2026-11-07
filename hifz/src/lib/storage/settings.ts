@@ -27,7 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyNewLimit: 3,
   repeatCount: 3,
   playbackRate: 1,
-  showTranslation: false,
+  showTranslation: true,
   theme: "system",
   cacheAudio: true,
 };
