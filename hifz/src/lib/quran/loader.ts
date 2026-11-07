@@ -25,7 +25,6 @@ export interface SurahLoaderOptions {
   cache: SurahCache;
   fetch?: typeof fetch;
   baseUrl?: string;
-  isOnline?: () => boolean;
 }
 
 async function sha256Hex(text: string): Promise<string> {
@@ -37,21 +36,21 @@ async function sha256Hex(text: string): Promise<string> {
  * Charge une sourate : d'abord depuis le cache local (hors ligne), sinon depuis
  * `/quran/surah/NNN.json`, en vérifiant l'empreinte SHA-256 de l'index avant de l'enregistrer.
  */
-export function createSurahLoader({ cache, fetch: fetchImpl, baseUrl = "/quran/surah", isOnline }: SurahLoaderOptions) {
+export function createSurahLoader({ cache, fetch: fetchImpl, baseUrl = "/quran/surah" }: SurahLoaderOptions) {
   const doFetch = fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
   const inflight = new Map<number, Promise<SurahData>>();
 
   async function loadFromNetwork(number: number): Promise<SurahData> {
     const meta = getSurahMeta(number);
     if (!meta) throw new QuranDataError("unknown-surah", `Sourate ${number} inconnue.`);
-    if (isOnline && !isOnline()) {
-      throw new QuranDataError("offline", "Hors ligne : cette sourate n'a pas encore été téléchargée sur cet appareil.");
-    }
     let res: Response;
     try {
       res = await doFetch(`${baseUrl}/${String(number).padStart(3, "0")}.json`);
     } catch {
-      throw new QuranDataError("offline", "Connexion impossible : vérifiez le réseau puis réessayez.");
+      throw new QuranDataError(
+        "offline",
+        "Hors ligne : cette sourate n'a pas encore été téléchargée sur cet appareil. Reconnectez-vous puis réessayez.",
+      );
     }
     if (!res.ok) throw new QuranDataError("http", `Le serveur a répondu ${res.status} pour la sourate ${number}.`);
     const text = await res.text();
