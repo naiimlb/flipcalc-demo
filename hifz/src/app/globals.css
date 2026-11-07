@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* Le mode sombre suit l'attribut data-theme posé avant le premier rendu (voir layout). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --bg: #faf8f3;
+  --surface: #ffffff;
+  --elevated: #f2efe7;
+  --ink: #1c201e;
+  --muted: #5f6662;
+  --line: #e3dfd4;
+  --accent: #166552;
+  --accent-soft: #e3efe9;
+  --on-accent: #ffffff;
+  --good: #1b7a57;
+  --hard: #9a6512;
+  --again: #a63d36;
+  --quran-size: 30px;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1211;
+  --surface: #171b19;
+  --elevated: #1f2422;
+  --ink: #ece9e2;
+  --muted: #a1a6a1;
+  --line: #2d3330;
+  --accent: #6cc3a1;
+  --accent-soft: #1b2d26;
+  --on-accent: #0b1f18;
+  --good: #6cc3a1;
+  --hard: #e2b25a;
+  --again: #ef8a80;
+  color-scheme: dark;
+}
+
+/* Sans JavaScript : on suit simplement le système. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #0f1211;
+    --surface: #171b19;
+    --elevated: #1f2422;
+    --ink: #ece9e2;
+    --muted: #a1a6a1;
+    --line: #2d3330;
+    --accent: #6cc3a1;
+    --accent-soft: #1b2d26;
+    --on-accent: #0b1f18;
+    --good: #6cc3a1;
+    --hard: #e2b25a;
+    --again: #ef8a80;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-good: var(--good);
+  --color-hard: var(--hard);
+  --color-again: var(--again);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-amiri: var(--font-amiri-quran), "Amiri Quran", serif;
+  --font-scheherazade: var(--font-scheherazade-new), "Scheherazade New", serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+
+@layer components {
+  /* Texte coranique : taille réglable, interligne généreux pour les signes. */
+  .quran-text {
+    font-size: var(--quran-size);
+    line-height: 2.1;
+    word-spacing: 0.04em;
+    text-align: right;
+    font-feature-settings: "calt", "liga";
+  }
+
+  .quran-text[data-font="amiri"] {
+    font-family: var(--font-amiri-quran), "Amiri Quran", serif;
+  }
+
+  .quran-text[data-font="scheherazade"] {
+    font-family: var(--font-scheherazade-new), "Scheherazade New", serif;
+    line-height: 2;
+  }
+
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

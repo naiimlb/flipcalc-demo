@@ -8,3 +8,4 @@
 - [`hashtagbangers/`](hashtagbangers/) — **#HASHTAG BANGERS**, prototype 3D du burger Bangers (Vite + Three.js + GSAP, voir [hashtagbangers/README.md](hashtagbangers/README.md)) : <https://naiimlb.github.io/flipcalc-demo/hashtagbangers/demo/>.
 - [`gratcoran/`](gratcoran/) — **Grat'Coran**, le « Shazam du Coran » : écoute une récitation et indique la sourate et le verset (Next.js + Supabase, PWA iPhone, voir [gratcoran/README.md](gratcoran/README.md)).
 - [`forma3d/`](forma3d/) — **Forma3D**, décrivez un problème ou un objet : analyse par Claude, solution et modèle 3D interactif exportable en GLB / STL (Next.js + React Three Fiber + Supabase, voir [forma3d/README.md](forma3d/README.md)).
+- [`hifz/`](hifz/) — **Hifz**, mémorisation du Coran verset par verset avec répétition espacée, audio et mode hors ligne (Next.js + IndexedDB, PWA iPhone, voir [hifz/README.md](hifz/README.md)).
