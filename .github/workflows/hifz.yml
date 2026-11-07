@@ -1,0 +1,35 @@
+name: Hifz
+
+on:
+  push:
+    paths:
+      - "hifz/**"
+      - ".github/workflows/hifz.yml"
+  pull_request:
+    paths:
+      - "hifz/**"
+      - ".github/workflows/hifz.yml"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hifz
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
