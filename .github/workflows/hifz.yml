@@ -41,10 +41,23 @@ jobs:
           npm start -- -p 3100 > /tmp/hifz.log 2>&1 &
           for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:3100 && break; sleep 1; done
           node scripts/smoke.mjs http://localhost:3100 "$RUNNER_TEMP/captures" || (tail -50 /tmp/hifz.log; exit 1)
+      # Comptes : le même parcours avec un faux serveur Supabase émulé dans le navigateur.
+      - name: Test des comptes (faux Supabase)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://fake.supabase.test
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+        run: |
+          pkill -f "next start" || true
+          npm run build
+          npm start -- -p 3101 > /tmp/hifz-auth.log 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:3101 && break; sleep 1; done
+          node scripts/smoke-auth.mjs http://localhost:3101 "$RUNNER_TEMP/captures-auth" || (tail -50 /tmp/hifz-auth.log; exit 1)
       - name: Captures d'écran
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hifz-captures
-          path: ${{ runner.temp }}/captures
+          path: |
+            ${{ runner.temp }}/captures
+            ${{ runner.temp }}/captures-auth
           if-no-files-found: ignore

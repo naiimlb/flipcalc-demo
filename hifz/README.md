@@ -3,7 +3,9 @@
 Application web de **mémorisation du Coran** (hifz), pensée pour l'iPhone et installable sur
 l'écran d'accueil (PWA). Chaque verset suit une **répétition espacée** : l'app propose chaque
 jour les versets à réviser et quelques nouveaux versets, que l'on récite de mémoire avant de
-s'auto-évaluer. Tout reste sur l'appareil : pas de compte, pas de serveur, pas de publicité.
+s'auto-évaluer. Chaque utilisateur a son **espace personnel** (compte e-mail + mot de passe) : sa
+progression et son historique sont enregistrés sur son compte et retrouvés sur tous ses appareils.
+Pas de publicité.
 
 ## Fonctionnalités
 
@@ -35,13 +37,22 @@ s'auto-évaluer. Tout reste sur l'appareil : pas de compte, pas de serveur, pas 
   - nouveaux versets par jour ;
   - cache audio ;
   - **export et import JSON**.
+- **Compte** : inscription et connexion par e-mail et mot de passe, « mot de passe oublié »,
+  déconnexion. Chaque compte a ses propres données, y compris sur un appareil partagé.
+- **Synchronisation** : l'app reste utilisable hors ligne. Les modifications sont gardées sur
+  l'appareil puis envoyées au retour du réseau, et les autres appareils les récupèrent.
+  Quand une même fiche est modifiée sur deux appareils, la modification la plus récente gagne ;
+  le journal des révisions est toujours conservé en entier.
+- **Reprise** : si l'appareil contenait déjà de la progression d'avant les comptes, l'app
+  propose, à la première connexion, de la rattacher au compte.
 - **Hors ligne** : l'app et les sourates déjà chargées fonctionnent sans réseau. Un bandeau
   discret l'indique, et un message clair s'affiche si un audio n'a pas encore été téléchargé.
 
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind CSS 4 · Dexie 4
-(IndexedDB) · Zod 4 · Vitest · Playwright (test de fumée). Service worker écrit à la main
+(IndexedDB, copie locale) · Supabase (comptes et synchronisation) · Zod 4 · Vitest · Playwright
+(tests de bout en bout). Service worker écrit à la main
 (`public/sw.js`), sans plugin. Polices auto-hébergées via `next/font`.
 
 ## Lancer en local
@@ -53,6 +64,10 @@ cd hifz
 npm ci
 npm run dev          # http://localhost:3000
 ```
+
+Sans configuration, l'app fonctionne en **mode local** (aucun compte, données sur l'appareil).
+Pour activer les comptes, copiez `.env.example` en `.env.local` et renseignez les deux variables
+(voir « Comptes et synchronisation »).
 
 Le service worker n'est actif qu'en production : `npm run build && npm start`.
 
@@ -70,19 +85,23 @@ demandent cependant HTTPS : utilisez pour cela le déploiement Vercel.
 | `npm run lint` | ESLint (règles Next.js, React, TypeScript) |
 | `npm test` | Tests unitaires Vitest |
 | `npm run check` | Les trois précédents |
-| `npm run smoke -- http://localhost:3100` | Parcours complet dans Chromium au format iPhone (serveur lancé au préalable) |
+| `npm run smoke -- http://localhost:3100` | Parcours complet dans Chromium au format iPhone, mode local (serveur lancé au préalable) |
+| `npm run smoke:auth -- http://localhost:3101` | Parcours des comptes contre un faux serveur Supabase (build avec `NEXT_PUBLIC_SUPABASE_URL=https://fake.supabase.test`) |
 | `npm run data:fetch` | Récupère à nouveau le texte et la liste des récitateurs |
 | `npm run icons` | Régénère les icônes (Playwright) |
 
 ## Tests
 
-- **Unitaires** (`tests/`, 73 tests) :
+- **Unitaires** (`tests/`, 104 tests) :
   - algorithme de répétition espacée : bonne réponse, hésitation, échec, retards, révision
     en avance, même jour, plancher et plafond, session du jour ;
   - dates (mois, années bissextiles, heure d'été) et statistiques ;
   - stockage IndexedDB (`fake-indexeddb`), export et import ;
   - intégrité des 114 fichiers coraniques (empreintes SHA-256, numérotation, basmala) ;
-  - chargement réseau (hors ligne, HTTP, données altérées).
+  - chargement réseau (hors ligne, HTTP, données altérées) ;
+  - synchronisation avec un faux serveur : deux appareils, conflits, suppressions, échec réseau,
+    lignes distantes invalides, import, migration de l'ancienne base ;
+  - messages d'erreur d'authentification en français et pages protégées.
 - **Test de fumée** (`scripts/smoke.mjs`) :
   - programme, session complète, suivi ;
   - thème sombre, export puis import ;
@@ -91,14 +110,66 @@ demandent cependant HTTPS : utilisez pour cela le déploiement Vercel.
   Il enregistre des captures dans `.smoke/`. L'audio EveryAyah y est bloqué pour que le test
   ne dépende d'aucun service extérieur.
 
-La CI GitHub (`.github/workflows/hifz.yml`) lance typecheck, lint, tests, build et test de fumée.
+- **Test des comptes** (`scripts/smoke-auth.mjs`) : le navigateur parle à un faux serveur
+  Supabase (authentification et API de données avec isolation par utilisateur), sans aucun appel
+  réseau réel :
+  - accès protégé, mauvais mot de passe, inscription ;
+  - synchronisation vers le serveur et second appareil ;
+  - modification hors ligne puis rattrapage ;
+  - déconnexion, isolation entre deux comptes sur un même appareil ;
+  - reprise des données d'une ancienne base.
+
+La CI GitHub (`.github/workflows/hifz.yml`) lance typecheck, lint, tests, build et les deux tests de fumée.
 Les captures y sont jointes comme artefact.
+
+## Comptes et synchronisation
+
+Les données de chaque utilisateur sont dans Supabase (Postgres) et copiées dans IndexedDB :
+l'app lit et écrit toujours en local, puis synchronise en arrière-plan.
+
+| Variable | Rôle |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clé publique (« publishable »). Elle peut être publique : l'accès aux données est protégé par la sécurité par ligne de la base. |
+
+Sans ces variables, l'app fonctionne en mode local.
+
+**Base de données** : `supabase/migrations/…_hifz_user_data.sql` crée quatre tables préfixées
+`hifz_` (programmes, fiches, révisions, réglages). Chacune a la sécurité par ligne activée : un
+utilisateur ne peut lire ni modifier que ses propres lignes, et le rôle anonyme n'a aucun
+accès. Les tables peuvent cohabiter avec d'autres apps dans le même projet Supabase.
+
+**À configurer dans le tableau de bord Supabase** (Authentication → URL Configuration) pour que
+les liens des e-mails ramènent vers Hifz :
+
+1. **Redirect URLs** : ajouter l'adresse de l'app suivie de `/**`, par exemple
+   `https://hifz-eta.vercel.app/**`.
+2. Vérifier que **Confirm email** correspond à ce que vous voulez : activé, l'inscription envoie
+   un e-mail de confirmation ; désactivé, l'utilisateur est connecté tout de suite.
+
+Si le projet Supabase est partagé avec une autre app, ses utilisateurs, ses e-mails et ses
+règles d'inscription sont communs.
+
+Fonctionnement de la synchronisation (`src/lib/sync/`) :
+
+- chaque modification locale est inscrite dans une file d'envoi (`outbox`) ;
+- à chaque passe : lecture des changements du serveur (curseur par table, avec chevauchement
+  de 5 s), puis envoi de la file ; rien n'est perdu si le réseau coupe en cours de route ;
+- une fiche porte la date de sa dernière modification (horloge de l'appareil) : la plus récente
+  gagne, une suppression locale plus récente que la version du serveur reste supprimée ;
+- les lignes du serveur sont validées avant d'être appliquées (une ligne invalide est ignorée) ;
+- le journal des révisions est ajouté sans jamais être écrasé.
+
+Limite connue : deux appareils qui modifient *la même fiche* dans la même seconde, hors ligne,
+sont départagés par leur horloge ; si l'heure d'un appareil est très décalée, sa modification
+peut l'emporter à tort.
 
 ## Déployer sur Vercel
 
 1. Sur [vercel.com/new](https://vercel.com/new), importez le dépôt GitHub.
 2. **Root Directory** : `hifz`. Next.js est détecté automatiquement.
-3. Aucune variable d'environnement n'est nécessaire. Déployez.
+3. Ajoutez les deux variables `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   (sans elles, l'app tourne en mode local, sans compte), puis déployez.
 
 En ligne de commande : `cd hifz && npx vercel`, puis `npx vercel --prod`.
 
@@ -114,8 +185,9 @@ la disponibilité d'AlQuran Cloud.
    texte des sourates choisies est enregistré automatiquement. Dans **Programme**, touchez
    « Garder l'audio hors ligne » pour pouvoir écouter sans réseau.
 
-Les données sont stockées dans l'app installée, séparément de Safari. Pensez à faire
-**Réglages → Exporter** de temps en temps : la feuille de partage d'iOS propose
+Les données sont enregistrées sur votre compte et copiées dans l'app installée, séparément de
+Safari : connectez-vous une fois dans l'app installée. Vous pouvez aussi faire
+**Réglages → Exporter** pour une sauvegarde de plus : la feuille de partage d'iOS propose
 « Enregistrer dans Fichiers ».
 
 ## Architecture
@@ -133,11 +205,14 @@ hifz/
       hifz/                   écrans et composants du hifz
       assistant/, quotidien/  modules prévus (déclaration seulement)
     components/               interface générique (boutons, ArabicText, lecteur audio, réglages)
+      auth/, providers/       connexion, garde d'accès, base du compte, reprise des données
     lib/
       srs/                    répétition espacée (pur, sans dépendance au navigateur)
       stats/                  série, régularité, progression (pur)
       quran/                  catalogue, recherche, URL audio, chargement vérifié
-      storage/                Dexie : schéma, opérations, export/import, réglages
+      storage/                Dexie : schéma, opérations, file d'envoi, export/import, réglages
+      sync/                   moteur de synchronisation (indépendant du serveur), contrôleur, adaptateur Supabase
+      auth/                   configuration, client Supabase, messages d'erreur en français
       audio/                  cache audio hors ligne et lecteur (boucle, vitesse)
   tests/
 ```
@@ -218,5 +293,8 @@ Règles complémentaires :
 
 ## Confidentialité
 
-Aucune donnée ne quitte l'appareil. Les seules requêtes externes servent à télécharger
-l'audio depuis EveryAyah.
+- Avec un compte : votre adresse e-mail, votre programme, vos fiches de révision, votre
+  historique et vos réglages sont enregistrés dans Supabase, accessibles uniquement avec votre
+  compte. Ni publicité, ni suivi.
+- Sans compte (mode local) : aucune donnée ne quitte l'appareil.
+- Dans tous les cas, l'audio est téléchargé depuis EveryAyah.

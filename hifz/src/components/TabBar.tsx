@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/icons";
+import { useAuth } from "@/components/providers/auth-context";
+import { isAuthPath } from "@/lib/auth/config";
 import { activeTab, tabs } from "@/modules/registry";
 
 /** Chemins en plein écran (mode récitation) : pas de barre d'onglets. */
@@ -10,6 +12,9 @@ const HIDDEN_ON = ["/hifz/session"];
 
 export function TabBar() {
   const pathname = usePathname();
+  const { state } = useAuth();
+  // Pas de barre d'onglets pendant l'identification ni avant de connaître la session.
+  if (state.status === "loading" || state.status === "signedOut" || isAuthPath(pathname)) return null;
   if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
   const current = activeTab(pathname);
 

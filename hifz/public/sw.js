@@ -11,7 +11,7 @@ const STATIC = "hifz-static-v1";
 const DATA = "hifz-data-v1";
 const KEEP = [PAGES, STATIC, DATA, "hifz-audio-v1"];
 
-const SHELL = ["/", "/hifz/programme", "/hifz/programme/ajouter", "/hifz/session", "/hifz/suivi", "/reglages", "/sources"];
+const SHELL = ["/", "/hifz/programme", "/hifz/programme/ajouter", "/hifz/session", "/hifz/suivi", "/reglages", "/sources", "/connexion", "/mot-de-passe-oublie", "/reinitialiser"];
 const ASSETS = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/icons/favicon-32.png"];
 
 /** Ressources /_next/static référencées par une page HTML. */

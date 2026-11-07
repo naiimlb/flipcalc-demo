@@ -1,7 +1,8 @@
 import type { SurahCache } from "@/lib/quran/loader";
 import { getSurahMeta, isValidRange } from "@/lib/quran/catalog";
-import { createCard, schedule, toDayKey, type Grade, type SrsCard } from "@/lib/srs";
-import type { HifzDB, Program, ReviewLog } from "./db";
+import { createCard, schedule, toDayKey, type Grade } from "@/lib/srs";
+import type { HifzDB, Program, ReviewLog, StoredCard } from "./db";
+import { enqueue } from "./outbox";
 import { DEFAULT_SETTINGS, normalizeSettings, type Settings } from "./settings";
 
 export async function getSettings(db: HifzDB): Promise<Settings> {
@@ -9,10 +10,12 @@ export async function getSettings(db: HifzDB): Promise<Settings> {
   return row ? normalizeSettings(row) : DEFAULT_SETTINGS;
 }
 
-export async function updateSettings(db: HifzDB, patch: Partial<Settings>): Promise<Settings> {
-  return db.transaction("rw", db.settings, async () => {
+export async function updateSettings(db: HifzDB, patch: Partial<Settings>, now: Date = new Date()): Promise<Settings> {
+  return db.transaction("rw", db.settings, db.outbox, async () => {
     const next = normalizeSettings({ ...(await getSettings(db)), ...patch });
-    await db.settings.put({ id: "app", ...next });
+    const at = now.toISOString();
+    await db.settings.put({ id: "app", ...next, updatedAt: at });
+    await enqueue(db, "settings", "app", "put", at);
     return next;
   });
 }
@@ -32,7 +35,8 @@ export async function addProgram(
       meta ? `Plage invalide : la sourate ${meta.transliteration} compte ${meta.ayahCount} versets.` : "Sourate inconnue.",
     );
   }
-  return db.transaction("rw", db.programs, db.cards, async () => {
+  return db.transaction("rw", db.programs, db.cards, db.outbox, async () => {
+    const at = now.toISOString();
     const last = await db.programs.orderBy("seq").last();
     const program: Program = {
       id: crypto.randomUUID(),
@@ -40,18 +44,21 @@ export async function addProgram(
       from,
       to,
       seq: (last?.seq ?? 0) + 1,
-      createdAt: now.toISOString(),
+      createdAt: at,
+      updatedAt: at,
     };
     await db.programs.add(program);
+    await enqueue(db, "programs", program.id, "put", at);
     const keys = Array.from({ length: to - from + 1 }, (_, i) => `${surah}:${from + i}`);
     const existing = new Set((await db.cards.bulkGet(keys)).filter(Boolean).map((c) => c!.key));
-    const fresh = keys
+    const fresh: StoredCard[] = keys
       .filter((k) => !existing.has(k))
       .map((k) => {
         const ayah = Number(k.split(":")[1]);
-        return createCard(surah, ayah, program.seq * 1000 + ayah);
+        return { ...createCard(surah, ayah, program.seq * 1000 + ayah), updatedAt: at };
       });
     await db.cards.bulkAdd(fresh);
+    for (const c of fresh) await enqueue(db, "cards", c.key, "put", at);
     return { program, added: fresh.length };
   });
 }
@@ -60,31 +67,37 @@ export async function addProgram(
  * Retire un programme. Les versets jamais commencés (et non couverts par un autre programme)
  * sont supprimés ; ceux déjà appris restent en révision pour ne pas être oubliés.
  */
-export async function removeProgram(db: HifzDB, id: string): Promise<{ removedCards: number }> {
-  return db.transaction("rw", db.programs, db.cards, async () => {
+export async function removeProgram(db: HifzDB, id: string, now: Date = new Date()): Promise<{ removedCards: number }> {
+  return db.transaction("rw", db.programs, db.cards, db.outbox, async () => {
     const program = await db.programs.get(id);
     if (!program) return { removedCards: 0 };
+    const at = now.toISOString();
     await db.programs.delete(id);
+    await enqueue(db, "programs", id, "delete", at);
     const others = await db.programs.where("id").notEqual(id).toArray();
     const covered = (ayah: number) => others.some((p) => p.surah === program.surah && ayah >= p.from && ayah <= p.to);
     const keys: string[] = [];
     for (let a = program.from; a <= program.to; a++) if (!covered(a)) keys.push(`${program.surah}:${a}`);
-    const toRemove = (await db.cards.bulkGet(keys)).filter((c): c is SrsCard => !!c && c.state === "new").map((c) => c.key);
+    const toRemove = (await db.cards.bulkGet(keys)).filter((c): c is StoredCard => !!c && c.state === "new").map((c) => c.key);
     await db.cards.bulkDelete(toRemove);
+    for (const key of toRemove) await enqueue(db, "cards", key, "delete", at);
     return { removedCards: toRemove.length };
   });
 }
 
 /** Enregistre une auto-évaluation : met à jour la fiche et ajoute une ligne au journal. */
-export async function recordGrade(db: HifzDB, key: string, grade: Grade, now: Date = new Date()): Promise<SrsCard> {
+export async function recordGrade(db: HifzDB, key: string, grade: Grade, now: Date = new Date()): Promise<StoredCard> {
   const today = toDayKey(now);
-  return db.transaction("rw", db.cards, db.reviews, async () => {
+  return db.transaction("rw", db.cards, db.reviews, db.outbox, async () => {
     const card = await db.cards.get(key);
     if (!card) throw new Error(`Verset ${key} introuvable dans vos programmes.`);
-    const next = schedule(card, grade, today);
+    const at = now.toISOString();
+    const next: StoredCard = { ...schedule(card, grade, today), updatedAt: at };
     await db.cards.put(next);
-    const log: ReviewLog = { key, day: today, grade, at: now.toISOString() };
+    await enqueue(db, "cards", key, "put", at);
+    const log: ReviewLog = { rid: crypto.randomUUID(), key, day: today, grade, at };
     await db.reviews.add(log);
+    await enqueue(db, "reviews", log.rid, "put", at);
     return next;
   });
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AccountSection } from "@/components/auth/AccountSection";
 import { ArabicText } from "@/components/ArabicText";
 import { Icon } from "@/components/icons";
 import { useSettings } from "@/components/providers/SettingsProvider";
@@ -22,6 +23,8 @@ export function SettingsScreen() {
   return (
     <>
       <PageHeader title="Réglages" />
+
+      <AccountSection />
 
       <SectionTitle>Récitation</SectionTitle>
       <Card className="space-y-5">
