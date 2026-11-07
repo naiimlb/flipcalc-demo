@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Amiri_Quran, Scheherazade_New } from "next/font/google";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { SettingsProvider } from "@/components/providers/SettingsProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorker";
 import { TabBar } from "@/components/TabBar";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
@@ -61,13 +61,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="antialiased">
         <ServiceWorkerRegistration />
-        <SettingsProvider>
+        <AuthProvider>
           <div className="pt-safe mx-auto min-h-dvh max-w-lg px-4 pb-32">
             <OfflineBanner />
             {children}
           </div>
           <TabBar />
-        </SettingsProvider>
+        </AuthProvider>
       </body>
     </html>
   );

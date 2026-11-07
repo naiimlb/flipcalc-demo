@@ -4,14 +4,25 @@ import { createSurahLoader } from "@/lib/quran/loader";
 import { createDb, type HifzDB } from "./db";
 import { surahCache } from "./repository";
 
-let db: HifzDB | null = null;
+let active: HifzDB | null = null;
 let loader: ReturnType<typeof createSurahLoader> | null = null;
 
-/** Base locale du navigateur (créée à la première utilisation, jamais côté serveur). */
+/** Définit la base de la session en cours (une par compte ; `null` à la déconnexion). */
+export function setActiveDb(db: HifzDB | null): void {
+  active = db;
+  loader = null;
+}
+
+/** Base locale de l'utilisateur connecté (ou de l'appareil si les comptes sont désactivés). */
 export function getDb(): HifzDB {
+  if (!active) throw new Error("Stockage local indisponible : aucune session ouverte.");
+  return active;
+}
+
+/** Ouvre la base IndexedDB d'un compte. Échoue si le navigateur bloque le stockage local. */
+export function openDb(name: string, trackChanges: boolean): HifzDB {
   if (typeof indexedDB === "undefined") throw new Error("Stockage local indisponible sur ce navigateur.");
-  db ??= createDb();
-  return db;
+  return createDb(name, { trackChanges });
 }
 
 export function getSurahLoader() {
