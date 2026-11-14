@@ -42,6 +42,31 @@ jobs:
         run: |
           npm start -- -p 3100 > /tmp/forma3d.log 2>&1 &
           node scripts/smoke.mjs http://localhost:3100 || (cat /tmp/forma3d.log; exit 1)
+      # Refonte : parcours Simple de bout en bout + critères mesurés aux 5 tailles (bloquants sur cette branche).
+      - name: Parcours Simple (e2e) et critères aux 5 tailles
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d-refonte'
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1 @axe-core/playwright@4.10.2
+          npx playwright install --with-deps chromium
+          mkdir -p "$RUNNER_TEMP/screens/simple"
+          node scripts/e2e-simple.mjs http://localhost:3100 "$RUNNER_TEMP/screens/simple/e2e"
+          node scripts/simple-captures.mjs http://localhost:3100 "$RUNNER_TEMP/screens/simple/tailles"
+      - name: Accessibilité Lighthouse ≥ 95 (accueil et résultat)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d-refonte'
+        run: |
+          mkdir -p "$RUNNER_TEMP/screens/simple"
+          for page in "" "apercu-refonte?ecran=resultat"; do
+            name=$([ -z "$page" ] && echo accueil || echo resultat)
+            npx --yes lighthouse@12.8.2 "http://localhost:3100/$page" --only-categories=accessibility --form-factor=mobile \
+              --chrome-flags="--headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader" \
+              --output=json --output-path="$RUNNER_TEMP/screens/simple/lighthouse-$name.json" --quiet
+            node -e '
+              const r = require(process.env.RUNNER_TEMP + "/screens/simple/lighthouse-'"$name"'.json");
+              const score = Math.round(r.categories.accessibility.score * 100);
+              console.log("Accessibilité '"$name"' : " + score);
+              if (score < 95) process.exit(1);
+            '
+          done
       # Captures d'écran (mode démo) publiées sur la branche claude/forma3d-screens.
       - name: Captures d'écran
         if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1' || github.ref == 'refs/heads/claude/forma3d-refonte')
