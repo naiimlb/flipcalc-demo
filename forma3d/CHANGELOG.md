@@ -1,5 +1,18 @@
 # Journal des modifications
 
+## Refonte v2 — phase 2 : fiabilité (branche `claude/forma3d-refonte`, non fusionnée)
+
+### Ajouté
+- Vérifications automatiques après génération et niveau de confiance affiché.
+- Une seule tentative de correction automatique pour les défauts bloquants (pièce flottante, paroi critique).
+- Paramètres nommés (curseurs en langage courant, sans appel à l'IA) ; exemple sur le support de téléphone.
+- Refus des pièces critiques (avant tout appel, sans crédit consommé) et avertissements pour les usages sensibles.
+- Comparatif de modèles prêt (`scripts/compare-models.ts`, job CI manuel avec plafond de dépense).
+
+### En attente
+- Comparatif réel : nécessite le secret GitHub `ANTHROPIC_API_KEY` (budget validé ≈ 2 à 3 $).
+- Choix du modèle et de l'effort, objectif « moins de 30 s dans 80 % des cas » : après le comparatif.
+
 ## Refonte v2 — phase 1 : simplicité d'usage (branche `claude/forma3d-refonte`, non fusionnée)
 
 ### Ajouté

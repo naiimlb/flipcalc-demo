@@ -26,7 +26,8 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | **fait** (voir « Refonte — phase 2 ») |
 | Refonte 3 | Outils de création + génération Meshy (coûts affichés) | **fait** (voir « Refonte — phase 3 ») |
 | Refonte 4 | Finitions, écran de génération Meshy, PWA, tests Safari, performance de l'accueil | **fait** (voir « Refonte — phase 4 ») |
-| **Refonte v2 · 1** | Parcours Simple (accueil = l'outil), thème clair, mode avancé | **fait, en validation** (voir « Refonte v2 — phase 1 ») |
+| **Refonte v2 · 1** | Parcours Simple (accueil = l'outil), thème clair, mode avancé | **fait** (voir « Refonte v2 — phase 1 ») |
+| **Refonte v2 · 2** | Vérifications automatiques, paramètres nommés, pièces critiques, comparatif de modèles | **en cours** (voir « Refonte v2 — phase 2 ») |
 
 Meshy est le service de génération 3D détaillée (voir « Refonte — phase 3 ») : il reste masqué tant que `MESHY_API_KEY`
 et la migration 7 ne sont pas en place, et chaque action affiche son coût en crédits avant confirmation.
@@ -499,6 +500,21 @@ STL vérifié → mode avancé, cas absurde, erreur, annulation, rotation tactil
 Limites connues : les curseurs étirent la pièce (mise à l'échelle par axe), ils ne sont pas encore enregistrés avec le
 projet ; les textes du parcours Simple sont en français (anglais et arabe : à venir) ; les vrais paramètres nommés
 (« diamètre du trou »…) demandent que l'IA les fournisse (phase 2).
+
+## Refonte v2 — phase 2 : fiabilité
+
+- **Vérifications automatiques** (`src/lib/fabrication/verify.ts`) après chaque génération : pièces fermées, pièces
+  flottantes, parois ≥ 1,2 mm, cotes demandées retrouvées dans la pièce, dimensions annoncées = modèle, volume de
+  l'imprimante. Niveau de confiance (élevée / moyenne / faible) affiché sur le résultat, détail sous « Voir le détail ».
+- **Une seule correction** : une pièce flottante ou une paroi critique déclenche UNE seconde génération, gardée
+  seulement si elle est meilleure (jamais plus de 2 appels ; cela rallonge l'attente dans ce cas).
+- **Paramètres nommés** (`parametres` dans le JSON, `src/lib/design/parameters.ts`) : 0 à 6 réglages en langage courant
+  (« Épaisseur de la semelle »…) appliqués localement, sans appel à l'IA ; les vérifications suivent en direct.
+- **Pièces critiques** (`src/lib/design/safety.ts`) : refus avant génération (escalade, protection, freinage/direction,
+  levage), avertissement fort pour les usages sensibles (porte une personne, gaz/électricité, médical, enfant).
+- **Comparatif de modèles** (`scripts/compare-models.ts`, job CI « comparatif-modeles » lancé à la main) : 10 demandes ×
+  Opus / Sonnet / Haiku 5.5, plafond de 3 $. Il attend le secret GitHub `ANTHROPIC_API_KEY` ; aucun changement de modèle
+  ou d'effort ne sera fait avant d'avoir montré les résultats.
 
 ## Mon espace et administration
 
