@@ -1,0 +1,1262 @@
+{
+  "schema": 1,
+  "fetchedAt": "2026-11-07T16:49:15.248Z",
+  "sources": {
+    "text": {
+      "provider": "AlQuran Cloud",
+      "edition": "quran-uthmani",
+      "url": "https://api.alquran.cloud/v1/quran/quran-uthmani",
+      "origin": "Tanzil Project (tanzil.net)"
+    },
+    "translation": {
+      "provider": "AlQuran Cloud",
+      "edition": "fr.hamidullah",
+      "url": "https://api.alquran.cloud/v1/quran/fr.hamidullah",
+      "author": "Muhammad Hamidullah"
+    },
+    "audio": {
+      "provider": "EveryAyah",
+      "url": "https://everyayah.com/data/recitations.js"
+    }
+  },
+  "totals": {
+    "surahs": 114,
+    "ayahs": 6236
+  },
+  "basmala": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+  "defaultReciter": "Alafasy_128kbps",
+  "reciters": [
+    {
+      "id": "Alafasy_128kbps",
+      "name": "Mishary Rashid Alafasy",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Husary_128kbps",
+      "name": "Mahmoud Khalil Al-Husary",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Husary_Muallim_128kbps",
+      "name": "Al-Husary (mode enseignement)",
+      "style": "enseignement",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Minshawy_Murattal_128kbps",
+      "name": "Mohamed Siddiq Al-Minshawi",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Abdul_Basit_Murattal_192kbps",
+      "name": "Abdul Basit Abdul Samad",
+      "style": "murattal",
+      "bitrate": "192kbps"
+    },
+    {
+      "id": "Abdurrahmaan_As-Sudais_192kbps",
+      "name": "Abdur-Rahman As-Sudais",
+      "style": "murattal",
+      "bitrate": "192kbps"
+    },
+    {
+      "id": "Saood_ash-Shuraym_128kbps",
+      "name": "Saoud Ash-Shuraim",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "MaherAlMuaiqly128kbps",
+      "name": "Maher Al-Muaiqly",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Abu_Bakr_Ash-Shaatree_128kbps",
+      "name": "Abu Bakr Ash-Shatri",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Muhammad_Ayyoub_128kbps",
+      "name": "Muhammad Ayyub",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Hudhaify_128kbps",
+      "name": "Ali Al-Hudhaify",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Yasser_Ad-Dussary_128kbps",
+      "name": "Yasser Ad-Dossari",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Abdullah_Basfar_192kbps",
+      "name": "Abdullah Basfar",
+      "style": "murattal",
+      "bitrate": "192kbps"
+    },
+    {
+      "id": "Muhammad_Jibreel_128kbps",
+      "name": "Muhammad Jibreel",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    },
+    {
+      "id": "Nasser_Alqatami_128kbps",
+      "name": "Nasser Al-Qatami",
+      "style": "murattal",
+      "bitrate": "128kbps"
+    }
+  ],
+  "surahs": [
+    {
+      "number": 1,
+      "nameAr": "سُورَةُ ٱلْفَاتِحَةِ",
+      "transliteration": "Al-Faatiha",
+      "revelation": "meccan",
+      "ayahCount": 7,
+      "firstAyah": 1,
+      "sha256": "8b0041d48a9f1861f0efaadaba94c4ab56e43c820a90ad5f9e3edb151f6386f6",
+      "bytes": 1330
+    },
+    {
+      "number": 2,
+      "nameAr": "سُورَةُ البَقَرَةِ",
+      "transliteration": "Al-Baqara",
+      "revelation": "medinan",
+      "ayahCount": 286,
+      "firstAyah": 8,
+      "sha256": "282359d920c7f112462c7647fe95f6945318ed8bd68c5f4afe567a762658b7cf",
+      "bytes": 192003
+    },
+    {
+      "number": 3,
+      "nameAr": "سُورَةُ آلِ عِمۡرَانَ",
+      "transliteration": "Aal-i-Imraan",
+      "revelation": "medinan",
+      "ayahCount": 200,
+      "firstAyah": 294,
+      "sha256": "4476edf28cdcce470c63ce6b8bc0a6c2bf25fd70c1e76fdd3173af0f830346e5",
+      "bytes": 111231
+    },
+    {
+      "number": 4,
+      "nameAr": "سُورَةُ النِّسَاءِ",
+      "transliteration": "An-Nisaa",
+      "revelation": "medinan",
+      "ayahCount": 176,
+      "firstAyah": 494,
+      "sha256": "53bb8790f963f8cfae88fc20b72193ca0e8fa1aa069d9a895710cc4b2d43ae6b",
+      "bytes": 118390
+    },
+    {
+      "number": 5,
+      "nameAr": "سُورَةُ المَائـِدَةِ",
+      "transliteration": "Al-Maaida",
+      "revelation": "medinan",
+      "ayahCount": 120,
+      "firstAyah": 670,
+      "sha256": "1957aea7c0bea24e8db368699551b493cf077b51c968513c828a8275ac6f5b38",
+      "bytes": 87737
+    },
+    {
+      "number": 6,
+      "nameAr": "سُورَةُ الأَنۡعَامِ",
+      "transliteration": "Al-An'aam",
+      "revelation": "meccan",
+      "ayahCount": 165,
+      "firstAyah": 790,
+      "sha256": "eb94ef6af7b86dd4075ae07dca199cfd66783e4153d5291f06dd294a45926016",
+      "bytes": 96788
+    },
+    {
+      "number": 7,
+      "nameAr": "سُورَةُ الأَعۡرَافِ",
+      "transliteration": "Al-A'raaf",
+      "revelation": "meccan",
+      "ayahCount": 206,
+      "firstAyah": 955,
+      "sha256": "6d96ae159592a2f084df9553828e6dae3c9946451767ed932aebc57f56bb933c",
+      "bytes": 108998
+    },
+    {
+      "number": 8,
+      "nameAr": "سُورَةُ الأَنفَالِ",
+      "transliteration": "Al-Anfaal",
+      "revelation": "medinan",
+      "ayahCount": 75,
+      "firstAyah": 1161,
+      "sha256": "67d4841cefb64190b1d8acb194c1d7bf271457841ebab4f57a0aa4668b79e4fc",
+      "bytes": 40388
+    },
+    {
+      "number": 9,
+      "nameAr": "سُورَةُ التَّوۡبَةِ",
+      "transliteration": "At-Tawba",
+      "revelation": "medinan",
+      "ayahCount": 129,
+      "firstAyah": 1236,
+      "sha256": "e4b110ec8e5c0a01ea9f40bbb09b8c30f729517ff4c3efb1cb406f623f6f0263",
+      "bytes": 80858
+    },
+    {
+      "number": 10,
+      "nameAr": "سُورَةُ يُونُسَ",
+      "transliteration": "Yunus",
+      "revelation": "meccan",
+      "ayahCount": 109,
+      "firstAyah": 1365,
+      "sha256": "c764df3a001758c034a568f91d475fc1a2517332bf3afa0d840caceb6898a460",
+      "bytes": 57801
+    },
+    {
+      "number": 11,
+      "nameAr": "سُورَةُ هُودٍ",
+      "transliteration": "Hud",
+      "revelation": "meccan",
+      "ayahCount": 123,
+      "firstAyah": 1474,
+      "sha256": "1fdcc1ada4b01162c2209219cacc362301333c3347e8300dd35d61f6c0103568",
+      "bytes": 61077
+    },
+    {
+      "number": 12,
+      "nameAr": "سُورَةُ يُوسُفَ",
+      "transliteration": "Yusuf",
+      "revelation": "meccan",
+      "ayahCount": 111,
+      "firstAyah": 1597,
+      "sha256": "df63c7bf243ce91efc27f7f607d0426dbab4381798fd5e823e0552f97261999e",
+      "bytes": 56788
+    },
+    {
+      "number": 13,
+      "nameAr": "سُورَةُ الرَّعۡدِ",
+      "transliteration": "Ar-Ra'd",
+      "revelation": "medinan",
+      "ayahCount": 43,
+      "firstAyah": 1708,
+      "sha256": "2fc89a8eb7aaf00b2554debd5a05747ad9de8f4d2abc6dbe0e25272a1cbaf1a4",
+      "bytes": 27067
+    },
+    {
+      "number": 14,
+      "nameAr": "سُورَةُ إِبۡرَاهِيمَ",
+      "transliteration": "Ibrahim",
+      "revelation": "meccan",
+      "ayahCount": 52,
+      "firstAyah": 1751,
+      "sha256": "cc18d6ce7d599da647dc101ce98bdc10ab0169117fc296bd19b8e5eb6a43a347",
+      "bytes": 27076
+    },
+    {
+      "number": 15,
+      "nameAr": "سُورَةُ الحِجۡرِ",
+      "transliteration": "Al-Hijr",
+      "revelation": "meccan",
+      "ayahCount": 99,
+      "firstAyah": 1803,
+      "sha256": "0f12a0924d2972f50df9786a7beaf60114b90dd522e9c6e8bbe95e7b13c84607",
+      "bytes": 25112
+    },
+    {
+      "number": 16,
+      "nameAr": "سُورَةُ النَّحۡلِ",
+      "transliteration": "An-Nahl",
+      "revelation": "meccan",
+      "ayahCount": 128,
+      "firstAyah": 1902,
+      "sha256": "a78f6b4342ddf1642675de3617b50fd3f3f53c0e249c9ae6d5391e4dee67250d",
+      "bytes": 60752
+    },
+    {
+      "number": 17,
+      "nameAr": "سُورَةُ الإِسۡرَاءِ",
+      "transliteration": "Al-Israa",
+      "revelation": "meccan",
+      "ayahCount": 111,
+      "firstAyah": 2030,
+      "sha256": "f33f0b5a483052479d7a9a251c36b85ced8272c422bea7845a9b713e68840e94",
+      "bytes": 51801
+    },
+    {
+      "number": 18,
+      "nameAr": "سُورَةُ الكَهۡفِ",
+      "transliteration": "Al-Kahf",
+      "revelation": "meccan",
+      "ayahCount": 110,
+      "firstAyah": 2141,
+      "sha256": "16547f39fca32e5eef0be538ca9ac588bddaec49a4b2dc815460ac4f9b82bd22",
+      "bytes": 51922
+    },
+    {
+      "number": 19,
+      "nameAr": "سُورَةُ مَرۡيَمَ",
+      "transliteration": "Maryam",
+      "revelation": "meccan",
+      "ayahCount": 98,
+      "firstAyah": 2251,
+      "sha256": "0207e3a1bca35823723151ba29e158b7f2a6418d3ac2aee2fa16db69d67cf45b",
+      "bytes": 32937
+    },
+    {
+      "number": 20,
+      "nameAr": "سُورَةُ طه",
+      "transliteration": "Taa-Haa",
+      "revelation": "meccan",
+      "ayahCount": 135,
+      "firstAyah": 2349,
+      "sha256": "51911bfb3141184c886eaaa6ab41ac8238612ffbecc84b280e7b14e5ae6cf182",
+      "bytes": 45580
+    },
+    {
+      "number": 21,
+      "nameAr": "سُورَةُ الأَنبِيَاءِ",
+      "transliteration": "Al-Anbiyaa",
+      "revelation": "meccan",
+      "ayahCount": 112,
+      "firstAyah": 2484,
+      "sha256": "b7d544613365c304f6263c3949e6697b791f7d4a31f878d02d49e4a535dfa26f",
+      "bytes": 40810
+    },
+    {
+      "number": 22,
+      "nameAr": "سُورَةُ الحَجِّ",
+      "transliteration": "Al-Hajj",
+      "revelation": "medinan",
+      "ayahCount": 78,
+      "firstAyah": 2596,
+      "sha256": "140e5577857ab027328be9368439300d46c42a01f618c85c9962090c402e6b4f",
+      "bytes": 40391
+    },
+    {
+      "number": 23,
+      "nameAr": "سُورَةُ المُؤۡمِنُونَ",
+      "transliteration": "Al-Muminoon",
+      "revelation": "meccan",
+      "ayahCount": 118,
+      "firstAyah": 2674,
+      "sha256": "ef0b2f75951bd8958ff2e2a4294e5a5df09122d15cb593acc36cfb9a45b55126",
+      "bytes": 36832
+    },
+    {
+      "number": 24,
+      "nameAr": "سُورَةُ النُّورِ",
+      "transliteration": "An-Noor",
+      "revelation": "medinan",
+      "ayahCount": 64,
+      "firstAyah": 2792,
+      "sha256": "694523651b21985d2f8f79fe8cd4ad03b26f50d8ba7fca6aad7313806a6eed3f",
+      "bytes": 41787
+    },
+    {
+      "number": 25,
+      "nameAr": "سُورَةُ الفُرۡقَانِ",
+      "transliteration": "Al-Furqaan",
+      "revelation": "meccan",
+      "ayahCount": 77,
+      "firstAyah": 2856,
+      "sha256": "1cbc55049771237271add899b3fb4967e3365a4d9af55f0130f72e772966e092",
+      "bytes": 30587
+    },
+    {
+      "number": 26,
+      "nameAr": "سُورَةُ الشُّعَرَاءِ",
+      "transliteration": "Ash-Shu'araa",
+      "revelation": "meccan",
+      "ayahCount": 227,
+      "firstAyah": 2933,
+      "sha256": "cc800268d50144fb2512771b11f50eee22f6413138bdb0926dd448d5d1890a2a",
+      "bytes": 50512
+    },
+    {
+      "number": 27,
+      "nameAr": "سُورَةُ النَّمۡلِ",
+      "transliteration": "An-Naml",
+      "revelation": "meccan",
+      "ayahCount": 93,
+      "firstAyah": 3160,
+      "sha256": "15684fe38abb453445bf89ee4b1b5e8bc43c7ad03870f83cb2e4b43e2f588a8b",
+      "bytes": 37997
+    },
+    {
+      "number": 28,
+      "nameAr": "سُورَةُ القَصَصِ",
+      "transliteration": "Al-Qasas",
+      "revelation": "meccan",
+      "ayahCount": 88,
+      "firstAyah": 3253,
+      "sha256": "f60ba0b1c8bf47d30608ba15c495583edc72d886f53458946a5ad9501f4a97c4",
+      "bytes": 45099
+    },
+    {
+      "number": 29,
+      "nameAr": "سُورَةُ العَنكَبُوتِ",
+      "transliteration": "Al-Ankaboot",
+      "revelation": "meccan",
+      "ayahCount": 69,
+      "firstAyah": 3341,
+      "sha256": "c3a5fa2ba35535a6bb5310c389aceaa669eb36881992a2f64a5476b82c7d4366",
+      "bytes": 32312
+    },
+    {
+      "number": 30,
+      "nameAr": "سُورَةُ الرُّومِ",
+      "transliteration": "Ar-Room",
+      "revelation": "meccan",
+      "ayahCount": 60,
+      "firstAyah": 3410,
+      "sha256": "36d677c407d05b22f5fc8405063713decb33a47da8ef958809279418204fbcf8",
+      "bytes": 26742
+    },
+    {
+      "number": 31,
+      "nameAr": "سُورَةُ لُقۡمَانَ",
+      "transliteration": "Luqman",
+      "revelation": "meccan",
+      "ayahCount": 34,
+      "firstAyah": 3470,
+      "sha256": "39d4f39f631f92d19f123e1622463ef2fee248c90d058329a61943007cfa8899",
+      "bytes": 16866
+    },
+    {
+      "number": 32,
+      "nameAr": "سُورَةُ السَّجۡدَةِ",
+      "transliteration": "As-Sajda",
+      "revelation": "meccan",
+      "ayahCount": 30,
+      "firstAyah": 3504,
+      "sha256": "9d4b379bb5e345dd6f690c321a0b83d39c364f46f337644ccf7e0ceed96481ad",
+      "bytes": 12138
+    },
+    {
+      "number": 33,
+      "nameAr": "سُورَةُ الأَحۡزَابِ",
+      "transliteration": "Al-Ahzaab",
+      "revelation": "medinan",
+      "ayahCount": 73,
+      "firstAyah": 3534,
+      "sha256": "35f67cc4849ca1edbdc360eb61ea40ebd187b4323a62c99411503843fd401e89",
+      "bytes": 41974
+    },
+    {
+      "number": 34,
+      "nameAr": "سُورَةُ سَبَإٍ",
+      "transliteration": "Saba",
+      "revelation": "meccan",
+      "ayahCount": 54,
+      "firstAyah": 3607,
+      "sha256": "a922f36450cf6dc1b235c44964c3e8bbf084a2ee996d3fed6be7f23b92ae5418",
+      "bytes": 27741
+    },
+    {
+      "number": 35,
+      "nameAr": "سُورَةُ فَاطِرٍ",
+      "transliteration": "Faatir",
+      "revelation": "meccan",
+      "ayahCount": 45,
+      "firstAyah": 3661,
+      "sha256": "81db26300ee23714df7c18b0e4eca5362b17bc2b966ce7bfda4e86c500ddef88",
+      "bytes": 24414
+    },
+    {
+      "number": 36,
+      "nameAr": "سُورَةُ يسٓ",
+      "transliteration": "Yaseen",
+      "revelation": "meccan",
+      "ayahCount": 83,
+      "firstAyah": 3706,
+      "sha256": "dc2a1ebd9964af3d794d7d59d0227165ff5d7aa93e45cf64ac929a280bb6fb9f",
+      "bytes": 25248
+    },
+    {
+      "number": 37,
+      "nameAr": "سُورَةُ الصَّافَّاتِ",
+      "transliteration": "As-Saaffaat",
+      "revelation": "meccan",
+      "ayahCount": 182,
+      "firstAyah": 3789,
+      "sha256": "8991cddf5f58094aa7881322444bf9ab49ee683cf1c28d7fc7a9fe4e8a0d3136",
+      "bytes": 36091
+    },
+    {
+      "number": 38,
+      "nameAr": "سُورَةُ صٓ",
+      "transliteration": "Saad",
+      "revelation": "meccan",
+      "ayahCount": 88,
+      "firstAyah": 3971,
+      "sha256": "68ea6ddc8d1469626b7b5d5c3d03026b1d68a7ea18198d7373e5d7e677aa989b",
+      "bytes": 25959
+    },
+    {
+      "number": 39,
+      "nameAr": "سُورَةُ الزُّمَرِ",
+      "transliteration": "Az-Zumar",
+      "revelation": "meccan",
+      "ayahCount": 75,
+      "firstAyah": 4059,
+      "sha256": "b9ed679a5b589ad95cf0c96adcae5a68a404705bf2ebed79484c53d56314d4b0",
+      "bytes": 37338
+    },
+    {
+      "number": 40,
+      "nameAr": "سُورَةُ غَافِرٍ",
+      "transliteration": "Ghafir",
+      "revelation": "meccan",
+      "ayahCount": 85,
+      "firstAyah": 4134,
+      "sha256": "bda8c795a5e83da1d8dfff1bb96f1fd49340678f91aa15441854f44614902055",
+      "bytes": 39060
+    },
+    {
+      "number": 41,
+      "nameAr": "سُورَةُ فُصِّلَتۡ",
+      "transliteration": "Fussilat",
+      "revelation": "meccan",
+      "ayahCount": 54,
+      "firstAyah": 4219,
+      "sha256": "4dea7e81de551bf68e07dc28fcd619f882ce3150c3de6984abe00033a11e7ff1",
+      "bytes": 26156
+    },
+    {
+      "number": 42,
+      "nameAr": "سُورَةُ الشُّورَىٰ",
+      "transliteration": "Ash-Shura",
+      "revelation": "meccan",
+      "ayahCount": 53,
+      "firstAyah": 4273,
+      "sha256": "e9214f91ce9bd41ac7ec40bed40b1463115cc9403ffe1813c2fd74274b533b27",
+      "bytes": 26894
+    },
+    {
+      "number": 43,
+      "nameAr": "سُورَةُ الزُّخۡرُفِ",
+      "transliteration": "Az-Zukhruf",
+      "revelation": "meccan",
+      "ayahCount": 89,
+      "firstAyah": 4326,
+      "sha256": "5efe23bdb6e29cdc0e2b6ea3947c4ed4a2800c0c3687c496f779b18c19e4f180",
+      "bytes": 29868
+    },
+    {
+      "number": 44,
+      "nameAr": "سُورَةُ الدُّخَانِ",
+      "transliteration": "Ad-Dukhaan",
+      "revelation": "meccan",
+      "ayahCount": 59,
+      "firstAyah": 4415,
+      "sha256": "4d49eba456063d074e6c7e021af9e62908003735eb587cef47c30e50356fc1eb",
+      "bytes": 13331
+    },
+    {
+      "number": 45,
+      "nameAr": "سُورَةُ الجَاثِيَةِ",
+      "transliteration": "Al-Jaathiya",
+      "revelation": "meccan",
+      "ayahCount": 37,
+      "firstAyah": 4474,
+      "sha256": "8b60843e0f417816490329af8265aae0e1496f3ac8aaed4095e67e6906d60479",
+      "bytes": 16001
+    },
+    {
+      "number": 46,
+      "nameAr": "سُورَةُ الأَحۡقَافِ",
+      "transliteration": "Al-Ahqaf",
+      "revelation": "meccan",
+      "ayahCount": 35,
+      "firstAyah": 4511,
+      "sha256": "6c0db6c46a756a029f0ebdcb9d1af118ea4bb8a139a81cd5ca41ebd7ca5635c3",
+      "bytes": 20364
+    },
+    {
+      "number": 47,
+      "nameAr": "سُورَةُ مُحَمَّدٍ",
+      "transliteration": "Muhammad",
+      "revelation": "medinan",
+      "ayahCount": 38,
+      "firstAyah": 4546,
+      "sha256": "ae40e95228eebafb8aa6860666b33ce579689047b5b7683f305db4ea0eaab8f5",
+      "bytes": 18466
+    },
+    {
+      "number": 48,
+      "nameAr": "سُورَةُ الفَتۡحِ",
+      "transliteration": "Al-Fath",
+      "revelation": "medinan",
+      "ayahCount": 29,
+      "firstAyah": 4584,
+      "sha256": "d4f87f9c64526ff29f99bcabf5bde0a897e3f0dab9c91bbf40091179f38ffc92",
+      "bytes": 18407
+    },
+    {
+      "number": 49,
+      "nameAr": "سُورَةُ الحُجُرَاتِ",
+      "transliteration": "Al-Hujuraat",
+      "revelation": "medinan",
+      "ayahCount": 18,
+      "firstAyah": 4613,
+      "sha256": "b7d3dd3faa8b7ff142eab6117344944531efe84b46e11afcbd2b8a2ca1476a66",
+      "bytes": 11175
+    },
+    {
+      "number": 50,
+      "nameAr": "سُورَةُ قٓ",
+      "transliteration": "Qaaf",
+      "revelation": "meccan",
+      "ayahCount": 45,
+      "firstAyah": 4631,
+      "sha256": "b17955f9de85bec6d6095d45d124946a92307a581dde3ab8a7679cf9159e45ca",
+      "bytes": 13039
+    },
+    {
+      "number": 51,
+      "nameAr": "سُورَةُ الذَّارِيَاتِ",
+      "transliteration": "Adh-Dhaariyat",
+      "revelation": "meccan",
+      "ayahCount": 60,
+      "firstAyah": 4676,
+      "sha256": "7823b748722210df0716fa7f26f0de7f3badbf8424009e9d02822efcbddfcdc8",
+      "bytes": 13755
+    },
+    {
+      "number": 52,
+      "nameAr": "سُورَةُ الطُّورِ",
+      "transliteration": "At-Tur",
+      "revelation": "meccan",
+      "ayahCount": 49,
+      "firstAyah": 4736,
+      "sha256": "95d412cc624da3801570b8832d490cbb3817173bf29604342b8b93b404a7f8b2",
+      "bytes": 11792
+    },
+    {
+      "number": 53,
+      "nameAr": "سُورَةُ النَّجۡمِ",
+      "transliteration": "An-Najm",
+      "revelation": "meccan",
+      "ayahCount": 62,
+      "firstAyah": 4785,
+      "sha256": "bef7ca400a831081b2f0e1d2f55a6bc6f95cdbe7f138dac2af7c048ffafbe10a",
+      "bytes": 13568
+    },
+    {
+      "number": 54,
+      "nameAr": "سُورَةُ القَمَرِ",
+      "transliteration": "Al-Qamar",
+      "revelation": "meccan",
+      "ayahCount": 55,
+      "firstAyah": 4847,
+      "sha256": "af0428a10535762f9b0334e4da0b6d7de3540aba07f0b058742593a71c340a7b",
+      "bytes": 13738
+    },
+    {
+      "number": 55,
+      "nameAr": "سُورَةُ الرَّحۡمَٰن",
+      "transliteration": "Ar-Rahmaan",
+      "revelation": "medinan",
+      "ayahCount": 78,
+      "firstAyah": 4902,
+      "sha256": "e43ca5a209ec4378ab9eb1d8d3a81f65ada948a04d4c97ebe85d7c1aba5ca099",
+      "bytes": 15777
+    },
+    {
+      "number": 56,
+      "nameAr": "سُورَةُ الوَاقِعَةِ",
+      "transliteration": "Al-Waaqia",
+      "revelation": "meccan",
+      "ayahCount": 96,
+      "firstAyah": 4980,
+      "sha256": "48c1ca36fe3d33b1e8688b8c782a0670b9ac49dcb28ac2bfa35228d066dffa93",
+      "bytes": 17343
+    },
+    {
+      "number": 57,
+      "nameAr": "سُورَةُ الحَدِيدِ",
+      "transliteration": "Al-Hadid",
+      "revelation": "medinan",
+      "ayahCount": 29,
+      "firstAyah": 5076,
+      "sha256": "26ad63e9943a124472e3f3ab51d32bcbbb4ce3e83d8443a5a33dae644e8ff64a",
+      "bytes": 18750
+    },
+    {
+      "number": 58,
+      "nameAr": "سُورَةُ المُجَادلَةِ",
+      "transliteration": "Al-Mujaadila",
+      "revelation": "medinan",
+      "ayahCount": 22,
+      "firstAyah": 5105,
+      "sha256": "3b4de1f8344417ecd81b153a50675658105d845aaba9abcfa86575328159f006",
+      "bytes": 14887
+    },
+    {
+      "number": 59,
+      "nameAr": "سُورَةُ الحَشۡرِ",
+      "transliteration": "Al-Hashr",
+      "revelation": "medinan",
+      "ayahCount": 24,
+      "firstAyah": 5127,
+      "sha256": "5954e46ee045cf746f4dbd6d204bec303707073393d6ee25f83d2ea03d2053bb",
+      "bytes": 14423
+    },
+    {
+      "number": 60,
+      "nameAr": "سُورَةُ المُمۡتَحنَةِ",
+      "transliteration": "Al-Mumtahana",
+      "revelation": "medinan",
+      "ayahCount": 13,
+      "firstAyah": 5151,
+      "sha256": "ba652e9649f220a4f0b68b46ea507f9c475264ce9fc86895fac9ad67246c3802",
+      "bytes": 11201
+    },
+    {
+      "number": 61,
+      "nameAr": "سُورَةُ الصَّفِّ",
+      "transliteration": "As-Saff",
+      "revelation": "medinan",
+      "ayahCount": 14,
+      "firstAyah": 5164,
+      "sha256": "888448815ea771b4ee128745c516b35965b62760ddda14d75a13836f0c0b96ae",
+      "bytes": 7060
+    },
+    {
+      "number": 62,
+      "nameAr": "سُورَةُ الجُمُعَةِ",
+      "transliteration": "Al-Jumu'a",
+      "revelation": "medinan",
+      "ayahCount": 11,
+      "firstAyah": 5178,
+      "sha256": "7d9de4fdffab28c7eaec80974d17283bc2bc15c283f38e387897cde8441418af",
+      "bytes": 5563
+    },
+    {
+      "number": 63,
+      "nameAr": "سُورَةُ المُنَافِقُونَ",
+      "transliteration": "Al-Munaafiqoon",
+      "revelation": "medinan",
+      "ayahCount": 11,
+      "firstAyah": 5189,
+      "sha256": "567be9a1401c9120e813aa546a8f20806f13eea7c38a9ae74bcf0dcd4d7d3176",
+      "bytes": 5983
+    },
+    {
+      "number": 64,
+      "nameAr": "سُورَةُ التَّغَابُنِ",
+      "transliteration": "At-Taghaabun",
+      "revelation": "medinan",
+      "ayahCount": 18,
+      "firstAyah": 5200,
+      "sha256": "4a60bdee8b6bb9044ca41d20f431b30171b25c9985f7f7cac6e6b0d64aeb9f62",
+      "bytes": 8479
+    },
+    {
+      "number": 65,
+      "nameAr": "سُورَةُ الطَّلَاقِ",
+      "transliteration": "At-Talaaq",
+      "revelation": "medinan",
+      "ayahCount": 12,
+      "firstAyah": 5218,
+      "sha256": "00661e9e8507301455e64bf4f968716fd30cb8b508633c8bbda60281b169aca7",
+      "bytes": 9077
+    },
+    {
+      "number": 66,
+      "nameAr": "سُورَةُ التَّحۡرِيمِ",
+      "transliteration": "At-Tahrim",
+      "revelation": "medinan",
+      "ayahCount": 12,
+      "firstAyah": 5230,
+      "sha256": "d4256a11b4ec313229c9ad7e8848419d459282871509bee8eb4ebb8820ef800a",
+      "bytes": 8002
+    },
+    {
+      "number": 67,
+      "nameAr": "سُورَةُ المُلۡكِ",
+      "transliteration": "Al-Mulk",
+      "revelation": "meccan",
+      "ayahCount": 30,
+      "firstAyah": 5242,
+      "sha256": "9b403a9073001b0f7d7d5f8e125aaad72fc98385123dc7a6b1c0503dce87347e",
+      "bytes": 10982
+    },
+    {
+      "number": 68,
+      "nameAr": "سُورَةُ القَلَمِ",
+      "transliteration": "Al-Qalam",
+      "revelation": "meccan",
+      "ayahCount": 52,
+      "firstAyah": 5272,
+      "sha256": "6754e2b6fdd040c975b40ed87c99bbb6986e91c135f649c4451210f099f62663",
+      "bytes": 11960
+    },
+    {
+      "number": 69,
+      "nameAr": "سُورَةُ الحَاقَّةِ",
+      "transliteration": "Al-Haaqqa",
+      "revelation": "meccan",
+      "ayahCount": 52,
+      "firstAyah": 5324,
+      "sha256": "b7c23fed5a293a5d4dad78b1f1c9394a8f852529532c664435914f17d617be19",
+      "bytes": 10483
+    },
+    {
+      "number": 70,
+      "nameAr": "سُورَةُ المَعَارِجِ",
+      "transliteration": "Al-Ma'aarij",
+      "revelation": "meccan",
+      "ayahCount": 44,
+      "firstAyah": 5376,
+      "sha256": "e8fe5416388dab10f3b5983d646f20fd6fde5def1a140241654764cb6e2dcbcb",
+      "bytes": 8913
+    },
+    {
+      "number": 71,
+      "nameAr": "سُورَةُ نُوحٍ",
+      "transliteration": "Nooh",
+      "revelation": "meccan",
+      "ayahCount": 28,
+      "firstAyah": 5420,
+      "sha256": "9b14022c60cf3b97cb7a4f368954947baf9f71c2b47540852dfbe252b8a61ed1",
+      "bytes": 7900
+    },
+    {
+      "number": 72,
+      "nameAr": "سُورَةُ الجِنِّ",
+      "transliteration": "Al-Jinn",
+      "revelation": "meccan",
+      "ayahCount": 28,
+      "firstAyah": 5448,
+      "sha256": "1f5dda53a4b40faf70284061492bb556a151f68e1817fbf5f633f158e678a98a",
+      "bytes": 9355
+    },
+    {
+      "number": 73,
+      "nameAr": "سُورَةُ المُزَّمِّلِ",
+      "transliteration": "Al-Muzzammil",
+      "revelation": "meccan",
+      "ayahCount": 20,
+      "firstAyah": 5476,
+      "sha256": "51262dee179c2cae73b324672c0ab5cbb1f40cac416b9f8769f1633731090563",
+      "bytes": 6921
+    },
+    {
+      "number": 74,
+      "nameAr": "سُورَةُ المُدَّثِّرِ",
+      "transliteration": "Al-Muddaththir",
+      "revelation": "meccan",
+      "ayahCount": 56,
+      "firstAyah": 5496,
+      "sha256": "3804367e8df35c9c5bb7c670fd2685eeb81e8e7d981e2f6bc51e3e4e9ce9221a",
+      "bytes": 10343
+    },
+    {
+      "number": 75,
+      "nameAr": "سُورَةُ القِيَامَةِ",
+      "transliteration": "Al-Qiyaama",
+      "revelation": "meccan",
+      "ayahCount": 40,
+      "firstAyah": 5552,
+      "sha256": "a2372dd752867c73cff7cf15965259c1df9e27c65409ba2c7677fac0fcf351c8",
+      "bytes": 7040
+    },
+    {
+      "number": 76,
+      "nameAr": "سُورَةُ الإِنسَانِ",
+      "transliteration": "Al-Insaan",
+      "revelation": "medinan",
+      "ayahCount": 31,
+      "firstAyah": 5592,
+      "sha256": "d40a9706f381f8670a18131b8b3320a842061daca0c36dbdeee22628b389184e",
+      "bytes": 9042
+    },
+    {
+      "number": 77,
+      "nameAr": "سُورَةُ المُرۡسَلَاتِ",
+      "transliteration": "Al-Mursalaat",
+      "revelation": "meccan",
+      "ayahCount": 50,
+      "firstAyah": 5623,
+      "sha256": "c9c4d3bca5cfc8d6cf37a514a3fdbd62d5a0cdeb094fdaaa9935c4014f3bfea6",
+      "bytes": 8734
+    },
+    {
+      "number": 78,
+      "nameAr": "سُورَةُ النَّبَإِ",
+      "transliteration": "An-Naba",
+      "revelation": "meccan",
+      "ayahCount": 40,
+      "firstAyah": 5673,
+      "sha256": "b5a298165eef489659a2dcc78e7eee65349131e69837b86e15a561bbe31d7d66",
+      "bytes": 7501
+    },
+    {
+      "number": 79,
+      "nameAr": "سُورَةُ النَّازِعَاتِ",
+      "transliteration": "An-Naazi'aat",
+      "revelation": "meccan",
+      "ayahCount": 46,
+      "firstAyah": 5713,
+      "sha256": "5ba536031fd7f3a03030a99c99c646afe5819dd0b529beb8ee5165c92184fa09",
+      "bytes": 7946
+    },
+    {
+      "number": 80,
+      "nameAr": "سُورَةُ عَبَسَ",
+      "transliteration": "Abasa",
+      "revelation": "meccan",
+      "ayahCount": 42,
+      "firstAyah": 5759,
+      "sha256": "c119b310b46419a104fdfdf647637530325b194e58e8d98de855ff71ff641da4",
+      "bytes": 6247
+    },
+    {
+      "number": 81,
+      "nameAr": "سُورَةُ التَّكۡوِيرِ",
+      "transliteration": "At-Takwir",
+      "revelation": "meccan",
+      "ayahCount": 29,
+      "firstAyah": 5801,
+      "sha256": "c85120fb546d8e4103f5736ab765f9fb9bcbf97b6884f2fc32f9940396dcd3d4",
+      "bytes": 4530
+    },
+    {
+      "number": 82,
+      "nameAr": "سُورَةُ الانفِطَارِ",
+      "transliteration": "Al-Infitaar",
+      "revelation": "meccan",
+      "ayahCount": 19,
+      "firstAyah": 5830,
+      "sha256": "1a0076db7baeca6defeeffb27f3e088b8dcd6fae9a095e704f5206b15d5a5646",
+      "bytes": 3355
+    },
+    {
+      "number": 83,
+      "nameAr": "سُورَةُ المُطَفِّفِينَ",
+      "transliteration": "Al-Mutaffifin",
+      "revelation": "meccan",
+      "ayahCount": 36,
+      "firstAyah": 5849,
+      "sha256": "3d059bd65f89509eebbcce90cb83eea18e4a4f227607ee9f7a273892546a140b",
+      "bytes": 6927
+    },
+    {
+      "number": 84,
+      "nameAr": "سُورَةُ الانشِقَاقِ",
+      "transliteration": "Al-Inshiqaaq",
+      "revelation": "meccan",
+      "ayahCount": 25,
+      "firstAyah": 5885,
+      "sha256": "3e8171c45a4b60220085d4ae2746b2a041a77b125c015b854996d4de36626290",
+      "bytes": 4420
+    },
+    {
+      "number": 85,
+      "nameAr": "سُورَةُ البُرُوجِ",
+      "transliteration": "Al-Burooj",
+      "revelation": "meccan",
+      "ayahCount": 22,
+      "firstAyah": 5910,
+      "sha256": "f3bbbaa95ffd8dd620c6a758acc3e73f36846b7536333cca8ad68aca50280011",
+      "bytes": 4279
+    },
+    {
+      "number": 86,
+      "nameAr": "سُورَةُ الطَّارِقِ",
+      "transliteration": "At-Taariq",
+      "revelation": "meccan",
+      "ayahCount": 17,
+      "firstAyah": 5932,
+      "sha256": "e605d81dd5c48844335df4d5666a1d4839d217583cc132078c868e9d8e57c896",
+      "bytes": 2730
+    },
+    {
+      "number": 87,
+      "nameAr": "سُورَةُ الأَعۡلَىٰ",
+      "transliteration": "Al-A'laa",
+      "revelation": "meccan",
+      "ayahCount": 19,
+      "firstAyah": 5949,
+      "sha256": "eaf722cab3940fe800558ae561dd805af21f2ccfe11154198a0977fc015dbcc7",
+      "bytes": 3132
+    },
+    {
+      "number": 88,
+      "nameAr": "سُورَةُ الغَاشِيَةِ",
+      "transliteration": "Al-Ghaashiya",
+      "revelation": "meccan",
+      "ayahCount": 26,
+      "firstAyah": 5968,
+      "sha256": "8fafe1c662e350fee1be5d5546528bba96093ea6e2406a851313e0442c7ba6bb",
+      "bytes": 3979
+    },
+    {
+      "number": 89,
+      "nameAr": "سُورَةُ الفَجۡرِ",
+      "transliteration": "Al-Fajr",
+      "revelation": "meccan",
+      "ayahCount": 30,
+      "firstAyah": 5994,
+      "sha256": "023c53e28347daec85809f912ce2a5df96a4e809461d46301888ff1d8a273be6",
+      "bytes": 5644
+    },
+    {
+      "number": 90,
+      "nameAr": "سُورَةُ البَلَدِ",
+      "transliteration": "Al-Balad",
+      "revelation": "meccan",
+      "ayahCount": 20,
+      "firstAyah": 6024,
+      "sha256": "44cb0e086b97017ed85006264babbaaf37e03e9b0b2dadbd711fa5b5d3fff7d3",
+      "bytes": 3401
+    },
+    {
+      "number": 91,
+      "nameAr": "سُورَةُ الشَّمۡسِ",
+      "transliteration": "Ash-Shams",
+      "revelation": "meccan",
+      "ayahCount": 15,
+      "firstAyah": 6044,
+      "sha256": "0e748f2cf40cf5e0dae4f3f27c583d5d90740d721a107413b4022f145339aed0",
+      "bytes": 2633
+    },
+    {
+      "number": 92,
+      "nameAr": "سُورَةُ اللَّيۡلِ",
+      "transliteration": "Al-Lail",
+      "revelation": "meccan",
+      "ayahCount": 21,
+      "firstAyah": 6059,
+      "sha256": "5691dca36adb6c7ac222a634295296247e5d8321e1cd2ce8818e1088cc5d2e61",
+      "bytes": 3417
+    },
+    {
+      "number": 93,
+      "nameAr": "سُورَةُ الضُّحَىٰ",
+      "transliteration": "Ad-Dhuhaa",
+      "revelation": "meccan",
+      "ayahCount": 11,
+      "firstAyah": 6080,
+      "sha256": "6958e3390d07bd73e98fa5aaaa817bc3fa18f748245ee8b34f8903bf2c156087",
+      "bytes": 1849
+    },
+    {
+      "number": 94,
+      "nameAr": "سُورَةُ الشَّرۡحِ",
+      "transliteration": "Ash-Sharh",
+      "revelation": "meccan",
+      "ayahCount": 8,
+      "firstAyah": 6091,
+      "sha256": "282286bf2793e600fcbf194061296dfb387404944d3b5bffcccffbe2603741e5",
+      "bytes": 1187
+    },
+    {
+      "number": 95,
+      "nameAr": "سُورَةُ التِّينِ",
+      "transliteration": "At-Tin",
+      "revelation": "meccan",
+      "ayahCount": 8,
+      "firstAyah": 6099,
+      "sha256": "c8bb4b909b1833c0e7371b5d488c167f1e94cc511464188f87e8879b3b2961cf",
+      "bytes": 1497
+    },
+    {
+      "number": 96,
+      "nameAr": "سُورَةُ العَلَقِ",
+      "transliteration": "Al-Alaq",
+      "revelation": "meccan",
+      "ayahCount": 19,
+      "firstAyah": 6107,
+      "sha256": "0c467c4dccf11ad11a65a89c35543b7b9c8f5dbae2a6d0ab52d2adee967a974e",
+      "bytes": 3081
+    },
+    {
+      "number": 97,
+      "nameAr": "سُورَةُ القَدۡرِ",
+      "transliteration": "Al-Qadr",
+      "revelation": "meccan",
+      "ayahCount": 5,
+      "firstAyah": 6126,
+      "sha256": "f65247af45334c75f77e3dfc6b5a084e4fe07172e5b10373c5d668e9744c29e6",
+      "bytes": 1099
+    },
+    {
+      "number": 98,
+      "nameAr": "سُورَةُ البَيِّنَةِ",
+      "transliteration": "Al-Bayyina",
+      "revelation": "medinan",
+      "ayahCount": 8,
+      "firstAyah": 6131,
+      "sha256": "3e25fe0bdcad2b2b881b83653b8ee768bc3e3429fb5a79898c8335d8233932f4",
+      "bytes": 3182
+    },
+    {
+      "number": 99,
+      "nameAr": "سُورَةُ الزَّلۡزَلَةِ",
+      "transliteration": "Az-Zalzala",
+      "revelation": "medinan",
+      "ayahCount": 8,
+      "firstAyah": 6139,
+      "sha256": "a22fdbdd12a9f6ff2c3c3bf5b8ff7040dd941331e6b54aa936e00b45b7b611c9",
+      "bytes": 1535
+    },
+    {
+      "number": 100,
+      "nameAr": "سُورَةُ العَادِيَاتِ",
+      "transliteration": "Al-Aadiyaat",
+      "revelation": "meccan",
+      "ayahCount": 11,
+      "firstAyah": 6147,
+      "sha256": "d586e5a70f40196fd561748873fdec7abf7429365ff44f2956c7ccfe720d8ab8",
+      "bytes": 1822
+    },
+    {
+      "number": 101,
+      "nameAr": "سُورَةُ القَارِعَةِ",
+      "transliteration": "Al-Qaari'a",
+      "revelation": "meccan",
+      "ayahCount": 11,
+      "firstAyah": 6158,
+      "sha256": "18763bdac6f78e4901a660bfb90dd255f323f2d94e56b4e989f12a557309617e",
+      "bytes": 1640
+    },
+    {
+      "number": 102,
+      "nameAr": "سُورَةُ التَّكَاثُرِ",
+      "transliteration": "At-Takaathur",
+      "revelation": "meccan",
+      "ayahCount": 8,
+      "firstAyah": 6169,
+      "sha256": "c43fabfa0fe59c3fe28ad7a66e65e208d958ec97f589350dc21bcec7d644f047",
+      "bytes": 1319
+    },
+    {
+      "number": 103,
+      "nameAr": "سُورَةُ العَصۡرِ",
+      "transliteration": "Al-Asr",
+      "revelation": "meccan",
+      "ayahCount": 3,
+      "firstAyah": 6177,
+      "sha256": "b1b664eaf864968eaf2ae0a964d80a82e06d99a5900bf33e037994ad8b8e4354",
+      "bytes": 661
+    },
+    {
+      "number": 104,
+      "nameAr": "سُورَةُ الهُمَزَةِ",
+      "transliteration": "Al-Humaza",
+      "revelation": "meccan",
+      "ayahCount": 9,
+      "firstAyah": 6180,
+      "sha256": "8d8b04de686a3310f2e98091d16686e11719c4215faea1b01831234c248c399c",
+      "bytes": 1395
+    },
+    {
+      "number": 105,
+      "nameAr": "سُورَةُ الفِيلِ",
+      "transliteration": "Al-Fil",
+      "revelation": "meccan",
+      "ayahCount": 5,
+      "firstAyah": 6189,
+      "sha256": "ef1d044ddce3db7b6f1baa1f51e79c97bca13fb84030f32932f1c9486e515ce1",
+      "bytes": 958
+    },
+    {
+      "number": 106,
+      "nameAr": "سُورَةُ قُرَيۡشٍ",
+      "transliteration": "Quraish",
+      "revelation": "meccan",
+      "ayahCount": 4,
+      "firstAyah": 6194,
+      "sha256": "aedaa98b25b7248ceb1142cbd85fa6cd51097294483ce09af07122ae5cf2e808",
+      "bytes": 767
+    },
+    {
+      "number": 107,
+      "nameAr": "سُورَةُ المَاعُونِ",
+      "transliteration": "Al-Maa'un",
+      "revelation": "meccan",
+      "ayahCount": 7,
+      "firstAyah": 6198,
+      "sha256": "178bcad5b9f7c21c9f60022f836b940a54279ff5e71de18657e3a369e2ea4c98",
+      "bytes": 1152
+    },
+    {
+      "number": 108,
+      "nameAr": "سُورَةُ الكَوۡثَرِ",
+      "transliteration": "Al-Kawthar",
+      "revelation": "meccan",
+      "ayahCount": 3,
+      "firstAyah": 6205,
+      "sha256": "911b9006a3a752398e6e153333695cb6a92361e60bdece05d9d56d4ff1fd250d",
+      "bytes": 515
+    },
+    {
+      "number": 109,
+      "nameAr": "سُورَةُ الكَافِرُونَ",
+      "transliteration": "Al-Kaafiroon",
+      "revelation": "meccan",
+      "ayahCount": 6,
+      "firstAyah": 6208,
+      "sha256": "780f8701044a456a8070742e906b1647f331dbe934c5a16cfb23c26746a63a32",
+      "bytes": 1002
+    },
+    {
+      "number": 110,
+      "nameAr": "سُورَةُ النَّصۡرِ",
+      "transliteration": "An-Nasr",
+      "revelation": "medinan",
+      "ayahCount": 3,
+      "firstAyah": 6214,
+      "sha256": "afa3398e8ff4beb4e4052e45679d9954e68ded6cfe9708402b761c361b9327e3",
+      "bytes": 770
+    },
+    {
+      "number": 111,
+      "nameAr": "سُورَةُ المَسَدِ",
+      "transliteration": "Al-Masad",
+      "revelation": "meccan",
+      "ayahCount": 5,
+      "firstAyah": 6217,
+      "sha256": "9d24c4022784b5724ee94d815ce7476c55c2c82285262d63cc371fc0bfa5726d",
+      "bytes": 882
+    },
+    {
+      "number": 112,
+      "nameAr": "سُورَةُ الإِخۡلَاصِ",
+      "transliteration": "Al-Ikhlaas",
+      "revelation": "meccan",
+      "ayahCount": 4,
+      "firstAyah": 6222,
+      "sha256": "6d4f2e4e9882ab34e8a463a7dc09ca94dc6afe1c0392729c3bb032d6caa00ab5",
+      "bytes": 618
+    },
+    {
+      "number": 113,
+      "nameAr": "سُورَةُ الفَلَقِ",
+      "transliteration": "Al-Falaq",
+      "revelation": "meccan",
+      "ayahCount": 5,
+      "firstAyah": 6226,
+      "sha256": "ad6cc99f1fa5d71f9aae4984bbf794dd03a8171fce619d4665059a8904abe76c",
+      "bytes": 876
+    },
+    {
+      "number": 114,
+      "nameAr": "سُورَةُ النَّاسِ",
+      "transliteration": "An-Naas",
+      "revelation": "meccan",
+      "ayahCount": 6,
+      "firstAyah": 6231,
+      "sha256": "69b6fe39417590ac2d0bf0968d7180b6b3b008c3259a1ad50db3f73c0eec4dab",
+      "bytes": 912
+    }
+  ]
+}
