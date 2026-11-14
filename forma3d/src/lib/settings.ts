@@ -103,7 +103,7 @@ export const DEFAULT_AI: AiSettings = {
 
 /** Fusionne une valeur stockée avec les valeurs par défaut, champ par champ (les champs invalides sont ignorés). */
 export function mergeWithDefaults<T extends Record<string, unknown>>(
-  schema: z.AnyZodObject,
+  schema: z.ZodObject,
   defaults: T,
   stored: unknown,
 ): T {
