@@ -60,6 +60,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/screens/simple"
           node scripts/e2e-simple.mjs http://localhost:3100 "$RUNNER_TEMP/screens/simple/e2e"
           node scripts/simple-captures.mjs http://localhost:3100 "$RUNNER_TEMP/screens/simple/tailles"
+          node scripts/explore.mjs http://localhost:3100
       - name: Accessibilité Lighthouse ≥ 95 (accueil et résultat)
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d-refonte'
         run: |

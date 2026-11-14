@@ -475,3 +475,11 @@ writeFileSync(join(out, "verifications.txt"), checks.join("\n") + "\n");
 writeFileSync(join(out, "erreurs-console.txt"), errors.length ? errors.join("\n") : "Aucune erreur.\n");
 console.log(checks.join("\n"));
 console.log(errors.length ? errors.join("\n") : "Aucune erreur de console.");
+
+// Bloquant : une vérification en échec ou une session qui plante fait échouer la CI (sinon une régression passerait inaperçue).
+const failedChecks = checks.filter((c) => c.startsWith("✗"));
+const crashed = errors.filter((e) => e.includes("] script :"));
+if (failedChecks.length || crashed.length) {
+  console.error(`\n${failedChecks.length} vérification(s) en échec, ${crashed.length} session(s) interrompue(s).`);
+  process.exit(1);
+}

@@ -92,6 +92,21 @@ describe("générateur de démonstration", () => {
     // Jamais de modèle sans rapport : une demande absurde ne correspond à aucun exemple.
     expect(matchDemoDesign("fjqz xkcd plumeau galactique")).toBeNull();
     expect(matchDemoDesign("un organiseur de tiroir pour les couverts")).not.toBeNull();
+    // Demandes ordinaires (dont les idées de l'accueil) : toujours un exemple, jamais « pas compris ».
+    for (const prompt of [
+      "un support",
+      "Un clip pour fermer un sachet de café",
+      "Un pied de meuble pour caler une table bancale de 8 mm",
+      "Un cache pour un trou de 35 mm dans mon bureau",
+      "Un range-câbles pour les chargeurs posés sur mon bureau",
+      "Un support pour mon téléphone sur le vélo",
+      "Un organiseur pour ranger les couverts dans un tiroir",
+      "une boîte pour mes vis",
+      "un crochet pour suspendre mon casque",
+      "une cale de porte",
+    ]) {
+      expect(matchDemoDesign(prompt), prompt).not.toBeNull();
+    }
     const other = demoDesign("quelque chose d'autre");
     expect(other.title).toBe(SAMPLE_DESIGNS[3].design.title);
     expect(other.analysis.assumptions[0]).toContain("démonstration");
@@ -139,5 +154,12 @@ describe("matières conseillées", () => {
     const root = DESIGN_JSON_SCHEMA as { required: string[] };
     expect(root.required).toContain("materiaux_conseilles");
     expect(root.required).toContain("criteres_materiaux");
+  });
+});
+
+describe("idées de l'accueil en démonstration", () => {
+  it("chaque idée proposée donne un modèle (aucune ne mène à « je n'ai pas compris »)", async () => {
+    const { IDEAS } = await import("@/components/simple/SimpleHome");
+    for (const idea of IDEAS) expect(matchDemoDesign(idea.prompt), idea.prompt).not.toBeNull();
   });
 });

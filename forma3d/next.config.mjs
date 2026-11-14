@@ -19,7 +19,8 @@ function contentSecurityPolicy() {
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://www.gstatic.com", ...(dev ? ["'unsafe-eval'"] : []), ...vercel],
     "style-src": ["'self'", "'unsafe-inline'", ...vercel],
-    "img-src": ["'self'", "data:", "blob:", ...sb.filter((u) => u.startsWith("https")), ...vercel],
+    // Images : toute source HTTPS (photos de profil Google, fichiers Supabase…) ; aucun script ne peut en venir.
+    "img-src": ["'self'", "data:", "blob:", "https:"],
     "font-src": ["'self'", "data:", ...vercel],
     "connect-src": ["'self'", "blob:", "data:", "https://www.gstatic.com", ...sb, ...(preview ? ["https://vercel.live", "wss://ws-us3.pusher.com"] : [])],
     "media-src": ["'self'", "blob:"],
