@@ -5,6 +5,7 @@ import { IMAGE_MEDIA_TYPES } from "@/lib/ai/claude";
 import { cacheLookup, cacheStore, computeCacheKey, type CachedDesign } from "@/lib/cache";
 import { AnswersSchema, composePrompt } from "@/lib/clarify-types";
 import { progressChanged, progressFromText, type StreamProgress } from "@/lib/design/partial-json";
+import { safetyVerdict } from "@/lib/design/safety";
 import { validateDesign, type Design } from "@/lib/design/schema";
 import { VARIANT_IDS, type VariantId, type VariantIntensity } from "@/lib/design/variants";
 import { generateDesign, type GenerationOutcome } from "@/lib/generation";
@@ -328,6 +329,12 @@ export async function POST(request: Request) {
     if (!validated?.ok) return jsonError(400, "Conception de départ invalide.", "invalid_base");
     variant = { id: body.variant, base: validated.design, intensity: body.intensity ?? 2 };
     body.image = null;
+  }
+
+  // Pièces critiques (sécurité des personnes) : refus avant tout appel à l'IA, donc sans crédit consommé.
+  if (!variant) {
+    const safety = safetyVerdict([body.prompt, ...body.answers.map((a) => a.answer)].join(" "));
+    if (safety?.level === "refuse") return jsonError(422, safety.message, "critical_part");
   }
 
   // Réponse classique (scripts, tests, anciens clients).

@@ -46,6 +46,13 @@ check((await page.getByRole("textbox").inputValue()) === absurd, "1c. le texte s
 check((await page.getByRole("list", { name: "Exemples de demandes" }).getByRole("button").count()) === 3, "1c. trois exemples cliquables proposés");
 await page.screenshot({ path: join(out, "1c-pas-compris.png") });
 
+// 1e. Pièce critique : refus immédiat et expliqué, texte conservé
+await page.getByRole("textbox").fill("un mousqueton pour l'escalade");
+await page.getByRole("button", { name: "Créer ma pièce" }).click();
+await page.getByText(/Je ne conçois pas de pièces d'escalade/).waitFor({ timeout: 10000 });
+check(true, "1e. pièce critique (escalade) refusée avec une explication");
+check((await page.getByRole("textbox").inputValue()) === "un mousqueton pour l'escalade", "1e. le texte saisi est conservé");
+
 // 1d. Erreur serveur : message humain, texte conservé ; puis « Annuler » pendant l'attente
 const long = "Je voudrais un support pour mon téléphone à poser sur mon bureau, avec un passage pour le câble de charge, stable et facile à imprimer sur ma machine";
 await page.route("**/api/generate", (route) => route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "Le service est occupé." }) }));

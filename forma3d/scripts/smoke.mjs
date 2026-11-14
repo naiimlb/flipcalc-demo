@@ -171,4 +171,6 @@ assert(foreign.status === 403, "une origine étrangère est refusée (403)");
 
 const setup = await fetch(`${base}/setup`);
 assert(setup.ok && (await setup.text()).includes("Supabase configuré"), "/setup affiche la liste de contrôle");
+const critical = await fetch(`${base}/api/generate`, { method: "POST", headers: { "Content-Type": "application/json", Origin: base }, body: JSON.stringify({ prompt: "un mousqueton pour l'escalade" }) });
+assert(critical.status === 422 && (await critical.json()).code === "critical_part", "pièce critique (escalade) refusée avant toute génération (422)");
 console.log("Test de fumée réussi.");

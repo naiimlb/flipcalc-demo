@@ -8,6 +8,7 @@ import { applyVariantLocally, type VariantId } from "@/lib/design/variants";
 import { DEFAULT_PRINT_SETTINGS, defaultPrintMaterial, estimatePrint } from "@/lib/fabrication/estimate";
 import { checkPrintability } from "@/lib/fabrication/printability";
 import { verifyDesign } from "@/lib/fabrication/verify";
+import { safetyVerdict } from "@/lib/design/safety";
 import { findPrinterPreset, DEFAULT_PRINTER } from "@/lib/fabrication/printer";
 import { downloadBlob, exportStl, fileBaseName } from "@/lib/three/export";
 import { DEFAULT_VIEWER_SETTINGS } from "../viewer/settings";
@@ -77,6 +78,7 @@ export function SimpleResult({
   const dims = design.dimensions;
   const size = { width: dims.width * stretch.x, depth: dims.depth * stretch.z, height: dims.height * stretch.y };
   const report = useMemo(() => checkPrintability(design, volume), [design, volume]);
+  const safety = useMemo(() => safetyVerdict(`${request ?? ""} ${design.title}`), [request, design.title]);
   const verification = useMemo(() => verifyDesign(design, { request, printer: volume }), [design, request, volume]);
   // Estimation avec la matière conseillée par l'analyse (et non une matière par défaut).
   const estimate = useMemo(
@@ -154,6 +156,14 @@ export function SimpleResult({
             </ul>
           </div>
 
+          {safety && (
+            <p role="note" className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-body text-danger">
+              <IconAlert size={20} />
+              <span>
+                <span className="font-semibold">Attention : pièce sensible.</span> {safety.message}
+              </span>
+            </p>
+          )}
           {tips.id === "result-adjust" && <Tip onDismiss={tips.dismiss}>Ajustez la largeur, la profondeur et la hauteur avec les curseurs : le fichier téléchargé suit vos réglages.</Tip>}
           {tips.id === "result-advanced" && <Tip onDismiss={tips.dismiss}>Besoin de plus de contrôle ? « Mode avancé » (en haut à droite) ouvre l&apos;éditeur complet.</Tip>}
 

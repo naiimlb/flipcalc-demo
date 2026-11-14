@@ -13,6 +13,7 @@ import { SimpleClarify } from "./SimpleClarify";
 import { SimpleHome, type SimpleRequest } from "./SimpleHome";
 import { SimpleProgress } from "./SimpleProgress";
 import { SimpleResult } from "./SimpleResult";
+import { safetyVerdict } from "@/lib/design/safety";
 import { currentStep } from "./steps";
 import { ToastProvider } from "./ui";
 
@@ -45,6 +46,7 @@ function humanError(status: number, body: { error?: string; code?: string }): No
   if (status === 402 || body.code === "credits_exhausted") {
     return { text: body.error ?? "Vous n'avez plus de crédits pour le moment. Votre demande est conservée.", action: { label: "Voir mes projets", href: "/espace" } };
   }
+  if (body.code === "critical_part") return { text: `${body.error ?? "Cette pièce engage la sécurité des personnes : je ne peux pas la concevoir."} Votre texte est conservé.` };
   if (status === 504) {
     return { text: "C'est plus long que prévu. Votre pièce est peut-être prête dans « Mes projets ». Vous pouvez aussi réessayer : votre texte est conservé.", action: { label: "Mes projets", href: "/espace" } };
   }
@@ -153,6 +155,13 @@ export function SimpleApp({ demo, signedIn, features }: Props) {
   const submit = useCallback(
     async (req: SimpleRequest) => {
       setNotice(null);
+      // Pièce critique : refus immédiat, expliqué (le serveur applique la même règle).
+      const safety = safetyVerdict(req.prompt);
+      if (safety?.level === "refuse") {
+        setInitial({ ...req });
+        setNotice({ text: `${safety.message} Votre texte est conservé : vous pouvez le modifier.` });
+        return;
+      }
       try {
         localStorage.setItem(PRINTER_KEY, req.printer);
       } catch {
