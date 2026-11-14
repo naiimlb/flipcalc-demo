@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Design } from "@/lib/design/schema";
+import { applyParameters, type ParameterValues } from "@/lib/design/parameters";
 import { applyVariantLocally, type VariantId } from "@/lib/design/variants";
 import { DEFAULT_PRINT_SETTINGS, defaultPrintMaterial, estimatePrint } from "@/lib/fabrication/estimate";
 import { checkPrintability } from "@/lib/fabrication/printability";
@@ -64,7 +65,10 @@ export function SimpleResult({
 }) {
   const toast = useToast();
   const tips = useTips(["result-adjust", "result-advanced"]);
-  const [design, setDesign] = useState(initial);
+  const [base, setBase] = useState(initial);
+  // Réglages nommés (« Épaisseur de la semelle »…) : appliqués localement, sans appel à l'IA.
+  const [values, setValues] = useState<ParameterValues>({});
+  const design = useMemo(() => applyParameters(base, values), [base, values]);
   const [stretch, setStretch] = useState<Stretch>({ x: 1, y: 1, z: 1 });
   const [adjusting, setAdjusting] = useState<VariantId | null>(null);
   const printer = findPrinterPreset(printerId);
@@ -92,7 +96,8 @@ export function SimpleResult({
   const adjust = (id: VariantId) => {
     setAdjusting(id);
     // Calcul local, sans appel à l'IA : la pièce est recalculée tout de suite.
-    setDesign((d) => applyVariantLocally(d, id, 2));
+    setBase(applyVariantLocally(design, id, 2));
+    setValues({});
     setStretch({ x: 1, y: 1, z: 1 });
     setTimeout(() => setAdjusting(null), 300);
   };
@@ -167,6 +172,23 @@ export function SimpleResult({
           <button type="button" onClick={download} className="hidden min-h-12 items-center justify-center gap-2 rounded-xl bg-accent-strong px-5 text-lead font-medium text-white transition-colors hover:bg-accent-strong/90 lg:flex">
             <IconDownload size={20} /> Télécharger pour imprimer
           </button>
+
+          {base.parametres.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lead font-semibold text-ink">Réglages de la pièce</h2>
+              {base.parametres.map((p) => (
+                <Slider
+                  key={p.id}
+                  label={p.nom}
+                  value={values[p.id] ?? p.valeur}
+                  min={p.min}
+                  max={p.max}
+                  step={p.max - p.min <= 20 ? 0.5 : 1}
+                  onChange={(v) => setValues((current) => ({ ...current, [p.id]: v }))}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="space-y-4">
             <h2 className="text-lead font-semibold text-ink">Ajuster les dimensions</h2>

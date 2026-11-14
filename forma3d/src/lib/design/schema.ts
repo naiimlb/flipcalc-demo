@@ -102,6 +102,24 @@ export const PartSchema = z.object({
   finish: z.enum(FINISHES).optional(),
 });
 
+/** Champs qu'un paramètre nommé peut faire varier (dimensions et position d'une pièce). */
+export const PARAMETER_FIELDS = ["size.x", "size.y", "size.z", "position.x", "position.y", "position.z"] as const;
+
+/**
+ * Paramètre nommé (phase 2) : un curseur en langage courant (« Épaisseur de la semelle ») qui modifie la pièce
+ * sans rappeler l'IA. Chaque effet : champ += facteur × (nouvelle valeur − valeur d'origine).
+ */
+export const ParameterSchema = z.object({
+  id: text(40),
+  nom: text(60),
+  valeur: clamp(0.1, 5000),
+  min: clamp(0.1, 5000),
+  max: clamp(0.1, 5000),
+  effets: z
+    .array(z.object({ piece: text(40), champ: z.enum(PARAMETER_FIELDS), facteur: clamp(-10, 10) }))
+    .transform((e) => e.slice(0, 40)),
+});
+
 export const DesignSchema = z.object({
   title: text(120),
   category: text(60),
@@ -166,6 +184,11 @@ export const DesignSchema = z.object({
       .min(1, "Le modèle 3D doit contenir au moins une pièce.")
       .transform((parts) => parts.slice(0, LIMITS.maxParts)),
   }),
+  // Refonte v2, phase 2 : 0 à 6 paramètres nommés (curseurs sans appel à l'IA).
+  parametres: z
+    .array(ParameterSchema)
+    .transform((p) => p.slice(0, 6))
+    .default([]),
   // Ajouté en phase 2 : version dérivée d'une autre conception (« Plus petit », « Plus solide »…).
   // Renseigné par le serveur, jamais demandé à l'IA.
   variante: z
@@ -209,6 +232,15 @@ export function validateDesign(value: unknown): ValidationResult {
       part.shape = "box";
     }
   });
+  // Paramètres : bornes ordonnées, effets limités aux pièces existantes, paramètres sans effet retirés.
+  const ids = new Set(design.model.parts.map((p) => p.id));
+  design.parametres = design.parametres
+    .map((p) => {
+      const min = Math.min(p.min, p.max);
+      const max = Math.max(p.min, p.max);
+      return { ...p, min, max, valeur: Math.min(max, Math.max(min, p.valeur)), effets: p.effets.filter((e) => ids.has(e.piece) && e.facteur !== 0) };
+    })
+    .filter((p) => p.nom && p.effets.length > 0 && p.max > p.min);
   if (design.cost.max < design.cost.min) design.cost.max = design.cost.min;
   normalizeRecommendedMaterials(design.materiaux_conseilles);
   if (!design.cost.currency) design.cost.currency = "EUR";
@@ -344,6 +376,24 @@ export const DESIGN_JSON_SCHEMA = S.obj({
       alternative_economique: { type: "boolean", description: "true pour UNE seule matière : l'alternative moins chère." },
     }),
     "3 à 5 matières classées de la plus recommandée à la moins recommandée.",
+  ),
+  parametres: S.arr(
+    S.obj({
+      id: S.str("Identifiant en kebab-case."),
+      nom: S.str("Nom en langage courant, ex. « Épaisseur de la semelle », « Diamètre du trou », « Largeur utile »."),
+      valeur: S.num("Valeur actuelle en mm (celle du modèle)."),
+      min: S.num("Minimum raisonnable en mm (pièce toujours imprimable : parois ≥ 1,2 mm)."),
+      max: S.num("Maximum raisonnable en mm."),
+      effets: S.arr(
+        S.obj({
+          piece: S.str("id d'une pièce de model.parts."),
+          champ: S.enumOf(PARAMETER_FIELDS),
+          facteur: S.num("champ += facteur × (nouvelle valeur − valeur). Ex. : 1 pour la taille, 0.5 pour le centre d'une pièce qui s'épaissit vers le haut."),
+        }),
+        "Toutes les pièces à déplacer ou redimensionner pour que l'objet reste assemblé (pièces posées dessus, pièces voisines).",
+      ),
+    }),
+    "3 à 6 réglages utiles pour CETTE solution (cotes que l'utilisateur voudra adapter). [] si aucun n'a de sens.",
   ),
   model: S.obj({
     parts: S.arr(

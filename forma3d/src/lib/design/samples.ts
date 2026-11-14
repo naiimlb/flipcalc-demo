@@ -123,6 +123,7 @@ export const CABLE_ORGANIZER: Design = {
     mat("TPU 95A", "Peigne entièrement souple, se tord sans casser, antidérapant naturel.", "Impression lente, aspect moins net.", "≈ 3,50 € (85 g)", 3.5, "Impression 3D FDM (extrudeur direct)", "#2b2b33", "rubber"),
     mat("Contreplaqué 6 mm", "Rendu naturel, se découpe en série au laser.", "Bords à poncer, fentes moins précises.", "≈ 3 € la planchette", 3, "Découpe laser", "#c99a6a", "wood"),
   ],
+  parametres: [],
   variante: null,
   model: {
     parts: [
@@ -210,6 +211,50 @@ export const PHONE_STAND: Design = {
     mat("PLA", "Facile à imprimer, très bonne précision pour la gorge de 6 mm.", "Peut fluer s'il reste au soleil derrière une vitre.", "≈ 2,40 € (120 g)", 2.4, "Impression 3D FDM", "#8f7cf0", "plastic", true),
     mat("Aluminium 3 mm", "Très stable et haut de gamme, dissipe la chaleur du téléphone.", "Nécessite découpe et pliage, coût plus élevé.", "≈ 18 € la pièce", 18, "Découpe laser + pliage", "#b8bfca", "metal"),
     mat("Hêtre massif", "Aspect chaleureux, lourd donc très stable.", "Usinage plus long, sensible à l'humidité.", "≈ 12 €", 12, "Défonceuse / CNC", "#d2a679", "wood"),
+  ],
+  // Réglages en langage courant (curseurs sans appel à l'IA).
+  parametres: [
+    {
+      id: "epaisseur-semelle",
+      nom: "Épaisseur de la semelle",
+      valeur: 8,
+      min: 4,
+      max: 14,
+      effets: [
+        { piece: "semelle", champ: "size.y", facteur: 1 },
+        { piece: "semelle", champ: "position.y", facteur: 0.5 },
+        ...["flasque-1", "flasque-2", "levre-1", "levre-2", "traverse", "patin-1", "patin-2"].map((piece) => ({ piece, champ: "position.y" as const, facteur: 1 })),
+      ],
+    },
+    {
+      id: "ecart-flasques",
+      nom: "Largeur entre les flasques",
+      valeur: 68,
+      min: 50,
+      max: 100,
+      effets: [
+        { piece: "flasque-1", champ: "position.x", facteur: -0.5 },
+        { piece: "flasque-2", champ: "position.x", facteur: 0.5 },
+        { piece: "semelle", champ: "size.x", facteur: 1 },
+        { piece: "traverse", champ: "size.x", facteur: 1 },
+        // Pieds, lèvres et patins suivent leur flasque (les patins reposent dessus).
+        ...["pied-av-1", "pied-ar-1", "levre-1", "patin-1"].map((piece) => ({ piece, champ: "position.x" as const, facteur: -0.5 })),
+        ...["pied-av-2", "pied-ar-2", "levre-2", "patin-2"].map((piece) => ({ piece, champ: "position.x" as const, facteur: 0.5 })),
+      ],
+    },
+    {
+      id: "hauteur-levre",
+      nom: "Hauteur de la lèvre avant",
+      valeur: 15,
+      min: 8,
+      max: 25,
+      effets: [
+        { piece: "levre-1", champ: "size.y", facteur: 1 },
+        { piece: "levre-1", champ: "position.y", facteur: 0.5 },
+        { piece: "levre-2", champ: "size.y", facteur: 1 },
+        { piece: "levre-2", champ: "position.y", facteur: 0.5 },
+      ],
+    },
   ],
   variante: null,
   model: {
@@ -319,6 +364,7 @@ export const WALL_KEY_SHELF: Design = {
     mat("Acier thermolaqué", "Très fin et très solide, look industriel.", "Demande pliage et soudure ou un atelier.", "≈ 35 €", 35, "Découpe laser + pliage", "#2e3138", "metal"),
     mat("PETG imprimé", "Possible en plusieurs morceaux pour une version légère.", "Charge limitée, sensible au fluage sur la durée.", "≈ 9 € (350 g)", 9, "Impression 3D FDM", "#5b6ee1", "plastic"),
   ],
+  parametres: [],
   variante: null,
   model: {
     parts: [
@@ -394,6 +440,7 @@ export const DESK_ORGANIZER: Design = {
     mat("PLA recyclé", "Même usage, empreinte carbone réduite.", "Couleurs moins régulières.", "≈ 3,20 € (200 g)", 3.2, "Impression 3D FDM", "#7a7f99", "plastic", true),
     mat("PETG", "Plus résistant aux chocs et aux chutes.", "Impression un peu plus délicate.", "≈ 5,20 € (200 g)", 5.2, "Impression 3D FDM", "#7b5ce6", "plastic"),
   ],
+  parametres: [],
   variante: null,
   model: {
     parts: [

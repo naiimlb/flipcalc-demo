@@ -92,13 +92,21 @@ await page.waitForTimeout(2000);
 check(true, "4. le résultat s'affiche avec « Télécharger pour imprimer »");
 await page.screenshot({ path: join(out, "4-resultat.png") });
 
-// 5. Curseur de dimensions : la cote change
-const sliders = page.getByRole("slider");
-check((await sliders.count()) === 3, "5. trois curseurs de dimensions");
-const before = await sliders.first().inputValue();
-await sliders.first().focus();
+// 5. Réglages nommés (sans IA) puis curseur de dimensions : les cotes changent
+const named = page.getByRole("slider", { name: /^Largeur entre les flasques/ });
+check(await named.isVisible(), "5. réglage nommé « Largeur entre les flasques » proposé");
+const dimsText = async () => (await page.getByText(/\d+ mm × \d+ mm × \d+ mm/).first().innerText()).trim();
+const dimsBefore = await dimsText();
+await named.focus();
 for (let i = 0; i < 10; i++) await page.keyboard.press("ArrowRight");
-const after = await sliders.first().inputValue();
+const dimsAfter = await dimsText();
+check(dimsBefore !== dimsAfter, `5. le réglage nommé modifie la pièce (${dimsBefore} → ${dimsAfter})`);
+const width = page.getByRole("slider", { name: /^Largeur \d/ });
+check((await page.getByRole("slider").count()) >= 3, "5. curseurs Largeur / Profondeur / Hauteur présents");
+const before = await width.inputValue();
+await width.focus();
+for (let i = 0; i < 10; i++) await page.keyboard.press("ArrowRight");
+const after = await width.inputValue();
 check(Number(after) > Number(before), `5. le curseur Largeur modifie la cote (${before} → ${after} mm)`);
 await page.screenshot({ path: join(out, "5-curseur.png") });
 
