@@ -3,6 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: ["three"],
+  env: {
+    // Preview Vercel : mode démonstration (aucune écriture dans la base réelle, aucun appel payant).
+    // Pour tester exceptionnellement une Preview branchée sur la vraie base : FORMA3D_PREVIEW_REAL=1.
+    NEXT_PUBLIC_FORMA3D_FORCE_DEMO: process.env.VERCEL_ENV === "preview" && process.env.FORMA3D_PREVIEW_REAL !== "1" ? "1" : "",
+  },
   experimental: {
     // N'embarque que les morceaux réellement utilisés de ces bibliothèques (moteur 3D plus léger).
     optimizePackageImports: ["@react-three/drei", "three-stdlib", "framer-motion"],
