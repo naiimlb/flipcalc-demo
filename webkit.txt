@@ -1,0 +1,17 @@
+✓ Safari : accueil, grand titre visible
+✓ Safari : navigation principale
+• WebGL disponible dans ce WebKit
+✓ Safari : objets 3D du héros chargés à la première interaction
+✓ Safari : la page défile
+✓ iPad Safari : barre de demande visible
+✓ iPad Safari : barre d'outils à gauche
+✓ iPad Safari : vue 3D affichée
+✓ iPad Safari : le menu Ajouter s'ouvre au toucher
+✓ iPad Safari : une forme s'ajoute au toucher
+✓ iPad Safari : boutons de la barre d'outils d'au moins 44 px
+✓ Safari : manifeste PWA référencé
+✓ PWA : plein écran, démarre sur l'éditeur
+✓ PWA : raccourcis (Nouvelle conception, Galerie)
+✓ PWA : application web iOS déclarée
+✓ PWA : écrans de lancement iPad / iPhone
+✓ PWA : icône d'écran d'accueil
