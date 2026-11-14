@@ -5,12 +5,12 @@ import { PHONE_STAND } from "@/lib/design/samples";
 import { SimpleHome } from "@/components/simple/SimpleHome";
 import { SimpleResult } from "@/components/simple/SimpleResult";
 
-/** Aperçu d'une direction : accueil-outil, puis résultat sur la conception d'exemple « support de téléphone ». */
-export function Preview({ direction, ecran }: { direction: "neutre" | "colore"; ecran: "accueil" | "resultat" }) {
+/** Aperçu du parcours Simple (direction « clair neutre ») : accueil-outil, puis résultat sur la conception d'exemple « support de téléphone ». */
+export function Preview({ ecran }: { ecran: "accueil" | "resultat" }) {
   const [screen, setScreen] = useState(ecran);
   const [printer, setPrinter] = useState<string | undefined>(undefined);
   return (
-    <div data-direction={direction} className="min-h-dvh">
+    <div className="simple-ui min-h-dvh">
       {screen === "accueil" ? (
         <SimpleHome
           demo
@@ -21,7 +21,7 @@ export function Preview({ direction, ecran }: { direction: "neutre" | "colore"; 
           }}
         />
       ) : (
-        <SimpleResult design={PHONE_STAND} direction={direction} demo printerId={printer} onBack={() => setScreen("accueil")} advancedHref="/studio" />
+        <SimpleResult design={PHONE_STAND} demo printerId={printer} onBack={() => setScreen("accueil")} advancedHref="/studio" />
       )}
     </div>
   );

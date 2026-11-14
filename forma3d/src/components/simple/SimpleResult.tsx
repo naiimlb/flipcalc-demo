@@ -9,6 +9,7 @@ import { checkPrintability } from "@/lib/fabrication/printability";
 import { findPrinterPreset, DEFAULT_PRINTER } from "@/lib/fabrication/printer";
 import { downloadBlob, exportStl, fileBaseName } from "@/lib/three/export";
 import { DEFAULT_VIEWER_SETTINGS } from "../viewer/settings";
+import { Slider } from "./ui";
 import { IconAlert, IconArrowLeft, IconCheck, IconDownload, IconSliders, Spinner } from "../icons";
 
 const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
@@ -27,26 +28,14 @@ const fmtDuration = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(mi
 
 /** Curseur de dimension : 50 % à 150 % de la valeur d'origine, au millimètre près. */
 function DimensionSlider({ label, base, factor, onChange }: { label: string; base: number; factor: number; onChange(f: number): void }) {
-  const value = Math.round(base * factor);
-  const min = Math.max(1, Math.round(base * 0.5));
-  const max = Math.round(base * 1.5);
   return (
-    <label className="block">
-      <span className="flex items-baseline justify-between text-base">
-        <span className="text-ink-soft">{label}</span>
-        <span className="font-medium tabular-nums text-ink">{value} mm</span>
-      </span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={1}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value) / base)}
-        aria-valuetext={`${value} millimètres`}
-        className="mt-2 h-11 w-full cursor-pointer accent-[rgb(var(--accent))]"
-      />
-    </label>
+    <Slider
+      label={label}
+      value={Math.round(base * factor)}
+      min={Math.max(1, Math.round(base * 0.5))}
+      max={Math.round(base * 1.5)}
+      onChange={(v) => onChange(v / base)}
+    />
   );
 }
 
@@ -57,14 +46,12 @@ function DimensionSlider({ label, base, factor, onChange }: { label: string; bas
  */
 export function SimpleResult({
   design: initial,
-  direction,
   demo,
   printerId,
   onBack,
   advancedHref,
 }: {
   design: Design;
-  direction: "neutre" | "colore";
   demo: boolean;
   printerId?: string;
   onBack(): void;
@@ -91,8 +78,8 @@ export function SimpleResult({
   const material = design.materiaux_conseilles[0]?.nom ?? design.materials[0]?.name ?? estimate.material.label;
   const fits = size.width <= volume.x && size.depth <= volume.y && size.height <= volume.z;
   const verdictOk = report.verdict !== "error" && fits;
-  const modelColor = direction === "colore" ? "#d67038" : "#969daa";
-  const viewerBg = direction === "colore" ? "#f5ece0" : "#eeece8";
+  const modelColor = "#969daa";
+  const viewerBg = "#eeece8";
 
   const adjust = (id: VariantId) => {
     setAdjusting(id);
@@ -109,10 +96,10 @@ export function SimpleResult({
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
       <header className="flex h-16 shrink-0 items-center gap-2 px-3 sm:px-6">
-        <button type="button" onClick={onBack} className="tap flex min-h-11 items-center gap-2 rounded-lg px-3 text-base text-ink-soft hover:bg-paper hover:text-ink">
+        <button type="button" onClick={onBack} className="tap flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
           <IconArrowLeft size={20} /> Nouvelle demande
         </button>
-        <a href={advancedHref} className="tap ms-auto flex min-h-11 items-center gap-2 rounded-lg px-3 text-base text-ink-soft hover:bg-paper hover:text-ink">
+        <a href={advancedHref} className="tap ms-auto flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
           <IconSliders size={20} /> Mode avancé
         </a>
       </header>
@@ -129,9 +116,9 @@ export function SimpleResult({
             stretch={stretch}
           />
           {demo && (
-            <span className="absolute start-3 top-3 rounded-full border border-line bg-surface/95 px-3 py-1 text-sm text-ink-soft">Exemple de démonstration</span>
+            <span className="absolute start-3 top-3 rounded-full border border-line bg-surface/95 px-3 py-1 text-body text-ink-soft">Exemple de démonstration</span>
           )}
-          <p className="pointer-events-none absolute bottom-3 start-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-surface/90 px-3 py-1 text-sm text-ink-mute rtl:translate-x-1/2">
+          <p className="pointer-events-none absolute bottom-3 start-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-surface/90 px-3 py-1 text-body text-ink-mute rtl:translate-x-1/2">
             <span className="sm:hidden">Glissez pour tourner</span>
             <span className="hidden sm:inline">Glissez pour tourner · pincez pour zoomer</span>
           </p>
@@ -140,8 +127,8 @@ export function SimpleResult({
         {/* Ce qu'il faut savoir, et une seule action principale */}
         <section aria-label="Votre pièce" className="flex min-h-0 flex-col gap-6 overflow-y-auto bg-surface px-5 py-6 pb-28 sm:px-8 lg:pb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-ink">{design.title}</h1>
-            <ul className="mt-3 space-y-1 text-lg text-ink-soft">
+            <h1 className="text-title font-semibold text-ink">{design.title}</h1>
+            <ul className="mt-3 space-y-1 text-lead text-ink-soft">
               <li>{design.solution.concept}</li>
               <li>
                 <span className="tabular-nums">
@@ -152,7 +139,7 @@ export function SimpleResult({
             </ul>
           </div>
 
-          <p className={`flex items-start gap-2 rounded-xl px-4 py-3 text-base ${verdictOk ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
+          <p className={`flex items-start gap-2 rounded-xl px-4 py-3 text-body ${verdictOk ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
             {verdictOk ? <IconCheck size={20} /> : <IconAlert size={20} />}
             <span>
               {verdictOk ? (report.supportsNeeded ? "Imprimable avec supports" : "Imprimable sans supports") : fits ? "À vérifier avant d'imprimer" : `Trop grande pour la ${printer?.name ?? "plaque d'impression"}`}
@@ -160,19 +147,19 @@ export function SimpleResult({
             </span>
           </p>
 
-          <button type="button" onClick={download} className="hidden min-h-12 items-center justify-center gap-2 rounded-xl bg-accent-strong px-5 text-lg font-medium text-white transition-colors hover:bg-accent-strong/90 lg:flex">
+          <button type="button" onClick={download} className="hidden min-h-12 items-center justify-center gap-2 rounded-xl bg-accent-strong px-5 text-lead font-medium text-white transition-colors hover:bg-accent-strong/90 lg:flex">
             <IconDownload size={20} /> Télécharger pour imprimer
           </button>
 
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-ink">Ajuster les dimensions</h2>
+            <h2 className="text-lead font-semibold text-ink">Ajuster les dimensions</h2>
             <DimensionSlider label="Largeur" base={dims.width} factor={stretch.x} onChange={(x) => setStretch((s) => ({ ...s, x }))} />
             <DimensionSlider label="Profondeur" base={dims.depth} factor={stretch.z} onChange={(z) => setStretch((s) => ({ ...s, z }))} />
             <DimensionSlider label="Hauteur" base={dims.height} factor={stretch.y} onChange={(y) => setStretch((s) => ({ ...s, y }))} />
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-ink">Ou laisser Forma3D ajuster</h2>
+            <h2 className="text-lead font-semibold text-ink">Ou laisser Forma3D ajuster</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {(
                 [
@@ -185,7 +172,7 @@ export function SimpleResult({
                   key={id}
                   type="button"
                   onClick={() => adjust(id)}
-                  className="tap flex min-h-11 items-center gap-2 rounded-full border border-line px-4 text-base text-ink-soft transition-colors hover:border-accent/40 hover:text-ink"
+                  className="tap flex min-h-11 items-center gap-2 rounded-full border border-line px-4 text-body text-ink-soft transition-colors hover:border-accent/40 hover:text-ink"
                 >
                   {adjusting === id && <Spinner size={16} />} {label}
                 </button>
@@ -194,11 +181,11 @@ export function SimpleResult({
           </div>
 
           <details className="group rounded-xl border border-line">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-base font-medium text-ink">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-body font-medium text-ink">
               Voir le détail
               <span aria-hidden className="text-ink-mute transition-transform group-open:rotate-90">›</span>
             </summary>
-            <div className="space-y-4 px-4 pb-4 text-base text-ink-soft">
+            <div className="space-y-4 px-4 pb-4 text-body text-ink-soft">
               <p>{design.analysis.summary}</p>
               {design.solution.howItWorks && <p>{design.solution.howItWorks}</p>}
               {design.fabrication.length > 0 && (
@@ -224,7 +211,7 @@ export function SimpleResult({
 
       {/* iPhone / iPad portrait : l'action principale reste à portée du pouce */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden">
-        <button type="button" onClick={download} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent-strong text-lg font-medium text-white">
+        <button type="button" onClick={download} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent-strong text-lead font-medium text-white">
           <IconDownload size={20} /> Télécharger pour imprimer
         </button>
       </div>

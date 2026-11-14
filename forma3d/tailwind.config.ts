@@ -28,6 +28,11 @@ const config: Config = {
       "8xl": ["28px", { lineHeight: "34px" }],
       "9xl": ["28px", { lineHeight: "34px" }],
       display: ["40px", { lineHeight: "46px", letterSpacing: "-0.02em" }],
+      // Parcours Simple : 4 tailles seulement, texte courant à 16 px minimum.
+      body: ["16px", { lineHeight: "24px" }],
+      lead: ["18px", { lineHeight: "28px" }],
+      title: ["24px", { lineHeight: "30px" }],
+      hero: ["36px", { lineHeight: "42px", letterSpacing: "-0.01em" }],
     },
     // Peu de graisses : normal (400), moyen (500), titres (600).
     fontWeight: {

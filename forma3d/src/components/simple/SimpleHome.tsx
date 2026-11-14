@@ -2,9 +2,9 @@
 
 import { useId, useRef, useState } from "react";
 import { PRINTER_PRESETS } from "@/lib/fabrication/printer";
-import { IconArrowRight, IconCamera, IconPrinter, LogoMark } from "../icons";
+import { IconArrowRight, IconCamera, IconBulb, IconPrinter, LogoMark } from "../icons";
 
-/** Idées pour commencer : un clic remplit la demande (rien n'est envoyé sans confirmation). */
+/**  : un clic remplit la demande (rien n'est envoyé sans confirmation). */
 export const IDEAS = [
   { label: "Range-câbles", prompt: "Un range-câbles pour les chargeurs posés sur mon bureau" },
   { label: "Support téléphone", prompt: "Un support pour mon téléphone sur le vélo" },
@@ -31,6 +31,7 @@ export function SimpleHome({
   const [prompt, setPrompt] = useState("");
   const [printer, setPrinter] = useState(PRINTER_PRESETS[0].id);
   const [photo, setPhoto] = useState<File | null>(null);
+  const [ideasOpen, setIdeasOpen] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   const file = useRef<HTMLInputElement>(null);
   const ready = prompt.trim().length >= 3;
@@ -40,13 +41,13 @@ export function SimpleHome({
       <header className="flex h-16 items-center gap-3 px-5 sm:px-8">
         <span className="flex items-center gap-2 text-ink">
           <LogoMark size={24} />
-          <span className="text-lg font-semibold">Forma3D</span>
+          <span className="text-lead font-semibold">Forma3D</span>
         </span>
         <nav aria-label="Compte" className="ms-auto flex items-center gap-1">
-          <a href="/espace" className="tap flex min-h-11 items-center rounded-lg px-3 text-base text-ink-soft hover:bg-paper hover:text-ink">
+          <a href="/espace" className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
             Mes projets
           </a>
-          <a href="/connexion" className="tap flex min-h-11 items-center rounded-lg px-3 text-base text-ink-soft hover:bg-paper hover:text-ink">
+          <a href="/connexion" className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
             {signedIn ? "Mon compte" : "Se connecter"}
           </a>
         </nav>
@@ -61,7 +62,7 @@ export function SimpleHome({
             else field.current?.focus();
           }}
         >
-          <label htmlFor={`${id}-prompt`} className="block text-center text-3xl font-semibold text-ink sm:text-[2.25rem] sm:leading-tight">
+          <label htmlFor={`${id}-prompt`} className="block text-center text-title font-semibold text-ink sm:text-hero">
             Quel problème voulez-vous résoudre{"\u202f"}?
           </label>
           <div className="mt-8 flex items-end gap-2 rounded-2xl border border-line bg-surface p-2 ps-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/15">
@@ -79,7 +80,7 @@ export function SimpleHome({
               rows={2}
               maxLength={1500}
               placeholder="Ex. : un support pour mon téléphone sur le vélo"
-              className="min-h-[3.5rem] w-full flex-1 resize-none bg-transparent py-2 text-lg text-ink outline-none placeholder:text-ink-mute"
+              className="min-h-[3.5rem] w-full flex-1 resize-none bg-transparent py-2 text-lead text-ink outline-none placeholder:text-ink-mute"
             />
             <button
               type="submit"
@@ -92,11 +93,11 @@ export function SimpleHome({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <button type="button" onClick={() => file.current?.click()} className="tap flex min-h-11 items-center gap-2 rounded-lg px-3 text-base text-ink-soft hover:bg-paper hover:text-ink">
+            <button type="button" onClick={() => file.current?.click()} className="tap flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
               <IconCamera size={20} /> {photo ? `Photo : ${photo.name.slice(0, 24)}` : "Ajouter une photo"}
             </button>
             <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
-            <label className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-base text-ink-soft">
+            <label className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft">
               <IconPrinter size={20} />
               <span className="sr-only sm:not-sr-only">Mon imprimante :</span>
               <select value={printer} onChange={(e) => setPrinter(e.target.value)} className="min-h-11 rounded-lg bg-transparent py-1 font-medium text-ink outline-none hover:bg-paper focus-visible:ring-2 focus-visible:ring-accent">
@@ -110,20 +111,27 @@ export function SimpleHome({
           </div>
         </form>
 
-        <section aria-labelledby={`${id}-ideas`} className="mt-12 w-full max-w-2xl">
-          <h2 id={`${id}-ideas`} className="text-center text-base text-ink-mute">
-            Idées pour commencer
-          </h2>
-          <ul className="mt-3 flex flex-wrap justify-center gap-2">
+        <section className="mt-10 flex w-full max-w-2xl flex-col items-center">
+          <button
+            type="button"
+            aria-expanded={ideasOpen}
+            aria-controls={`${id}-ideas`}
+            onClick={() => setIdeasOpen((o) => !o)}
+            className="tap flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-body text-ink-soft transition-colors hover:border-accent/40 hover:text-ink"
+          >
+            <IconBulb size={20} /> Voir des idées
+          </button>
+          <ul id={`${id}-ideas`} className={`mt-4 flex-wrap justify-center gap-2 ${ideasOpen ? "flex" : "hidden"}`}>
             {IDEAS.map((idea) => (
               <li key={idea.label}>
                 <button
                   type="button"
                   onClick={() => {
                     setPrompt(idea.prompt);
+                    setIdeasOpen(false);
                     field.current?.focus();
                   }}
-                  className="tap flex min-h-11 items-center rounded-full border border-line bg-surface px-4 text-base text-ink-soft transition-colors hover:border-accent/40 hover:text-ink"
+                  className="tap flex min-h-11 items-center rounded-full border border-line bg-surface px-4 text-body text-ink-soft transition-colors hover:border-accent/40 hover:text-ink"
                 >
                   {idea.label}
                 </button>
@@ -133,7 +141,7 @@ export function SimpleHome({
         </section>
 
         {demo && (
-          <p className="mt-10 max-w-xl text-center text-base text-ink-mute">
+          <p className="mt-10 max-w-xl text-center text-body text-ink-mute">
             Aperçu : les résultats sont des exemples. Connectez-vous pour générer vos propres pièces.
           </p>
         )}
