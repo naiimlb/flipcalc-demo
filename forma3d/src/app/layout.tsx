@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { PreferencesProvider } from "@/components/app/Preferences";
 import { RegisterServiceWorker } from "@/components/app/RegisterServiceWorker";
@@ -11,19 +11,23 @@ import { getSession } from "@/lib/supabase/server";
 import { DEFAULT_THEME, THEME_BOOT_SCRIPT, THEME_COOKIE, isThemeChoice, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
-// Interface : Inter (sans-serif sobre). Valeurs numériques et cotes : JetBrains Mono (chasse fixe).
-const uiFont = Inter({
-  subsets: ["latin"],
+// Polices auto-hébergées (licence OFL, fichiers dans src/app/fonts) : le build ne dépend d'aucun service externe.
+// Interface : Inter (police variable 400 à 600). Valeurs numériques : JetBrains Mono.
+const uiFont = localFont({
+  src: "./fonts/Inter-latin-var.woff2",
+  weight: "400 600",
   display: "swap",
   variable: "--font-sans",
+  fallback: ["system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
 });
-const monoFont = JetBrains_Mono({
-  subsets: ["latin"],
+const monoFont = localFont({
+  src: "./fonts/JetBrainsMono-latin-var.woff2",
+  weight: "400 500",
   display: "swap",
   variable: "--font-mono",
-  weight: ["400", "500"],
   // Petites valeurs seulement : pas de préchargement (le premier affichage reste léger).
   preload: false,
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 });
 
 /** Écrans de lancement iOS : un par taille d'appareil (largeur × hauteur en pixels CSS, densité). */
