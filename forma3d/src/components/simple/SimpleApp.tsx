@@ -260,6 +260,7 @@ export function SimpleApp({ demo, signedIn, features }: Props) {
               setScreen({ kind: "home" });
             }}
             onAdvanced={() => openAdvanced(screen.item, screen.design)}
+            request={[screen.item.prompt, ...(request.current?.answers ?? []).map((a) => a.answer)].join(" ")}
           />
         )}
       </div>

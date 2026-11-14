@@ -3,6 +3,7 @@ import { generateDesignWithClaude, type ClaudeUsage, type ImageMediaType } from 
 import { DEMO_NO_MATCH, demoDesign, matchDemoDesign } from "./design/demo";
 import { languageInstruction } from "./design/prompt";
 import type { Design } from "./design/schema";
+import { verifyDesign, type VerifyCheck } from "./fabrication/verify";
 import { VARIANTS, applyVariantLocally, variantInstruction, type VariantId, type VariantIntensity } from "./design/variants";
 import { getSecret } from "./secrets";
 import type { AiSettings } from "./settings";
@@ -19,6 +20,19 @@ export interface GenerationOutcome {
   usage: ClaudeUsage | null;
   validationErrors: string[] | null;
   durationMs: number;
+  /** Vrai si une seconde génération a corrigé un défaut bloquant (pièce flottante, paroi trop fine). */
+  corrected?: boolean;
+}
+
+/** Défauts que l'IA doit corriger elle-même (une seule fois) : ils rendraient la pièce inimprimable. */
+export function blockingChecks(checks: VerifyCheck[]): VerifyCheck[] {
+  return checks.filter((c) => c.status === "error" && (c.id === "floating" || c.id === "walls"));
+}
+
+export function correctionInstruction(problems: VerifyCheck[]): string {
+  return `\n\nUne première version de cette conception avait des défauts bloquants pour l'impression 3D. Corrige-les en gardant la même solution :\n${problems
+    .map((p) => `- ${p.label} : ${p.detail}`)
+    .join("\n")}\nRappels : toutes les pièces doivent se toucher ou s'emboîter (aucune pièce flottante) et aucune paroi ne doit faire moins de 1,2 mm.`;
 }
 
 /**
@@ -131,18 +145,40 @@ export async function generateDesign(params: {
     };
   }
   if (result.ok) {
+    let final = result;
+    let corrected = false;
+    // Vérifications automatiques : un défaut bloquant déclenche UNE seule tentative de correction.
+    const problems = variant ? [] : blockingChecks(verifyDesign(result.design, { request: params.prompt }).checks);
+    if (problems.length) {
+      const retry = await generateDesignWithClaude({
+        apiKey,
+        systemPrompt: params.ai.systemPrompt + languageInstruction(params.language),
+        model: params.ai.model,
+        effort: params.ai.effort,
+        maxTokens: params.ai.maxTokens,
+        prompt: params.prompt + correctionInstruction(problems),
+        image: params.image ?? null,
+        onRestart: params.onRestart,
+      });
+      // On garde la correction seulement si elle a moins de défauts bloquants que la première version.
+      if (retry.ok && blockingChecks(verifyDesign(retry.design, { request: params.prompt }).checks).length < problems.length) {
+        final = retry;
+        corrected = true;
+      }
+    }
     return {
       ok: true,
-      design: markVariant(result.design),
+      design: markVariant(final.design),
       provider: "claude",
-      model: result.servedBy,
+      model: final.servedBy,
       error: null,
       detail: null,
-      raw: result.raw,
-      stopReason: result.stopReason,
-      usage: result.usage,
+      raw: final.raw,
+      stopReason: final.stopReason,
+      usage: final.usage,
       validationErrors: null,
-      durationMs,
+      durationMs: Date.now() - started,
+      corrected,
     };
   }
   return {

@@ -58,3 +58,43 @@ describe("repli quand l'IA est indisponible", () => {
     expect(generateDesignWithClaude).not.toHaveBeenCalled();
   });
 });
+
+describe("vérifications et correction automatique", () => {
+  const ok = (design: unknown) => ({ ok: true as const, design, raw: "{}", stopReason: "end_turn", usage: null, servedBy: "claude-test" });
+  const floating = () => {
+    const d = structuredClone(SAMPLE_DESIGNS[0].design);
+    d.model.parts[0].position.y += 500;
+    return d;
+  };
+
+  beforeEach(() => {
+    generateDesignWithClaude.mockReset();
+    getSecret.mockReset();
+    getSecret.mockResolvedValue("sk-ant-test-key");
+  });
+
+  it("une pièce sans défaut ne déclenche aucune seconde génération", async () => {
+    generateDesignWithClaude.mockResolvedValue(ok(SAMPLE_DESIGNS[0].design));
+    const outcome = await generateDesign({ prompt: "un support de téléphone", ai: DEFAULT_AI, allowDemo: false });
+    expect(outcome.ok).toBe(true);
+    expect(outcome.corrected).toBe(false);
+    expect(generateDesignWithClaude).toHaveBeenCalledTimes(1);
+  });
+
+  it("une pièce flottante est corrigée par une seule seconde génération", async () => {
+    generateDesignWithClaude.mockResolvedValueOnce(ok(floating())).mockResolvedValueOnce(ok(SAMPLE_DESIGNS[0].design));
+    const outcome = await generateDesign({ prompt: "un support de téléphone", ai: DEFAULT_AI, allowDemo: false });
+    expect(generateDesignWithClaude).toHaveBeenCalledTimes(2);
+    expect(generateDesignWithClaude.mock.calls[1][0].prompt).toContain("Pièces flottantes");
+    expect(outcome.corrected).toBe(true);
+    expect(outcome.design?.model.parts[0].position.y).toBe(SAMPLE_DESIGNS[0].design.model.parts[0].position.y);
+  });
+
+  it("garde la première version si la correction n'est pas meilleure (jamais plus de 2 appels)", async () => {
+    generateDesignWithClaude.mockResolvedValue(ok(floating()));
+    const outcome = await generateDesign({ prompt: "un support de téléphone", ai: DEFAULT_AI, allowDemo: false });
+    expect(generateDesignWithClaude).toHaveBeenCalledTimes(2);
+    expect(outcome.corrected).toBe(false);
+    expect(outcome.ok).toBe(true);
+  });
+});

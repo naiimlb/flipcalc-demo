@@ -6,6 +6,7 @@ import type { Design } from "@/lib/design/schema";
 import { applyVariantLocally, type VariantId } from "@/lib/design/variants";
 import { DEFAULT_PRINT_SETTINGS, defaultPrintMaterial, estimatePrint } from "@/lib/fabrication/estimate";
 import { checkPrintability } from "@/lib/fabrication/printability";
+import { verifyDesign } from "@/lib/fabrication/verify";
 import { findPrinterPreset, DEFAULT_PRINTER } from "@/lib/fabrication/printer";
 import { downloadBlob, exportStl, fileBaseName } from "@/lib/three/export";
 import { DEFAULT_VIEWER_SETTINGS } from "../viewer/settings";
@@ -51,12 +52,15 @@ export function SimpleResult({
   printerId,
   onBack,
   onAdvanced,
+  request,
 }: {
   design: Design;
   demo: boolean;
   printerId?: string;
   onBack(): void;
   onAdvanced(): void;
+  /** Demande d'origine (et réponses) : sert à vérifier que les cotes demandées sont respectées. */
+  request?: string;
 }) {
   const toast = useToast();
   const tips = useTips(["result-adjust", "result-advanced"]);
@@ -69,6 +73,7 @@ export function SimpleResult({
   const dims = design.dimensions;
   const size = { width: dims.width * stretch.x, depth: dims.depth * stretch.z, height: dims.height * stretch.y };
   const report = useMemo(() => checkPrintability(design, volume), [design, volume]);
+  const verification = useMemo(() => verifyDesign(design, { request, printer: volume }), [design, request, volume]);
   // Estimation avec la matière conseillée par l'analyse (et non une matière par défaut).
   const estimate = useMemo(
     () => estimatePrint(design, { ...DEFAULT_PRINT_SETTINGS, material: defaultPrintMaterial(design) }, { supportsNeeded: report.supportsNeeded }),
@@ -155,6 +160,10 @@ export function SimpleResult({
             </span>
           </p>
 
+          <p className={`-mt-3 text-body ${verification.confidence === "high" ? "text-ink-soft" : verification.confidence === "medium" ? "text-warning" : "text-danger"}`}>
+            Confiance {verification.confidence === "high" ? "élevée" : verification.confidence === "medium" ? "moyenne" : "faible"} · {verification.summary}
+          </p>
+
           <button type="button" onClick={download} className="hidden min-h-12 items-center justify-center gap-2 rounded-xl bg-accent-strong px-5 text-lead font-medium text-white transition-colors hover:bg-accent-strong/90 lg:flex">
             <IconDownload size={20} /> Télécharger pour imprimer
           </button>
@@ -194,6 +203,19 @@ export function SimpleResult({
               <span aria-hidden className="text-ink-mute transition-transform group-open:rotate-90">›</span>
             </summary>
             <div className="space-y-4 px-4 pb-4 text-body text-ink-soft">
+              <ul className="space-y-2" aria-label="Vérifications automatiques">
+                {verification.checks.map((c) => (
+                  <li key={c.id} className="flex items-start gap-2">
+                    <span className={c.status === "ok" ? "text-success" : c.status === "warning" ? "text-warning" : "text-danger"}>
+                      {c.status === "ok" ? <IconCheck size={20} /> : <IconAlert size={20} />}
+                    </span>
+                    <span>
+                      <span className="font-medium text-ink">{c.label}</span> — {c.detail}
+                      <span className="sr-only">{c.status === "ok" ? " (réussi)" : c.status === "warning" ? " (à vérifier)" : " (problème)"}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
               <p>{design.analysis.summary}</p>
               {design.solution.howItWorks && <p>{design.solution.howItWorks}</p>}
               {design.fabrication.length > 0 && (
