@@ -139,9 +139,9 @@ export function SimpleResult({
             onFocusChange={() => {}}
             stretch={stretch}
           />
-          {demo && (
-            <span className="absolute start-3 top-3 rounded-full border border-line bg-surface/95 px-3 py-1 text-body text-ink-soft">Exemple de démonstration</span>
-          )}
+          <span className="absolute start-3 top-3 rounded-full border border-line bg-surface/95 px-3 py-1 text-body text-ink-soft">
+            {demo ? "Exemple de démonstration" : "Générée par IA"}
+          </span>
           <p className="pointer-events-none absolute bottom-3 start-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-surface/90 px-3 py-1 text-body text-ink-mute rtl:translate-x-1/2">
             <span className="sm:hidden">Glissez pour tourner</span>
             <span className="hidden sm:inline">Glissez pour tourner · pincez pour zoomer</span>
@@ -206,6 +206,13 @@ export function SimpleResult({
               ))}
             </div>
           )}
+
+          <div className="-mt-3 text-body text-ink-mute">
+            <p>Pièce générée par IA : vérifiez-la avant usage. Ne l&apos;utilisez jamais pour retenir ou porter une personne.</p>
+            <a href="/cgu" className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-ink">
+              Conditions d&apos;utilisation
+            </a>
+          </div>
 
           <div className="space-y-4">
             <h2 className="text-lead font-semibold text-ink">Ajuster les dimensions</h2>

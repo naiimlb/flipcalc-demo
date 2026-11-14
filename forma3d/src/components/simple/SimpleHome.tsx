@@ -75,11 +75,9 @@ export function SimpleHome({
           <span className="text-lead font-semibold">Forma3D</span>
         </span>
         <nav aria-label="Compte" className="ms-auto flex items-center gap-1">
-          <a href="/espace" className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
-            Mes projets
-          </a>
-          <a href="/connexion" className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
-            {signedIn ? "Mon compte" : "Se connecter"}
+          {/* Un seul lien : « Mes projets » une fois connecté (le compte s'y trouve), sinon « Se connecter ». */}
+          <a href={signedIn ? "/espace" : "/connexion"} className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
+            {signedIn ? "Mes projets" : "Se connecter"}
           </a>
         </nav>
       </header>
@@ -252,6 +250,11 @@ export function SimpleHome({
           </p>
         )}
       </main>
+      <footer className="flex justify-center px-5 pb-6">
+        <a href="/mentions-legales" className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-mute hover:text-ink">
+          Mentions légales et confidentialité
+        </a>
+      </footer>
     </div>
   );
 }
