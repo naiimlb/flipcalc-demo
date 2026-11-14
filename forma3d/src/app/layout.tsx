@@ -57,8 +57,12 @@ const STARTUP_IMAGES = [
 
 export async function generateMetadata(): Promise<Metadata> {
   const { site } = await getPublicSettings();
+  const base = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
   return {
+    metadataBase: new URL(base),
     title: { default: site.siteName, template: `%s · ${site.siteName}` },
+    openGraph: { type: "website", siteName: site.siteName, title: site.siteName, description: site.heroSubtitle, locale: "fr_FR" },
+    twitter: { card: "summary_large_image" },
     description: site.heroSubtitle,
     applicationName: site.siteName,
     icons: { icon: site.logoDataUrl ?? "/icon.svg", apple: "/icons/apple-touch-icon.png" },
