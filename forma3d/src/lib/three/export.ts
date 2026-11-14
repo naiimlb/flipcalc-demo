@@ -25,6 +25,9 @@ export function exportStl(design: Design, stretch?: { x: number; y: number; z: n
   }
   const view = new STLExporter().parse(group, { binary: true }) as DataView;
   disposeGroup(group);
+  // En-tête (80 octets) : mention « généré par IA », sans commencer par « solid » (réservé au STL texte).
+  const header = "Forma3D - piece generee par IA - a verifier avant impression";
+  for (let i = 0; i < 80; i++) view.setUint8(i, i < header.length ? header.charCodeAt(i) : 0);
   return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
 }
 

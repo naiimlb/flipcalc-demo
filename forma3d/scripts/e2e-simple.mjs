@@ -140,6 +140,13 @@ check(triangles > 0 && stl.length === 84 + 50 * triangles, `6. le fichier est un
 check(Math.abs(extent[0] - Number(after)) <= 1.5, `6. la largeur du fichier (${extent[0]} mm) suit le curseur (${after} mm)`);
 check(await page.getByText(/Fichier prêt/).isVisible(), "6. confirmation « Fichier prêt »");
 
+// 6b. 3MF posé sur le plateau (dans « Voir le détail »)
+await page.getByText("Voir le détail").click();
+const [download3mf] = await Promise.all([page.waitForEvent("download", { timeout: 20000 }), page.getByRole("button", { name: /Télécharger en 3MF/ }).click()]);
+const threeMf = readFileSync(await download3mf.path());
+check(download3mf.suggestedFilename().endsWith(".3mf") && threeMf.readUInt32LE(0) === 0x04034b50, `6b. fichier 3MF (archive valide, ${Math.round(threeMf.length / 1024)} Ko)`);
+check(threeMf.includes(Buffer.from("3D/3dmodel.model")) && threeMf.includes(Buffer.from("générée par IA")), "6b. 3MF : modèle et mention « générée par IA »");
+
 // 7. Mode avancé : l'éditeur s'ouvre avec la pièce
 await page.getByRole("button", { name: "Mode avancé" }).click();
 await page.waitForURL(/\/studio/, { timeout: 20000 });

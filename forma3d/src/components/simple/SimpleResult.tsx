@@ -11,6 +11,7 @@ import { verifyDesign } from "@/lib/fabrication/verify";
 import { safetyVerdict } from "@/lib/design/safety";
 import { findPrinterPreset, DEFAULT_PRINTER } from "@/lib/fabrication/printer";
 import { downloadBlob, exportStl, fileBaseName } from "@/lib/three/export";
+import { export3mf } from "@/lib/three/export3mf";
 import { DEFAULT_VIEWER_SETTINGS } from "../viewer/settings";
 import { Tip, useTips } from "./tips";
 import { Slider, useToast } from "./ui";
@@ -102,6 +103,12 @@ export function SimpleResult({
     setValues({});
     setStretch({ x: 1, y: 1, z: 1 });
     setTimeout(() => setAdjusting(null), 300);
+  };
+  const download3mf = () => {
+    const name = `${fileBaseName(design)}.3mf`;
+    const data = export3mf(design, { stretch, printer: volume });
+    downloadBlob(new Blob([data as BlobPart], { type: "model/3mf" }), name);
+    toast(`Fichier prêt : ${name}`);
   };
   const download = () => {
     const stl = exportStl(design, stretch);
@@ -235,6 +242,15 @@ export function SimpleResult({
               <span aria-hidden className="text-ink-mute transition-transform group-open:rotate-90">›</span>
             </summary>
             <div className="space-y-4 px-4 pb-4 text-body text-ink-soft">
+              <div>
+                <button
+                  type="button"
+                  onClick={download3mf}
+                  className="tap flex min-h-11 items-center gap-2 rounded-xl border border-line px-4 text-body font-medium text-ink hover:bg-paper"
+                >
+                  <IconDownload size={20} /> Télécharger en 3MF (posé et centré sur le plateau)
+                </button>
+              </div>
               <ul className="space-y-2" aria-label="Vérifications automatiques">
                 {verification.checks.map((c) => (
                   <li key={c.id} className="flex items-start gap-2">
