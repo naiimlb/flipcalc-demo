@@ -8,6 +8,18 @@ describe("pièces critiques", () => {
     }
   });
 
+  it("refuse les armes et les contenus protégés", () => {
+    for (const text of ["un chargeur pour pistolet", "une crosse de fusil", "une figurine Pikachu", "le logo de Nike en 3D", "un poing américain"]) {
+      expect(safetyVerdict(text)?.level, text).toBe("refuse");
+    }
+  });
+
+  it("n'empêche pas les objets compatibles avec une marque", () => {
+    for (const text of ["un support pour ma manette Xbox", "un étui pour Apple Watch", "un chargeur pour mon téléphone", "une boîte pour mes Lego"]) {
+      expect(safetyVerdict(text), text).toBeNull();
+    }
+  });
+
   it("avertit pour les usages sensibles", () => {
     for (const text of ["un tabouret pour la cuisine", "un cache pour une prise électrique", "une attelle de doigt", "un jouet pour bébé"]) {
       expect(safetyVerdict(text)?.level, text).toBe("warn");

@@ -14,6 +14,19 @@ export interface SafetyVerdict {
 }
 
 const RULES: { level: SafetyLevel; pattern: RegExp; message: string }[] = [
+  // Filtre de contenu (phase 4) : armes et contenus protégés.
+  {
+    level: "refuse",
+    pattern:
+      /\b(armes?( à feu| blanches?)?|pistolets?|revolvers?|fusils?|carabines?|silencieux|munitions?|cartouches? de (fusil|pistolet)|chargeurs? (de |d'|pour )(pistolet|fusil|arme)|canons? de (pistolet|fusil)|poings? am[eé]ricains?|couteaux? papillon|matraques?|ghost gun|glock|ar-?15|ak-?47)\b/i,
+    message: "Je ne conçois pas d'armes ni de pièces d'armes.",
+  },
+  {
+    level: "refuse",
+    pattern:
+      /\b(pok[eé]mon|pikachu|mickey|minnie|disney|marvel|spider-?man|batman|superman|star wars|dark vador|yoda|mario|luigi|zelda|sonic|harry potter|minecraft|hello kitty|naruto|one piece|dragon ball)\b|\blogos? (de |d'|du |de la )?(nike|adidas|apple|ferrari|porsche|mercedes|bmw|coca-?cola|mcdonald|chanel|gucci|louis vuitton|lego|nintendo|playstation|xbox)\b/i,
+    message: "Je ne reproduis pas de personnages, de logos ou de marques protégés. Décrivez plutôt la fonction de l'objet (par exemple « un support pour manette »).",
+  },
   {
     level: "refuse",
     pattern: /\b(harnais|baudrier|mousquetons?|assurage|prises? d'escalade|escalade)\b/i,
