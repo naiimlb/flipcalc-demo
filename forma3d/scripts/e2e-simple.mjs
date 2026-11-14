@@ -46,6 +46,14 @@ check((await page.getByRole("textbox").inputValue()) === absurd, "1c. le texte s
 check((await page.getByRole("list", { name: "Exemples de demandes" }).getByRole("button").count()) === 3, "1c. trois exemples cliquables proposés");
 await page.screenshot({ path: join(out, "1c-pas-compris.png") });
 
+// 1f. Photo + une cote : aperçu, champ de mesure, « Retirer la photo »
+const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+await page.locator('input[type="file"]').setInputFiles({ name: "prise.png", mimeType: "image/png", buffer: png });
+check(await page.getByRole("img", { name: "Photo jointe" }).isVisible(), "1f. aperçu de la photo jointe");
+check(await page.getByLabel(/Une mesure visible sur la photo/).isVisible(), "1f. champ « une mesure visible sur la photo »");
+await page.getByRole("button", { name: "Retirer la photo" }).click();
+check((await page.getByRole("img", { name: "Photo jointe" }).count()) === 0, "1f. la photo peut être retirée");
+
 // 1e. Pièce critique : refus immédiat et expliqué, texte conservé
 await page.getByRole("textbox").fill("un mousqueton pour l'escalade");
 await page.getByRole("button", { name: "Créer ma pièce" }).click();

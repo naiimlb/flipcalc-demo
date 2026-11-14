@@ -2,6 +2,7 @@ import "server-only";
 import { generateDesignWithClaude, type ClaudeUsage, type ImageMediaType } from "./ai/claude";
 import { DEMO_NO_MATCH, demoDesign, matchDemoDesign } from "./design/demo";
 import { languageInstruction } from "./design/prompt";
+import { standardPartsHint } from "./design/standard-parts";
 import type { Design } from "./design/schema";
 import { verifyDesign, type VerifyCheck } from "./fabrication/verify";
 import { VARIANTS, applyVariantLocally, variantInstruction, type VariantId, type VariantIntensity } from "./design/variants";
@@ -119,7 +120,7 @@ export async function generateDesign(params: {
     model: params.ai.model,
     effort: params.ai.effort,
     maxTokens: params.ai.maxTokens,
-    prompt: variant ? `${params.prompt}\n\n${variantInstruction(variant.id, variant.base, variant.intensity)}` : params.prompt,
+    prompt: variant ? `${params.prompt}\n\n${variantInstruction(variant.id, variant.base, variant.intensity)}` : params.prompt + standardPartsHint(params.prompt),
     image: variant ? null : (params.image ?? null),
     onText: params.onText,
     onRestart: params.onRestart,
@@ -156,7 +157,7 @@ export async function generateDesign(params: {
         model: params.ai.model,
         effort: params.ai.effort,
         maxTokens: params.ai.maxTokens,
-        prompt: params.prompt + correctionInstruction(problems),
+        prompt: params.prompt + standardPartsHint(params.prompt) + correctionInstruction(problems),
         image: params.image ?? null,
         onRestart: params.onRestart,
       });

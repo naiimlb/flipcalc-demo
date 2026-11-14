@@ -1,5 +1,6 @@
 "use client";
 
+import { DesignThumbnail } from "@/components/DesignThumbnail";
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -235,7 +236,7 @@ export function EspaceClient({
               {filtered.map((item) => (
                 <article key={item.id} className="panel flex flex-col p-3">
                   <div className="flex h-28 items-center justify-center rounded-md border border-line bg-paper" style={{ color: item.design?.model.parts[0]?.color ?? "rgb(var(--ink-mute))" }}>
-                    <IconCube size={20} />
+                    {item.design ? <DesignThumbnail design={item.design} className="h-full w-full" /> : <IconCube size={20} />}
                   </div>
                   <p className="mt-2 truncate text-sm font-semibold">{item.title ?? item.prompt}</p>
                   <p className="text-xs text-ink-mute">
@@ -399,8 +400,8 @@ function RequestRow({
 
   return (
     <li className="panel flex flex-wrap items-center gap-3 p-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-paper" style={{ color: item.design?.model.parts[0]?.color ?? "rgb(var(--ink-mute))" }}>
-        <IconCube size={16} />
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-paper" style={{ color: item.design?.model.parts[0]?.color ?? "rgb(var(--ink-mute))" }}>
+        {item.design ? <DesignThumbnail design={item.design} className="h-full w-full" /> : <IconCube size={16} />}
       </span>
       <div className="min-w-0 flex-1 basis-56">
         {editing ? (

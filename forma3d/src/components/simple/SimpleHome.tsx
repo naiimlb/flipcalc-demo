@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { PRINTER_PRESETS } from "@/lib/fabrication/printer";
 import { useTips } from "./tips";
 import { IconArrowRight, IconCamera, IconBulb, IconPrinter, LogoMark } from "../icons";
@@ -49,6 +49,18 @@ export function SimpleHome({
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
   const [printer, setPrinter] = useState(initial?.printer ?? PRINTER_PRESETS[0].id);
   const [photo, setPhoto] = useState<File | null>(initial?.photo ?? null);
+  // Photo + une cote : la mesure de référence permet d'estimer les tailles sur la photo.
+  const [cote, setCote] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!photo) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(photo);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
   const [ideasOpen, setIdeasOpen] = useState(false);
   const tips = useTips(["home"]);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -79,7 +91,8 @@ export function SimpleHome({
             e.preventDefault();
             if (ready) {
               tips.dismiss();
-              onSubmit({ prompt: prompt.trim(), printer, photo });
+              const reference = photo && cote.trim() ? ` (mesure de référence visible sur la photo : ${cote.trim()})` : "";
+              onSubmit({ prompt: `${prompt.trim()}${reference}`.slice(0, 1500), printer, photo });
             }
             else field.current?.focus();
           }}
@@ -153,6 +166,33 @@ export function SimpleHome({
             </button>
           </div>
 
+          {photo && preview && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element -- aperçu local (URL d'objet), jamais envoyé tel quel */}
+              <img src={preview} alt="Photo jointe" className="h-16 w-16 rounded-lg object-cover" />
+              <label className="min-w-0 flex-1 text-body text-ink-soft">
+                Une mesure visible sur la photo (conseillé)
+                <input
+                  value={cote}
+                  onChange={(e) => setCote(e.target.value)}
+                  maxLength={80}
+                  placeholder="Ex. : la prise fait 8 cm de large"
+                  className="mt-1 block min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-mute focus:border-accent focus:ring-4 focus:ring-accent/15"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setPhoto(null);
+                  setCote("");
+                  if (file.current) file.current.value = "";
+                }}
+                className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink"
+              >
+                Retirer la photo
+              </button>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             {allowPhoto ? (
             <button type="button" onClick={() => file.current?.click()} className="tap flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">

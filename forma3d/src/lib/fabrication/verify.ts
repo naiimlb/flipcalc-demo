@@ -1,4 +1,5 @@
 import type { Design } from "../design/schema";
+import { standardRequirements } from "../design/standard-parts";
 import { buildPartMeshes, meshesBounds, type PartMesh } from "./mesh";
 import { CRITICAL_WALL, MIN_WALL, checkPrintability, partThickness } from "./printability";
 import { DEFAULT_PRINTER, type PrinterVolume } from "./printer";
@@ -9,7 +10,7 @@ import { DEFAULT_PRINTER, type PrinterVolume } from "./printer";
  */
 
 export type CheckStatus = "ok" | "warning" | "error";
-export type CheckId = "closed" | "floating" | "walls" | "requested" | "declared" | "printer";
+export type CheckId = "closed" | "floating" | "walls" | "requested" | "standard" | "declared" | "printer";
 
 export interface VerifyCheck {
   id: CheckId;
@@ -144,6 +145,18 @@ export function verifyDesign(design: Design, options: { request?: string; printe
       missing.length === 0
         ? { id: "requested", status: "ok", label: "Cotes demandées respectées", detail: asked.map((mm) => `${fmt(mm)} mm`).join(", ") + " : retrouvées dans la pièce." }
         : { id: "requested", status: "warning", label: "Cotes demandées à vérifier", detail: `Non retrouvées telles quelles : ${missing.map((mm) => `${fmt(mm)} mm`).join(", ")}.` },
+    );
+  }
+
+  // 4 bis. Pièces normalisées citées (vis, écrous, inserts, aimants, roulements) : leur logement doit exister.
+  const standards = options.request ? standardRequirements(options.request) : [];
+  if (standards.length) {
+    const have = designMeasures(design, bounds);
+    const missing = standards.filter((r) => !r.acceptable.some((mm) => have.some((v) => Math.abs(v - mm) <= 0.3)));
+    checks.push(
+      missing.length === 0
+        ? { id: "standard", status: "ok", label: "Logements normalisés", detail: `${standards.map((r) => r.label).join(", ")} : cotes de logement présentes.` }
+        : { id: "standard", status: "warning", label: "Logements à vérifier", detail: `Cote de logement non retrouvée pour : ${missing.map((r) => r.label).join(", ")}.` },
     );
   }
 
