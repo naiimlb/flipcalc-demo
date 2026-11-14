@@ -76,7 +76,7 @@ export function SimpleHome({
         </span>
         <nav aria-label="Compte" className="ms-auto flex items-center gap-1">
           {/* Un seul lien : « Mes projets » une fois connecté (le compte s'y trouve), sinon « Se connecter ». */}
-          <a href={signedIn ? "/espace" : "/connexion"} className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
+          <a href={signedIn ? "/espace" : "/connexion?next=/"} className="tap flex min-h-11 items-center rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
             {signedIn ? "Mes projets" : "Se connecter"}
           </a>
         </nav>

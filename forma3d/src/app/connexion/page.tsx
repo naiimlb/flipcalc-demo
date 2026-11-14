@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { AuthShell } from "@/components/AuthShell";
 import { getPublicSettings } from "@/lib/settings.server";
 import { isDemoMode } from "@/lib/supabase/env";
@@ -14,7 +14,21 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ mode?: string; next?: string; erreur?: string }>;
 }) {
-  if (isDemoMode()) redirect("/");
+  // Démonstration (aperçu sans base de données) : on explique au lieu de renvoyer en silence vers l'accueil.
+  if (isDemoMode()) {
+    const { site } = await getPublicSettings();
+    return (
+      <AuthShell siteName={site.siteName} logoDataUrl={site.logoDataUrl} title="Connexion indisponible ici">
+        <p className="text-base text-ink-soft">
+          Cet aperçu est une démonstration : il n&apos;est relié à aucune base de données, donc la création de compte et la connexion y sont
+          désactivées. Sur le site en ligne, ce bouton ouvre la connexion normalement.
+        </p>
+        <Link href="/" className="btn-primary mt-6 min-h-11 w-full !text-base">
+          Revenir à l&apos;accueil
+        </Link>
+      </AuthShell>
+    );
+  }
 
   const [{ site, features }, providers] = await Promise.all([getPublicSettings(), getAuthProviders()]);
   const params = await searchParams;

@@ -31,6 +31,12 @@ await page.getByRole("button", { name: "Voir des idées" }).click();
 await page.getByRole("button", { name: "Support téléphone" }).click();
 const field = page.getByRole("textbox");
 check((await field.inputValue()).includes("téléphone"), "1. une idée remplit la demande");
+// 1a. « Se connecter » : ouvre la connexion (en démonstration : une explication, jamais un retour silencieux)
+await page.getByRole("link", { name: "Se connecter" }).click();
+await page.waitForURL(/\/connexion/, { timeout: 10000 });
+check(await page.getByRole("heading", { level: 1 }).isVisible(), `1a. « Se connecter » ouvre la page de connexion (${new URL(page.url()).pathname})`);
+await page.goto(base, { waitUntil: "networkidle" });
+
 // 1b. Premier lancement : l'astuce est visible, sans bouton supplémentaire (7 éléments au plus)
 await field.fill("");
 check(await page.getByText(/Astuce : décrivez votre besoin/).isVisible(), "1. astuce de premier lancement visible");

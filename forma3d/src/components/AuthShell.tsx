@@ -16,8 +16,8 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="relative flex min-h-dvh items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-card bg-paper/95 p-6 border border-line backdrop-blur sm:p-9">
+    <main className="simple-ui relative flex min-h-dvh items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md rounded-card border border-line bg-surface p-6 sm:p-9">
         <Link href="/" className="inline-flex items-center gap-2 font-semibold">
           {logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
