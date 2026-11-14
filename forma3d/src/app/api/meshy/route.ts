@@ -18,6 +18,7 @@ import {
 } from "@/lib/providers/meshy";
 import { REQUEST_COLUMNS, toRequestItem } from "@/lib/requests";
 import { getSecret } from "@/lib/secrets";
+import { getPublicSettings } from "@/lib/settings.server";
 import { isDemoMode } from "@/lib/supabase/env";
 import { getSession } from "@/lib/supabase/server";
 
@@ -32,6 +33,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export async function GET() {
   if (isDemoMode()) return NextResponse.json({ available: false, reason: "demo" });
+  if (!(await getPublicSettings()).features.meshy) return NextResponse.json({ available: false, reason: "disabled" });
   const session = await getSession();
   if (!session) return NextResponse.json({ available: false, reason: "guest" });
   const key = await getSecret("MESHY_API_KEY");
@@ -59,6 +61,7 @@ const BodySchema = z.object({
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.");
   if (isDemoMode()) return jsonError(503, "Indisponible en mode démo.", "meshy_unavailable");
+  if (!(await getPublicSettings()).features.meshy) return jsonError(503, "Fonction expérimentale désactivée.", "meshy_unavailable");
   const session = await getSession();
   if (!session) return jsonError(401, "Connectez-vous.");
   const parsed = BodySchema.safeParse(await request.json().catch(() => null));

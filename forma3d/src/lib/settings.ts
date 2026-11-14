@@ -53,6 +53,8 @@ export const FeatureFlagsSchema = z.object({
   guestTrial: z.boolean(),
   guestDailyLimit: z.number().int().min(0).max(100),
   guestGlobalDailyLimit: z.number().int().min(0).max(100000),
+  /** Objets décoratifs par Meshy (expérimental). Désactivé par défaut : ne pas l'ouvrir au public sans accord écrit de Meshy. */
+  meshy: z.boolean(),
 });
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>;
 
@@ -70,6 +72,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   guestTrial: true,
   guestDailyLimit: 2,
   guestGlobalDailyLimit: 200,
+  meshy: false,
 };
 
 export const CLAUDE_MODELS = [

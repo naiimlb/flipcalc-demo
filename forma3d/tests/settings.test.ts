@@ -26,3 +26,10 @@ describe("réglages", () => {
     expect(hexToRgbTriplet("#5b6ee1")).toBe("91 110 225");
   });
 });
+
+describe("Meshy derrière un interrupteur", () => {
+  it("est désactivé par défaut, y compris pour des réglages enregistrés avant l'interrupteur", () => {
+    expect(DEFAULT_FEATURES.meshy).toBe(false);
+    expect(mergeWithDefaults(FeatureFlagsSchema, DEFAULT_FEATURES, { exportGlb: false }).meshy).toBe(false);
+  });
+});

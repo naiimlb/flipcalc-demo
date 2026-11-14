@@ -23,6 +23,11 @@ const GROUPS: { title: string; items: { key: BoolKey; label: string; help: strin
       { key: "newRequests", label: "Nouvelles demandes", help: "Désactiver pour suspendre les générations (sauf admins)." },
       { key: "imageUpload", label: "Ajout de photo", help: "Photo de référence jointe à la demande." },
       { key: "demoFallback", label: "Modèles d'exemple si l'IA est absente", help: "Sans clé Anthropic, utilise le modèle d'exemple le plus proche." },
+      {
+        key: "meshy",
+        label: "Objets décoratifs par Meshy (expérimental)",
+        help: "Désactivé par défaut. Les conditions de Meshy interdisent de revendre l'accès : ne pas activer en public sans leur accord écrit.",
+      },
     ],
   },
   {
