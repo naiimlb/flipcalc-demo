@@ -10,6 +10,15 @@ on:
       - "forma3d/**"
       - ".github/workflows/forma3d.yml"
   workflow_dispatch:
+    inputs:
+      comparatif:
+        description: "Lancer le comparatif de modèles (appels Claude réels, payants)"
+        type: boolean
+        default: false
+      budget:
+        description: "Plafond de dépense du comparatif, en dollars"
+        type: string
+        default: "3"
 
 permissions:
   contents: write
@@ -208,3 +217,30 @@ jobs:
           for d in . forma3d gratcoran cinemood cinemood-demo commande hashtagbangers maze; do mkdir -p "$d" && echo '{"git":{"deploymentEnabled":false}}' > "$d/vercel.json"; done
           git add . && git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Captures E2E Forma3D (run $GITHUB_RUN_ID)"
           git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/forma3d-e2e-screens
+
+  # Comparatif Opus / Sonnet / Haiku 5.5 (refonte, phase 2) : uniquement à la demande, avec le secret
+  # ANTHROPIC_API_KEY du dépôt. Plafond de dépense strict ; la clé n'est jamais affichée ni enregistrée.
+  comparatif-modeles:
+    if: github.event_name == 'workflow_dispatch' && inputs.comparatif
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forma3d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Comparatif (10 demandes × 3 modèles)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BUDGET_USD: ${{ inputs.budget }}
+        run: |
+          npx --yes tsx@4.19.2 --conditions=react-server scripts/compare-models.ts "$RUNNER_TEMP/comparatif"
+          cat "$RUNNER_TEMP/comparatif/comparatif.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comparatif-modeles
+          path: ${{ runner.temp }}/comparatif
