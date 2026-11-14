@@ -20,7 +20,7 @@ import { ToastProvider } from "./ui";
 export const HANDOFF_KEY = "forma3d:handoff";
 const PRINTER_KEY = "forma3d:printer";
 
-type Notice = { text: string; action?: { label: string; href: string } } | null;
+type Notice = { text: string; action?: { label: string; href: string }; examples?: boolean } | null;
 type Screen =
   | { kind: "home" }
   | { kind: "checking"; startedAt: number }
@@ -128,6 +128,10 @@ export function SimpleApp({ demo, signedIn, features }: Props) {
           return;
         }
         if (item.status !== "ready" || !item.design) {
+          if (item.error?.startsWith("Je n'ai pas compris")) {
+            backHome({ text: "Je n'ai pas compris ce besoin. Décrivez un objet du quotidien (support, range-câbles, cache…), ou partez d'un exemple :", examples: true });
+            return;
+          }
           backHome({ text: `${item.error ?? "Je n'ai pas réussi à créer cette pièce."} Votre texte est conservé : vous pouvez réessayer ou le reformuler.` });
           return;
         }

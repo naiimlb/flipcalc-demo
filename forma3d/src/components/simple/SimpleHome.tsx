@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { PRINTER_PRESETS } from "@/lib/fabrication/printer";
+import { useTips } from "./tips";
 import { IconArrowRight, IconCamera, IconBulb, IconPrinter, LogoMark } from "../icons";
 
 /**  : un clic remplit la demande (rien n'est envoyé sans confirmation). */
@@ -39,7 +40,7 @@ export function SimpleHome({
   /** Saisie à restaurer (retour depuis une erreur, brouillon, « Modifier ma demande »). */
   initial?: Partial<SimpleRequest>;
   /** Message humain (erreur, annulation) avec une action éventuelle. */
-  notice?: { text: string; action?: { label: string; href: string } } | null;
+  notice?: { text: string; action?: { label: string; href: string }; examples?: boolean } | null;
   /** Appelé à chaque frappe : le texte n'est jamais perdu. */
   onDraft?(prompt: string): void;
   onSubmit(request: SimpleRequest): void;
@@ -49,6 +50,7 @@ export function SimpleHome({
   const [printer, setPrinter] = useState(initial?.printer ?? PRINTER_PRESETS[0].id);
   const [photo, setPhoto] = useState<File | null>(initial?.photo ?? null);
   const [ideasOpen, setIdeasOpen] = useState(false);
+  const tips = useTips(["home"]);
   const field = useRef<HTMLTextAreaElement>(null);
   const file = useRef<HTMLInputElement>(null);
   const ready = prompt.trim().length >= 3;
@@ -75,13 +77,19 @@ export function SimpleHome({
           className="w-full max-w-2xl"
           onSubmit={(e) => {
             e.preventDefault();
-            if (ready) onSubmit({ prompt: prompt.trim(), printer, photo });
+            if (ready) {
+              tips.dismiss();
+              onSubmit({ prompt: prompt.trim(), printer, photo });
+            }
             else field.current?.focus();
           }}
         >
           <h1 id={`${id}-title`} className="block text-center text-title font-semibold text-ink sm:text-hero">
             Quel problème voulez-vous résoudre{"\u202f"}?
           </h1>
+          {tips.id === "home" && !prompt && !notice && (
+            <p className="mt-3 text-center text-body text-ink-mute">Astuce : décrivez votre besoin avec vos mots, comme à un ami. Pas besoin de termes techniques.</p>
+          )}
           {notice && (
             <p role="alert" className="mt-6 rounded-xl bg-warning/10 px-4 py-3 text-body text-warning">
               {notice.text}
@@ -94,6 +102,25 @@ export function SimpleHome({
                 </>
               )}
             </p>
+          )}
+          {notice?.examples && (
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Exemples de demandes">
+              {IDEAS.slice(0, 3).map((idea) => (
+                <li key={idea.label}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrompt(idea.prompt);
+                      onDraft?.(idea.prompt);
+                      field.current?.focus();
+                    }}
+                    className="tap flex min-h-11 items-center rounded-full border border-line bg-surface px-4 text-body text-ink-soft transition-colors hover:border-accent/40 hover:text-ink"
+                  >
+                    {idea.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
           <div className="mt-8 flex items-end gap-2 rounded-2xl border border-line bg-surface p-2 ps-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/15">
             <textarea

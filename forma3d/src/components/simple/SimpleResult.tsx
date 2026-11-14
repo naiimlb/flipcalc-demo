@@ -9,6 +9,7 @@ import { checkPrintability } from "@/lib/fabrication/printability";
 import { findPrinterPreset, DEFAULT_PRINTER } from "@/lib/fabrication/printer";
 import { downloadBlob, exportStl, fileBaseName } from "@/lib/three/export";
 import { DEFAULT_VIEWER_SETTINGS } from "../viewer/settings";
+import { Tip, useTips } from "./tips";
 import { Slider, useToast } from "./ui";
 import { IconAlert, IconArrowLeft, IconCheck, IconDownload, IconSliders, Spinner } from "../icons";
 
@@ -58,6 +59,7 @@ export function SimpleResult({
   onAdvanced(): void;
 }) {
   const toast = useToast();
+  const tips = useTips(["result-adjust", "result-advanced"]);
   const [design, setDesign] = useState(initial);
   const [stretch, setStretch] = useState<Stretch>({ x: 1, y: 1, z: 1 });
   const [adjusting, setAdjusting] = useState<VariantId | null>(null);
@@ -141,6 +143,9 @@ export function SimpleResult({
               <li>Matière conseillée : {material}</li>
             </ul>
           </div>
+
+          {tips.id === "result-adjust" && <Tip onDismiss={tips.dismiss}>Ajustez la largeur, la profondeur et la hauteur avec les curseurs : le fichier téléchargé suit vos réglages.</Tip>}
+          {tips.id === "result-advanced" && <Tip onDismiss={tips.dismiss}>Besoin de plus de contrôle ? « Mode avancé » (en haut à droite) ouvre l&apos;éditeur complet.</Tip>}
 
           <p className={`flex items-start gap-2 rounded-xl px-4 py-3 text-body ${verdictOk ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
             {verdictOk ? <IconCheck size={20} /> : <IconAlert size={20} />}

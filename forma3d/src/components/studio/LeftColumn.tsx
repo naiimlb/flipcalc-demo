@@ -284,14 +284,16 @@ function Notice({
   }
   if (!title) return null;
 
+  const isError = item?.status === "error";
+  // Seules les vraies erreurs sont en rouge ; démonstration, exemples et repli sont des informations neutres.
   return (
-    <div className="rounded-2xl bg-danger/10 p-3 ring-1 ring-danger/30 dark:bg-danger/10 dark:ring-danger/20">
-      <p className="flex items-center gap-1.5 text-sm font-semibold text-danger">
-        {item?.status === "error" ? <IconAlert size={14} /> : <IconSparkles size={14} />}
+    <div className={isError ? "rounded-2xl bg-danger/10 p-3 ring-1 ring-danger/30 dark:bg-danger/10 dark:ring-danger/20" : "rounded-2xl bg-paper p-3 ring-1 ring-line"}>
+      <p className={`flex items-center gap-1.5 text-sm font-semibold ${isError ? "text-danger" : "text-ink"}`}>
+        {isError ? <IconAlert size={14} /> : <IconSparkles size={14} />}
         {title}
       </p>
-      <p className="mt-1 text-xs leading-snug text-danger/90">{body}</p>
-      {meta && <p className="mt-1.5 text-xs text-danger">{meta}</p>}
+      <p className={`mt-1 text-xs leading-snug ${isError ? "text-danger/90" : "text-ink-soft"}`}>{body}</p>
+      {meta && <p className={`mt-1.5 text-xs ${isError ? "text-danger" : "text-ink-mute"}`}>{meta}</p>}
     </div>
   );
 }

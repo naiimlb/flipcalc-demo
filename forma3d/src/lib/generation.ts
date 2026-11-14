@@ -1,6 +1,6 @@
 import "server-only";
 import { generateDesignWithClaude, type ClaudeUsage, type ImageMediaType } from "./ai/claude";
-import { demoDesign } from "./design/demo";
+import { DEMO_NO_MATCH, demoDesign, matchDemoDesign } from "./design/demo";
 import { languageInstruction } from "./design/prompt";
 import type { Design } from "./design/schema";
 import { VARIANTS, applyVariantLocally, variantInstruction, type VariantId, type VariantIntensity } from "./design/variants";
@@ -47,6 +47,21 @@ export async function generateDesign(params: {
     variant ? applyVariantLocally(variant.base, variant.id, variant.intensity) : demoDesign(params.prompt, note);
   const markVariant = (design: Design): Design =>
     variant ? { ...design, variante: { objectif: variant.id, libelle: VARIANTS[variant.id].label, base: variant.base.title } } : design;
+  // Démonstration : aucune demande sans rapport avec les exemples ne reçoit un modèle au hasard.
+  const noMatch = (): GenerationOutcome => ({
+    ok: false,
+    design: null,
+    provider: "demo",
+    model: null,
+    error: DEMO_NO_MATCH,
+    detail: "Aucun modèle d'exemple ne correspond à cette demande (démonstration).",
+    raw: null,
+    stopReason: null,
+    usage: null,
+    validationErrors: null,
+    durationMs: Date.now() - started,
+  });
+  const unmatched = !variant && !matchDemoDesign(params.prompt);
   const apiKey = params.forceDemo ? null : await getSecret("ANTHROPIC_API_KEY");
 
   if (!apiKey) {
@@ -65,6 +80,7 @@ export async function generateDesign(params: {
         durationMs: Date.now() - started,
       };
     }
+    if (unmatched) return noMatch();
     // Petite attente pour que l'animation de génération reste lisible.
     await new Promise((r) => setTimeout(r, 900));
     const design = fallbackDesign("Mode démonstration : modèle d'exemple le plus proche de la demande (l'IA n'a pas été utilisée).");
@@ -98,6 +114,7 @@ export async function generateDesign(params: {
   if (!result.ok && result.unavailable && params.allowDemo) {
     // Crédit épuisé, clé refusée… : on sert le modèle d'exemple le plus proche plutôt qu'une erreur.
     console.warn(`IA indisponible, repli sur les exemples : ${result.detail}`);
+    if (unmatched) return noMatch();
     const design = fallbackDesign("L'IA n'a pas pu répondre (clé, crédit ou réglage) : modèle d'exemple le plus proche de la demande.");
     return {
       ok: true,

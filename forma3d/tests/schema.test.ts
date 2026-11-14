@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { DESIGN_JSON_SCHEMA, extractJson, normalizeRecommendedMaterials, validateDesign, type RecommendedMaterial } from "@/lib/design/schema";
 import { SAMPLE_DESIGNS } from "@/lib/design/samples";
-import { demoDesign } from "@/lib/design/demo";
+import { demoDesign, matchDemoDesign } from "@/lib/design/demo";
 
 type JsonNode = { type?: string; properties?: Record<string, JsonNode>; required?: string[]; additionalProperties?: boolean; items?: JsonNode };
 
@@ -89,6 +89,9 @@ describe("générateur de démonstration", () => {
     expect(demoDesign("Ranger mes câbles USB").title).toBe(SAMPLE_DESIGNS[1].design.title);
     expect(demoDesign("un support pour mon téléphone").title).toBe(SAMPLE_DESIGNS[0].design.title);
     expect(demoDesign("je perds mes clés").title).toBe(SAMPLE_DESIGNS[2].design.title);
+    // Jamais de modèle sans rapport : une demande absurde ne correspond à aucun exemple.
+    expect(matchDemoDesign("fjqz xkcd plumeau galactique")).toBeNull();
+    expect(matchDemoDesign("un organiseur de tiroir pour les couverts")).not.toBeNull();
     const other = demoDesign("quelque chose d'autre");
     expect(other.title).toBe(SAMPLE_DESIGNS[3].design.title);
     expect(other.analysis.assumptions[0]).toContain("démonstration");

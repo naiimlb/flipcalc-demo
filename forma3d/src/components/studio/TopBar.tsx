@@ -213,7 +213,7 @@ export function AccountMenu({
   const ref = useOutsideClose(open, () => setOpen(false));
 
   if (!viewer) {
-    if (demoMode) return <span className="chip bg-warning/10 text-warning">{t("nav.demo")}</span>;
+    if (demoMode) return <span className="chip bg-paper text-ink-soft ring-1 ring-line">{t("nav.demo")}</span>;
     return (
       <div className="flex items-center gap-1.5">
         <Link href="/connexion" className="btn-subtle tap">
