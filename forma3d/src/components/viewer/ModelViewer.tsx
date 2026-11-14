@@ -67,6 +67,8 @@ interface ViewerProps {
   showAxes?: boolean;
   /** Règle : cotes de l'encombrement (largeur, profondeur, hauteur). */
   showRuler?: boolean;
+  /** Étirement de tout le modèle par axe (curseurs Largeur / Hauteur / Profondeur du parcours simple). */
+  stretch?: { x: number; y: number; z: number };
 }
 
 export default function ModelViewer(props: ViewerProps) {
@@ -99,6 +101,7 @@ function Scene({
   hiddenIds,
   showAxes = false,
   showRuler = false,
+  stretch,
   selectedIds,
   transformMode = null,
   snap = null,
@@ -391,7 +394,7 @@ function Scene({
         </Suspense>
       ) : (
         design && (
-          <group scale={SCENE_SCALE}>
+          <group scale={stretch ? [SCENE_SCALE * stretch.x, SCENE_SCALE * stretch.y, SCENE_SCALE * stretch.z] : SCENE_SCALE}>
             {design.model.parts.map((part, index) =>
               hiddenIds?.includes(part.id) ? null : (
               <PartMesh

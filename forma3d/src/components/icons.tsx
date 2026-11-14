@@ -66,6 +66,10 @@ import {
   Video,
   Axis3d,
   Menu,
+  Printer,
+  ArrowRight,
+  ArrowLeft,
+  SlidersHorizontal,
   type LucideIcon,
 } from "lucide-react";
 
@@ -152,6 +156,10 @@ export const IconTorus = icon(Disc);
 export const IconText = icon(Type);
 export const IconDraw = icon(PenTool);
 export const IconMenu = icon(Menu);
+export const IconPrinter = icon(Printer);
+export const IconArrowRight = icon(ArrowRight);
+export const IconArrowLeft = icon(ArrowLeft);
+export const IconSliders = icon(SlidersHorizontal);
 
 /** Indicateur d'activité : anneau fin qui tourne (figé si l'on demande de réduire les animations). */
 export function Spinner({ size = 16, className = "" }: { size?: number; className?: string }) {

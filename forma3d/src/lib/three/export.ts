@@ -16,9 +16,13 @@ export function fileBaseName(design: Design): string {
   return base || "forma3d";
 }
 
-/** STL binaire en millimètres (unité attendue par les trancheurs d'impression 3D). */
-export function exportStl(design: Design): ArrayBuffer {
+/** STL binaire en millimètres (unité attendue par les trancheurs d'impression 3D), étiré par axe si demandé. */
+export function exportStl(design: Design, stretch?: { x: number; y: number; z: number }): ArrayBuffer {
   const group = buildDesignGroup(design, 1);
+  if (stretch) {
+    group.scale.set(group.scale.x * stretch.x, group.scale.y * stretch.y, group.scale.z * stretch.z);
+    group.updateMatrixWorld(true);
+  }
   const view = new STLExporter().parse(group, { binary: true }) as DataView;
   disposeGroup(group);
   return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
