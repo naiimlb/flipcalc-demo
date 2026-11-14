@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ipHash } from "@/lib/request-ip";
+import { allowBurst } from "@/lib/rate-limit";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isSameOrigin, jsonError } from "@/lib/http";
 import { getSession } from "@/lib/supabase/server";
@@ -17,6 +19,7 @@ async function removeFolder(supabase: SupabaseClient, bucket: string, userId: st
 /** Suppression définitive du compte : fichiers Storage, puis utilisateur (le reste suit en cascade). */
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.");
+  if (!allowBurst("account-delete", ipHash(request), 5, 3600)) return jsonError(429, "Trop de tentatives : réessayez plus tard.", "rate_limited");
   const session = await getSession();
   if (!session) return jsonError(401, "Connectez-vous.");
   const body = (await request.json().catch(() => null)) as { confirm?: string } | null;

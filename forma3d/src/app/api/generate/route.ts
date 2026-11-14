@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { allowBurst } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { IMAGE_MEDIA_TYPES } from "@/lib/ai/claude";
@@ -311,6 +312,8 @@ async function run(request: Request, body: Body, emit: Emit, variant: { id: Vari
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.", "forbidden");
+  // Rafale de demandes depuis une même source (quotas et crédits restent la vraie limite pour les comptes).
+  if (!allowBurst("generate", ipHash(request), 60, 600)) return jsonError(429, "Trop de demandes d'affilée : réessayez dans quelques minutes.", "rate_limited");
 
   let body: Body;
   try {

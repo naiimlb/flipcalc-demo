@@ -1,3 +1,41 @@
+/**
+ * Politique de sécurité du contenu (CSP) : seules les ressources du site, de Supabase (base, fichiers) et, pour les
+ * modèles compressés, le décodeur Draco de Google sont autorisées. Les scripts en ligne restent permis (Next.js et le
+ * script de thème en ont besoin) mais aucun script externe ne peut être injecté, et le site ne peut pas être encadré.
+ * Sur les Preview Vercel, la barre d'outils de Vercel est autorisée.
+ */
+function contentSecurityPolicy() {
+  let supabase = "";
+  try {
+    supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host : "";
+  } catch {
+    supabase = "";
+  }
+  const dev = process.env.NODE_ENV !== "production";
+  const preview = process.env.VERCEL_ENV === "preview";
+  const vercel = preview ? ["https://vercel.live", "https://vercel.com"] : [];
+  const sb = supabase ? [`https://${supabase}`, `wss://${supabase}`] : [];
+  const directives = {
+    "default-src": ["'self'"],
+    "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://www.gstatic.com", ...(dev ? ["'unsafe-eval'"] : []), ...vercel],
+    "style-src": ["'self'", "'unsafe-inline'", ...vercel],
+    "img-src": ["'self'", "data:", "blob:", ...sb.filter((u) => u.startsWith("https")), ...vercel],
+    "font-src": ["'self'", "data:", ...vercel],
+    "connect-src": ["'self'", "blob:", "data:", "https://www.gstatic.com", ...sb, ...(preview ? ["https://vercel.live", "wss://ws-us3.pusher.com"] : [])],
+    "media-src": ["'self'", "blob:"],
+    "worker-src": ["'self'", "blob:"],
+    "frame-src": preview ? ["https://vercel.live"] : ["'none'"],
+    "manifest-src": ["'self'"],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    "frame-ancestors": ["'none'"],
+  };
+  return Object.entries(directives)
+    .map(([k, v]) => `${k} ${v.join(" ")}`)
+    .join("; ");
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -28,6 +66,7 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: [
+          { key: "Content-Security-Policy", value: contentSecurityPolicy() },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },

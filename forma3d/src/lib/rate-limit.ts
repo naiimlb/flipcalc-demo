@@ -21,6 +21,15 @@ function allowInMemory(bucket: string, max: number, windowSeconds: number): bool
   return true;
 }
 
+/**
+ * Limite simple par personne (compte ou adresse anonymisée), en mémoire de l'instance, pour les routes sans compteur
+ * en base. Moins stricte qu'un compteur SQL (plusieurs instances), mais bloque les abus répétés depuis une même source.
+ * Un compteur en base pour ces routes demanderait une migration (non appliquée sans accord).
+ */
+export function allowBurst(scope: string, identity: string, max: number, windowSeconds: number): boolean {
+  return allowInMemory(`${scope}:${identity}`, max, windowSeconds);
+}
+
 export async function allowAction(
   supabase: SupabaseClient | null,
   scope: "clarify",

@@ -12,7 +12,12 @@ export function jsonError(status: number, error: string, code?: string) {
  */
 export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
-  if (!origin) return true; // requêtes same-origin de certains navigateurs, outils serveur
+  if (!origin) {
+    // Sans en-tête Origin : on s'appuie sur Sec-Fetch-Site, que les navigateurs envoient toujours.
+    // Absent (outils serveur, scripts) : accepté ; présent, il doit indiquer le même site.
+    const site = request.headers.get("sec-fetch-site");
+    return !site || site === "same-origin" || site === "none";
+  }
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   try {
     return new URL(origin).host === host;

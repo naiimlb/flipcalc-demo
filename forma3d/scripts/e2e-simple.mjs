@@ -18,7 +18,11 @@ const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--ena
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "fr-FR", acceptDownloads: true });
 const page = await context.newPage();
 const errors = [];
+const cspViolations = [];
 page.on("pageerror", (e) => errors.push(e.message));
+page.on("console", (m) => {
+  if (m.type() === "error" && /Content Security Policy|Refused to/i.test(m.text())) cspViolations.push(m.text().slice(0, 160));
+});
 
 // 1. Demande
 await page.goto(base, { waitUntil: "networkidle" });
@@ -185,6 +189,17 @@ await page.screenshot({ path: join(out, "7-mode-avance.png") });
   check(!before.equals(after), "8. iPad : le modèle a tourné");
   await tablet.close();
 }
+
+// 9. Pages publiques : chargées sans violation de la politique de sécurité (CSP), 404 lisible
+for (const path of ["/decouvrir", "/studio", "/galerie", "/connexion", "/mentions-legales", "/confidentialite", "/cgu"]) {
+  const res = await page.goto(`${base}${path}`, { waitUntil: "networkidle" });
+  check(res?.ok() ?? false, `9. ${path} s'affiche`);
+}
+const missing = await page.goto(`${base}/page-qui-n-existe-pas`, { waitUntil: "networkidle" });
+check(missing?.status() === 404 && (await page.getByRole("heading", { name: "Cette page n'existe pas" }).isVisible()), "9. page 404 lisible");
+check(cspViolations.length === 0, `9. aucune violation CSP (${cspViolations.length})${cspViolations.length ? " : " + cspViolations[0] : ""}`);
+const headers = (await page.request.get(base)).headers();
+check(/frame-ancestors 'none'/.test(headers["content-security-policy"] ?? ""), "9. en-tête CSP présent (frame-ancestors 'none')");
 
 check(errors.length === 0, `aucune erreur JavaScript (${errors.length})`);
 await browser.close();

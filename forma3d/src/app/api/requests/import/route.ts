@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ipHash } from "@/lib/request-ip";
+import { allowBurst } from "@/lib/rate-limit";
 import { z } from "zod";
 import { validateDesign } from "@/lib/design/schema";
 import { isSameOrigin, jsonError } from "@/lib/http";
@@ -17,6 +19,7 @@ const BodySchema = z.object({
 /** Enregistre dans le compte le résultat d'un essai fait avant l'inscription. */
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.");
+  if (!allowBurst("import", ipHash(request), 20, 600)) return jsonError(429, "Trop d'imports d'affilée : réessayez dans quelques minutes.", "rate_limited");
   const session = await getSession();
   if (!session) return jsonError(401, "Connectez-vous.");
   const parsed = BodySchema.safeParse(await request.json().catch(() => null));

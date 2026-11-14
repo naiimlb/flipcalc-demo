@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ipHash } from "@/lib/request-ip";
+import { allowBurst } from "@/lib/rate-limit";
 import { z } from "zod";
 import { validateDesign } from "@/lib/design/schema";
 import { isSameOrigin, jsonError } from "@/lib/http";
@@ -16,6 +18,7 @@ const BodySchema = z.object({ design: z.unknown() });
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.");
+  if (!allowBurst("design-save", ipHash(request), 240, 600)) return jsonError(429, "Trop d'enregistrements d'affilée : patientez un instant.", "rate_limited");
   const { id } = await params;
   if (!UUID.test(id)) return jsonError(400, "Identifiant invalide.");
   const session = await getSession();

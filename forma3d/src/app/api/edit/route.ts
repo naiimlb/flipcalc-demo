@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ipHash } from "@/lib/request-ip";
+import { allowBurst } from "@/lib/rate-limit";
 import { z } from "zod";
 import { editDesignWithClaude } from "@/lib/ai/edit";
 import { consumeCredits, getMyCredits, refundCredits } from "@/lib/credits";
@@ -29,6 +31,8 @@ const BodySchema = z.object({
  */
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return jsonError(403, "Origine refusée.");
+  // Chaque modification appelle l'IA : 30 par heure et par source au plus.
+  if (!allowBurst("edit", ipHash(request), 30, 3600)) return jsonError(429, "Trop de modifications d'affilée : réessayez dans quelques minutes.", "rate_limited");
   const raw = await request.text();
   if (raw.length > 400_000) return jsonError(413, "Modèle trop volumineux.");
   let json: unknown = null;
