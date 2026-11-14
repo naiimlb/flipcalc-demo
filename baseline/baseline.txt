@@ -1,0 +1,16 @@
+écran | taille | interactifs (1er écran / total) | cibles < 44 px | débordement | axe sérieux | transfert (JS) | corps
+accueil | iphone-390 | 7 / 7 | 0 | 0 px | 0 (—) | 394 Ko (327 Ko) | 14px
+accueil | ipad-portrait-820 | 7 / 7 | 0 | 0 px | 0 (—) | 394 Ko (327 Ko) | 14px
+accueil | ipad-paysage-1180 | 7 / 7 | 0 | 0 px | 0 (—) | 394 Ko (327 Ko) | 14px
+accueil | macbook-air-1280 | 7 / 7 | 0 | 0 px | 0 (—) | 394 Ko (327 Ko) | 14px
+accueil | macbook-pro-1512 | 7 / 7 | 0 | 0 px | 0 (—) | 394 Ko (327 Ko) | 14px
+resultat | iphone-390 | 38 / 38 | 3 | 0 px | 2 (button-name×2) | 567 Ko (458 Ko) | 14px
+resultat | ipad-portrait-820 | 38 / 38 | 4 | 0 px | 0 (—) | 567 Ko (458 Ko) | 14px
+resultat | ipad-paysage-1180 | 40 / 40 | 6 | 0 px | 0 (—) | 770 Ko (661 Ko) | 14px
+resultat | macbook-air-1280 | 87 / 102 | 102 | 0 px | 0 (—) | 569 Ko (458 Ko) | 14px
+resultat | macbook-pro-1512 | 99 / 102 | 102 | 0 px | 0 (—) | 569 Ko (458 Ko) | 14px
+editeur | iphone-390 | 38 / 38 | 3 | 0 px | 2 (button-name×2) | 567 Ko (458 Ko) | 14px
+editeur | ipad-portrait-820 | 38 / 38 | 4 | 0 px | 0 (—) | 567 Ko (458 Ko) | 14px
+editeur | ipad-paysage-1180 | 40 / 40 | 6 | 0 px | 0 (—) | 567 Ko (458 Ko) | 14px
+editeur | macbook-air-1280 | 95 / 115 | 115 | 0 px | 1 (color-contrast×1) | 569 Ko (458 Ko) | 14px
+editeur | macbook-pro-1512 | 111 / 115 | 115 | 0 px | 1 (color-contrast×1) | 569 Ko (458 Ko) | 14px

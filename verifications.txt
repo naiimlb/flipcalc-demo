@@ -1,0 +1,87 @@
+✓ Bureau 1440×900 : barre de demande visible sans défiler
+✓ Bureau 1440×900 : visionneuse 3D visible sans défiler
+✓ Bureau : au moins 3 matières conseillées
+✓ Bureau : badge « Recommandé »
+✓ Bureau : matière appliquée au modèle
+✓ Bureau : demande → modèle 3D affiché
+✓ Éditeur : arborescence des pièces (12 pièces)
+✓ Éditeur : onglet de propriétés « Objet »
+✓ Éditeur : onglet de propriétés « Matière »
+✓ Éditeur : onglet de propriétés « Dimensions »
+✓ Éditeur : onglet de propriétés « Analyse »
+✓ Éditeur : onglet de propriétés « Fabrication »
+✓ Éditeur : barre d'outils à gauche
+✓ Éditeur : « Annuler » inactif avant toute modification
+✓ Éditeur : la pièce choisie s'ouvre dans l'onglet Objet
+✓ Éditeur : modification enregistrée dans l'historique
+✓ Raccourci ⌘Z / Ctrl+Z : annuler
+✓ Raccourci ⇧⌘Z / Ctrl+Maj+Z : rétablir
+✓ Raccourci ⌘D / Ctrl+D : dupliquer la pièce
+✓ Raccourci Suppr : supprimer la pièce
+✓ Sauvegarde automatique (sur l'appareil pour un exemple)
+✓ Arborescence : masquer / afficher une pièce
+✓ Raccourci E : outil Tourner
+✓ Raccourci W : outil Déplacer
+✓ Règle : cotes largeur, profondeur, hauteur
+✓ Vues multiples : 4 vues (perspective, dessus, face, droite)
+✓ Vues multiples : 2 vues
+✓ Panneaux redimensionnables (souris, trackpad, clavier)
+✓ Barre du haut : nom du projet modifiable
+✓ Personnalisation guidée : curseurs de variantes
+✓ Personnalisation guidée : 4 curseurs (petit, solide, cher, esthétique)
+✓ Meshy masqué tant qu'il n'est pas configuré (mode démo)
+✓ Ajouter : cylindre ajouté (et sélectionné)
+✓ Poignées : outil Déplacer activé sur la nouvelle pièce
+✓ Opérations : répétition en ligne (4 exemplaires)
+✓ Annuler une opération (Ctrl+Z)
+✓ Opérations : perçage d'un trou au diamètre exact
+✓ Texte en relief (police chargée à la demande)
+✓ Forme libre : tracé extrudé
+✓ Bibliothèque de matières : résine appliquée à la pièce
+✓ Éclairage : préréglage néon bleu/orange
+✓ Rendu : vidéo de rotation à 360°
+✓ « Modifie la pièce » : consigne appliquée
+✓ Outil de mesure : distance entre deux points
+✓ Assistant : une option « Passer » par question
+✓ Assistant : « Modifier ma demande » remet le texte dans la barre
+✓ Assistant : une réponse se choisit d'un clic
+✓ Fabrication : contrôle d'imprimabilité et estimation affichés
+✓ Fabrication : plan coté dessiné (vues de face, de droite, de dessus)
+✓ Fabrication : plan PDF téléchargé (194 Ko)
+✓ Où fabriquer : liens de recherche génériques
+✓ Versions : « Plus petit » crée une nouvelle version
+✓ Comparer : deux modèles 3D côte à côte
+✓ Comparer : tableau dimensions, matière, coût
+✓ Photo : la photo est jointe (réduite et compressée dans le navigateur)
+✓ Photo : une mesure de référence est demandée (réponse libre)
+✓ Photo : la conception est générée avec la mesure de référence
+✓ Réalité augmentée : bouton masqué sur un appareil sans AR
+✓ Identité : thème sombre par défaut
+✓ Accueil : bouton « Ouvrir l'éditeur »
+✓ Accueil : bouton « Créer un compte »
+✓ Accueil : titre de taille raisonnable (40 px ≤ 40)
+✓ Accueil : explication en 3 étapes
+✓ Navigation : Accueil, Éditeur, Galerie (+ Mon espace avec un compte)
+✓ Accueil : héros + aperçu de l'éditeur + 5 sections (étapes, fonctions, exemples, galerie, appel final)
+✓ Accueil : aperçu réel de l'éditeur (capture, sans cadre d'appareil)
+✓ Design : aucun dégradé de fond (0)
+✓ Accueil : objets 3D (chargés à la première interaction)
+✓ Navigation : barre de 56 px, filet au défilement
+✓ Thème : mode clair appliqué
+✓ Thème : retour au mode sombre
+✓ Langue : arabe, lecture de droite à gauche
+✓ Langue : textes traduits (arabe)
+✓ Thème et langue mémorisés d'une page à l'autre
+✓ accueil-ipad : bouton principal d'au moins 44 px
+✓ accueil-iphone : menu mobile, liens d'au moins 44 px
+✓ accueil-iphone : bouton principal d'au moins 44 px
+✓ Galerie : page publique accessible
+✓ Mise à jour : bouton affiché après un nouveau déploiement
+✓ Mise à jour : la demande en cours est conservée
+✓ iPad portrait : barre de demande visible sans défiler
+✓ iPad portrait : visionneuse 3D visible sans défiler
+✓ iPad : panneau de propriétés en tiroir
+✓ iPad paysage : barre de demande visible sans défiler
+✓ iPad paysage : visionneuse 3D visible sans défiler
+✓ Mobile 390×844 : barre de demande visible sans défiler
+✓ Mobile 390×844 : visionneuse 3D visible sans défiler

@@ -1,0 +1,1 @@
+Lighthouse mobile — performance 88, accessibilité 100, bonnes pratiques 100, SEO 90 | FCP 0.8 s · LCP 3.7 s · TBT 130 ms · CLS 0.049 · JS Total size was 401 KiB
