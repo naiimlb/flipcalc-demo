@@ -77,3 +77,21 @@ await browser.close();
 const lines = rows.map((r) => (r.error ? `${r.screen} | ${r.size} | ERREUR ${r.error}` : `${r.screen} | ${r.size} | interactifs 1er écran ${r.first} / ${r.total} | < 44 px : ${r.under44} | débordement ${r.overflow} px | texte min ${r.minFontPx} px (${r.fontSizes}) | axe sérieux : ${r.axe} (${r.axeRules})`));
 writeFileSync(join(out, "mesures.txt"), lines.join("\n") + "\n");
 console.log(lines.join("\n"));
+
+// Critères de la refonte (bloquants) : 0 violation axe sérieuse, 0 cible < 44 px, 0 débordement, texte ≥ 16 px,
+// premier écran de l'accueil à 7 éléments interactifs au plus.
+const problems = rows.flatMap((r) => {
+  if (r.error) return [`${r.screen} ${r.size} : ${r.error}`];
+  const p = [];
+  if (r.axe > 0) p.push(`${r.screen} ${r.size} : ${r.axe} violation(s) axe (${r.axeRules})`);
+  if (r.under44 > 0) p.push(`${r.screen} ${r.size} : ${r.under44} cible(s) tactile(s) < 44 px`);
+  if (r.overflow > 0) p.push(`${r.screen} ${r.size} : débordement horizontal de ${r.overflow} px`);
+  if (r.minFontPx < 16) p.push(`${r.screen} ${r.size} : texte de ${r.minFontPx} px (16 px minimum)`);
+  if (r.screen === "accueil" && r.first > 7) p.push(`${r.screen} ${r.size} : ${r.first} éléments interactifs (7 au plus)`);
+  return p;
+});
+if (problems.length) {
+  console.error("Critères non respectés :\n" + problems.join("\n"));
+  process.exit(1);
+}
+console.log("Critères de la refonte respectés aux 5 tailles.");

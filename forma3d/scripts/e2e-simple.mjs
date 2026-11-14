@@ -132,6 +132,30 @@ await page.waitForSelector("canvas", { timeout: 20000 });
 check(await page.getByText("Support de téléphone", { exact: false }).first().isVisible().catch(() => false), "7. le mode avancé ouvre l'éditeur sur la pièce");
 await page.screenshot({ path: join(out, "7-mode-avance.png") });
 
+// 8. iPad portrait : tourner le modèle au doigt ne fait pas défiler la page
+{
+  const tablet = await browser.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true, locale: "fr-FR" });
+  const tp = await tablet.newPage();
+  await tp.goto(`${base}/apercu-refonte?ecran=resultat`, { waitUntil: "networkidle" });
+  const canvas = tp.locator("canvas").first();
+  await canvas.waitFor({ timeout: 20000 });
+  await tp.waitForTimeout(2500);
+  const box = await canvas.boundingBox();
+  const cdp = await tablet.newCDPSession(tp);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const before = await canvas.screenshot();
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 12; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + i * 6, y: y + i * 14 }] });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await tp.waitForTimeout(600);
+  const scrolled = await tp.evaluate(() => window.scrollY);
+  const after = await canvas.screenshot();
+  check(scrolled === 0, `8. iPad : la page ne défile pas pendant la rotation au doigt (scrollY = ${scrolled})`);
+  check(!before.equals(after), "8. iPad : le modèle a tourné");
+  await tablet.close();
+}
+
 check(errors.length === 0, `aucune erreur JavaScript (${errors.length})`);
 await browser.close();
 if (failed) {

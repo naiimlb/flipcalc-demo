@@ -26,6 +26,7 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | Refonte 2 | Structure de l'éditeur (outils, vue 3D, propriétés, versions) | **fait** (voir « Refonte — phase 2 ») |
 | Refonte 3 | Outils de création + génération Meshy (coûts affichés) | **fait** (voir « Refonte — phase 3 ») |
 | Refonte 4 | Finitions, écran de génération Meshy, PWA, tests Safari, performance de l'accueil | **fait** (voir « Refonte — phase 4 ») |
+| **Refonte v2 · 1** | Parcours Simple (accueil = l'outil), thème clair, mode avancé | **fait, en validation** (voir « Refonte v2 — phase 1 ») |
 
 Meshy est le service de génération 3D détaillée (voir « Refonte — phase 3 ») : il reste masqué tant que `MESHY_API_KEY`
 et la migration 7 ne sont pas en place, et chaque action affiche son coût en crédits avant confirmation.
@@ -468,6 +469,37 @@ et que **chaque texte atteint 4,5:1 (WCAG AA)** sur surface, toile et champ, dan
 La disposition de l'éditeur (barre d'actions, bibliothèque de formes, barre contextuelle, cube de vue) change en phase 2 ;
 la phase 1 n'en modifie que l'apparence.
 
+## Refonte v2 — phase 1 : le parcours Simple
+
+Plan complet : `PLAN_REFONTE.md`. Captures avant / après : `docs/refonte/avant` et `docs/refonte/apres` (5 tailles :
+iPhone 390, iPad portrait 820, iPad paysage 1180, MacBook Air 1280, MacBook Pro 1512).
+
+**Le parcours (page `/`)** : une question (« Quel problème voulez-vous résoudre ? ») → précisions si la demande est floue
+(une question à la fois, « Passer » toujours possible) → création en 4 étapes visibles avec durée et « Annuler » →
+résultat : modèle 3D en grand, 3 lignes, **un seul bouton principal « Télécharger pour imprimer »** (STL réel), 3 curseurs
+Largeur / Profondeur / Hauteur (le fichier téléchargé suit les réglages) et « Plus petit / Plus solide / Moins cher »
+(calculés sans appel à l'IA). Le détail (analyse, étapes, avertissements) est replié sous « Voir le détail ».
+**« Mode avancé »** ouvre l'éditeur complet (`/studio`), inchangé. L'ancienne présentation du site est sur `/decouvrir`.
+
+**Design** : direction « clair neutre » (`.simple-ui` dans `globals.css`), texte 16 px minimum, 4 tailles
+(`text-body` 16, `text-lead` 18, `text-title` 24, `text-hero` 36), composants dans `src/components/simple/ui.tsx`
+(Button, Card, Slider, Tabs, Dialog, Toast). L'éditeur garde son échelle compacte.
+
+**Honnêteté** : en démonstration (pas de base ni d'IA), badge neutre « Exemple de démonstration » ; une demande sans
+rapport avec les exemples reçoit « Je n'ai pas compris ce besoin » et 3 exemples cliquables (jamais un modèle au hasard).
+Le texte saisi n'est jamais perdu (annulation, erreur, rechargement). Meshy reste désactivé par défaut
+(`/admin/fonctionnalites`, « expérimental ») : ses conditions interdisent de revendre l'accès, ne pas l'activer en public
+sans accord écrit.
+
+**Preuves (CI, branche de refonte)** : `scripts/e2e-simple.mjs` (demande → précisions → création → résultat → curseur →
+STL vérifié → mode avancé, cas absurde, erreur, annulation, rotation tactile sans défilement) et
+`scripts/simple-captures.mjs` (0 violation axe sérieuse, 0 cible tactile < 44 px, 0 débordement, texte ≥ 16 px, accueil à
+7 éléments interactifs au plus, aux 5 tailles) ; Lighthouse accessibilité ≥ 95 sur l'accueil et le résultat.
+
+Limites connues : les curseurs étirent la pièce (mise à l'échelle par axe), ils ne sont pas encore enregistrés avec le
+projet ; les textes du parcours Simple sont en français (anglais et arabe : à venir) ; les vrais paramètres nommés
+(« diamètre du trou »…) demandent que l'IA les fournisse (phase 2).
+
 ## Mon espace et administration
 
 - `/espace` : demandes, modèles 3D (GLB dans Supabase Storage), favoris, dossiers, matières préférées,
@@ -494,7 +526,8 @@ la phase 1 n'en modifie que l'apparence.
 `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm test` (Vitest : schéma,
 géométries, chiffrement, réglages, génération et repli, appel à Claude, lecture du JSON en cours
 d'écriture, assistant de questions, cache) · `npm run smoke` (bout en bout en mode démo : génération
-classique et diffusée, assistant de questions, PWA). La CI (`.github/workflows/forma3d.yml`) enchaîne
+classique et diffusée, assistant de questions, PWA) · `node scripts/e2e-simple.mjs <url>` et
+`node scripts/simple-captures.mjs <url> <dossier>` (parcours Simple, Playwright + axe). La CI (`.github/workflows/forma3d.yml`) enchaîne
 types, lint, tests, build, test de fumée, captures d'écran, Lighthouse et un parcours complet contre
 le vrai projet Supabase (comptes de test, Storage, export, suppression, isolation).
 
@@ -505,7 +538,8 @@ forma3d/
 ├─ supabase/migrations/        schéma SQL (tables, RLS, fonctions, cache, limite de débit)
 ├─ public/                     icônes PWA, écrans de lancement iOS, service worker, page hors-ligne
 ├─ src/app/                    pages (accueil, connexion, espace, setup, admin) et routes API
-├─ src/components/studio/      tableau de bord : barre de demande, assistant, colonnes, visionneuse
+├─ src/components/simple/      parcours Simple (accueil, précisions, attente, résultat, composants)
+├─ src/components/studio/      tableau de bord (mode avancé) : barre de demande, assistant, colonnes, visionneuse
 ├─ src/components/viewer/      visionneuse React Three Fiber (qualité, gestes, captures)
 ├─ src/lib/design/             schéma de conception, prompt, exemples, lecture du JSON partiel
 ├─ src/lib/ai/                 appels à Claude (conception en flux, assistant de questions)
