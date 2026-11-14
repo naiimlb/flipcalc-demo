@@ -44,7 +44,7 @@ jobs:
           node scripts/smoke.mjs http://localhost:3100 || (cat /tmp/forma3d.log; exit 1)
       # Captures d'écran (mode démo) publiées sur la branche claude/forma3d-screens.
       - name: Captures d'écran
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1' || github.ref == 'refs/heads/claude/forma3d-refonte')
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
@@ -52,15 +52,27 @@ jobs:
       # Safari : le même parcours dans WebKit (accueil, éditeur au toucher sur iPad émulé, PWA). Informatif : WebKit sous
       # Linux n'est pas un vrai Safari (ni Pencil, ni capteurs), donc un échec ici ne bloque pas la CI.
       - name: Safari (WebKit)
-        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
+        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1' || github.ref == 'refs/heads/claude/forma3d-refonte')
         continue-on-error: true
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps webkit
           node scripts/webkit.mjs http://localhost:3100 "$RUNNER_TEMP/screens"
+      # Refonte : mesures de référence aux 5 tailles cibles (captures, éléments interactifs, cibles tactiles, axe, poids de page).
+      - name: Mesures de référence (refonte)
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/claude/forma3d-refonte'
+        continue-on-error: true
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1 @axe-core/playwright@4.10.2
+          npx playwright install --with-deps chromium
+          node scripts/baseline.mjs http://localhost:3100 "$RUNNER_TEMP/screens/baseline"
+          npx --yes lighthouse@12.8.2 http://localhost:3100/studio \
+            --only-categories=performance,accessibility,best-practices --form-factor=mobile \
+            --chrome-flags="--headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader" \
+            --output=json --output-path="$RUNNER_TEMP/screens/baseline/lighthouse-studio.json" --quiet || true
       # Performance mobile (Lighthouse, informatif : le score est publié avec les captures, il ne bloque pas la CI).
       - name: Lighthouse (mobile)
-        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
+        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1' || github.ref == 'refs/heads/claude/forma3d-refonte')
         continue-on-error: true
         run: |
           mkdir -p "$RUNNER_TEMP/screens"
@@ -78,7 +90,7 @@ jobs:
             require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, line + "\n");
           '
       - name: Publication des captures
-        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1')
+        if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/claude/forma3d' || github.ref == 'refs/heads/claude/forma3d-phase1' || github.ref == 'refs/heads/claude/forma3d-refonte')
         working-directory: ${{ runner.temp }}/screens
         run: |
           git init -q && git checkout -q -b claude/forma3d-screens
