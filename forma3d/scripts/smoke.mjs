@@ -24,20 +24,23 @@ function assert(condition, message) {
 }
 
 const home = await waitForServer();
-const landing = await home.text();
-assert(landing.includes("Forma3D"), "la page d'accueil s'affiche");
+const tool = await home.text();
+assert(tool.includes("Forma3D") && tool.includes("Quel problème voulez-vous résoudre"), "accueil = l'outil : la question « Quel problème voulez-vous résoudre ? »");
+assert(tool.includes("Voir des idées") && tool.includes("Mode avancé") === false, "accueil : bouton « Voir des idées », pas de jargon d'éditeur");
+const landing = await (await fetch(`${base}/decouvrir`)).text();
+assert(landing.includes("Forma3D"), "la page de présentation (/decouvrir) s'affiche");
 assert(/Ouvrir l('|&#x27;)éditeur/.test(landing) && landing.includes("Comment ça marche"), "accueil des visiteurs : bouton « Ouvrir l'éditeur » et explication en 3 étapes");
 const studio = await fetch(`${base}/studio`);
 const html = await studio.text();
 assert(studio.ok && html.includes('id="prompt"') && html.includes("Outils de l&#x27;éditeur"), "l'éditeur (/studio) : barre de saisie et barre d'outils");
-const english = await (await fetch(`${base}/`, { headers: { "Accept-Language": "en-US,en;q=0.9" } })).text();
+const english = await (await fetch(`${base}/decouvrir`, { headers: { "Accept-Language": "en-US,en;q=0.9" } })).text();
 assert(english.includes('lang="en"') && english.includes("Open the editor"), "détection automatique de la langue (anglais)");
-const arabic = await (await fetch(`${base}/`, { headers: { "Accept-Language": "ar" } })).text();
+const arabic = await (await fetch(`${base}/decouvrir`, { headers: { "Accept-Language": "ar" } })).text();
 assert(arabic.includes('dir="rtl"'), "arabe : lecture de droite à gauche");
 const dark = await (await fetch(`${base}/studio`, { headers: { Cookie: "forma3d-theme=dark" } })).text();
 assert(/<html[^>]*class="[^"]*\bdark\b/.test(dark), "mode sombre mémorisé (cookie) rendu dès le serveur");
 assert(/<html[^>]*class="[^"]*\bdark\b/.test(landing), "identité : thème sombre par défaut (sans choix enregistré)");
-const light = await (await fetch(`${base}/`, { headers: { Cookie: "forma3d-theme=light" } })).text();
+const light = await (await fetch(`${base}/decouvrir`, { headers: { Cookie: "forma3d-theme=light" } })).text();
 assert(!/<html[^>]*class="[^"]*\bdark\b/.test(light), "thème clair mémorisé (cookie) rendu dès le serveur");
 assert(["accueil", "apercu", "etapes", "outils", "exemples", "galerie", "commencer"].every((id) => landing.includes(`id="${id}"`)), "accueil : héros, aperçu de l'éditeur + 5 sections");
 assert(landing.includes('aria-label="Navigation principale"') && landing.includes('href="/studio"'), "navigation : lien vers l'éditeur");

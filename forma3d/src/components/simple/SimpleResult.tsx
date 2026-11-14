@@ -9,7 +9,7 @@ import { checkPrintability } from "@/lib/fabrication/printability";
 import { findPrinterPreset, DEFAULT_PRINTER } from "@/lib/fabrication/printer";
 import { downloadBlob, exportStl, fileBaseName } from "@/lib/three/export";
 import { DEFAULT_VIEWER_SETTINGS } from "../viewer/settings";
-import { Slider } from "./ui";
+import { Slider, useToast } from "./ui";
 import { IconAlert, IconArrowLeft, IconCheck, IconDownload, IconSliders, Spinner } from "../icons";
 
 const ModelViewer = dynamic(() => import("../viewer/ModelViewer"), {
@@ -49,14 +49,15 @@ export function SimpleResult({
   demo,
   printerId,
   onBack,
-  advancedHref,
+  onAdvanced,
 }: {
   design: Design;
   demo: boolean;
   printerId?: string;
   onBack(): void;
-  advancedHref: string;
+  onAdvanced(): void;
 }) {
+  const toast = useToast();
   const [design, setDesign] = useState(initial);
   const [stretch, setStretch] = useState<Stretch>({ x: 1, y: 1, z: 1 });
   const [adjusting, setAdjusting] = useState<VariantId | null>(null);
@@ -90,7 +91,9 @@ export function SimpleResult({
   };
   const download = () => {
     const stl = exportStl(design, stretch);
-    downloadBlob(new Blob([stl], { type: "model/stl" }), `${fileBaseName(design)}.stl`);
+    const name = `${fileBaseName(design)}.stl`;
+    downloadBlob(new Blob([stl], { type: "model/stl" }), name);
+    toast(`Fichier prêt : ${name}`);
   };
 
   return (
@@ -99,12 +102,12 @@ export function SimpleResult({
         <button type="button" onClick={onBack} className="tap flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
           <IconArrowLeft size={20} /> Nouvelle demande
         </button>
-        <a href={advancedHref} className="tap ms-auto flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
+        <button type="button" onClick={onAdvanced} className="tap ms-auto flex min-h-11 items-center gap-2 rounded-lg px-3 text-body text-ink-soft hover:bg-paper hover:text-ink">
           <IconSliders size={20} /> Mode avancé
-        </a>
+        </button>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(0,65fr)_minmax(360px,35fr)]">
+      <main className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(0,65fr)_minmax(360px,35fr)]">
         {/* Le modèle, en vedette */}
         <section aria-label="Aperçu 3D de la pièce" className="relative h-[52dvh] min-h-[300px] md:h-[56dvh] lg:h-auto" style={{ background: viewerBg }}>
           <ModelViewer
@@ -207,7 +210,7 @@ export function SimpleResult({
             </div>
           </details>
         </section>
-      </div>
+      </main>
 
       {/* iPhone / iPad portrait : l'action principale reste à portée du pouce */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden">

@@ -330,7 +330,7 @@ await session("photo", { width: 1280, height: 800 }, async (page) => {
 
 // Accueil sobre (design professionnel) : héros, aperçu réel de l'éditeur, sections factuelles ; thème sombre par défaut, clair, arabe.
 await session("accueil", { width: 1366, height: 900 }, async (page) => {
-  await page.goto(base, { waitUntil: "networkidle" });
+  await page.goto(`${base}/decouvrir`, { waitUntil: "networkidle" });
   check(await page.evaluate(() => document.documentElement.classList.contains("dark")), "Identité : thème sombre par défaut");
   check(await page.getByRole("link", { name: /Ouvrir l'éditeur/ }).first().isVisible(), "Accueil : bouton « Ouvrir l'éditeur »");
   check(await page.getByRole("link", { name: "Créer un compte" }).first().isVisible(), "Accueil : bouton « Créer un compte »");
@@ -402,7 +402,7 @@ for (const [name, viewport] of [
   ["accueil-iphone", { width: 390, height: 844 }],
 ]) {
   await session(name, viewport, async (page) => {
-    await page.goto(base, { waitUntil: "networkidle" });
+    await page.goto(`${base}/decouvrir`, { waitUntil: "networkidle" });
     await page.mouse.click(viewport.width / 2, viewport.height - 40);
     await page.waitForSelector("canvas", { timeout: 20000 });
     await page.waitForTimeout(2500);

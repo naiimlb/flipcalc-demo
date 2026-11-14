@@ -251,6 +251,21 @@ export function Studio({
 
 
 
+  // Passage depuis le parcours Simple (« Mode avancé ») d'un résultat non enregistré en base (démo, essai sans compte).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("forma3d:handoff");
+      if (!raw) return;
+      sessionStorage.removeItem("forma3d:handoff");
+      const item = JSON.parse(raw) as RequestItem;
+      if (!item?.id || !item.design || typeof item.prompt !== "string") return;
+      setUserItems((prev) => [item, ...prev.filter((i) => i.id !== item.id)]);
+      setSelectedId(item.id);
+    } catch {
+      // ignoré : l'éditeur s'ouvre normalement
+    }
+  }, []);
+
   /* ---------------- Essai sans compte → import après inscription ---------------- */
 
   useEffect(() => {

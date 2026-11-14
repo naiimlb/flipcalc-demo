@@ -35,7 +35,7 @@ const hasWebGL = async (page) => page.evaluate(() => !!document.createElement("c
 
 // 1. Accueil sur un MacBook.
 await session("accueil", { viewport: { width: 1440, height: 900 } }, async (page) => {
-  await page.goto(base, { waitUntil: "networkidle" });
+  await page.goto(`${base}/decouvrir`, { waitUntil: "networkidle" });
   check(await page.locator("h1#hero-title").isVisible(), "Safari : accueil, grand titre visible");
   check((await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Éditeur" }).count()) === 1, "Safari : navigation principale");
   const webgl = await hasWebGL(page);
