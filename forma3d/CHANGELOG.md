@@ -1,5 +1,21 @@
 # Journal des modifications
 
+## Refonte v2 — phases 3 et 4 (branche `claude/forma3d-refonte`, non fusionnée)
+
+### Ajouté
+- Export 3MF posé et centré sur le plateau ; mention « générée par IA » dans le 3MF et le STL.
+- Photo + une mesure de référence sur l'accueil ; bibliothèque de pièces normalisées ; miniatures dans Mon espace.
+- Pages légales (à compléter), badge « Générée par IA » et avertissement d'usage sur chaque pièce.
+- Filtre de contenu (armes, contenus protégés), CSP, limites de débit, robots.txt, sitemap.xml, Open Graph, page 404.
+
+### Modifié
+- « Utiliser comme point de départ » devient « Remixer cette pièce ».
+- Accueil : un seul lien de compte et un pied de page légal.
+- zod 3 → 4.6.7 (majeure) et postcss 8.5.33 : 0 vulnérabilité selon npm audit.
+
+### À faire de ton côté
+- Compléter les champs [À COMPLÉTER] des pages légales (et les faire relire).
+
 ## Refonte v2 — phase 2 : fiabilité (branche `claude/forma3d-refonte`, non fusionnée)
 
 ### Ajouté

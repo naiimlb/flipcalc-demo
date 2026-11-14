@@ -27,7 +27,9 @@ matières conseillées), avec dimensions, matériaux, étapes de fabrication, co
 | Refonte 3 | Outils de création + génération Meshy (coûts affichés) | **fait** (voir « Refonte — phase 3 ») |
 | Refonte 4 | Finitions, écran de génération Meshy, PWA, tests Safari, performance de l'accueil | **fait** (voir « Refonte — phase 4 ») |
 | **Refonte v2 · 1** | Parcours Simple (accueil = l'outil), thème clair, mode avancé | **fait** (voir « Refonte v2 — phase 1 ») |
-| **Refonte v2 · 2** | Vérifications automatiques, paramètres nommés, pièces critiques, comparatif de modèles | **en cours** (voir « Refonte v2 — phase 2 ») |
+| **Refonte v2 · 2** | Vérifications automatiques, paramètres nommés, pièces critiques, comparatif de modèles | **fait, sauf le comparatif** (attend la clé) |
+| **Refonte v2 · 3** | Export 3MF, photo + cote, pièces normalisées, miniatures, remix | **fait** (voir « Refonte v2 — phases 3 et 4 ») |
+| **Refonte v2 · 4** | Pages légales, filtre de contenu, CSP, limites de débit, SEO, mises à jour de sécurité | **fait** (voir « Refonte v2 — phases 3 et 4 ») |
 
 Meshy est le service de génération 3D détaillée (voir « Refonte — phase 3 ») : il reste masqué tant que `MESHY_API_KEY`
 et la migration 7 ne sont pas en place, et chaque action affiche son coût en crédits avant confirmation.
@@ -515,6 +517,29 @@ projet ; les textes du parcours Simple sont en français (anglais et arabe : à 
 - **Comparatif de modèles** (`scripts/compare-models.ts`, job CI « comparatif-modeles » lancé à la main) : 10 demandes ×
   Opus / Sonnet / Haiku 5.5, plafond de 3 $. Il attend le secret GitHub `ANTHROPIC_API_KEY` ; aucun changement de modèle
   ou d'effort ne sera fait avant d'avoir montré les résultats.
+
+## Refonte v2 — phases 3 et 4
+
+**Phase 3**
+- **3MF** (`src/lib/three/export3mf.ts`, ZIP sans dépendance dans `src/lib/files/zip.ts`) : posé dans l'orientation qui
+  demande le moins de supports, centré sur le plateau de l'imprimante choisie, métadonnée « générée par IA ».
+  Le STL porte aussi la mention dans son en-tête.
+- **Photo + une cote** : aperçu de la photo et champ « une mesure visible sur la photo » sur l'accueil.
+- **Pièces normalisées** (`src/lib/design/standard-parts.ts`) : vis M2 à M8, inserts, écrous, aimants, roulements ;
+  cotes transmises à l'IA seulement quand la demande en cite, contrôle « Logements normalisés ».
+- **Miniatures** (`src/components/DesignThumbnail.tsx`) dans Mon espace, dessinées depuis le modèle (sans stockage).
+- **Remixer** : nouveau nom de « Utiliser comme point de départ » dans la galerie.
+- « Mon imprimante » est mémorisée sur l'appareil ; la garder dans le compte demanderait une migration (non faite).
+
+**Phase 4**
+- **Légal** : `/mentions-legales`, `/confidentialite`, `/cgu`, avec des champs **[À COMPLÉTER]** (identité de l'éditeur,
+  hébergeurs, durées, clause de responsabilité) : rien n'a été inventé. Pas de bandeau cookies : aucun cookie de suivi.
+- **Filtre de contenu** : armes, personnages, logos et marques protégés refusés avant génération.
+- **Sécurité** : en-tête Content-Security-Policy, contrôle d'origine durci (Sec-Fetch-Site), limites de débit en mémoire
+  sur génération, modification, import, enregistrement et suppression de compte (un compteur en base demanderait une migration).
+- **Dépendances** : zod 4.6.7 et postcss 8.5.33 → `npm audit` : 0 vulnérabilité. Next 16 n'est pas nécessaire pour cela
+  et n'a pas été installé.
+- **SEO** : `robots.txt` (Preview non indexées), `sitemap.xml`, image Open Graph, page 404.
 
 ## Mon espace et administration
 
