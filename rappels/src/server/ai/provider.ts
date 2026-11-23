@@ -36,6 +36,32 @@ export function isProviderConfigured(): boolean {
   return !!process.env.MISTRAL_API_KEY;
 }
 
+// Le plan gratuit limite à ~1 requête/seconde : un message avec outil fait 2 appels d'affilée.
+// On espace donc les appels (file d'attente) et on réessaie un 429 jusqu'à 2 fois.
+// (Les délais sont réglables par variables d'env, uniquement utile pour les tests.)
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+let nextSlot = 0;
+async function pace() {
+  const gap = Number(process.env.MISTRAL_MIN_GAP_MS ?? 1100);
+  const slot = Math.max(Date.now(), nextSlot);
+  nextSlot = slot + gap;
+  if (slot > Date.now()) await sleep(slot - Date.now());
+}
+
+async function openStream(request: Parameters<Mistral["chat"]["stream"]>[0]) {
+  const base = Number(process.env.MISTRAL_RETRY_BASE_MS ?? 1500);
+  for (let attempt = 0; ; attempt++) {
+    await pace();
+    try {
+      return await getClient().chat.stream(request);
+    } catch (err) {
+      if (!(err instanceof MistralError) || err.statusCode !== 429 || attempt >= 2) throw err;
+      const retryAfter = Number(err.headers?.get("retry-after"));
+      await sleep(retryAfter > 0 ? Math.min(retryAfter * 1000, 6000) : base * (attempt + 1));
+    }
+  }
+}
+
 let client: Mistral | undefined;
 function getClient(): Mistral {
   const apiKey = process.env.MISTRAL_API_KEY;
@@ -77,7 +103,7 @@ function toProviderError(err: unknown): ProviderError {
 export async function* streamChat(args: { messages: ProviderMessage[]; tools: ToolSpec[] }): AsyncGenerator<ProviderEvent> {
   const calls = new Map<number, ToolCallRequest>();
   try {
-    const stream = await getClient().chat.stream({
+    const stream = await openStream({
       model: process.env.MISTRAL_MODEL || DEFAULT_MODEL,
       temperature: 0.2, // réponses stables, calculs délégués aux outils
       maxTokens: 700,

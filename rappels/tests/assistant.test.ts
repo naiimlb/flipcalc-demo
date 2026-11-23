@@ -130,7 +130,9 @@ const post = (body: unknown, id = "device-route-" + Math.random().toString(36).s
 const body = { messages: [{ role: "user", content: "compte ma caisse : 3 billets de 20" }], context: ctx };
 
 describe("route /api/assistant", () => {
-  beforeEach(() => streamChat.mockReset());
+  beforeEach(() => {
+    streamChat.mockReset();
+  });
 
   it("boucle d'outils : le modèle appelle compter_caisse puis présente le résultat (streaming)", async () => {
     streamChat
