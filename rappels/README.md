@@ -23,6 +23,8 @@ Ouvre-la en vue mobile (390 px). Pour la tester sur ton iPhone, passe plutôt pa
 | `/semaine` | Un bloc par jour de service |
 | `/reglages` | Activer les notifications, aperçu + test, nom du poste, remise à zéro des exemples |
 | `/apercu` | Faux écran verrouillé avec la notification (logo, titre, heure) |
+| `/assistant` | **Assistant caisse** : chat (Mistral) qui propose des tâches, fait les calculs via des outils et répond aux questions de service |
+| `/assistant/caisse` | Comptage de caisse guidé : une ligne par coupure, total automatique, comparaison avec le montant attendu |
 
 ## Le service de nuit (19h → 3h)
 
@@ -34,6 +36,41 @@ Tout est dans [`src/lib/service.ts`](src/lib/service.ts) (testé dans `tests/ser
 - Tri : 19h00 → 23h59, puis 00h00 → 02h55 (séparateur « 🌙 Après minuit » dans la liste).
 - Le suivi (fait / rappel envoyé) est clé par `tâche@date-du-service`, donc pas de confusion minuit.
 - Les heures proposées dans le formulaire vont de 19h à 02h55 (pas de 5 min).
+
+## Assistant caisse (IA)
+
+Un chat pour le caissier : il propose des tâches selon l'heure et la liste du jour (bouton « Ajouter à mes tâches »), aide pour les comptes et répond aux questions simples de service.
+
+**Les calculs ne sont jamais faits par l'IA.** Elle appelle des outils côté serveur (function calling) qui travaillent en centimes et renvoient un texte déjà formaté :
+`compter_caisse`, `calculer_ecart`, `calculer_tva` (10 % par défaut, réglable dans Réglages), `rendre_monnaie`, `calculer_total_commande`, `calculer_pourcentage`, `partager_montant`, `lire_taches_du_jour`, `proposer_tache`.
+
+| Fichier | Rôle |
+|---|---|
+| `src/server/ai/system-prompt.ts` | **Le prompt système** : rôle, ton, limites, usage des outils. À modifier librement. |
+| `src/server/ai/provider.ts` | **Seul fichier qui parle à Mistral** (SDK `@mistralai/mistralai`, streaming, erreurs 429). Pour changer de fournisseur, on ne réécrit que `streamChat`. |
+| `src/server/ai/tools.ts` | Les outils et leurs schémas |
+| `src/server/ai/assistant.ts` | Boucle modèle → outils → modèle |
+| `src/server/ai/rate-limit.ts` | 30 messages / heure par appareil (en mémoire, approximatif sur Vercel) |
+| `src/server/ai/sanitize.ts` | Validation des requêtes + masquage des e-mails, téléphones et numéros de carte |
+| `src/lib/money.ts` | Calculs en centimes, partagés avec l'écran de comptage |
+| `src/app/api/assistant/route.ts` | Route API : renvoie le texte en streaming (NDJSON) |
+
+Points à connaître :
+- La clé `MISTRAL_API_KEY` n'est lue que côté serveur (jamais `NEXT_PUBLIC_`).
+- Seuls partent vers l'API : l'historique récent de la discussion et la liste du jour (titres, heures, statuts). Rien d'autre.
+- L'historique de discussion reste dans le `localStorage` du téléphone. Bouton « Nouvelle discussion » pour l'effacer.
+- Le plan gratuit de Mistral peut servir à entraîner les modèles : l'assistant ne demande aucune donnée personnelle et le serveur masque e-mails, téléphones et numéros de carte avant l'envoi.
+- Les tâches proposées sont **ponctuelles** (ce service seulement) ; dans le formulaire, « Répéter chaque semaine » les rend récurrentes.
+
+### Tester en local
+```bash
+cp .env.example .env.local   # puis colle ta clé après MISTRAL_API_KEY=
+npm run dev
+```
+Redémarre `npm run dev` après avoir modifié `.env.local`. Sans clé, l'assistant affiche « pas encore activé » (le reste de l'app marche).
+
+### Ajouter la clé sur Vercel
+Vercel → projet **hb-rappels** → Settings → Environment Variables → `MISTRAL_API_KEY` (Production, Preview) → Save, puis **Redeploy** (Deployments → ⋯ → Redeploy) : une variable n'est prise en compte qu'au déploiement suivant. Ne mets pas la case « Exposed to the browser ».
 
 ## Logo
 

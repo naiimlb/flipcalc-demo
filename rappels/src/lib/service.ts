@@ -36,6 +36,12 @@ export function dateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** "2026-11-23" → Date locale à minuit. */
+export function parseDateKey(key: string): Date {
+  const [y = 1970, m = 1, d = 1] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 /** 0 = lundi … 6 = dimanche. */
 export function weekdayIndex(d: Date): number {
   return (d.getDay() + 6) % 7;
@@ -82,8 +88,9 @@ export type PlannedTask = {
 /** Tâches d'un service donné, triées dans l'ordre du service (19h → 3h). */
 export function planForService(tasks: Task[], sDate: Date): PlannedTask[] {
   const dow = weekdayIndex(sDate);
+  const key = dateKey(sDate);
   return tasks
-    .filter((t) => t.days.includes(dow))
+    .filter((t) => (t.date ? t.date === key : t.days.includes(dow)))
     .map((task) => ({
       task,
       at: occurrenceAt(task, sDate),

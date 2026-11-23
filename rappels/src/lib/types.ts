@@ -12,6 +12,8 @@ export type Task = {
   time: string;
   /** Jours de SERVICE concernés, 0 = lundi … 6 = dimanche. Un service démarre à 19h ce jour-là. */
   days: number[];
+  /** Tâche ponctuelle : date du service concerné ("YYYY-MM-DD"). Sans elle, la tâche suit `days`. */
+  date?: string;
   /** Minutes d'avance du rappel. */
   remind: Reminder;
   note?: string;
@@ -25,6 +27,8 @@ export type AppState = {
   /** Rappels déjà envoyés, même clé que `done`. */
   notified: Record<string, true>;
   role: string;
+  /** Taux de TVA par défaut de l'assistant (en %). */
+  tva: number;
 };
 
 export const CATEGORY_EMOJI: Record<Category, string> = {

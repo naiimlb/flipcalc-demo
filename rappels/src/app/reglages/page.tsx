@@ -33,6 +33,21 @@ export default function SettingsPage() {
         </section>
 
         <section className={card}>
+          <h2 className={h2}>Assistant caisse</h2>
+          <label htmlFor="tva" className="mb-2 block text-sm font-semibold text-mute">Taux de TVA par défaut pour les calculs</label>
+          <select
+            id="tva"
+            value={state.tva}
+            onChange={(e) => updateState((s) => ({ ...s, tva: Number(e.target.value) }))}
+            className="min-h-12 w-full rounded-2xl border-2 border-line bg-white px-4 text-[17px] font-semibold focus:border-pink"
+          >
+            {[...new Set([5.5, 10, 20, state.tva])].sort((a, b) => a - b).map((r) => (
+              <option key={r} value={r}>{String(r).replace(".", ",")} %</option>
+            ))}
+          </select>
+        </section>
+
+        <section className={card}>
           <h2 className={h2}>Notifications</h2>
           <NotifSettings />
         </section>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { DAY_LETTERS, DAY_LONG, formatTime, isAfterMidnight, reminderLabel } from "@/lib/service";
+import { DAY_LETTERS, DAY_LONG, formatServiceDate, formatTime, isAfterMidnight, parseDateKey, reminderLabel, weekdayIndex } from "@/lib/service";
 import { updateState } from "@/lib/store";
 import { CATEGORIES, CATEGORY_EMOJI, REMINDERS, type Category, type Reminder, type Task } from "@/lib/types";
 
@@ -25,6 +25,8 @@ export function TaskForm({ initial }: { initial?: Task }) {
   const [remind, setRemind] = useState<Reminder>(initial?.remind ?? 5);
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState("");
+  // Tâche ponctuelle (ex. proposée par l'assistant) : liée à un seul service.
+  const [once, setOnce] = useState(!!initial?.date);
 
   const [h = "19", m = "00"] = time.split(":");
   const night = isAfterMidnight(time);
@@ -35,13 +37,15 @@ export function TaskForm({ initial }: { initial?: Task }) {
   function save(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return setError("Donne un nom à ta tâche.");
-    if (days.length === 0) return setError("Choisis au moins un jour.");
+    if (!once && days.length === 0) return setError("Choisis au moins un jour.");
+    const onceDate = once ? initial?.date : undefined;
     const task: Task = {
       id: initial?.id ?? `t-${Date.now().toString(36)}`,
       title: title.trim(),
       category,
       time,
-      days: sortedDays,
+      days: onceDate ? [weekdayIndex(parseDateKey(onceDate))] : sortedDays,
+      ...(onceDate ? { date: onceDate } : {}),
       remind,
       ...(note.trim() ? { note: note.trim() } : {}),
     };
@@ -118,31 +122,48 @@ export function TaskForm({ initial }: { initial?: Task }) {
         <p className="mt-2 text-xs font-medium text-mute">Service de 19h à 3h : après minuit, la tâche reste dans le service de la veille.</p>
       </fieldset>
 
-      <fieldset>
-        <legend className={label}>Jours de service</legend>
-        <div className="flex justify-between gap-1.5">
-          {DAY_LETTERS.map((letter, d) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={days.includes(d)}
-              aria-label={DAY_LONG[d]}
-              onClick={() => toggleDay(d)}
-              className={`size-11 rounded-full border-2 text-base font-extrabold ${
-                days.includes(d) ? "border-pink bg-pink text-white" : "border-line bg-white text-mute"
-              }`}
-            >
-              {letter}
-            </button>
-          ))}
+      {once && initial?.date ? (
+        <div className="rounded-3xl bg-pink-soft p-4">
+          <p className="text-sm font-extrabold uppercase tracking-wide">Jour</p>
+          <p className="mt-1 text-[15px] font-semibold">📌 Juste pour le service du {formatServiceDate(parseDateKey(initial.date))}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setDays([weekdayIndex(parseDateKey(initial.date!))]);
+              setOnce(false);
+            }}
+            className="mt-3 min-h-11 rounded-full border-2 border-pink bg-white px-4 text-sm font-bold text-pink-deep"
+          >
+            Répéter chaque semaine
+          </button>
         </div>
-        {night && sortedDays.length > 0 && (
-          <p className="mt-3 rounded-2xl bg-pink-soft p-3 text-[13px] font-semibold leading-snug text-pink-deep">
-            🌙 {formatTime(time)} est après minuit : cocher « {DAY_LONG[sortedDays[0]!]} » = service du {DAY_LONG[sortedDays[0]!]} soir,
-            le rappel sonnera dans la nuit de {DAY_LONG[sortedDays[0]!]} à {DAY_LONG[(sortedDays[0]! + 1) % 7]}.
-          </p>
-        )}
-      </fieldset>
+      ) : (
+        <fieldset>
+          <legend className={label}>Jours de service</legend>
+          <div className="flex justify-between gap-1.5">
+            {DAY_LETTERS.map((letter, d) => (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={days.includes(d)}
+                aria-label={DAY_LONG[d]}
+                onClick={() => toggleDay(d)}
+                className={`size-11 rounded-full border-2 text-base font-extrabold ${
+                  days.includes(d) ? "border-pink bg-pink text-white" : "border-line bg-white text-mute"
+                }`}
+              >
+                {letter}
+              </button>
+            ))}
+          </div>
+          {night && sortedDays.length > 0 && (
+            <p className="mt-3 rounded-2xl bg-pink-soft p-3 text-[13px] font-semibold leading-snug text-pink-deep">
+              🌙 {formatTime(time)} est après minuit : cocher « {DAY_LONG[sortedDays[0]!]} » = service du {DAY_LONG[sortedDays[0]!]} soir,
+              le rappel sonnera dans la nuit de {DAY_LONG[sortedDays[0]!]} à {DAY_LONG[(sortedDays[0]! + 1) % 7]}.
+            </p>
+          )}
+        </fieldset>
+      )}
 
       <fieldset>
         <legend className={label}>Rappel</legend>

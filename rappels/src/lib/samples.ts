@@ -12,5 +12,5 @@ export const SAMPLE_TASKS: Task[] = [
 ];
 
 export function defaultState(): AppState {
-  return { v: 1, tasks: SAMPLE_TASKS, done: {}, notified: {}, role: "Caissier" };
+  return { v: 1, tasks: SAMPLE_TASKS, done: {}, notified: {}, role: "Caissier", tva: 10 };
 }
