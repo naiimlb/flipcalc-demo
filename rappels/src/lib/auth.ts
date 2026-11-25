@@ -73,10 +73,13 @@ export function retryAuth() {
 // ----- actions (messages d'erreur en français) -----
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
-function frenchError(err: { message?: string; status?: number; code?: string } | null): string {
+export function frenchError(err: { message?: string; status?: number; code?: string } | null): string {
   const msg = (err?.message ?? "").toLowerCase();
   if (err?.status === 429 || err?.code === "over_request_rate_limit" || msg.includes("rate limit")) return "Trop d'essais. Réessaie dans une minute.";
   if (msg.includes("invalid login") || err?.code === "invalid_credentials") return "Email ou mot de passe incorrect.";
+  if (err?.code === "user_already_exists" || err?.code === "email_exists" || msg.includes("already registered") || msg.includes("already been registered")) return "Cet email a déjà un compte. Connecte-toi.";
+  if (err?.code === "signup_disabled" || msg.includes("signups not allowed")) return "Les inscriptions sont fermées pour le moment.";
+  if (err?.code === "email_address_invalid" || msg.includes("invalid format") || msg.includes("is invalid")) return "Cet email n'a pas l'air valide.";
   if (msg.includes("fetch") || msg.includes("network")) return "Pas de connexion. Vérifie ton réseau.";
   if (msg.includes("password") && (msg.includes("least") || msg.includes("weak"))) return "Mot de passe trop court : 8 caractères minimum.";
   if (msg.includes("same password") || err?.code === "same_password") return "Choisis un mot de passe différent de l'ancien.";
@@ -86,6 +89,18 @@ function frenchError(err: { message?: string; status?: number; code?: string } |
 export async function signIn(email: string, password: string): Promise<ActionResult> {
   const { error } = await getSupabase().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
   return error ? { ok: false, message: frenchError(error) } : { ok: true };
+}
+
+/**
+ * Création de compte libre (email + mot de passe). Le prénom part dans les métadonnées : un déclencheur de la base
+ * crée le profil (rôle TOUJOURS « caissier »). `needsConfirmation` : Supabase demande de confirmer l'email avant de se connecter.
+ */
+export async function signUp(prenom: string, email: string, password: string): Promise<ActionResult & { needsConfirmation?: boolean }> {
+  const { data, error } = await getSupabase().auth.signUp({ email: email.trim().toLowerCase(), password, options: { data: { prenom } } });
+  if (error) return { ok: false, message: frenchError(error) };
+  // Pas de session = confirmation par email exigée. Pas d'identité = email déjà utilisé (Supabase masque l'erreur dans ce mode).
+  if (data.user && data.user.identities?.length === 0) return { ok: false, message: frenchError({ code: "user_already_exists" }) };
+  return data.session ? { ok: true } : { ok: true, needsConfirmation: true };
 }
 
 export async function signOut(): Promise<void> {

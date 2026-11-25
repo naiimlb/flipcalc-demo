@@ -4,30 +4,20 @@ import Link from "next/link";
 import { useState } from "react";
 import { AuthShell, ErrorMessage, inputCls, linkBtn, primaryBtn } from "@/components/AuthShell";
 import { PasswordInput } from "@/components/PasswordInput";
-import { signIn } from "@/lib/auth";
+import { signUp } from "@/lib/auth";
 import { cleanPrenom, isEmail, isPassword, isPrenom, MIN_PASSWORD, normalizeEmail } from "@/lib/validate";
 
-const STEPS = 4;
-
-async function post(url: string, body: unknown): Promise<{ ok: boolean; message: string }> {
-  try {
-    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = (await res.json().catch(() => ({}))) as { message?: string };
-    return { ok: res.ok, message: data.message ?? "Oups, une erreur est survenue. Réessaie." };
-  } catch {
-    return { ok: false, message: "Pas de connexion. Vérifie ton réseau." };
-  }
-}
+const STEPS = 3;
 
 /** Création de compte : une seule question par écran. */
 export default function SignupPage() {
   const [step, setStep] = useState(0);
-  const [code, setCode] = useState("");
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
 
   const go = (n: number) => {
     setError("");
@@ -37,39 +27,32 @@ export default function SignupPage() {
   async function next(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (step === 0) {
-      if (!code.trim()) return setError("Écris le code d'équipe.");
-      setBusy(true);
-      const r = await post("/api/auth/code", { code });
-      setBusy(false);
-      return r.ok ? go(1) : setError(r.message);
-    }
-    if (step === 1) return isPrenom(cleanPrenom(prenom)) ? go(2) : setError("Écris ton prénom (30 caractères maximum).");
-    if (step === 2) return isEmail(normalizeEmail(email)) ? go(3) : setError("Cet email n'a pas l'air valide.");
+    if (step === 0) return isPrenom(cleanPrenom(prenom)) ? go(1) : setError("Écris ton prénom (30 caractères maximum).");
+    if (step === 1) return isEmail(normalizeEmail(email)) ? go(2) : setError("Cet email n'a pas l'air valide.");
     if (!isPassword(password)) return setError(`Mot de passe trop court : ${MIN_PASSWORD} caractères minimum.`);
     setBusy(true);
-    const r = await post("/api/auth/inscription", { code, prenom: cleanPrenom(prenom), email: normalizeEmail(email), password });
+    const r = await signUp(cleanPrenom(prenom), normalizeEmail(email), password);
+    setBusy(false);
     if (!r.ok) {
-      setBusy(false);
-      // Code refusé ou email déjà pris : on ramène l'utilisateur à l'étape concernée.
-      if (r.message.startsWith("Code")) go(0);
-      else if (r.message.startsWith("Cet email")) go(2);
+      if (r.message.startsWith("Cet email")) go(1);
       return setError(r.message);
     }
-    const login = await signIn(email, password); // la redirection vers l'accueil se fait toute seule
-    if (!login.ok) {
-      setBusy(false);
-      setError(login.message);
-    }
+    if (r.needsConfirmation) setConfirm(true); // sinon : connecté, la redirection vers l'accueil se fait toute seule
   }
 
-  const titles = ["Code d'équipe", "Ton prénom", "Ton email", "Ton mot de passe"];
-  const hints = [
-    "Demande-le à ton responsable.",
-    "C'est comme ça que l'app te dira bonjour.",
-    "Il te servira à te connecter.",
-    `${MIN_PASSWORD} caractères minimum.`,
-  ];
+  const titles = ["Ton prénom", "Ton email", "Ton mot de passe"];
+  const hints = ["C'est comme ça que l'app te dira bonjour.", "Il te servira à te connecter.", `${MIN_PASSWORD} caractères minimum.`];
+
+  if (confirm) {
+    return (
+      <AuthShell title="Vérifie tes mails" footer={<Link href="/connexion" className={linkBtn}>Aller à la connexion</Link>}>
+        <div className="rounded-3xl bg-white p-5 shadow-card">
+          <p className="text-lg font-extrabold">Compte créé 📬</p>
+          <p className="mt-2 text-[15px] text-ink/80">On t&apos;a envoyé un lien de confirmation. Clique dessus (regarde aussi tes spams), puis connecte-toi.</p>
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell
@@ -85,15 +68,12 @@ export default function SignupPage() {
 
       <form onSubmit={next} noValidate className="space-y-3" key={step}>
         {step === 0 && (
-          <input value={code} onChange={(e) => setCode(e.target.value)} autoFocus autoCapitalize="characters" autoComplete="off" placeholder="Code d'équipe" aria-label="Code d'équipe" maxLength={100} className={inputCls} />
-        )}
-        {step === 1 && (
           <input value={prenom} onChange={(e) => setPrenom(e.target.value)} autoFocus autoComplete="given-name" placeholder="Prénom" aria-label="Ton prénom" maxLength={30} className={inputCls} />
         )}
-        {step === 2 && (
+        {step === 1 && (
           <input type="email" inputMode="email" autoCapitalize="none" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus placeholder="email@exemple.fr" aria-label="Ton email" className={inputCls} />
         )}
-        {step === 3 && <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" label="Mot de passe" autoFocus />}
+        {step === 2 && <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" label="Mot de passe" autoFocus />}
         <ErrorMessage message={error} />
         <button type="submit" disabled={busy} className={`${primaryBtn} mt-2`}>
           {busy ? "Un instant…" : step === STEPS - 1 ? "Créer mon compte" : "Continuer"}

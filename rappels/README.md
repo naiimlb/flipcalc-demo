@@ -19,7 +19,7 @@ Ouvre-la en vue mobile (390 px). Pour la tester sur ton iPhone, passe plutôt pa
 
 | Route | Écran |
 |---|---|
-| `/connexion`, `/inscription`, `/mot-de-passe-oublie`, `/reinitialiser` | Connexion, création de compte (code d'équipe, une étape à la fois), mot de passe oublié |
+| `/connexion`, `/inscription`, `/mot-de-passe-oublie`, `/reinitialiser` | Connexion, création de compte libre (une question par écran), mot de passe oublié |
 | `/equipe`, `/equipe/[id]` | Responsable : liste des caissiers et assignation d'une tâche |
 | `/` | Aujourd'hui : tâches du service triées par heure, cases à cocher, retards en évidence, progression « 3/6 faites » |
 | `/tache/nouvelle`, `/tache/[id]` | Ajouter / modifier (titre, catégorie, heure, jours L M M J V S D, rappel, note) |
@@ -32,10 +32,10 @@ Ouvre-la en vue mobile (390 px). Pour la tester sur ton iPhone, passe plutôt pa
 
 Tout est expliqué pas à pas dans **[docs/COMPTES.md](docs/COMPTES.md)** : création du projet, `supabase/schema.sql` (tables + sécurité RLS), clés, `.env.local`, Vercel, test avec 2 comptes.
 
-- Connexion email + mot de passe, session gardée sur le téléphone. Création de compte protégée par un **code d'équipe** (`TEAM_CODE`, côté serveur uniquement).
+- Connexion et création de compte libres (email + mot de passe), session gardée sur le téléphone.
 - Rôles `caissier` (par défaut) et `responsable` (désigné à la main dans Supabase). Un caissier ne voit jamais les données d'un autre ; le responsable voit la liste des caissiers et peut leur assigner une tâche, rien de plus.
 - Sécurité testée sur le vrai schéma SQL dans un Postgres embarqué : `npm test` (`tests/rls.test.ts`).
-- `.env.local` : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (secret), `TEAM_CODE` (secret).
+- `.env.local` : `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publiques).
 
 ## Le service de nuit (19h → 3h)
 
@@ -69,7 +69,7 @@ Dépose ton fichier dans `public/logo.png` : il remplace automatiquement le plac
 1. Pousse le dépôt sur GitHub (déjà fait pour ce repo).
 2. Sur <https://vercel.com/new>, importe `naiimlb/flipcalc-demo`.
 3. **Root Directory : `rappels`** (le dépôt contient plusieurs apps). Framework : Next.js (détecté), Node 22.
-4. Ajoute les 4 variables d'environnement (voir [docs/COMPTES.md](docs/COMPTES.md), étape 8), puis Deploy.
+4. Ajoute les 2 variables d'environnement Supabase (voir [docs/COMPTES.md](docs/COMPTES.md), étape 8), puis Deploy.
 5. Sur l'iPhone, ouvre l'URL `*.vercel.app` dans **Safari** → Partager → **Sur l'écran d'accueil**.
 
 (CLI : `cd rappels && npx vercel` puis `npx vercel --prod`.)
