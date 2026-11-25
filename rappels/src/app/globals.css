@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --color-pink: #ff1f6e;
+  --color-pink-deep: #c80a4e; /* rose foncé pour le petit texte (contraste) */
+  --color-pink-soft: #ffe3ee;
+  --color-ink: #141414;
+  --color-mute: #62626b;
+  --color-line: #f0dde5;
+  --color-canvas: #fff8fb;
+  --shadow-card: 0 8px 24px -10px rgb(255 31 110 / 0.28), 0 2px 6px rgb(20 20 20 / 0.06);
+  --shadow-pop: 0 14px 30px -8px rgb(255 31 110 / 0.55);
+}
+
+html {
+  background: var(--color-canvas);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+/* Gros titres street */
+.h-street {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+button,
+a,
+select,
+input,
+textarea {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pop-in {
+  animation: pop-in 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-in {
+    animation: none;
+  }
+}
