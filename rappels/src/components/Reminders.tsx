@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { buildNotification, sendLocalNotification } from "@/lib/notify";
-import { addDays, formatServiceDate, planForService, reminderAt, serviceDate } from "@/lib/service";
+import { addDays, formatServiceDate, reminderAt, serviceDate, visiblePlan } from "@/lib/service";
 import { updateState, useAppState, useNowMs } from "@/lib/store";
 
 const GRACE_MS = 10 * 60_000; // on ne rattrape pas un rappel vieux de plus de 10 min
@@ -19,9 +19,9 @@ export function Reminders() {
     if (!state || nowMs === null || !state.settings.notify) return;
     const now = new Date(nowMs);
     const today = serviceDate(now);
-    // Service en cours + précédent (un rappel de 02h30 peut tomber après 03h).
+    // Journée en cours + précédente (un rappel de 01h30 peut tomber après le changement de journée).
     for (const sDate of [today, addDays(today, -1)]) {
-      for (const p of planForService(state.tasks, sDate)) {
+      for (const p of visiblePlan(state.tasks, sDate, state.settings.schedule)) {
         const at = reminderAt(p).getTime();
         if (at > nowMs || nowMs - at > GRACE_MS) continue;
         if (state.done[p.key] || state.notified[p.key]) continue;

@@ -3,14 +3,32 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { DAY_LETTERS, DAY_LONG, dateKey, serviceDate, formatServiceDate, formatTime, isAfterMidnight, parseDateKey, reminderLabel, weekdayIndex } from "@/lib/service";
+import {
+  DAY_LETTERS,
+  DAY_LONG,
+  DEFAULT_HANDOVER,
+  TEAM_LABEL,
+  dateKey,
+  formatMinutes,
+  formatServiceDate,
+  formatTime,
+  isAfterMidnight,
+  isOutsideTeamRange,
+  parseDateKey,
+  reminderLabel,
+  serviceDate,
+  teamRange,
+  weekdayIndex,
+  type TeamPref,
+} from "@/lib/service";
 import { updateState, useAppState } from "@/lib/store";
 import { assignTask } from "@/lib/team";
 import { showToast } from "@/lib/toast";
 import { CATEGORIES, CATEGORY_EMOJI, REMINDERS, type Category, type Reminder, type Task } from "@/lib/types";
 
-// Heures proposées : le service va de 19h à 3h.
-const HOURS = [19, 20, 21, 22, 23, 0, 1, 2];
+// Heures proposées : de 10h (ouverture de caisse) à 01h55, la journée de service finit à 2h.
+const HOURS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1];
+const TEAMS: TeamPref[] = ["jour", "soir", "both"];
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -29,15 +47,21 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
   const taskDate = initial?.date ?? presetDate;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [category, setCategory] = useState<Category>(initial?.category ?? "Caisse");
-  const [time, setTime] = useState(initial?.time ?? "19:00");
+  const [time, setTime] = useState(initial?.time ?? "11:00");
   const [days, setDays] = useState<number[]>(initial?.days ?? [0, 1, 2, 3, 4, 5, 6]);
   const [remind, setRemind] = useState<Reminder>(initial?.remind ?? (assignTo ? 5 : (app?.settings.defaultRemind ?? 5)));
+  const [team, setTeam] = useState<TeamPref>(initial?.team ?? "both");
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState("");
   // Tâche ponctuelle : liée à un seul service.
   const [once, setOnce] = useState(!!taskDate);
 
-  const [h = "19", m = "00"] = time.split(":");
+  const [h = "11", m = "00"] = time.split(":");
+  const handover = app?.settings.handover ?? DEFAULT_HANDOVER;
+  const outside = isOutsideTeamRange(time, team, handover);
+  const [rangeFrom, rangeTo] = teamRange(team, handover);
+  // Une ancienne tâche peut avoir une heure hors des nouveaux horaires : on la garde sélectionnable.
+  const hours = HOURS.includes(Number(h)) ? HOURS : [...HOURS, Number(h)];
   const night = isAfterMidnight(time);
   const sortedDays = [...days].sort((a, b) => a - b);
 
@@ -55,6 +79,7 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
       time,
       days: onceDate ? [weekdayIndex(parseDateKey(onceDate))] : sortedDays,
       ...(onceDate ? { date: onceDate } : {}),
+      team,
       remind,
       ...(note.trim() ? { note: note.trim() } : {}),
     };
@@ -120,10 +145,28 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
       </fieldset>
 
       <fieldset>
+        <legend className={label}>Pour qui ?</legend>
+        <div className="grid grid-cols-3 gap-2">
+          {TEAMS.map((tm) => (
+            <button
+              key={tm}
+              type="button"
+              aria-pressed={team === tm}
+              onClick={() => setTeam(tm)}
+              className={`min-h-12 rounded-2xl border-2 px-1 text-sm font-bold leading-tight ${team === tm ? "border-pink bg-pink text-white" : "border-line bg-white"}`}
+            >
+              {tm === "jour" ? "☀️ " : tm === "soir" ? "🌙 " : ""}
+              {TEAM_LABEL[tm]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend className={label}>Heure</legend>
         <div className="flex items-center gap-2">
           <select aria-label="Heure" value={Number(h)} onChange={(e) => setTime(`${pad(Number(e.target.value))}:${m}`)} className={field}>
-            {HOURS.map((x) => (
+            {hours.map((x) => (
               <option key={x} value={x}>{pad(x)} h</option>
             ))}
           </select>
@@ -134,7 +177,12 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
             ))}
           </select>
         </div>
-        <p className="mt-2 text-xs font-medium text-mute">Service de 19h à 3h : après minuit, la tâche reste dans le service de la veille.</p>
+        <p className="mt-2 text-xs font-medium text-mute">Journée de service de 11h à 2h : après minuit, la tâche reste dans la journée de la veille.</p>
+        {outside && (
+          <p role="status" className="mt-3 rounded-2xl bg-pink-soft p-3 text-[13px] font-semibold leading-snug text-pink-deep">
+            ⚠️ {formatTime(time)} est en dehors de la plage de « {TEAM_LABEL[team].toLowerCase()} » ({formatMinutes(rangeFrom)} → {formatMinutes(rangeTo % 1440)}). Tu peux enregistrer quand même.
+          </p>
+        )}
       </fieldset>
 
       {once && taskDate ? (

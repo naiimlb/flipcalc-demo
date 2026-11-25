@@ -4,12 +4,12 @@ import { sanitizeLocalTask } from "@/lib/local-import";
 import { diffState, isEmptyOps } from "@/lib/sync-diff";
 import type { AppState, Task } from "@/lib/types";
 
-const task = (id: string, extra: Partial<Task> = {}): Task => ({ id, title: "Ouvrir la caisse", category: "Caisse", time: "19:00", days: [0, 1], remind: 5, ...extra });
+const task = (id: string, extra: Partial<Task> = {}): Task => ({ id, title: "Ouvrir la caisse", category: "Caisse", time: "19:00", days: [0, 1], team: "both", remind: 5, ...extra });
 const state = (extra: Partial<AppState> = {}): AppState => ({
   tasks: [task("a"), task("b")],
   done: {},
   notified: {},
-  settings: { defaultRemind: 5, notify: true },
+  settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: null },
   profile: { id: "u1", email: "l@hb.fr", prenom: "Léa", role: "caissier" },
   ...extra,
 });
@@ -37,16 +37,22 @@ describe("diffState : ce qui part dans la base", () => {
   });
 
   it("détecte réglages et prénom", () => {
-    const ops = diffState(state(), state({ settings: { defaultRemind: 15, notify: true }, profile: { id: "u1", email: "l@hb.fr", prenom: "Léa B.", role: "caissier" } }));
+    const ops = diffState(state(), state({ settings: { defaultRemind: 15, notify: true, handover: 1110, schedule: null }, profile: { id: "u1", email: "l@hb.fr", prenom: "Léa B.", role: "caissier" } }));
     expect(ops.settingsChanged && ops.profileChanged).toBe(true);
+  });
+
+  it("détecte relève, planning et équipe d'une tâche", () => {
+    expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1080, schedule: null } })).settingsChanged).toBe(true);
+    expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: "JSRJSR-" } })).settingsChanged).toBe(true);
+    expect(diffState(state(), state({ tasks: [task("a", { team: "soir" }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);
   });
 });
 
 describe("correspondance base ↔ app", () => {
-  const row: TaskRow = { id: "x", user_id: "u1", assigned_by: "boss", title: "Frigo", category: "Stock", at_time: "00:30", days: [4, 0], once_date: "2026-11-23", remind: 15, note: null };
+  const row: TaskRow = { id: "x", user_id: "u1", assigned_by: "boss", title: "Frigo", category: "Stock", at_time: "00:30", days: [4, 0], once_date: "2026-11-23", team: "soir", remind: 15, note: null };
 
   it("lit une ligne de la base", () => {
-    expect(rowToTask(row)).toEqual({ id: "x", title: "Frigo", category: "Stock", time: "00:30", days: [0, 4], date: "2026-11-23", remind: 15, assigned: true });
+    expect(rowToTask(row)).toEqual({ id: "x", title: "Frigo", category: "Stock", time: "00:30", days: [0, 4], date: "2026-11-23", team: "soir", remind: 15, assigned: true });
   });
 
   it("n'écrit jamais user_id ni assigned_by dans les champs modifiables", () => {
@@ -64,7 +70,7 @@ describe("correspondance base ↔ app", () => {
 describe("import des anciennes tâches du téléphone", () => {
   it("garde une tâche valide avec un nouvel identifiant", () => {
     const t = sanitizeLocalTask({ id: "ex-ouverture", title: " Ouvrir la caisse ", category: "Caisse", time: "19:00", days: [0, 1, 1, 9], remind: 5 });
-    expect(t).toMatchObject({ title: "Ouvrir la caisse", days: [0, 1], remind: 5 });
+    expect(t).toMatchObject({ title: "Ouvrir la caisse", days: [0, 1], remind: 5, team: "both" });
     expect(t?.id).not.toBe("ex-ouverture");
   });
 

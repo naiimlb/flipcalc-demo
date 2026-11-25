@@ -28,7 +28,7 @@ Aujourd'hui les rappels sont simulés. Pour qu'ils arrivent **app fermée, iPhon
    - ⚠️ **Vercel Cron en offre Hobby est limité à 1 exécution par jour** ; la fréquence à la minute demande le plan Pro.
    - Alternatives gratuites : cron-job.org, GitHub Actions (5 min mini, peu précis), Supabase `pg_cron` + Edge Function, Upstash QStash.
 5. **Logique du cron** : réutiliser `planForService` / `reminderAt` de `src/lib/service.ts` pour les services d'hier et d'aujourd'hui (c'est ce qui gère les tâches d'après minuit), en heure de Paris, et envoyer celles dont l'heure de rappel est passée depuis moins de quelques minutes et pas encore dans `sent`.
-6. **Payload** attendu par le service worker : `{ "title": "⏰ Clôture caisse", "body": "02h30 · Caisse — dans 15 min", "url": "/", "tag": "<taskId>@<date>" }`. Utiliser `buildNotification` pour garder le même texte.
+6. **Payload** attendu par le service worker : `{ "title": "⏰ Clôture caisse", "body": "01h30 · Caisse — dans 15 min", "url": "/", "tag": "<taskId>@<date>" }`. Utiliser `buildNotification` pour garder le même texte.
 7. **Remplacer `store.ts`** par des appels API (synchronisation des tâches serveur ↔ appareil) et brancher `subscribeToPush()` au bouton « Activer les notifications ».
 8. **Cocher une tâche** doit aussi être enregistré côté serveur, pour ne pas notifier une tâche déjà faite.
 

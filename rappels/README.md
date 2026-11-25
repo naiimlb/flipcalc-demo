@@ -1,6 +1,6 @@
 # HB Rappels
 
-Maquette d'une PWA iPhone de **rappels de tâches pour les caissiers de Hashtag Bangers** (75 Grande Rue, Roubaix, 19h–3h).
+Maquette d'une PWA iPhone de **rappels de tâches pour les caissiers de Hashtag Bangers** (75 Grande Rue, Roubaix, ouvert 11h–2h).
 Next.js 16 + Tailwind 4, comptes et données dans Supabase (plan gratuit) : chaque caissier a son espace perso.
 
 ## Lancer en local
@@ -23,7 +23,8 @@ Ouvre-la en vue mobile (390 px). Pour la tester sur ton iPhone, passe plutôt pa
 | `/equipe`, `/equipe/[id]` | Responsable : liste des caissiers et assignation d'une tâche |
 | `/` | Aujourd'hui : tâches du service triées par heure, cases à cocher, retards en évidence, progression « 3/6 faites » |
 | `/tache/nouvelle`, `/tache/[id]` | Ajouter / modifier (titre, catégorie, heure, jours L M M J V S D, rappel, note) |
-| `/semaine` | Un bloc par jour de service |
+| `/semaine` | Un bloc par journée de service, avec l'équipe du jour |
+| `/planning` | Mon planning : Jour / Soir / Repos pour chaque jour de la semaine |
 | `/reglages` | Activer les notifications, aperçu + test, mon compte (prénom, déconnexion), rappels par défaut, import des tâches du téléphone, tâches d'exemple |
 | `/apercu` | Faux écran verrouillé avec la notification (logo, titre, heure) |
 | `/caisse` | Comptage de caisse guidé : une ligne par coupure, total automatique, comparaison avec le montant attendu (calculs faits par le code, sans IA) |
@@ -37,16 +38,20 @@ Tout est expliqué pas à pas dans **[docs/COMPTES.md](docs/COMPTES.md)** : cré
 - Sécurité testée sur le vrai schéma SQL dans un Postgres embarqué : `npm test` (`tests/rls.test.ts`).
 - `.env.local` : `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publiques).
 
-## Le service de nuit (19h → 3h)
+## Journée de service et équipes (11h → 2h)
 
 Tout est dans [`src/lib/service.ts`](src/lib/service.ts) (testé dans `tests/service.test.ts`) :
 
-- Les **jours cochés sont des jours de service** : un service « du lundi » commence lundi 19h et finit mardi 3h.
-- Une heure **avant 03h00 appartient au service de la veille** : une tâche à 01h30 cochée « Lun » sonne dans la nuit de lundi à mardi.
-- À 01h10 un mardi, « Aujourd'hui » affiche donc le **service du lundi**. À partir de 03h00 on bascule sur le service du jour.
-- Tri : 19h00 → 23h59, puis 00h00 → 02h55 (séparateur « 🌙 Après minuit » dans la liste).
-- Le suivi (fait / rappel envoyé) est clé par `tâche@date-du-service`, donc pas de confusion minuit.
-- Les heures proposées dans le formulaire vont de 19h à 02h55 (pas de 5 min).
+- Une **journée de service** va de **11h à 2h du matin**. Les **jours cochés sont des jours de service** : une journée « du lundi » commence lundi 11h et finit mardi 2h.
+- Une heure **avant 02h00 appartient à la journée de la veille** : une tâche à 01h30 cochée « Lun » sonne dans la nuit de lundi à mardi. À 01h10 un mardi, « Aujourd'hui » affiche donc la **journée du lundi** ; à partir de 02h00 on bascule sur la journée du jour.
+- Tri : 10h30 → 23h59, puis 00h00 → 01h55 (séparateur « 🌙 Après minuit »). Les heures proposées dans le formulaire vont de 10h00 (ouverture de caisse) à 01h55, par pas de 5 min.
+- **Deux équipes** : Jour (11h → relève) et Soir (relève → 2h). L'**heure de relève** (18h00 ou 18h30, par défaut 18h30) se règle dans Réglages, sans toucher au code.
+- **Mon planning** (`/planning`) : chaque caissier indique pour chaque jour de la semaine Jour, Soir ou Repos. « Aujourd'hui », « Semaine » et les rappels ne montrent que les tâches de son équipe (planning non indiqué : toutes les tâches ; repos : aucune).
+- Chaque tâche est pour l'**équipe jour, l'équipe soir ou les deux**. Si l'heure sort de la plage de l'équipe (jour : 10h30 → relève, soir : relève → 2h), le formulaire affiche un avertissement mais n'empêche pas d'enregistrer.
+- **Fuseau Europe/Paris**, quel que soit le fuseau du téléphone, avec passage heure d'été / heure d'hiver : un rappel à 01h30 part bien à 01h30 heure de Paris, y compris la nuit du changement d'heure.
+- Le suivi (fait / rappel envoyé) est clé par `tâche@date-de-la-journée`, donc pas de confusion à minuit.
+- **Tâches d'exemple** : 5 pour l'équipe jour et 5 pour l'équipe soir ; les heures de transmission (relève − 15 min) et de vérification du fond de caisse (relève + 5 min) suivent l'heure de relève au moment où on les ajoute.
+- **Anciennes tâches** : elles restent visibles pour les deux équipes. Celles dont l'heure tombe entre 02h et 10h30 (hors des nouveaux horaires) sont signalées sur l'écran Aujourd'hui pour être corrigées ; rien n'est supprimé.
 
 ## Logo
 

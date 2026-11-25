@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Skeleton } from "@/components/Skeleton";
-import { addDays, DAY_LONG, DAY_SHORT, formatTime, planForService, serviceDate, weekdayIndex } from "@/lib/service";
+import { TeamBadge } from "@/components/TeamBadge";
+import { addDays, dayPlanFor, DAY_LONG, DAY_SHORT, formatTime, serviceDate, visiblePlan, weekdayIndex } from "@/lib/service";
 import { useAppState, useNowMs } from "@/lib/store";
 import { CATEGORY_EMOJI } from "@/lib/types";
 
@@ -20,12 +21,13 @@ export default function WeekPage() {
     <>
       <Header title="Ma semaine" />
       <p className="-mt-2 mb-4 text-sm font-medium text-mute">
-        Chaque jour = un service (19h → 3h). Les tâches 🌙 d&apos;après minuit sont rangées dans le service de la veille.
+        Chaque jour = une journée de service (11h → 2h). Les tâches 🌙 d&apos;après minuit sont rangées dans la journée de la veille.
       </p>
       <div className="space-y-4">
         {days.map((d) => {
           const isToday = d.getTime() === current.getTime();
-          const plan = planForService(state.tasks, d);
+          const plan = visiblePlan(state.tasks, d, state.settings.schedule);
+          const dp = dayPlanFor(state.settings.schedule, d);
           return (
             <section
               key={d.getTime()}
@@ -34,16 +36,17 @@ export default function WeekPage() {
             >
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="h-street text-2xl">
-                  {DAY_SHORT[weekdayIndex(d)]} <span className="text-pink">{d.getDate()}</span>
+                  {DAY_SHORT[weekdayIndex(d)]} <span className="text-pink">{d.getUTCDate()}</span>
                 </h2>
+                <TeamBadge plan={dp} />
                 {isToday ? (
-                  <span className="rounded-full bg-pink px-3 py-1 text-xs font-extrabold text-white">Ce service</span>
+                  <span className="rounded-full bg-pink px-3 py-1 text-xs font-extrabold text-white">Aujourd&apos;hui</span>
                 ) : (
                   <span className="text-sm font-bold text-mute">{plan.length} tâche{plan.length > 1 ? "s" : ""}</span>
                 )}
               </div>
               {plan.length === 0 ? (
-                <p className="py-1 text-sm text-mute">Rien de prévu.</p>
+                <p className="py-1 text-sm text-mute">{dp === "R" ? "Repos 😴" : "Rien de prévu."}</p>
               ) : (
                 <ul className="divide-y divide-line">
                   {plan.map((p) => {

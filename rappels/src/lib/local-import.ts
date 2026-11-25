@@ -25,6 +25,7 @@ export function sanitizeLocalTask(raw: unknown): Task | null {
     time: raw.time,
     days: days.length ? days : [0],
     ...(date ? { date } : {}),
+    team: "both", // les anciennes tâches restent visibles pour les deux équipes
     remind: (REMINDERS as readonly number[]).includes(Number(raw.remind)) ? (Number(raw.remind) as Reminder) : 5,
     ...(note ? { note } : {}),
   };

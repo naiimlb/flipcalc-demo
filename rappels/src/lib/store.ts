@@ -42,9 +42,9 @@ async function fetchState(profile: Profile, notified: Record<string, true>): Pro
   const sb = getSupabase();
   const since = dateKeyOf(new Date(Date.now() - FOLLOW_DAYS * 86_400_000));
   const [tasks, done, settings] = await Promise.all([
-    sb.from("tasks").select("id,user_id,assigned_by,title,category,at_time,days,once_date,remind,note").order("created_at"),
+    sb.from("tasks").select("id,user_id,assigned_by,title,category,at_time,days,once_date,team,remind,note").order("created_at"),
     sb.from("task_done").select("task_id,service_date").gte("service_date", since),
-    sb.from("settings").select("default_remind,notify").maybeSingle(),
+    sb.from("settings").select("default_remind,notify,handover_min,schedule").maybeSingle(),
   ]);
   if (tasks.error) throw tasks.error;
   if (done.error) throw done.error;
@@ -121,7 +121,7 @@ async function push(ops: SyncOps, next: AppState) {
   }
   if (ops.settingsChanged) {
     await check(
-      sb.from("settings").upsert({ user_id: uid, default_remind: next.settings.defaultRemind, notify: next.settings.notify, updated_at: new Date().toISOString() }, { onConflict: "user_id" }),
+      sb.from("settings").upsert({ user_id: uid, default_remind: next.settings.defaultRemind, notify: next.settings.notify, handover_min: next.settings.handover, schedule: next.settings.schedule, updated_at: new Date().toISOString() }, { onConflict: "user_id" }),
     );
   }
   if (ops.profileChanged) await check(sb.from("profiles").update({ prenom: next.profile.prenom }).eq("id", uid));

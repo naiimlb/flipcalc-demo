@@ -11,7 +11,7 @@ export type SyncOps = {
   profileChanged: boolean;
 };
 
-const sig = (t: Task) => JSON.stringify([t.title, t.category, t.time, t.days, t.date ?? null, t.remind, t.note ?? null]);
+const sig = (t: Task) => JSON.stringify([t.title, t.category, t.time, t.days, t.date ?? null, t.team, t.remind, t.note ?? null]);
 
 export function diffState(prev: AppState, next: AppState): SyncOps {
   const before = new Map(prev.tasks.map((t) => [t.id, t]));
@@ -25,7 +25,9 @@ export function diffState(prev: AppState, next: AppState): SyncOps {
     taskDeletes: prev.tasks.filter((t) => !after.has(t.id)).map((t) => t.id),
     doneAdds: Object.keys(next.done).filter((k) => !prev.done[k]),
     doneRemoves: Object.keys(prev.done).filter((k) => !next.done[k]),
-    settingsChanged: prev.settings.defaultRemind !== next.settings.defaultRemind || prev.settings.notify !== next.settings.notify,
+    settingsChanged: prev.settings.defaultRemind !== next.settings.defaultRemind || prev.settings.notify !== next.settings.notify ||
+      prev.settings.handover !== next.settings.handover ||
+      prev.settings.schedule !== next.settings.schedule,
     profileChanged: prev.profile.prenom !== next.profile.prenom,
   };
 }

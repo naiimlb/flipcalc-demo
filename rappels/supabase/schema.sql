@@ -56,8 +56,13 @@ create table if not exists public.settings (
   tva            numeric(4, 1) not null default 10 check (tva between 0 and 30),
   default_remind smallint not null default 5 check (default_remind in (0, 5, 15)),
   notify         boolean not null default true,
+  handover_min   smallint not null default 1110 check (handover_min in (1080, 1110)),  -- relève : 18h00 ou 18h30
+  schedule       text check (schedule ~ '^[JSR-]{7}$'),                                -- mon planning lun → dim : J, S, R ou -
   updated_at     timestamptz not null default now()
 );
+-- Mise à jour d'une base existante (sans effet sur une base neuve).
+alter table public.settings add column if not exists handover_min smallint not null default 1110 check (handover_min in (1080, 1110));
+alter table public.settings add column if not exists schedule text check (schedule ~ '^[JSR-]{7}$');
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users
@@ -73,10 +78,13 @@ create table if not exists public.tasks (
   at_time     text not null check (at_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
   days        smallint[] not null default '{}' check (days <@ array[0, 1, 2, 3, 4, 5, 6]::smallint[]),
   once_date   date,                                                         -- tâche ponctuelle (service de ce jour)
+  team        text not null default 'both' check (team in ('jour', 'soir', 'both')), -- pour quelle équipe
   remind      smallint not null default 5 check (remind in (0, 5, 15)),
   note        text check (char_length(note) <= 200),
   created_at  timestamptz not null default now()
 );
+-- Mise à jour d'une base existante : les tâches déjà créées restent visibles pour les deux équipes.
+alter table public.tasks add column if not exists team text not null default 'both' check (team in ('jour', 'soir', 'both'));
 create index if not exists tasks_user_idx on public.tasks (user_id);
 
 -- Tâches faites : une ligne par tâche et par service.
@@ -131,7 +139,7 @@ create policy settings_own on public.settings for all to authenticated
 
 -- tasks : je lis/modifie/supprime les miennes. Je ne peux pas changer user_id ni assigned_by.
 grant select, insert, delete on public.tasks to authenticated;
-grant update (title, category, at_time, days, once_date, remind, note) on public.tasks to authenticated;
+grant update (title, category, at_time, days, once_date, team, remind, note) on public.tasks to authenticated;
 drop policy if exists tasks_select on public.tasks;
 create policy tasks_select on public.tasks for select to authenticated
   using (user_id = auth.uid());

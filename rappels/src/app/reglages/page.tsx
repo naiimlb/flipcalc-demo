@@ -10,8 +10,8 @@ import { Skeleton } from "@/components/Skeleton";
 import { TestNotification } from "@/components/TestNotification";
 import { signOut } from "@/lib/auth";
 import { buildNotification } from "@/lib/notify";
-import { freshSampleTasks } from "@/lib/samples";
-import { reminderLabel } from "@/lib/service";
+import { sampleTasks } from "@/lib/samples";
+import { formatMinutes, HANDOVER_CHOICES, reminderLabel } from "@/lib/service";
 import { updateState, useAppState } from "@/lib/store";
 import { REMINDERS, type Reminder } from "@/lib/types";
 import { cleanPrenom, isPrenom } from "@/lib/validate";
@@ -72,6 +72,28 @@ export default function SettingsPage() {
         )}
 
         <section className={card}>
+          <h2 className={h2}>Mes horaires</h2>
+          <Link href="/planning" className="mb-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-pink text-base font-extrabold text-white shadow-pop">
+            Mon planning (Jour / Soir / Repos)
+          </Link>
+          <p className="mb-2 text-sm font-semibold text-mute">Heure de relève entre l&apos;équipe jour et l&apos;équipe soir</p>
+          <div className="grid grid-cols-2 gap-2">
+            {HANDOVER_CHOICES.map((h) => (
+              <button
+                key={h}
+                type="button"
+                aria-pressed={settings.handover === h}
+                onClick={() => void updateState((s) => ({ ...s, settings: { ...s.settings, handover: h } }))}
+                className={`min-h-12 rounded-2xl border-2 px-1 text-base font-bold ${settings.handover === h ? "border-pink bg-pink text-white" : "border-line bg-white"}`}
+              >
+                {formatMinutes(h)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-mute">Les tâches d&apos;exemple s&apos;adaptent à cette heure quand tu les ajoutes.</p>
+        </section>
+
+        <section className={card}>
           <h2 className={h2}>Mes rappels</h2>
           <p className="mb-2 text-sm font-semibold text-mute">Rappel par défaut des nouvelles tâches</p>
           <div className="grid grid-cols-3 gap-2">
@@ -116,10 +138,10 @@ export default function SettingsPage() {
         <section className={card}>
           <h2 className={h2}>Le resto</h2>
           <p className="text-[15px] font-semibold">Hashtag Bangers</p>
-          <p className="text-sm text-mute">75 Grande Rue, Roubaix · ouvert 19h – 3h</p>
+          <p className="text-sm text-mute">75 Grande Rue, Roubaix · ouvert 11h – 2h</p>
           <button
             type="button"
-            onClick={() => void updateState((s) => ({ ...s, tasks: [...s.tasks, ...freshSampleTasks()] }))}
+            onClick={() => void updateState((s) => ({ ...s, tasks: [...s.tasks, ...sampleTasks(s.settings.handover)] }))}
             className="mt-4 min-h-12 w-full rounded-full border-2 border-ink/15 bg-white text-base font-bold"
           >
             Ajouter les tâches d&apos;exemple

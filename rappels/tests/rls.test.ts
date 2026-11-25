@@ -194,6 +194,35 @@ describe("le responsable", () => {
   });
 });
 
+describe("équipes, relève et planning", () => {
+  it("les tâches existantes restent visibles pour les deux équipes (défaut « both »)", async () => {
+    const r = await q("select team from public.tasks where user_id = $1 limit 1", [ids.lea]);
+    expect(r.rows[0]!.team).toBe("both");
+  });
+
+  it("refuse une équipe, une relève ou un planning invalide ; accepte les bons", async () => {
+    await as(ids.lea, async () => {
+      const task = (team: string) => fails(() => q("insert into public.tasks (user_id, title, category, at_time, days, team) values ($1, 'x', 'Caisse', '12:00', '{0}', $2)", [ids.lea, team]));
+      expect(await task("nuit")).toBe(true);
+      expect(await task("jour")).toBe(false);
+      expect(await task("soir")).toBe(false);
+      const set = (col: string, v: string | number) => fails(() => q(`update public.settings set ${col} = $1 where user_id = $2`, [v, ids.lea]));
+      expect(await set("handover_min", 1000)).toBe(true);
+      expect(await set("handover_min", 1080)).toBe(false);
+      expect(await set("handover_min", 1110)).toBe(false);
+      expect(await set("schedule", "JSRJSR")).toBe(true); // 6 lettres
+      expect(await set("schedule", "JSXJSRJ")).toBe(true);
+      expect(await set("schedule", "JSRJSR-")).toBe(false);
+    });
+  });
+
+  it("le planning et la relève d'un caissier sont invisibles pour les autres", async () => {
+    await as(ids.lea, () => q("update public.settings set schedule = 'JJJJJJJ' where user_id = $1", [ids.lea]));
+    expect((await as(ids.tom, () => q("select schedule from public.settings"))).rows).toEqual([{ schedule: null }]); // seulement le sien
+    expect((await as(ids.boss, () => q("select * from public.settings where user_id = $1", [ids.lea]))).rows).toHaveLength(0);
+  });
+});
+
 describe("contraintes de données", () => {
   it("refuse une heure, une catégorie ou un rappel invalide", async () => {
     await as(ids.lea, async () => {

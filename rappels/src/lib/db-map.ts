@@ -1,3 +1,4 @@
+import type { Handover, TeamPref } from "./service";
 import type { Category, Profile, Reminder, Role, Settings, Task } from "./types";
 
 // Correspondance entre l'app (Task…) et les lignes de la base (supabase/schema.sql).
@@ -10,10 +11,11 @@ export type TaskRow = {
   at_time: string;
   days: number[];
   once_date: string | null;
+  team: string;
   remind: number;
   note: string | null;
 };
-export type SettingsRow = { default_remind: number; notify: boolean };
+export type SettingsRow = { default_remind: number; notify: boolean; handover_min: number; schedule: string | null };
 export type ProfileRow = { id: string; email: string; prenom: string; role: string };
 export type DoneRow = { task_id: string; service_date: string };
 
@@ -25,6 +27,7 @@ export function rowToTask(r: TaskRow): Task {
     time: r.at_time,
     days: [...r.days].sort((a, b) => a - b),
     ...(r.once_date ? { date: r.once_date } : {}),
+    team: (r.team === "jour" || r.team === "soir" ? r.team : "both") as TeamPref,
     remind: r.remind as Reminder,
     ...(r.note ? { note: r.note } : {}),
     ...(r.assigned_by ? { assigned: true } : {}),
@@ -39,6 +42,7 @@ export function taskToFields(t: Task) {
     at_time: t.time,
     days: t.days,
     once_date: t.date ?? null,
+    team: t.team,
     remind: t.remind,
     note: t.note ?? null,
   };
@@ -49,6 +53,8 @@ export const rowToProfile = (r: ProfileRow): Profile => ({ id: r.id, email: r.em
 export const rowToSettings = (r: SettingsRow | null): Settings => ({
   defaultRemind: ([0, 5, 15].includes(r?.default_remind ?? 5) ? (r?.default_remind ?? 5) : 5) as Reminder,
   notify: r?.notify ?? true,
+  handover: (r?.handover_min === 1080 ? 1080 : 1110) as Handover,
+  schedule: r?.schedule && /^[JSR-]{7}$/.test(r.schedule) ? r.schedule : null,
 });
 
 export const doneKey = (taskId: string, serviceDate: string) => `${taskId}@${serviceDate}`;
