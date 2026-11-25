@@ -47,6 +47,9 @@ export function TaskRow({ planned: { task, afterMidnight }, done, lateBy, onTogg
           {afterMidnight && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-ink text-white"}`}>🌙 nuit</span>
           )}
+          {task.assigned && (
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-pink-soft text-pink-deep"}`}>📌 Assignée</span>
+          )}
           {late && <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-extrabold uppercase text-pink-deep">En retard · {formatDuration(lateBy)}</span>}
         </div>
         <p className={`text-[17px] font-bold leading-snug ${done ? "text-mute line-through decoration-2" : ""}`}>{task.title}</p>

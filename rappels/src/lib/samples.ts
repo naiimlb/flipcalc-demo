@@ -1,4 +1,4 @@
-import type { AppState, Task } from "./types";
+import type { Task } from "./types";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
@@ -11,6 +11,7 @@ export const SAMPLE_TASKS: Task[] = [
   { id: "ex-cloture", title: "Clôture caisse", category: "Caisse", time: "02:30", days: ALL_DAYS, remind: 15, note: "Ticket Z, comptage, mise en coffre." },
 ];
 
-export function defaultState(): AppState {
-  return { v: 1, tasks: SAMPLE_TASKS, done: {}, notified: {}, role: "Caissier" };
+/** Les 6 tâches d'exemple, avec de nouveaux identifiants (prêtes à être enregistrées dans le compte). */
+export function freshSampleTasks(): Task[] {
+  return SAMPLE_TASKS.map((t) => ({ ...t, id: crypto.randomUUID() }));
 }

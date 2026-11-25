@@ -16,7 +16,7 @@ export function Reminders() {
   const nowMs = useNowMs();
 
   useEffect(() => {
-    if (!state || nowMs === null) return;
+    if (!state || nowMs === null || !state.settings.notify) return;
     const now = new Date(nowMs);
     const today = serviceDate(now);
     // Service en cours + précédent (un rappel de 02h30 peut tomber après 03h).

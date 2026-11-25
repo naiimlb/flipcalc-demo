@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Poppins } from "next/font/google";
-import { Reminders } from "@/components/Reminders";
-import { ServiceWorkerRegistration } from "@/components/ServiceWorker";
-import { TabBar } from "@/components/TabBar";
-import { Toast } from "@/components/Toast";
+import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -40,11 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr" className={poppins.variable}>
       <body className="antialiased">
-        <ServiceWorkerRegistration />
-        <Reminders />
-        <Toast />
-        <div className="pt-safe mx-auto min-h-dvh max-w-[430px] px-4 pb-32">{children}</div>
-        <TabBar />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

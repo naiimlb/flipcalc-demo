@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { DAY_LETTERS, DAY_LONG, formatServiceDate, formatTime, isAfterMidnight, parseDateKey, reminderLabel, weekdayIndex } from "@/lib/service";
-import { updateState } from "@/lib/store";
+import { DAY_LETTERS, DAY_LONG, dateKey, serviceDate, formatServiceDate, formatTime, isAfterMidnight, parseDateKey, reminderLabel, weekdayIndex } from "@/lib/service";
+import { updateState, useAppState } from "@/lib/store";
+import { assignTask } from "@/lib/team";
+import { showToast } from "@/lib/toast";
 import { CATEGORIES, CATEGORY_EMOJI, REMINDERS, type Category, type Reminder, type Task } from "@/lib/types";
 
 // Heures proposées : le service va de 19h à 3h.
@@ -15,18 +17,25 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const field = "w-full rounded-2xl border-2 border-line bg-white px-4 text-[17px] font-semibold min-h-12 focus:border-pink";
 const label = "mb-2 block text-sm font-extrabold uppercase tracking-wide";
 
-export function TaskForm({ initial }: { initial?: Task }) {
+type AssignTo = { id: string; prenom: string };
+
+/** Formulaire de tâche. Avec `assignTo`, le responsable crée la tâche pour un caissier précis. */
+export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: AssignTo }) {
   const router = useRouter();
+  const app = useAppState();
   const editing = !!initial;
+  // Une tâche assignée est ponctuelle par défaut : elle concerne le service en cours.
+  const [presetDate] = useState(() => (assignTo ? dateKey(serviceDate(new Date())) : undefined));
+  const taskDate = initial?.date ?? presetDate;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [category, setCategory] = useState<Category>(initial?.category ?? "Caisse");
   const [time, setTime] = useState(initial?.time ?? "19:00");
   const [days, setDays] = useState<number[]>(initial?.days ?? [0, 1, 2, 3, 4, 5, 6]);
-  const [remind, setRemind] = useState<Reminder>(initial?.remind ?? 5);
+  const [remind, setRemind] = useState<Reminder>(initial?.remind ?? (assignTo ? 5 : (app?.settings.defaultRemind ?? 5)));
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState("");
   // Tâche ponctuelle : liée à un seul service.
-  const [once, setOnce] = useState(!!initial?.date);
+  const [once, setOnce] = useState(!!taskDate);
 
   const [h = "19", m = "00"] = time.split(":");
   const night = isAfterMidnight(time);
@@ -34,13 +43,13 @@ export function TaskForm({ initial }: { initial?: Task }) {
 
   const toggleDay = (d: number) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
 
-  function save(e: React.FormEvent) {
+  async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return setError("Donne un nom à ta tâche.");
     if (!once && days.length === 0) return setError("Choisis au moins un jour.");
-    const onceDate = once ? initial?.date : undefined;
+    const onceDate = once ? taskDate : undefined;
     const task: Task = {
-      id: initial?.id ?? `t-${Date.now().toString(36)}`,
+      id: initial?.id ?? crypto.randomUUID(),
       title: title.trim(),
       category,
       time,
@@ -49,9 +58,15 @@ export function TaskForm({ initial }: { initial?: Task }) {
       remind,
       ...(note.trim() ? { note: note.trim() } : {}),
     };
+    if (assignTo && app) {
+      const ok = await assignTask(assignTo.id, app.profile.id, task);
+      if (!ok) return setError("La tâche n'a pas pu être envoyée. Réessaie.");
+      showToast("📌 Tâche envoyée", `${task.title} → ${assignTo.prenom}`);
+      return router.push("/equipe");
+    }
     updateState((s) => ({
       ...s,
-      tasks: editing ? s.tasks.map((t) => (t.id === task.id ? task : t)) : [...s.tasks, task],
+      tasks: editing ? s.tasks.map((t) => (t.id === task.id ? { ...task, ...(t.assigned ? { assigned: true } : {}) } : t)) : [...s.tasks, task],
     }));
     router.push("/");
   }
@@ -65,12 +80,12 @@ export function TaskForm({ initial }: { initial?: Task }) {
   return (
     <form onSubmit={save} className="space-y-6 pb-8">
       <header className="flex items-center gap-3">
-        <Link href="/" aria-label="Retour" className="flex size-12 items-center justify-center rounded-full bg-white shadow-card">
+        <Link href={assignTo ? "/equipe" : "/"} aria-label="Retour" className="flex size-12 items-center justify-center rounded-full bg-white shadow-card">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </Link>
-        <h1 className="h-street text-3xl">{editing ? "Modifier" : "Nouvelle tâche"}</h1>
+        <h1 className="h-street text-3xl">{assignTo ? `Pour ${assignTo.prenom}` : editing ? "Modifier" : "Nouvelle tâche"}</h1>
       </header>
 
       <div>
@@ -122,14 +137,14 @@ export function TaskForm({ initial }: { initial?: Task }) {
         <p className="mt-2 text-xs font-medium text-mute">Service de 19h à 3h : après minuit, la tâche reste dans le service de la veille.</p>
       </fieldset>
 
-      {once && initial?.date ? (
+      {once && taskDate ? (
         <div className="rounded-3xl bg-pink-soft p-4">
           <p className="text-sm font-extrabold uppercase tracking-wide">Jour</p>
-          <p className="mt-1 text-[15px] font-semibold">📌 Juste pour le service du {formatServiceDate(parseDateKey(initial.date))}</p>
+          <p className="mt-1 text-[15px] font-semibold">📌 Juste pour le service du {formatServiceDate(parseDateKey(taskDate))}</p>
           <button
             type="button"
             onClick={() => {
-              setDays([weekdayIndex(parseDateKey(initial.date!))]);
+              setDays([weekdayIndex(parseDateKey(taskDate))]);
               setOnce(false);
             }}
             className="mt-3 min-h-11 rounded-full border-2 border-pink bg-white px-4 text-sm font-bold text-pink-deep"
@@ -201,7 +216,7 @@ export function TaskForm({ initial }: { initial?: Task }) {
 
       <div className="space-y-3">
         <button type="submit" className="min-h-14 w-full rounded-full bg-pink text-lg font-extrabold text-white shadow-pop active:scale-[0.98]">
-          {editing ? "Enregistrer" : "Ajouter la tâche"}
+          {assignTo ? "Envoyer la tâche" : editing ? "Enregistrer" : "Ajouter la tâche"}
         </button>
         {editing && (
           <button type="button" onClick={remove} className="min-h-12 w-full rounded-full border-2 border-ink/15 bg-white text-base font-bold text-pink-deep">

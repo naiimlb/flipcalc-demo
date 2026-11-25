@@ -1,11 +1,7 @@
 -- =============================================================================
---  ⚠️ BROUILLON, NON TESTÉ ET NON UTILISÉ PAR L'APP POUR L'INSTANT.
---  Début du chantier « comptes utilisateurs » (en pause). Ne pas coller tel quel
---  en production : la sécurité (RLS) doit d'abord être vérifiée par des tests.
--- =============================================================================
 --  HB Rappels : schéma Supabase (tables + sécurité RLS)
 --  À coller en entier dans Supabase → SQL Editor → New query → Run.
---  Peut être relancé sans risque (idempotent).
+--  Peut être relancé sans risque (idempotent). Testé : npm test (tests/rls.test.ts).
 --
 --  Données stockées : prénom, email, tâches. Rien d'autre.
 --  Règle d'or : chaque ligne appartient à un utilisateur (user_id) et la base

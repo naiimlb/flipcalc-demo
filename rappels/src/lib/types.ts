@@ -17,16 +17,29 @@ export type Task = {
   /** Minutes d'avance du rappel. */
   remind: Reminder;
   note?: string;
+  /** Tâche assignée par un responsable. */
+  assigned?: boolean;
+};
+
+export type Role = "caissier" | "responsable";
+
+export type Profile = { id: string; email: string; prenom: string; role: Role };
+
+export type Settings = {
+  /** Rappel proposé par défaut pour les nouvelles tâches. */
+  defaultRemind: Reminder;
+  /** Recevoir les rappels (dans l'app, et en notification si autorisée). */
+  notify: boolean;
 };
 
 export type AppState = {
-  v: 1;
   tasks: Task[];
   /** "<taskId>@<date du service>" → fait. */
   done: Record<string, true>;
-  /** Rappels déjà envoyés, même clé que `done`. */
+  /** Rappels déjà envoyés sur CET appareil (non synchronisé), même clé que `done`. */
   notified: Record<string, true>;
-  role: string;
+  settings: Settings;
+  profile: Profile;
 };
 
 export const CATEGORY_EMOJI: Record<Category, string> = {

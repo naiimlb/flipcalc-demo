@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { Header } from "@/components/Header";
+import { ImportLocalCard } from "@/components/ImportLocalCard";
 import { Skeleton } from "@/components/Skeleton";
 import { TaskRow } from "@/components/TaskRow";
+import { freshSampleTasks } from "@/lib/samples";
 import { formatServiceDate, isServiceLive, planForService, serviceDate } from "@/lib/service";
 import { updateState, useAppState, useNowMs } from "@/lib/store";
 
@@ -32,7 +34,9 @@ export default function TodayPage() {
 
   return (
     <>
-      <Header title={`Salut ${state.role.toLowerCase()} 👋`} />
+      <Header title={`Salut ${state.profile.prenom} 👋`} />
+
+      <ImportLocalCard userId={state.profile.id} />
 
       <section aria-label="Progression" className="mb-5 rounded-3xl bg-white p-4 shadow-card">
         <p className="text-sm font-bold text-mute">Service du {formatServiceDate(sDate)}</p>
@@ -68,6 +72,15 @@ export default function TodayPage() {
         <div className="rounded-3xl bg-white p-6 text-center shadow-card">
           <p className="text-lg font-extrabold">Rien de prévu ce soir 😎</p>
           <p className="mt-1 text-sm text-mute">Ajoute ta première tâche pour recevoir un rappel.</p>
+          {state.tasks.length === 0 && (
+            <button
+              type="button"
+              onClick={() => updateState((s) => ({ ...s, tasks: [...s.tasks, ...freshSampleTasks()] }))}
+              className="mt-4 min-h-12 rounded-full border-2 border-pink bg-white px-5 text-sm font-extrabold text-pink-deep"
+            >
+              Ajouter les tâches d&apos;exemple
+            </button>
+          )}
         </div>
       ) : (
         <ul className="space-y-3">
