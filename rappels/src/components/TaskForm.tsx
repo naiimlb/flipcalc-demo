@@ -25,7 +25,7 @@ export function TaskForm({ initial }: { initial?: Task }) {
   const [remind, setRemind] = useState<Reminder>(initial?.remind ?? 5);
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState("");
-  // Tâche ponctuelle (ex. proposée par l'assistant) : liée à un seul service.
+  // Tâche ponctuelle : liée à un seul service.
   const [once, setOnce] = useState(!!initial?.date);
 
   const [h = "19", m = "00"] = time.split(":");

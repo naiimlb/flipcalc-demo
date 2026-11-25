@@ -1,10 +1,6 @@
-// Tous les calculs d'argent se font ici, en CENTIMES (entiers), jamais en flottants.
-// Ce module est la seule source de vérité : l'écran de comptage ET les outils de l'assistant l'utilisent.
+// Calculs d'argent de l'écran « Compter la caisse », en CENTIMES (entiers), jamais en flottants.
 
 export type Cents = number;
-
-/** Billets et pièces euro, en centimes, du plus grand au plus petit. */
-export const DENOMINATIONS: readonly Cents[] = [50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 
 const MAX_CENTS = 1_000_000_00; // 1 million d'euros : au-delà, c'est forcément une erreur de saisie
 
@@ -59,50 +55,4 @@ export function computeGap(counted: Cents, expected: Cents): Gap {
   if (gap === 0) return { gap, kind: "exact", text: "Aucun écart : la caisse est juste." };
   if (gap > 0) return { gap, kind: "surplus", text: `Excédent de ${formatEuro(gap)}.` };
   return { gap, kind: "shortage", text: `Manque de ${formatEuro(-gap)}.` };
-}
-
-/** TVA à partir d'un montant HT ou TTC. `ratePercent` : 10, 5.5, 20… */
-export function vat(amount: Cents, from: "HT" | "TTC", ratePercent: number) {
-  const bp = Math.round(ratePercent * 100); // points de base : 10 % = 1000
-  if (from === "HT") {
-    const tva = Math.round((amount * bp) / 10000);
-    return { ht: amount, tva, ttc: amount + tva };
-  }
-  const ht = Math.round((amount * 10000) / (10000 + bp));
-  return { ht, tva: amount - ht, ttc: amount };
-}
-
-/** Rendu de monnaie : montant dû, montant donné par le client. */
-export function change(due: Cents, given: Cents) {
-  const diff = given - due;
-  if (diff < 0) return { ok: false as const, missing: -diff, back: 0, parts: [] as CountLine[] };
-  let rest = diff;
-  const parts: CountLine[] = [];
-  for (const d of DENOMINATIONS) {
-    if (d >= 50000) continue; // on ne rend pas de 500 €
-    const q = Math.floor(rest / d);
-    if (q > 0) {
-      parts.push({ denomination: d, quantity: q, subtotal: d * q, label: `${q} × ${formatDenomination(d)}` });
-      rest -= d * q;
-    }
-  }
-  return { ok: true as const, missing: 0, back: diff, parts };
-}
-
-/** Pourcentage d'un montant, ajout, retrait, ou « quel % représente X de Y ». */
-export function percent(op: "part" | "ajouter" | "retirer", amount: Cents, pct: number): Cents {
-  const part = Math.round((amount * Math.round(pct * 100)) / 10000);
-  return op === "part" ? part : op === "ajouter" ? amount + part : amount - part;
-}
-
-export function percentOf(part: Cents, total: Cents): number | null {
-  if (total === 0) return null;
-  return Math.round((part / total) * 10000) / 100; // 2 décimales
-}
-
-/** Partage équitable : les centimes restants vont aux premières parts. */
-export function split(amount: Cents, parts: number): Cents[] {
-  const base = Math.floor(amount / parts);
-  const extra = amount - base * parts;
-  return Array.from({ length: parts }, (_, i) => base + (i < extra ? 1 : 0));
 }

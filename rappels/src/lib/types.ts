@@ -27,8 +27,6 @@ export type AppState = {
   /** Rappels déjà envoyés, même clé que `done`. */
   notified: Record<string, true>;
   role: string;
-  /** Taux de TVA par défaut de l'assistant (en %). */
-  tva: number;
 };
 
 export const CATEGORY_EMOJI: Record<Category, string> = {

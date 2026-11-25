@@ -17,7 +17,6 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
-    "@mistralai/mistralai": "3.5.0",
     "next": "16.4.6",
     "react": "19.2.9",
     "react-dom": "19.2.9"

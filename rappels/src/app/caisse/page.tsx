@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Header } from "@/components/Header";
 import { useState } from "react";
 import { computeGap, countCash, formatDenomination, formatEuro, toCents } from "@/lib/money";
 
@@ -41,12 +41,7 @@ export default function CashCountPage() {
 
   return (
     <>
-      <header className="mb-4 flex items-center gap-3">
-        <Link href="/assistant" aria-label="Retour à l'assistant" className="flex size-12 items-center justify-center rounded-full bg-white shadow-card">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 5l-7 7 7 7" /></svg>
-        </Link>
-        <h1 className="h-street text-3xl">Compter la caisse</h1>
-      </header>
+      <Header title="Compter la caisse" />
 
       <section className="mb-4 rounded-3xl bg-white p-4 shadow-card">
         <h2 className="h-street mb-1 text-xl">Billets</h2>
