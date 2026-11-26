@@ -74,3 +74,7 @@ Les étapes 1 à 4 restent nécessaires (le secret doit aussi exister dans le Va
 - L'abonnement existe-t-il ? `select count(*) from push_subscriptions;` (doit être ≥ 1 après « Activer les notifications »).
 - Planning : un jour de **repos** ou une tâche d'une **autre équipe** ne sonne pas. Une tâche **en pause** non plus.
 - iOS peut retarder ou regrouper des notifications pour économiser la batterie (de quelques secondes) : ce n'est pas un bogue de l'app.
+
+## Partage, lien profond, relances
+
+Le même planificateur envoie aussi les relances, les tâches reportées et les notifications de partage. Chaque notification ouvre `/taches/<id>?j=<journée>`. Détails, réglages (`app_config`) et test à 2 téléphones : **[PARTAGE.md](PARTAGE.md)**.

@@ -18,6 +18,7 @@ export type TaskRow = {
   until_done: boolean;
   paused: boolean;
   note: string | null;
+  share_mode?: string | null;
 };
 export type SettingsRow = { default_remind: number; notify: boolean; handover_min: number; schedule: string | null };
 export type ProfileRow = { id: string; email: string; prenom: string; role: string };
@@ -38,7 +39,20 @@ export function rowToTask(r: TaskRow): Task {
     paused: r.paused === true,
     ...(r.note ? { note: r.note } : {}),
     ...(r.assigned_by ? { assigned: true } : {}),
+    ownerId: r.user_id,
+    ...(r.share_mode === "each" || r.share_mode === "one" ? { shareMode: r.share_mode } : {}),
   };
+}
+
+export type SharedMeta = { task_id: string; owner_prenom: string; status: string };
+/** Ajoute aux tâches reçues d'un collègue son prénom et ma réponse (en attente, acceptée, refusée). */
+export function applySharedMeta(tasks: Task[], meta: SharedMeta[], uid: string): Task[] {
+  const byTask = new Map(meta.map((m) => [m.task_id, m]));
+  return tasks.map((t) => {
+    const m = byTask.get(t.id);
+    if (!m || t.ownerId === uid) return t;
+    return { ...t, sharedBy: m.owner_prenom, shareStatus: (m.status === "accepted" || m.status === "declined" ? m.status : "pending") as Task["shareStatus"] };
+  });
 }
 
 /** Colonnes modifiables d'une tâche (jamais user_id ni assigned_by). */

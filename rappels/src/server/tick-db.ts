@@ -1,10 +1,27 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { doneKey, rowToTask, type DoneRow, type TaskRow } from "@/lib/db-map";
-import type { Target, TickDb } from "./push-tick";
+import type { Notice, Target, TickDb } from "./push-tick";
 
 type SubRow = { user_id: string; endpoint: string; p256dh: string; auth_key: string };
 type SettingRow = { user_id: string; notify: boolean; schedule: string | null };
-type TickData = { subs: SubRow[]; settings: SettingRow[]; tasks: (TaskRow & { user_id: string })[]; done: (DoneRow & { user_id: string })[] };
+type TickTask = TaskRow & { for_user?: string; shared?: boolean };
+type TickData = {
+  subs: SubRow[];
+  settings: SettingRow[];
+  tasks: TickTask[];
+  done: (DoneRow & { user_id: string })[];
+  claims?: { task_id: string; service_date: string; user_id: string }[];
+};
+type SubJson = { endpoint: string; p256dh: string; auth_key: string };
+type NoticeRow = { user_id: string; task_id: string; service_date?: string; title: string; subs: SubJson[]; owner_prenom?: string; claimer_prenom?: string };
+const toNotice = (r: NoticeRow): Notice => ({
+  userId: r.user_id,
+  taskId: r.task_id,
+  serviceDate: r.service_date,
+  title: r.title,
+  who: r.owner_prenom ?? r.claimer_prenom,
+  subs: (r.subs ?? []).map((s) => ({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth_key })),
+});
 
 /**
  * Accès base du planificateur. Passe par les fonctions SQL push_* de supabase/schema.sql, qui exigent le secret
@@ -25,16 +42,34 @@ export function createTickDb(sb: SupabaseClient, secret: string): TickDb {
       const byUser = new Map<string, Target>();
       for (const s of d.subs) {
         if (muted.has(s.user_id)) continue;
-        if (!byUser.has(s.user_id)) byUser.set(s.user_id, { userId: s.user_id, schedule: schedule.get(s.user_id) ?? null, subs: [], tasks: [], done: new Set() });
+        if (!byUser.has(s.user_id)) byUser.set(s.user_id, { userId: s.user_id, schedule: schedule.get(s.user_id) ?? null, subs: [], tasks: [], done: new Set(), claims: new Map() });
         byUser.get(s.user_id)!.subs.push({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth_key });
       }
-      for (const t of d.tasks) byUser.get(t.user_id)?.tasks.push(rowToTask(t));
+      for (const t of d.tasks) {
+        const target = byUser.get(t.for_user ?? t.user_id);
+        if (!target) continue;
+        const task = rowToTask(t);
+        // Tâche d'un collègue que j'ai acceptée : elle entre dans mon planning quelle que soit l'équipe.
+        target.tasks.push(t.shared ? { ...task, shareStatus: "accepted" } : task);
+      }
       for (const x of d.done) byUser.get(x.user_id)?.done.add(doneKey(x.task_id, x.service_date));
+      for (const c of d.claims ?? []) {
+        const key = doneKey(c.task_id, c.service_date);
+        for (const target of byUser.values()) target.claims.set(key, c.user_id);
+      }
       return [...byUser.values()];
     },
     claim: (userId, taskId, serviceDate, slotAtIso) => rpc<boolean>("push_claim", { p_user: userId, p_task: taskId, p_date: serviceDate, p_slot: slotAtIso }),
     async removeSubscription(endpoint) {
       await rpc("push_remove_sub", { p_endpoint: endpoint });
+    },
+    async followups() {
+      const r = await rpc<{ relances: NoticeRow[]; postponed: NoticeRow[] }>("push_followups", {});
+      return { relances: (r.relances ?? []).map(toNotice), postponed: (r.postponed ?? []).map(toNotice) };
+    },
+    async notices() {
+      const r = await rpc<{ shares: NoticeRow[]; claims: NoticeRow[] }>("push_notices", {});
+      return { shares: (r.shares ?? []).map(toNotice), claims: (r.claims ?? []).map(toNotice) };
     },
   };
 }

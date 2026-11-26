@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatDuration, formatTime, frequencyLabel, type PlannedTask } from "@/lib/service";
 import { CATEGORY_EMOJI } from "@/lib/types";
+import { ShareBadge } from "./ShareBadge";
 
 type Props = {
   planned: PlannedTask;
@@ -8,14 +9,17 @@ type Props = {
   /** Retard en ms (> 0) si la tâche est en retard. */
   lateBy: number;
   onToggle: () => void;
+  /** Mode « un seul s'en occupe » : prénom du collègue qui a pris la tâche (elle est alors grisée, sans rappel). */
+  takenBy?: string;
 };
 
-export function TaskRow({ planned: { task, afterMidnight }, done, lateBy, onToggle }: Props) {
-  const late = !done && lateBy > 0;
+export function TaskRow({ planned: { task, afterMidnight, key }, done, lateBy, onToggle, takenBy }: Props) {
+  const late = !done && !takenBy && lateBy > 0;
+  const date = key.split("@")[1] ?? "";
   return (
     <li
       className={`flex items-stretch gap-3 rounded-3xl p-3 shadow-card transition-colors ${
-        late ? "bg-pink text-white" : done ? "bg-white/70" : "bg-white"
+        takenBy ? "bg-white/60 opacity-70" : late ? "bg-pink text-white" : done ? "bg-white/70" : "bg-white"
       }`}
     >
       <button
@@ -39,7 +43,7 @@ export function TaskRow({ planned: { task, afterMidnight }, done, lateBy, onTogg
         </span>
       </button>
 
-      <Link href={`/tache/${task.id}`} className="min-w-0 flex-1 py-1" aria-label={`Modifier : ${task.title}`}>
+      <Link href={`/taches/${task.id}?j=${date}`} className="min-w-0 flex-1 py-1" aria-label={`Ouvrir : ${task.title}`}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className={`text-xl font-extrabold tabular-nums ${late ? "text-white" : done ? "text-mute" : "text-pink-deep"}`}>
             {formatTime(task.time)}
@@ -47,6 +51,8 @@ export function TaskRow({ planned: { task, afterMidnight }, done, lateBy, onTogg
           {afterMidnight && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-ink text-white"}`}>🌙 nuit</span>
           )}
+          <ShareBadge task={task} light={late} />
+          {takenBy && <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-white">🙌 {takenBy} s&apos;en occupe</span>}
           {task.assigned && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-pink-soft text-pink-deep"}`}>📌 Assignée</span>
           )}

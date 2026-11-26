@@ -133,7 +133,7 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
     }
     void updateState((s) => ({
       ...s,
-      tasks: editing ? s.tasks.map((t) => (t.id === task.id ? { ...task, ...(t.assigned ? { assigned: true } : {}) } : t)) : [...s.tasks, task],
+      tasks: editing ? s.tasks.map((t) => (t.id === task.id ? { ...task, ...(t.assigned ? { assigned: true } : {}), ...(t.ownerId ? { ownerId: t.ownerId } : {}), ...(t.shareMode ? { shareMode: t.shareMode } : {}) } : t)) : [...s.tasks, task],
     }));
     router.push("/");
   }
@@ -146,7 +146,7 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
 
   function duplicate() {
     if (!initial) return;
-    const copy: Task = { ...initial, id: crypto.randomUUID(), title: `${initial.title} (copie)`.slice(0, 60), assigned: undefined };
+    const copy: Task = { ...initial, id: crypto.randomUUID(), title: `${initial.title} (copie)`.slice(0, 60), assigned: undefined, shareMode: undefined };
     void updateState((s) => ({ ...s, tasks: [...s.tasks, copy] }));
     showToast("📄 Tâche dupliquée", "Tu peux maintenant modifier la copie.");
     router.push(`/tache/${copy.id}`);
@@ -342,6 +342,11 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
         <button type="submit" className="min-h-14 w-full rounded-full bg-pink text-lg font-extrabold text-white shadow-pop active:scale-[0.98]">
           {assignTo ? "Envoyer la tâche" : editing ? "Enregistrer" : "Ajouter la tâche"}
         </button>
+        {editing && !assignTo && (
+          <Link href={`/partager/${initial?.id}`} className="inline-flex min-h-12 w-full items-center justify-center rounded-full border-2 border-pink bg-white text-base font-extrabold text-pink-deep">
+            👥 {initial?.shareMode ? "Gérer le partage" : "Partager avec des collègues"}
+          </Link>
+        )}
         {editing && !assignTo && (
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={duplicate} className="min-h-12 rounded-full border-2 border-ink/15 bg-white text-base font-bold">📄 Dupliquer</button>

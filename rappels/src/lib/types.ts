@@ -31,7 +31,24 @@ export type Task = {
   note?: string;
   /** Tâche assignée par un responsable. */
   assigned?: boolean;
+  /** Créateur de la tâche (absent = une tâche que je viens de créer sur cet appareil). */
+  ownerId?: string;
+  /** Partage : « each » = chacun la fait, « one » = le premier qui s'en occupe la prend pour tous. */
+  shareMode?: ShareMode;
+  /** Présent seulement si la tâche m'a été partagée (par un collègue) : prénom du créateur et ma réponse. */
+  sharedBy?: string;
+  shareStatus?: ShareStatus;
 };
+
+export type ShareMode = "each" | "one";
+export type ShareStatus = "pending" | "accepted" | "declined";
+
+/** Cette tâche vient d'un collègue (partagée avec moi) ? */
+export const isSharedWithMe = (t: Task) => t.shareStatus !== undefined;
+/** Je peux la modifier : c'est la mienne (jamais celles des collègues). */
+export const isMine = (t: Task, uid: string) => !t.ownerId || t.ownerId === uid;
+
+export type Claim = { userId: string; prenom: string };
 
 export type Role = "caissier" | "responsable";
 
@@ -54,6 +71,8 @@ export type AppState = {
   done: Record<string, true>;
   /** Rappels déjà envoyés sur CET appareil (non synchronisé), même clé que `done`. */
   notified: Record<string, true>;
+  /** Mode « un seul s'en occupe » : qui a pris la tâche, par clé « tâche@journée ». */
+  claims: Record<string, Claim>;
   settings: Settings;
   profile: Profile;
 };

@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { doneKey, parseDoneKey, rowToSettings, rowToTask, taskToFields, type DoneRow, type SettingsRow, type TaskRow } from "./db-map";
+import { applySharedMeta, doneKey, parseDoneKey, rowToSettings, rowToTask, taskToFields, type DoneRow, type SettingsRow, type SharedMeta, type TaskRow } from "./db-map";
+import { addDays, dateKey, serviceDate } from "./service";
 import { getSupabase } from "./supabase";
 import { diffState, isEmptyOps, type SyncOps } from "./sync-diff";
 import { showToast } from "./toast";
@@ -39,11 +40,11 @@ function saveNotified(uid: string, map: Record<string, true>) {
 
 // ----- copie locale : l'app reste utilisable (en lecture) quand le réseau est coupé -----
 const snapshotKey = (uid: string) => `hb-snapshot:${uid}`;
-type Snapshot = { v: 1; profile: Profile; tasks: AppState["tasks"]; done: AppState["done"]; settings: AppState["settings"] };
+type Snapshot = { v: 1; profile: Profile; tasks: AppState["tasks"]; done: AppState["done"]; settings: AppState["settings"]; claims?: AppState["claims"] };
 
 function saveSnapshot(s: AppState) {
   try {
-    const snap: Snapshot = { v: 1, profile: s.profile, tasks: s.tasks, done: s.done, settings: s.settings };
+    const snap: Snapshot = { v: 1, profile: s.profile, tasks: s.tasks, done: s.done, settings: s.settings, claims: s.claims };
     localStorage.setItem(snapshotKey(s.profile.id), JSON.stringify(snap));
   } catch {
     /* stockage plein ou indisponible : sans gravité */
@@ -61,7 +62,7 @@ export function readSnapshot(uid: string): Snapshot | null {
 
 /** Affiche les dernières données connues (réseau coupé au lancement). */
 export function applySnapshot(snap: Snapshot) {
-  state = { profile: snap.profile, tasks: snap.tasks, done: snap.done, settings: snap.settings, notified: loadNotified(snap.profile.id) };
+  state = { profile: snap.profile, tasks: snap.tasks, done: snap.done, settings: snap.settings, claims: snap.claims ?? {}, notified: loadNotified(snap.profile.id) };
   emit();
 }
 
@@ -79,17 +80,25 @@ export function clearSnapshot(uid: string) {
 async function fetchState(profile: Profile, notified: Record<string, true>): Promise<AppState> {
   const sb = getSupabase();
   const since = dateKeyOf(new Date(Date.now() - FOLLOW_DAYS * 86_400_000));
-  const [tasks, done, settings] = await Promise.all([
-    sb.from("tasks").select("id,user_id,assigned_by,title,category,at_time,days,once_date,team,remind,note").order("created_at"),
+  // Qui s'occupe de quoi : hier et aujourd'hui (une tâche de 01h30 appartient à la journée de la veille).
+  const today = serviceDate(new Date());
+  const claimDates = [addDays(today, -1), today, addDays(today, 1)].map(dateKey);
+  const [tasks, done, settings, shared, claims] = await Promise.all([
+    sb.from("tasks").select("id,user_id,assigned_by,title,category,at_time,days,once_date,team,remind,note,share_mode").order("created_at"),
     sb.from("task_done").select("task_id,service_date").gte("service_date", since),
     sb.from("settings").select("default_remind,notify,handover_min,schedule").maybeSingle(),
+    sb.rpc("shared_with_me"),
+    sb.rpc("claims_overview", { p_dates: claimDates }),
   ]);
   if (tasks.error) throw tasks.error;
   if (done.error) throw done.error;
   if (settings.error) throw settings.error;
+  if (shared.error) throw shared.error;
+  if (claims.error) throw claims.error;
   return {
     profile,
-    tasks: (tasks.data as TaskRow[]).map(rowToTask),
+    tasks: applySharedMeta((tasks.data as TaskRow[]).map(rowToTask), (shared.data as SharedMeta[]) ?? [], profile.id),
+    claims: Object.fromEntries(((claims.data as { task_id: string; service_date: string; user_id: string; prenom: string }[]) ?? []).map((c) => [doneKey(c.task_id, c.service_date), { userId: c.user_id, prenom: c.prenom }])),
     done: Object.fromEntries((done.data as DoneRow[]).map((d) => [doneKey(d.task_id, d.service_date), true as const])),
     notified,
     settings: rowToSettings(settings.data as SettingsRow | null),
@@ -153,11 +162,11 @@ async function push(ops: SyncOps, next: AppState) {
       const { taskId, serviceDate } = parseDoneKey(k);
       return { task_id: taskId, service_date: serviceDate, user_id: uid };
     });
-    await check(sb.from("task_done").upsert(rows, { onConflict: "task_id,service_date" }));
+    await check(sb.from("task_done").upsert(rows, { onConflict: "task_id,service_date,user_id" }));
   }
   for (const k of ops.doneRemoves) {
     const { taskId, serviceDate } = parseDoneKey(k);
-    await check(sb.from("task_done").delete().eq("task_id", taskId).eq("service_date", serviceDate));
+    await check(sb.from("task_done").delete().eq("task_id", taskId).eq("service_date", serviceDate).eq("user_id", uid));
   }
   if (ops.settingsChanged) {
     await check(
@@ -210,7 +219,11 @@ export function useAppState(): AppState | null {
 // ----- horloge : un tick toutes les 15 s, sans setState dans un effet -----
 const TICK = 15_000;
 function subscribeClock(cb: () => void) {
-  const id = setInterval(cb, 5_000);
+  const id = setInterval(() => {
+    cb();
+    // Un collègue a pu prendre une tâche : on se met à jour toutes les 30 s tant que l'écran est ouvert.
+    if (document.visibilityState === "visible") void refreshStore();
+  }, 5_000);
   const onVisible = () => {
     cb();
     if (document.visibilityState === "visible") void refreshStore();

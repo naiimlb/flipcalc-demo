@@ -177,7 +177,8 @@ export function planForService(tasks: Task[], sDate: Date): PlannedTask[] {
   const dow = weekdayIndex(sDate);
   const key = dateKey(sDate);
   return tasks
-    .filter((t) => !t.paused && (t.date ? t.date === key : t.days.includes(dow)))
+    // Une tâche partagée n'entre dans mon planning qu'une fois acceptée (en attente ou refusée : pas de rappel).
+    .filter((t) => !t.paused && (t.shareStatus === undefined || t.shareStatus === "accepted") && (t.date ? t.date === key : t.days.includes(dow)))
     .map((task) => ({
       task,
       at: occurrenceAt(task, sDate),
@@ -197,7 +198,14 @@ export function visiblePlan(tasks: Task[], sDate: Date, schedule: string | null)
   if (dp === null) return plan;
   if (dp === "R") return [];
   const team: Team = dp === "J" ? "jour" : "soir";
-  return plan.filter((p) => p.task.team === "both" || p.task.team === team);
+  // Une tâche qu'un collègue m'a partagée est pour moi, quelle que soit son équipe.
+  return plan.filter((p) => p.task.shareStatus !== undefined || p.task.team === "both" || p.task.team === team);
+}
+
+/** Mode « un seul s'en occupe » : le collègue qui l'a prise (pas moi), sinon null. */
+export function claimedByOther<C extends { userId: string }>(claims: Record<string, C> | undefined, key: string, uid: string): C | null {
+  const c = claims?.[key];
+  return c && c.userId !== uid ? c : null;
 }
 
 /** Instant du premier rappel (heure de la tâche moins l'avance choisie). */

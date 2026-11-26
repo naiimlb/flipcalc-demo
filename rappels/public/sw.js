@@ -1,5 +1,5 @@
 /* Service worker HB Rappels : hors-ligne simple + notifications (locales et, plus tard, push). */
-const CACHE = "hb-rappels-v2";
+const CACHE = "hb-rappels-v3";
 const IS_LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -51,14 +51,53 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Toucher une notification ouvre la tâche : app fermée (nouvelle fenêtre), en arrière-plan ou déjà ouverte (on réutilise
+// la fenêtre, sans rechargement). Le lien est du type /taches/<id>?j=<journée>. Si la page connectée ne répond pas
+// (ancienne version de l'app), on la fait naviguer directement.
+const OPEN_ACK_MS = 800;
+
+function safePath(raw) {
+  try {
+    const u = new URL(raw || "/", self.location.origin);
+    return u.origin === self.location.origin ? u.pathname + u.search + u.hash : "/";
+  } catch {
+    return "/";
+  }
+}
+
+async function openOrFocus(path) {
+  const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  const win = wins.find((w) => w.visibilityState === "visible") || wins[0];
+  if (!win) return self.clients.openWindow(path);
+  try {
+    await win.focus();
+  } catch {
+    /* iOS peut refuser le focus : on continue */
+  }
+  const ack = await new Promise((resolve) => {
+    const ch = new MessageChannel();
+    const timer = setTimeout(() => resolve(false), OPEN_ACK_MS);
+    ch.port1.onmessage = () => (clearTimeout(timer), resolve(true));
+    try {
+      win.postMessage({ type: "hb-open", url: path }, [ch.port2]);
+    } catch {
+      clearTimeout(timer);
+      resolve(false);
+    }
+  });
+  if (!ack && typeof win.navigate === "function") {
+    try {
+      await win.navigate(path);
+      return;
+    } catch {
+      /* fenêtre non pilotable : on en ouvre une nouvelle */
+    }
+  }
+  if (!ack) return self.clients.openWindow(path);
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
-      const open = wins[0];
-      if (open) return open.focus().then((c) => c.navigate && c.navigate(url));
-      return self.clients.openWindow(url);
-    }),
-  );
+  const path = safePath(event.notification.data && event.notification.data.url);
+  event.waitUntil(openOrFocus(path));
 });

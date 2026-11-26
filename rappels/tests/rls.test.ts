@@ -344,3 +344,300 @@ describe("contraintes de données", () => {
     });
   });
 });
+
+// =============================================================================================
+//  PARTAGE ENTRE COLLÈGUES, RELANCES AUTOMATIQUES
+// =============================================================================================
+describe("partage de tâches entre collègues", () => {
+  let ines = "";
+  let shared = ""; // tâche de Léa partagée
+  let other = ""; // autre tâche de Léa, jamais partagée
+  const D = "2026-11-26";
+  const call = (who: string | null, sql: string, params: unknown[] = []) => as(who, () => q(sql, params));
+  const json = async (who: string | null, sql: string, params: unknown[]) => (await call(who, sql, params)).rows[0]!.r as Record<string, unknown>;
+  const newTask = async (owner: string, title: string) =>
+    (await q("insert into public.tasks (user_id, title, category, at_time, days) values ($1, $2, 'Autre', '12:00', '{0,1,2,3,4,5,6}') returning id", [owner, title])).rows[0]!.id as string;
+
+  beforeAll(async () => {
+    ines = await newUser("ines@hb.fr", "Inès");
+    shared = await newTask(ids.lea, "Tâche partagée");
+    other = await newTask(ids.lea, "Tâche privée de Léa");
+  });
+
+  it("la liste des collègues ne montre que des prénoms (jamais l'email), sans moi ni les responsables", async () => {
+    const r = await call(ids.tom, "select * from public.colleagues()");
+    expect(Object.keys(r.rows[0]!).sort()).toEqual(["id", "prenom"]); // aucune autre colonne
+    const prenoms = r.rows.map((x) => x.prenom);
+    expect(prenoms).toEqual(expect.arrayContaining(["Inès", "Léa B."]));
+    expect(prenoms).not.toContain("Tom");
+    expect(prenoms).not.toContain("Sam"); // responsable
+    expect(JSON.stringify(r.rows)).not.toMatch(/@hb\.fr/);
+    expect(await call(null, "select * from public.colleagues()").then(() => false, () => true)).toBe(true); // pas pour les anonymes
+  });
+
+  it("seul le propriétaire partage ; pas avec soi-même, un responsable ou un inconnu", async () => {
+    const share = (who: string, recips: string[]) => fails(() => call(who, "select public.share_task($1, $2::uuid[], 'each')", [shared, recips]));
+    expect(await share(ids.tom, [ines])).toBe(true); // pas son propriétaire
+    expect(await share(ids.lea, [ids.lea])).toBe(true); // soi-même
+    expect(await share(ids.lea, [ids.boss])).toBe(true); // responsable
+    expect(await share(ids.lea, ["00000000-0000-0000-0000-000000000099"])).toBe(true); // inconnu
+    expect(await fails(() => call(ids.lea, "select public.share_task($1, $2::uuid[], 'tous')", [shared, [ids.tom]]))).toBe(true); // mode invalide
+    expect((await q("select count(*)::int as n from public.task_shares")).rows[0]!.n).toBe(0);
+  });
+
+  it("partager : le collègue lit CETTE tâche et aucune autre ; il ne peut ni la modifier ni la supprimer", async () => {
+    await call(ids.lea, "select public.share_task($1, $2::uuid[], 'one')", [shared, [ids.tom, ines]]);
+    expect((await q("select share_mode from public.tasks where id = $1", [shared])).rows[0]!.share_mode).toBe("one");
+    for (const who of [ids.tom, ines]) {
+      const titles = (await call(who, "select title from public.tasks where user_id = $1", [ids.lea])).rows.map((r) => r.title);
+      expect(titles).toEqual(["Tâche partagée"]); // pas « Tâche privée de Léa »
+      expect((await call(who, "update public.tasks set title = 'piraté' where id = $1 returning id", [shared])).rows).toHaveLength(0);
+      expect((await call(who, "delete from public.tasks where id = $1 returning id", [shared])).rows).toHaveLength(0);
+    }
+    expect((await call(ids.boss, "select * from public.tasks where id = $1", [shared])).rows).toHaveLength(0); // le responsable non plus
+    expect((await call(ids.boss, "select * from public.task_shares")).rows).toHaveLength(0);
+  });
+
+  it("chacun ne voit que ses propres lignes de partage, et seul le destinataire peut répondre", async () => {
+    expect((await call(ids.tom, "select * from public.task_shares")).rows).toHaveLength(1);
+    expect((await call(ines, "select * from public.task_shares")).rows).toHaveLength(1);
+    expect((await call(ids.lea, "select * from public.task_shares")).rows).toHaveLength(2); // le créateur voit tout
+    expect(await call(ids.tom, "insert into public.task_shares (task_id, recipient_id) values ($1, $2)", [shared, ids.boss]).then(() => false, () => true)).toBe(true);
+    expect(await fails(() => call(ids.tom, "delete from public.task_shares"))).toBe(true); // aucun droit de suppression
+    expect(await fails(() => call(ines, "select public.respond_share($1, true)", [other]))).toBe(true); // pas partagée avec elle
+    const forTom = await q("select task_id from public.task_shares where recipient_id = $1", [ids.tom]);
+    expect(forTom.rows).toHaveLength(1);
+  });
+
+  it("shared_with_me montre le prénom du créateur, sans rien d'autre", async () => {
+    const r = await call(ids.tom, "select * from public.shared_with_me()");
+    expect(r.rows).toEqual([{ task_id: shared, owner_prenom: "Léa B.", status: "pending", mode: "one" }]);
+  });
+
+  it("cocher : impossible tant que le partage n'est pas accepté, puis chacun coche de son côté", async () => {
+    const done = (who: string) => call(who, "insert into public.task_done (task_id, service_date, user_id) values ($1, $2, $3)", [shared, D, who]);
+    expect(await fails(() => done(ids.tom))).toBe(true); // en attente
+    await call(ids.tom, "select public.respond_share($1, true)", [shared]);
+    await call(ines, "select public.respond_share($1, true)", [shared]);
+    await done(ids.tom);
+    await done(ines);
+    expect(await fails(() => done(ids.boss))).toBe(true); // étranger
+    expect((await call(ids.tom, "select user_id from public.task_done where task_id = $1", [shared])).rows).toEqual([{ user_id: ids.tom }]); // seulement les siennes
+    await q("delete from public.task_done where task_id = $1", [shared]);
+  });
+
+  it("qui est concerné et où il en est : visible des participants, refusé aux étrangers", async () => {
+    const r = await call(ids.tom, "select * from public.share_overview($1, $2)", [shared, D]);
+    expect(r.rows.map((x) => [x.prenom, x.is_owner, x.share_status, x.progress])).toEqual([
+      ["Léa B.", true, "accepted", "sent"],
+      ["Inès", false, "accepted", "sent"],
+      ["Tom", false, "accepted", "sent"],
+    ]);
+    expect(await fails(() => call(ids.boss, "select * from public.share_overview($1, $2)", [shared, D]))).toBe(true);
+    expect(Object.keys(r.rows[0]!).sort()).toEqual(["is_owner", "prenom", "progress", "share_status", "user_id"]); // pas d'email
+  });
+
+  it("« un seul s'en occupe » : le premier gagne, les autres sont informés et abandonnent", async () => {
+    for (const u of [ids.lea, ids.tom, ines]) await q("insert into public.task_occurrences (task_id, user_id, slot_at, service_date) values ($1, $2, '2026-11-26T11:00:00Z', $3)", [shared, u, D]);
+    const first = await json(ids.tom, "select public.occ_act($1, $2, 'taken') as r", [shared, D]);
+    expect(first).toEqual({ ok: true });
+    expect(await json(ines, "select public.occ_act($1, $2, 'taken') as r", [shared, D])).toEqual({ ok: false, taken_by: "Tom" });
+    expect(await json(ids.lea, "select public.occ_act($1, $2, 'done') as r", [shared, D])).toEqual({ ok: false, taken_by: "Tom" }); // même le créateur
+    expect(await json(ids.tom, "select public.occ_act($1, $2, 'taken') as r", [shared, D])).toEqual({ ok: true }); // idempotent
+    const st = Object.fromEntries((await q("select user_id, status, reason from public.task_occurrences where task_id = $1", [shared])).rows.map((r) => [r.user_id, [r.status, r.reason]]));
+    expect(st[ids.tom]).toEqual(["taken", null]);
+    expect(st[ines]).toEqual(["dropped", "taken_by_other"]);
+    expect(st[ids.lea]).toEqual(["dropped", "taken_by_other"]);
+    const c = await call(ines, "select task_id, service_date::text as service_date, user_id, prenom from public.claims_overview($1::date[])", [[D]]);
+    expect(c.rows).toEqual([{ task_id: shared, service_date: D, user_id: ids.tom, prenom: "Tom" }]);
+    expect((await call(ids.boss, "select * from public.claims_overview($1::date[])", [[D]])).rows).toHaveLength(0);
+    const ov = (await call(ines, "select prenom, progress from public.share_overview($1, $2)", [shared, D])).rows;
+    expect(ov.find((x) => x.prenom === "Tom")!.progress).toBe("taken");
+    expect(await fails(() => call(ids.boss, "select public.occ_act($1, $2, 'seen')", [shared, D]))).toBe(true); // étranger
+  });
+
+  it("« chacun la fait » : tout le monde peut prendre et cocher, sans conflit", async () => {
+    const t = await newTask(ids.lea, "Tâche pour tous");
+    await call(ids.lea, "select public.share_task($1, $2::uuid[], 'each')", [t, [ids.tom, ines]]);
+    for (const u of [ids.tom, ines]) await call(u, "select public.respond_share($1, true)", [t]);
+    expect(await json(ids.tom, "select public.occ_act($1, $2, 'taken') as r", [t, D])).toEqual({ ok: true });
+    expect(await json(ines, "select public.occ_act($1, $2, 'done') as r", [t, D])).toEqual({ ok: true });
+    expect((await q("select count(*)::int as n from public.task_claims where task_id = $1", [t])).rows[0]!.n).toBe(0);
+    expect((await q("select user_id from public.task_done where task_id = $1", [t])).rows).toEqual([{ user_id: ines }]);
+  });
+
+  it("arrêter le partage : le collègue ne voit plus la tâche ; vide = tâche non partagée", async () => {
+    await call(ids.lea, "select public.share_task($1, $2::uuid[], 'one')", [shared, [ids.tom]]);
+    expect((await call(ines, "select * from public.tasks where id = $1", [shared])).rows).toHaveLength(0);
+    expect((await call(ids.tom, "select * from public.tasks where id = $1", [shared])).rows).toHaveLength(1);
+    await call(ids.lea, "select public.share_task($1, '{}'::uuid[], 'one')", [shared]);
+    expect((await call(ids.tom, "select * from public.tasks where id = $1", [shared])).rows).toHaveLength(0);
+    expect((await q("select share_mode from public.tasks where id = $1", [shared])).rows[0]!.share_mode).toBeNull();
+  });
+
+  it("refuser (masquer) : le partage est conservé, avec le statut « refusé »", async () => {
+    await call(ids.lea, "select public.share_task($1, $2::uuid[], 'each')", [other, [ids.tom]]);
+    await call(ids.tom, "select public.respond_share($1, false)", [other]);
+    expect((await call(ids.tom, "select task_id, status from public.shared_with_me() where task_id = $1", [other])).rows).toEqual([{ task_id: other, status: "declined" }]);
+    expect(await fails(() => call(ids.tom, "insert into public.task_done (task_id, service_date, user_id) values ($1, $2, $3)", [other, D, ids.tom]))).toBe(true);
+  });
+});
+
+describe("relances automatiques et notifications de partage", () => {
+  const SECRET = "secret-de-test";
+  const D = "2026-11-26";
+  let tom = "";
+  let t = ""; // tâche de Tom
+  const fu = async () => (await as(null, () => q("select public.push_followups($1) as r", [SECRET]))).rows[0]!.r as { relances: { n: number; user_id: string; title: string; subs: unknown[] }[]; postponed: { title: string }[] };
+  const occ = async (slot = "2026-11-26T11:00:00Z") => (await q("select status, reminders, reason from public.task_occurrences where task_id = $1 and slot_at = $2", [t, slot])).rows[0]!;
+  const age = (minutes: number, slot = "2026-11-26T11:00:00Z") => q("update public.task_occurrences set last_sent_at = now() - make_interval(mins => $1) where task_id = $2 and slot_at = $3", [minutes, t, slot]);
+  const claim = (slot = "2026-11-26T11:00:00Z") => as(null, () => q("select public.push_claim($1, $2, $3, $4, $5) as ok", [SECRET, tom, t, D, slot]));
+
+  beforeAll(async () => {
+    tom = ids.tom;
+    t = (await q("insert into public.tasks (user_id, title, category, at_time, days) values ($1, 'Vérifier la friteuse', 'Autre', '12:00', '{0,1,2,3,4,5,6}') returning id", [tom])).rows[0]!.id as string;
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/tom', 'k', 'a') on conflict do nothing", [tom]);
+  });
+
+  it("une occurrence enregistrée est « envoyée » et n'est pas relancée avant le délai (5 min)", async () => {
+    expect((await claim()).rows[0]!.ok).toBe(true);
+    expect(await occ()).toEqual({ status: "sent", reminders: 0, reason: null });
+    expect((await fu()).relances).toHaveLength(0);
+    await age(4);
+    expect((await fu()).relances).toHaveLength(0);
+  });
+
+  it("après 5 minutes sans signe : une relance, une seule (verrou), puis toutes les 5 minutes", async () => {
+    await age(6);
+    const r1 = await fu();
+    expect(r1.relances).toHaveLength(1);
+    expect(r1.relances[0]).toMatchObject({ n: 1, user_id: tom, title: "Vérifier la friteuse" });
+    expect(r1.relances[0]!.subs).toHaveLength(1);
+    expect((await fu()).relances).toHaveLength(0); // même minute : déjà partie, pas de doublon
+    await age(6);
+    expect((await fu()).relances[0]!.n).toBe(2);
+    expect((await occ()).reminders).toBe(2);
+  });
+
+  it("maximum 6 relances, puis abandon (réglable)", async () => {
+    for (let n = 3; n <= 6; n++) {
+      await age(6);
+      expect((await fu()).relances[0]!.n).toBe(n);
+    }
+    await age(6);
+    expect((await fu()).relances).toHaveLength(0);
+    expect(await occ()).toEqual({ status: "dropped", reminders: 6, reason: "max" });
+  });
+
+  it("le délai et le maximum se règlent dans app_config, sans toucher au code", async () => {
+    await claim("2026-11-26T12:00:00Z");
+    await q("update public.app_config set value = 10 where key = 'relance_delay_min'");
+    await age(6, "2026-11-26T12:00:00Z");
+    expect((await fu()).relances).toHaveLength(0); // 6 min < 10 min
+    await age(11, "2026-11-26T12:00:00Z");
+    expect((await fu()).relances).toHaveLength(1);
+    await q("update public.app_config set value = 5 where key = 'relance_delay_min'");
+    await q("update public.app_config set value = 1 where key = 'relance_max'");
+    await age(6, "2026-11-26T12:00:00Z");
+    expect((await fu()).relances).toHaveLength(0); // plafond de 1 atteint
+    expect((await occ("2026-11-26T12:00:00Z")).status).toBe("dropped");
+    await q("update public.app_config set value = 6 where key = 'relance_max'");
+  });
+
+  it("jamais de relance pour une occurrence vue, prise, faite ou reportée", async () => {
+    const act = (action: string, extra = "") => as(tom, () => q(`select public.occ_act($1, $2, '${action}'${extra})`, [t, D]));
+    for (const [action, slot, status] of [["seen", "2026-11-26T13:00:00Z", "seen"], ["taken", "2026-11-26T14:00:00Z", "taken"], ["postpone", "2026-11-26T15:00:00Z", "postponed"]] as const) {
+      await claim(slot);
+      await age(6, slot);
+      await act(action);
+      expect((await occ(slot)).status).toBe(status);
+      await q("update public.task_occurrences set status = $1 where task_id = $2 and slot_at = $3", ["sent", t, slot]); // remise à « envoyée » pour tester chaque action seule
+      await q("update public.task_occurrences set status = $1 where task_id = $2 and slot_at = $3", [status, t, slot]);
+    }
+    await age(6, "2026-11-26T13:00:00Z");
+    await age(6, "2026-11-26T14:00:00Z");
+    expect((await fu()).relances).toHaveLength(0);
+    // faite (cochée directement, sans passer par le bouton) : la relance s'arrête aussi
+    await claim("2026-11-26T16:00:00Z");
+    await age(6, "2026-11-26T16:00:00Z");
+    await q("insert into public.task_done (task_id, service_date, user_id) values ($1, $2, $3) on conflict do nothing", [t, D, tom]);
+    expect((await fu()).relances).toHaveLength(0);
+    expect((await occ("2026-11-26T16:00:00Z")).status).toBe("done");
+    await q("delete from public.task_done where task_id = $1", [t]);
+  });
+
+  it("« Reporter de 10 min » : le rappel repart à l'échéance, avec un compteur remis à zéro", async () => {
+    await claim("2026-11-26T17:00:00Z");
+    await as(tom, () => q("select public.occ_act($1, $2, 'postpone', 10)", [t, D]));
+    expect((await occ("2026-11-26T17:00:00Z")).status).toBe("postponed");
+    expect((await fu()).postponed).toHaveLength(0); // pas encore l'heure
+    await q("update public.task_occurrences set postponed_until = now() - interval '1 minute' where task_id = $1 and slot_at = '2026-11-26T17:00:00Z'", [t]);
+    const r = await fu();
+    expect(r.postponed).toEqual([expect.objectContaining({ title: "Vérifier la friteuse" })]);
+    expect(await occ("2026-11-26T17:00:00Z")).toEqual({ status: "sent", reminders: 0, reason: null });
+    expect((await fu()).postponed).toHaveLength(0); // une seule fois
+  });
+
+  it("reporter depuis la page (sans rappel en cours) crée une occurrence reportée", async () => {
+    await as(tom, () => q("select public.occ_act($1, '2026-11-27', 'postpone', 15)", [t]));
+    const r = await q("select status, service_date::text as d from public.task_occurrences where task_id = $1 and service_date = '2026-11-27'", [t]);
+    expect(r.rows).toEqual([{ status: "postponed", d: "2026-11-27" }]);
+  });
+
+  it("pas de relance si la tâche est en pause, si les notifications sont coupées, ou sans abonnement", async () => {
+    await claim("2026-11-26T18:00:00Z");
+    await age(6, "2026-11-26T18:00:00Z");
+    await q("update public.tasks set paused = true where id = $1", [t]);
+    expect((await fu()).relances).toHaveLength(0);
+    await q("update public.tasks set paused = false where id = $1", [t]);
+    await q("update public.settings set notify = false where user_id = $1", [tom]);
+    expect((await fu()).relances).toHaveLength(0);
+    await q("update public.settings set notify = true where user_id = $1", [tom]);
+    const subs = await q("delete from public.push_subscriptions where user_id = $1 returning *", [tom]);
+    expect((await fu()).relances).toHaveLength(0);
+    for (const s of subs.rows) await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, $2, 'k', 'a')", [s.user_id, s.endpoint]);
+    expect((await fu()).relances).toHaveLength(1); // tout est rétabli : la relance repart
+  });
+
+  it("une occurrence prise par un collègue n'est pas relancée (mode « un seul »)", async () => {
+    const t2 = (await q("insert into public.tasks (user_id, title, category, at_time, days, share_mode) values ($1, 'Sortir les poubelles', 'Autre', '12:00', '{0,1,2,3,4,5,6}', 'one') returning id", [ids.lea])).rows[0]!.id as string;
+    await q("insert into public.task_shares (task_id, recipient_id, status, notified_at) values ($1, $2, 'accepted', now())", [t2, tom]);
+    await as(null, () => q("select public.push_claim($1, $2, $3, $4, '2026-11-26T19:00:00Z')", [SECRET, tom, t2, D]));
+    await q("update public.task_occurrences set last_sent_at = now() - interval '6 minutes' where task_id = $1", [t2]);
+    await q("insert into public.task_claims (task_id, service_date, user_id, notified_at) values ($1, $2, $3, now())", [t2, D, ids.lea]); // Léa l'a prise
+    const r = await fu();
+    expect(r.relances.some((x) => x.title === "Sortir les poubelles")).toBe(false);
+    expect((await q("select status, reason from public.task_occurrences where task_id = $1", [t2])).rows[0]).toEqual({ status: "dropped", reason: "taken_by_other" });
+  });
+
+  it("notifications de partage : « t'a partagé » une seule fois ; « s'en occupe » aux autres participants", async () => {
+    const t3 = (await q("insert into public.tasks (user_id, title, category, at_time, days, share_mode) values ($1, 'Nettoyer la vitrine', 'Autre', '12:00', '{0,1,2,3,4,5,6}', 'one') returning id", [ids.lea])).rows[0]!.id as string;
+    await q("insert into public.task_shares (task_id, recipient_id, status) values ($1, $2, 'pending')", [t3, tom]);
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/lea', 'k', 'a') on conflict do nothing", [ids.lea]);
+    const n = async () => (await as(null, () => q("select public.push_notices($1) as r", [SECRET]))).rows[0]!.r as { shares: Record<string, unknown>[]; claims: Record<string, unknown>[] };
+    const a = await n();
+    expect(a.shares.find((x) => x.title === "Nettoyer la vitrine")).toMatchObject({ user_id: tom, owner_prenom: "Léa B." });
+    expect((await n()).shares.some((x) => x.title === "Nettoyer la vitrine")).toBe(false); // une seule fois
+    await q("update public.task_shares set status = 'accepted' where task_id = $1", [t3]);
+    await as(tom, () => q("select public.occ_act($1, $2, 'taken')", [t3, D]));
+    const c = await n();
+    const mine = c.claims.filter((x) => x.title === "Nettoyer la vitrine");
+    expect(mine.map((x) => x.user_id)).toEqual([ids.lea]); // le créateur est informé, pas Tom lui-même
+    expect(mine[0]).toMatchObject({ claimer_prenom: "Tom" });
+    expect((await n()).claims.some((x) => x.title === "Nettoyer la vitrine")).toBe(false);
+  });
+
+  it("le planificateur reçoit aussi les tâches partagées acceptées et qui s'en occupe", async () => {
+    const d = (await as(null, () => q("select public.push_tick_data($1, $2::date[]) as d", [SECRET, [D]]))).rows[0]!.d as { tasks: { title: string; for_user: string; shared: boolean }[]; claims: unknown[] };
+    const forTom = d.tasks.filter((x) => x.for_user === tom);
+    expect(forTom.some((x) => x.title === "Nettoyer la vitrine" && x.shared)).toBe(true);
+    expect(forTom.some((x) => x.title === "Vérifier la friteuse" && !x.shared)).toBe(true);
+    expect(d.claims.length).toBeGreaterThan(0);
+  });
+
+  it("toutes ces fonctions refusent un mauvais secret", async () => {
+    for (const sql of ["select public.push_followups($1)", "select public.push_notices($1)"]) {
+      expect(await as(null, () => fails(() => q(sql, ["mauvais"])))).toBe(true);
+    }
+  });
+});

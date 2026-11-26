@@ -20,7 +20,7 @@ const TABS = [
 
 export function TabBar() {
   const pathname = usePathname();
-  if (pathname === "/tache" || pathname.startsWith("/tache/") || pathname.startsWith("/equipe/")) return null; // les formulaires ont leur propre en-tête
+  if (["/tache", "/taches/", "/partager/", "/equipe/"].some((p) => pathname === p || pathname.startsWith(p.endsWith("/") ? p : `${p}/`))) return null; // les formulaires ont leur propre en-tête
   return (
     <nav
       aria-label="Navigation"

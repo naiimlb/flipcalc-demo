@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { buildSlotNotification } from "@/lib/notification-text";
-import { runTick, type PushPayload, type Sender, type Target, type TickDb } from "@/server/push-tick";
+import { runTick, type Followups, type Notice, type Notices, type PushPayload, type Sender, type Target, type TickDb } from "@/server/push-tick";
 import type { Task } from "@/lib/types";
 
 const task = (extra: Partial<Task>): Task => ({ id: "t1", title: "Sortir les poubelles", category: "Hygiène", time: "12:00", days: [0, 1, 2, 3, 4, 5, 6], team: "both", remind: 0, untilDone: true, paused: false, ...extra });
 const sub = (n: number) => ({ endpoint: `https://push.example/${n}`, p256dh: "k", auth: "a" });
 
 /** Fausse base : mémorise les créneaux réservés comme le ferait la clé primaire de push_sent. */
-function fakeDb(targets: Target[]) {
+function fakeDb(targets: Target[], extra: { followups?: Followups; notices?: Notices } = {}) {
   const claimed = new Set<string>();
   const removed: string[] = [];
   const db: TickDb = {
@@ -19,6 +19,8 @@ function fakeDb(targets: Target[]) {
       return true;
     },
     removeSubscription: async (e) => void removed.push(e),
+    followups: async () => extra.followups ?? { relances: [], postponed: [] },
+    notices: async () => extra.notices ?? { shares: [], claims: [] },
   };
   return { db, claimed, removed };
 }
@@ -27,7 +29,7 @@ const okSender = () => {
   const send: Sender = async (s, payload) => (sent.push({ sub: s.endpoint, payload }), "ok");
   return { send, sent };
 };
-const target = (tasks: Task[], extra: Partial<Target> = {}): Target => ({ userId: "u1", schedule: null, subs: [sub(1)], tasks, done: new Set(), ...extra });
+const target = (tasks: Task[], extra: Partial<Target> = {}): Target => ({ userId: "u1", schedule: null, subs: [sub(1)], tasks, done: new Set(), claims: new Map(), ...extra });
 
 // 2026-11-23 (lundi), heure de Paris = UTC + 1 l'hiver.
 const at = (iso: string) => new Date(iso);
@@ -38,7 +40,7 @@ describe("planificateur de rappels (serveur)", () => {
     const { send, sent } = okSender();
     const r = await runTick(at("2026-11-23T11:00:20Z"), db, send); // 12h00 Paris
     expect(r.sent).toBe(1);
-    expect(sent[0]!.payload).toMatchObject({ title: "⏰ Sortir les poubelles", body: "12h00 · Hygiène — c'est l'heure !", tag: "t1@2026-11-23", url: "/" });
+    expect(sent[0]!.payload).toMatchObject({ title: "⏰ Sortir les poubelles", body: "12h00 · Hygiène — c'est l'heure !", tag: "t1@2026-11-23", url: "/taches/t1?j=2026-11-23" });
   });
 
   it("n'envoie rien avant l'heure, ni plus de 5 min après", async () => {
@@ -137,5 +139,73 @@ describe("planificateur de rappels (serveur)", () => {
     expect(buildSlotNotification(t, 710).body).toBe("12h00 · Hygiène — dans 10 min, prépare-toi !");
     expect(buildSlotNotification(t, 720).body).toBe("12h00 · Hygiène — c'est l'heure !");
     expect(buildSlotNotification(t, 750).body).toBe("12h00 · Hygiène — toujours à faire (depuis 30 min) !");
+  });
+
+  // ---------------------------------------------------------------- partage, relances ---
+  const notice = (extra: Partial<Notice> = {}): Notice => ({ userId: "u1", subs: [sub(1)], taskId: "t1", serviceDate: "2026-11-23", title: "Sortir les poubelles", ...extra });
+
+  it("mode « un seul » : si un collègue a pris la tâche, je ne reçois pas le rappel", async () => {
+    const t = task({ time: "12:00", shareMode: "one", shareStatus: "accepted", sharedBy: "Léa" });
+    const { send, sent } = okSender();
+    const r1 = await runTick(at("2026-11-23T11:00:10Z"), fakeDb([target([t], { claims: new Map([["t1@2026-11-23", "u2"]]) })]).db, send);
+    expect(sent).toHaveLength(0);
+    expect(r1.skippedClaimed).toBe(1);
+    // si c'est moi qui l'ai prise, je suis rappelé normalement
+    await runTick(at("2026-11-23T11:00:10Z"), fakeDb([target([t], { claims: new Map([["t1@2026-11-23", "u1"]]) })]).db, send);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("une tâche partagée acceptée sonne même si elle est d'une autre équipe que la mienne", async () => {
+    const soir = task({ id: "s", team: "soir", shareStatus: "accepted", sharedBy: "Léa" });
+    const { send, sent } = okSender();
+    await runTick(at("2026-11-23T11:00:10Z"), fakeDb([target([soir], { schedule: "J------" })]).db, send);
+    expect(sent.map((x) => x.payload.tag)).toEqual(["s@2026-11-23"]);
+  });
+
+  it("une tâche partagée en attente ou refusée ne sonne pas", async () => {
+    const { send, sent } = okSender();
+    for (const shareStatus of ["pending", "declined"] as const) await runTick(at("2026-11-23T11:00:10Z"), fakeDb([target([task({ shareStatus, sharedBy: "Léa" })])]).db, send);
+    expect(sent).toHaveLength(0);
+  });
+
+  it("relance : « Rappel : titre », même lien profond, un envoi par appareil", async () => {
+    const { db } = fakeDb([], { followups: { relances: [notice({ subs: [sub(1), sub(2)] })], postponed: [] } });
+    const { send, sent } = okSender();
+    const r = await runTick(at("2026-11-23T11:05:10Z"), db, send);
+    expect(r.relances).toBe(1);
+    expect(sent.map((x) => x.sub)).toEqual(["https://push.example/1", "https://push.example/2"]);
+    expect(sent[0]!.payload).toEqual({ title: "🔔 Rappel : Sortir les poubelles", body: "Touche pour ouvrir la tâche.", tag: "t1@2026-11-23", url: "/taches/t1?j=2026-11-23" });
+  });
+
+  it("tâche reportée qui revient", async () => {
+    const { db } = fakeDb([], { followups: { relances: [], postponed: [notice()] } });
+    const { send, sent } = okSender();
+    const r = await runTick(at("2026-11-23T11:05:10Z"), db, send);
+    expect(r.postponed).toBe(1);
+    expect(sent[0]!.payload.title).toBe("⏱️ C'est reparti : Sortir les poubelles");
+  });
+
+  it("partage : « Prénom t'a partagé une tâche : titre » ouvre la tâche", async () => {
+    const { db } = fakeDb([], { notices: { shares: [notice({ who: "Léa", serviceDate: undefined })], claims: [] } });
+    const { send, sent } = okSender();
+    const r = await runTick(at("2026-11-23T11:05:10Z"), db, send);
+    expect(r.shares).toBe(1);
+    expect(sent[0]!.payload).toMatchObject({ title: "Léa t'a partagé une tâche : Sortir les poubelles", url: "/taches/t1?j=2026-11-23", tag: "share:t1" });
+  });
+
+  it("un collègue s'en occupe : « Prénom s'en occupe : titre », même étiquette que le rappel (il le remplace)", async () => {
+    const { db } = fakeDb([], { notices: { shares: [], claims: [notice({ who: "Tom" })] } });
+    const { send, sent } = okSender();
+    const r = await runTick(at("2026-11-23T11:05:10Z"), db, send);
+    expect(r.claims).toBe(1);
+    expect(sent[0]!.payload).toMatchObject({ title: "🙌 Tom s'en occupe : Sortir les poubelles", tag: "t1@2026-11-23" });
+  });
+
+  it("appareil expiré pendant une relance : abonnement supprimé", async () => {
+    const { db, removed } = fakeDb([], { followups: { relances: [notice({ subs: [sub(1), sub(2)] })], postponed: [] } });
+    const send: Sender = async (s) => (s.endpoint.endsWith("/1") ? "gone" : "ok");
+    const r = await runTick(at("2026-11-23T11:05:10Z"), db, send);
+    expect(removed).toEqual(["https://push.example/1"]);
+    expect(r.relances).toBe(1); // l'autre appareil l'a reçue
   });
 });

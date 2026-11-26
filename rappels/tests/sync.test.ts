@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doneKey, parseDoneKey, rowToTask, taskToFields, type TaskRow } from "@/lib/db-map";
+import { applySharedMeta, doneKey, parseDoneKey, rowToTask, taskToFields, type TaskRow } from "@/lib/db-map";
 import { sanitizeLocalTask } from "@/lib/local-import";
 import { diffState, isEmptyOps } from "@/lib/sync-diff";
 import type { AppState, Task } from "@/lib/types";
@@ -9,6 +9,7 @@ const state = (extra: Partial<AppState> = {}): AppState => ({
   tasks: [task("a"), task("b")],
   done: {},
   notified: {},
+  claims: {},
   settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: null },
   profile: { id: "u1", email: "l@hb.fr", prenom: "Léa", role: "caissier" },
   ...extra,
@@ -54,7 +55,18 @@ describe("correspondance base ↔ app", () => {
   const row: TaskRow = { id: "x", user_id: "u1", assigned_by: "boss", title: "Frigo", category: "Stock", at_time: "00:30", days: [4, 0], once_date: "2026-11-23", team: "soir", remind: 15, repeat_every: 30, end_time: "18:00", until_done: false, paused: true, note: null };
 
   it("lit une ligne de la base", () => {
-    expect(rowToTask(row)).toEqual({ id: "x", title: "Frigo", category: "Stock", time: "00:30", days: [0, 4], date: "2026-11-23", team: "soir", remind: 15, repeatEvery: 30, endTime: "18:00", untilDone: false, paused: true, assigned: true });
+    expect(rowToTask(row)).toEqual({ id: "x", title: "Frigo", category: "Stock", time: "00:30", days: [0, 4], date: "2026-11-23", team: "soir", remind: 15, repeatEvery: 30, endTime: "18:00", untilDone: false, paused: true, assigned: true, ownerId: "u1" });
+  });
+
+  it("lit le mode de partage et le prénom du collègue qui a partagé", () => {
+    const mine = rowToTask({ ...row, share_mode: "one" });
+    expect(mine).toMatchObject({ ownerId: "u1", shareMode: "one" });
+    const theirs = rowToTask({ ...row, id: "y", user_id: "u2", share_mode: "each" });
+    const [a, b] = applySharedMeta([mine, theirs], [{ task_id: "y", owner_prenom: "Léa", status: "pending" }], "u1");
+    expect(a).toEqual(mine); // ma tâche : rien à ajouter
+    expect(b).toMatchObject({ sharedBy: "Léa", shareStatus: "pending" });
+    expect(applySharedMeta([theirs], [{ task_id: "y", owner_prenom: "Léa", status: "accepted" }], "u1")[0]!.shareStatus).toBe("accepted");
+    expect(applySharedMeta([theirs], [{ task_id: "y", owner_prenom: "Léa", status: "bizarre" }], "u1")[0]!.shareStatus).toBe("pending");
   });
 
   it("écrit la fréquence : répétition seulement si l'heure de fin existe", () => {
@@ -88,5 +100,29 @@ describe("import des anciennes tâches du téléphone", () => {
     expect(sanitizeLocalTask({ title: "", category: "Caisse", time: "20:00", days: [2] })).toBeNull();
     expect(sanitizeLocalTask({ title: "X", category: "Caisse", time: "20:00", days: [] })).toBeNull();
     expect(sanitizeLocalTask("n'importe quoi")).toBeNull();
+  });
+});
+
+describe("tâches partagées par un collègue : lecture seule", () => {
+  const theirs = task("c", { ownerId: "u2", sharedBy: "Léa", shareStatus: "accepted", shareMode: "each" });
+  const mine = task("a", { ownerId: "u1" });
+
+  it("modifier, supprimer ou réécrire une tâche d'un collègue n'envoie rien dans la base", () => {
+    const s = state({ tasks: [mine, theirs] });
+    expect(isEmptyOps(diffState(s, { ...s, tasks: [mine, { ...theirs, title: "piraté", time: "03:00" }] }))).toBe(true);
+    expect(isEmptyOps(diffState(s, { ...s, tasks: [mine] }))).toBe(true);
+  });
+
+  it("mes propres tâches partent toujours, y compris à côté de celles d'un collègue", () => {
+    const s = state({ tasks: [mine, theirs] });
+    const ops = diffState(s, { ...s, tasks: [{ ...mine, title: "Nouveau" }, theirs, task("n")] });
+    expect(ops.taskUpdates.map((t) => t.id)).toEqual(["a"]);
+    expect(ops.taskInserts.map((t) => t.id)).toEqual(["n"]);
+    expect(ops.taskDeletes).toEqual([]);
+  });
+
+  it("cocher une tâche d'un collègue s'enregistre (chacun coche de son côté)", () => {
+    const s = state({ tasks: [theirs] });
+    expect(diffState(s, { ...s, done: { "c@2026-11-23": true } }).doneAdds).toEqual(["c@2026-11-23"]);
   });
 });

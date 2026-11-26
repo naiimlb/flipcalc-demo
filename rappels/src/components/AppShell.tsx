@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { retryAuth, useAuth } from "@/lib/auth";
+import { loginUrl, nextFromSearch, safeNext } from "@/lib/redirect";
 import { Logo } from "./Logo";
 import { Reminders } from "./Reminders";
 import { ServiceWorkerRegistration } from "./ServiceWorker";
@@ -25,9 +26,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const toLogin = auth.status === "signedOut" && !isPublic;
 
   useEffect(() => {
-    if (toLogin) router.replace("/connexion");
-    else if (leavePublic) router.replace("/");
+    // Lien ouvert sans être connecté (ex. notification) : connexion, puis retour exactement sur la bonne page.
+    if (toLogin) router.replace(loginUrl(`${window.location.pathname}${window.location.search}`));
+    else if (leavePublic) router.replace(nextFromSearch(window.location.search) ?? "/");
   }, [toLogin, leavePublic, router]);
+
+  // Le service worker nous dit où aller quand on touche une notification alors que l'app est déjà ouverte.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { type?: string; url?: string } | null;
+      if (d?.type !== "hb-open") return;
+      e.ports[0]?.postMessage("ok"); // « reçu » : le service worker n'a pas à recharger la page
+      const next = safeNext(d.url);
+      if (next) router.push(next);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [router]);
 
   let content: ReactNode = children;
   if (auth.status === "unconfigured") {

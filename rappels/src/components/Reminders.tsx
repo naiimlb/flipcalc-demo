@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { buildSlotNotification } from "@/lib/notification-text";
 import { sendLocalNotification } from "@/lib/notify";
-import { addDays, notificationSlots, serviceDate, visiblePlan } from "@/lib/service";
+import { addDays, claimedByOther, notificationSlots, serviceDate, visiblePlan } from "@/lib/service";
 import { reconcilePush, usePushOn } from "@/lib/push";
 import { updateState, useAppState, useNowMs } from "@/lib/store";
 
@@ -31,6 +31,7 @@ export function Reminders() {
     for (const sDate of [today, addDays(today, -1)]) {
       for (const p of visiblePlan(state.tasks, sDate, state.settings.schedule)) {
         if (state.done[p.key] && p.task.untilDone) continue;
+        if (claimedByOther(state.claims, p.key, state.profile.id)) continue; // un collègue s'en occupe
         for (const slot of notificationSlots(p.task, sDate)) {
           const late = nowMs - slot.at.getTime();
           if (late < 0 || late >= GRACE_MS) continue;
