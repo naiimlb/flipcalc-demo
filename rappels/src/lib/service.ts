@@ -104,7 +104,8 @@ export function formatTime(time: string): string {
 }
 
 export function formatMinutes(min: number): string {
-  return `${String(Math.floor(min / 60)).padStart(2, "0")}h${String(min % 60).padStart(2, "0")}`;
+  const m = ((min % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}h${String(m % 60).padStart(2, "0")}`;
 }
 
 export function minutesToTime(min: number): string {
@@ -176,7 +177,7 @@ export function planForService(tasks: Task[], sDate: Date): PlannedTask[] {
   const dow = weekdayIndex(sDate);
   const key = dateKey(sDate);
   return tasks
-    .filter((t) => (t.date ? t.date === key : t.days.includes(dow)))
+    .filter((t) => !t.paused && (t.date ? t.date === key : t.days.includes(dow)))
     .map((task) => ({
       task,
       at: occurrenceAt(task, sDate),
@@ -199,9 +200,70 @@ export function visiblePlan(tasks: Task[], sDate: Date, schedule: string | null)
   return plan.filter((p) => p.task.team === "both" || p.task.team === team);
 }
 
-/** Instant d'envoi du rappel (heure de la tâche moins l'avance choisie). */
+/** Instant du premier rappel (heure de la tâche moins l'avance choisie). */
 export function reminderAt(p: PlannedTask): Date {
   return new Date(p.at.getTime() - p.task.remind * 60_000);
+}
+
+// ----- fréquence des rappels -----
+export const MAX_SLOTS = 200; // garde-fou : jamais plus de 200 rappels pour une tâche et une journée
+
+/** Instant d'une heure exprimée en « minutes étendues » (≥ 1440 = après minuit, donc le lendemain du jour de service). */
+export function slotInstant(sDate: Date, ext: number): Date {
+  const day = addDays(sDate, Math.floor(ext / 1440));
+  const m = ((ext % 1440) + 1440) % 1440;
+  return new Date(parisInstant(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), Math.floor(m / 60), m % 60));
+}
+
+export type Slot = { at: Date; ext: number };
+
+/**
+ * Tous les rappels d'une tâche pour la journée de service `sDate` : le premier à (heure − avance), puis toutes les
+ * `repeatEvery` minutes jusqu'à l'heure de fin. Les répétitions peuvent passer minuit (l'heure de fin 01h00 est
+ * après 23h00). Calcul à l'heure de Paris : les créneaux de 11h à 2h ne croisent jamais le changement d'heure.
+ */
+export function notificationSlots(task: Task, sDate: Date): Slot[] {
+  const first = sortKey(task.time) - task.remind;
+  const exts = [first];
+  if (task.repeatEvery && task.endTime && task.repeatEvery >= 5) {
+    const end = sortKey(task.endTime);
+    for (let m = first + task.repeatEvery; m <= end && exts.length < MAX_SLOTS; m += task.repeatEvery) exts.push(m);
+  }
+  return exts.map((ext) => ({ ext, at: slotInstant(sDate, ext) }));
+}
+
+/** Erreur de saisie de la fréquence (null si tout va bien). */
+export function validateFrequency(task: Pick<Task, "time" | "repeatEvery" | "endTime">): string | null {
+  if (!task.repeatEvery) return null;
+  if (!Number.isInteger(task.repeatEvery) || task.repeatEvery < 5 || task.repeatEvery > 720) return "Choisis un intervalle entre 5 et 720 minutes.";
+  if (!task.endTime) return "Choisis l'heure de fin des rappels.";
+  if (sortKey(task.endTime) <= sortKey(task.time)) return "L'heure de fin doit être après l'heure de début.";
+  return null;
+}
+
+function everyLabel(min: number): string {
+  if (min === 60) return "toutes les heures";
+  if (min > 60 && min % 60 === 0) return `toutes les ${min / 60} h`;
+  return `toutes les ${min} min`;
+}
+
+/** Résumé en français affiché dans le formulaire : « Tu seras notifié toutes les 30 min, de 11h00 à 18h00… ». */
+export function describeFrequency(task: Task): string {
+  const lead = task.remind > 0 ? ` (premier rappel ${task.remind} min avant)` : "";
+  if (!task.repeatEvery || !task.endTime) {
+    return task.remind > 0
+      ? `Tu seras notifié une seule fois, ${task.remind} min avant (à ${formatMinutes(sortKey(task.time) - task.remind)}).`
+      : `Tu seras notifié une seule fois, à ${formatTime(task.time)}.`;
+  }
+  const n = notificationSlots(task, new Date(Date.UTC(2026, 0, 5))).length;
+  const stop = task.untilDone ? ", jusqu'à ce que tu coches la tâche" : "";
+  return `Tu seras notifié ${everyLabel(task.repeatEvery)}, de ${formatTime(task.time)} à ${formatTime(task.endTime)}${lead} : ${n} rappel${n > 1 ? "s" : ""} au plus${stop}.`;
+}
+
+/** Libellé court de la fréquence (listes). */
+export function frequencyLabel(task: Task): string {
+  if (task.repeatEvery && task.endTime) return `${everyLabel(task.repeatEvery)} jusqu'à ${formatTime(task.endTime)}`;
+  return task.remind > 0 ? `${task.remind} min avant` : "à l'heure";
 }
 
 export function formatDuration(ms: number): string {

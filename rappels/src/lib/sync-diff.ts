@@ -11,7 +11,7 @@ export type SyncOps = {
   profileChanged: boolean;
 };
 
-const sig = (t: Task) => JSON.stringify([t.title, t.category, t.time, t.days, t.date ?? null, t.team, t.remind, t.note ?? null]);
+const sig = (t: Task) => JSON.stringify([t.title, t.category, t.time, t.days, t.date ?? null, t.team, t.remind, t.repeatEvery ?? null, t.endTime ?? null, t.untilDone, t.paused, t.note ?? null]);
 
 export function diffState(prev: AppState, next: AppState): SyncOps {
   const before = new Map(prev.tasks.map((t) => [t.id, t]));

@@ -1,7 +1,9 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { permission, requestPermission } from "@/lib/notify";
+import { disablePush, enablePush, pushConfigured, usePushOn } from "@/lib/push";
+import { useAppState } from "@/lib/store";
 
 function subscribe(cb: () => void) {
   window.addEventListener("hb-permission", cb);
@@ -23,9 +25,27 @@ function snapshot() {
 
 export function NotifSettings() {
   const snap = useSyncExternalStore(subscribe, snapshot, () => "");
+  const app = useAppState();
+  const uid = app?.profile.id;
+  const pushOn = usePushOn(uid);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   if (!snap) return null;
   const [perm, standalone, ios] = snap.split("|");
   const needsInstall = ios === "true" && standalone !== "true";
+
+  async function activate() {
+    if (!uid) return;
+    setBusy(true);
+    setError("");
+    if (pushConfigured) {
+      const r = await enablePush(uid);
+      if (!r.ok) setError(r.message);
+    } else {
+      await requestPermission(); // notifications locales seulement (pas de serveur configuré)
+    }
+    setBusy(false);
+  }
 
   return (
     <div className="space-y-3">
@@ -36,11 +56,7 @@ export function NotifSettings() {
         </p>
       )}
 
-      {perm === "granted" ? (
-        <p className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-4 text-base font-extrabold text-white">
-          ✅ Notifications activées
-        </p>
-      ) : perm === "denied" ? (
+      {perm === "denied" ? (
         <p className="rounded-2xl bg-ink p-3 text-sm font-semibold text-white">
           🚫 Notifications refusées. Réactive-les dans Réglages iPhone → Notifications → HB Rappels.
         </p>
@@ -48,14 +64,34 @@ export function NotifSettings() {
         <p className="rounded-2xl bg-ink p-3 text-sm font-semibold text-white">
           Ce navigateur ne gère pas les notifications{ios === "true" ? " (iOS 16.4 minimum, app ajoutée à l'écran d'accueil)" : ""}.
         </p>
+      ) : perm === "granted" && (pushOn || !pushConfigured) ? (
+        <>
+          <p className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-4 text-base font-extrabold text-white">
+            ✅ Notifications activées{pushOn ? " (même app fermée)" : ""}
+          </p>
+          {pushOn && uid && (
+            <button type="button" onClick={() => void disablePush(uid)} className="min-h-11 w-full rounded-full text-sm font-bold text-mute">
+              Désactiver sur ce téléphone
+            </button>
+          )}
+        </>
       ) : (
-        <button
-          type="button"
-          onClick={() => void requestPermission()}
-          className="min-h-14 w-full rounded-full bg-pink text-lg font-extrabold text-white shadow-pop active:scale-[0.98]"
-        >
-          🔔 Activer les notifications
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => void activate()}
+            disabled={busy || !uid}
+            className="min-h-14 w-full rounded-full bg-pink text-lg font-extrabold text-white shadow-pop active:scale-[0.98] disabled:opacity-60"
+          >
+            {busy ? "Activation…" : "🔔 Activer les notifications"}
+          </button>
+          {pushConfigured && <p className="text-center text-xs text-mute">Tu les recevras même quand l&apos;app est fermée.</p>}
+        </>
+      )}
+      {error && (
+        <p role="alert" className="rounded-2xl bg-ink px-4 py-3 text-sm font-bold text-white">
+          {error}
+        </p>
       )}
     </div>
   );

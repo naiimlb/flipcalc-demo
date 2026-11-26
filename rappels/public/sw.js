@@ -1,5 +1,5 @@
 /* Service worker HB Rappels : hors-ligne simple + notifications (locales et, plus tard, push). */
-const CACHE = "hb-rappels-v1";
+const CACHE = "hb-rappels-v2";
 const IS_LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -30,7 +30,7 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// --- Web Push (branché plus tard, voir docs/PUSH.md) ---
+// --- Web Push (envoyé par le planificateur du serveur, voir docs/NOTIFICATIONS.md) ---
 // Payload attendu : { "title": "⏰ Clôture caisse", "body": "02h30 · Caisse", "url": "/", "tag": "<taskId>@<date>" }
 self.addEventListener("push", (event) => {
   let data = {};
@@ -43,6 +43,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title || "HB Rappels", {
       body: data.body || "",
       tag: data.tag,
+      renotify: !!data.tag, // une répétition remplace la précédente mais sonne quand même
       icon: "/icons/icon-192.png",
       badge: "/icons/favicon-32.png",
       data: { url: data.url || "/" },

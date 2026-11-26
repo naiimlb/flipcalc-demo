@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatDuration, formatTime, reminderLabel, type PlannedTask } from "@/lib/service";
+import { formatDuration, formatTime, frequencyLabel, type PlannedTask } from "@/lib/service";
 import { CATEGORY_EMOJI } from "@/lib/types";
 
 type Props = {
@@ -54,7 +54,7 @@ export function TaskRow({ planned: { task, afterMidnight }, done, lateBy, onTogg
         </div>
         <p className={`text-[17px] font-bold leading-snug ${done ? "text-mute line-through decoration-2" : ""}`}>{task.title}</p>
         <p className={`mt-0.5 text-[13px] font-medium ${late ? "text-white/90" : "text-mute"}`}>
-          {CATEGORY_EMOJI[task.category]} {task.category} · 🔔 {reminderLabel(task.remind)}
+          {CATEGORY_EMOJI[task.category]} {task.category} · 🔔 {frequencyLabel(task)}
         </p>
         {task.note && !done && <p className={`mt-1 text-[13px] leading-snug ${late ? "text-white/90" : "text-ink/70"}`}>{task.note}</p>}
       </Link>

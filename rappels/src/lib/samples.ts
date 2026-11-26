@@ -3,8 +3,8 @@ import type { Category, Task } from "./types";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
-function t(title: string, category: Category, time: string, team: TeamPref, remind: Task["remind"], note?: string): Task {
-  return { id: crypto.randomUUID(), title, category, time, days: ALL_DAYS, team, remind, ...(note ? { note } : {}) };
+function t(title: string, category: Category, time: string, team: TeamPref, remind: number, note?: string): Task {
+  return { id: crypto.randomUUID(), title, category, time, days: ALL_DAYS, team, remind, untilDone: true, paused: false, ...(note ? { note } : {}) };
 }
 
 /**

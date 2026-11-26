@@ -18,8 +18,16 @@ export type Task = {
   date?: string;
   /** Pour quelle équipe : jour, soir ou les deux. */
   team: TeamPref;
-  /** Minutes d'avance du rappel. */
-  remind: Reminder;
+  /** Rappel X minutes avant l'heure de la tâche (0 = à l'heure). */
+  remind: number;
+  /** Répéter le rappel toutes les X minutes (absent = une seule fois). */
+  repeatEvery?: number;
+  /** Fin de la fenêtre de répétition, "HH:MM" (obligatoire avec `repeatEvery`). */
+  endTime?: string;
+  /** Les rappels s'arrêtent dès que la tâche est cochée. */
+  untilDone: boolean;
+  /** Tâche en pause : ni affichée, ni rappelée. */
+  paused: boolean;
   note?: string;
   /** Tâche assignée par un responsable. */
   assigned?: boolean;

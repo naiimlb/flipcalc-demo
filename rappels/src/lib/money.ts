@@ -52,7 +52,21 @@ export type Gap = { gap: Cents; kind: "exact" | "surplus" | "shortage"; text: st
 /** Écart = compté − attendu. Positif : excédent. Négatif : manque. */
 export function computeGap(counted: Cents, expected: Cents): Gap {
   const gap = counted - expected;
-  if (gap === 0) return { gap, kind: "exact", text: "Aucun écart : la caisse est juste." };
-  if (gap > 0) return { gap, kind: "surplus", text: `Excédent de ${formatEuro(gap)}.` };
+  if (gap === 0) return { gap, kind: "exact", text: "OK : aucun écart." };
+  if (gap > 0) return { gap, kind: "surplus", text: `Surplus de ${formatEuro(gap)}.` };
   return { gap, kind: "shortage", text: `Manque de ${formatEuro(-gap)}.` };
+}
+
+/** Billets (5 € et plus) d'un côté, pièces (2 € et moins) de l'autre, avec montants et nombres. */
+export function cashTotals(lines: { denomination: Cents; quantity: number }[]) {
+  const { rows } = countCash(lines);
+  const sum = (list: CountLine[]) => ({ total: list.reduce((a, r) => a + r.subtotal, 0), count: list.reduce((a, r) => a + r.quantity, 0) });
+  const bills = sum(rows.filter((r) => r.denomination >= 500));
+  const coins = sum(rows.filter((r) => r.denomination < 500));
+  return { bills, coins, total: bills.total + coins.total };
+}
+
+/** « 1 billet », « 6 billets » (0 → « 0 billet »). */
+export function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n > 1 ? many : one}`;
 }

@@ -13,6 +13,10 @@ export type TaskRow = {
   once_date: string | null;
   team: string;
   remind: number;
+  repeat_every: number | null;
+  end_time: string | null;
+  until_done: boolean;
+  paused: boolean;
   note: string | null;
 };
 export type SettingsRow = { default_remind: number; notify: boolean; handover_min: number; schedule: string | null };
@@ -28,7 +32,10 @@ export function rowToTask(r: TaskRow): Task {
     days: [...r.days].sort((a, b) => a - b),
     ...(r.once_date ? { date: r.once_date } : {}),
     team: (r.team === "jour" || r.team === "soir" ? r.team : "both") as TeamPref,
-    remind: r.remind as Reminder,
+    remind: r.remind,
+    ...(r.repeat_every && r.end_time ? { repeatEvery: r.repeat_every, endTime: r.end_time } : {}),
+    untilDone: r.until_done !== false,
+    paused: r.paused === true,
     ...(r.note ? { note: r.note } : {}),
     ...(r.assigned_by ? { assigned: true } : {}),
   };
@@ -44,6 +51,10 @@ export function taskToFields(t: Task) {
     once_date: t.date ?? null,
     team: t.team,
     remind: t.remind,
+    repeat_every: t.repeatEvery && t.endTime ? t.repeatEvery : null,
+    end_time: t.repeatEvery && t.endTime ? t.endTime : null,
+    until_done: t.untilDone,
+    paused: t.paused,
     note: t.note ?? null,
   };
 }

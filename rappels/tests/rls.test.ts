@@ -13,6 +13,9 @@ const SUPABASE_STUB = `
   create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}'::jsonb);
   create function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+  create schema vault;
+  create table vault.decrypted_secrets (name text, decrypted_secret text); -- simule le coffre-fort Supabase
+  insert into vault.decrypted_secrets values ('hb_cron_secret', 'secret-de-test');
   create role anon nologin;
   create role authenticated nologin;
   grant usage on schema public, auth to anon, authenticated;
@@ -223,6 +226,110 @@ describe("équipes, relève et planning", () => {
   });
 });
 
+describe("tâches libres, fréquence des rappels, pause", () => {
+  const ins = (cols: string, vals: string) =>
+    q(`insert into public.tasks (user_id, title, category, at_time, days, ${cols}) values ($1, 'x', 'Autre', '12:00', '{0}', ${vals})`, [ids.lea]);
+
+  it("accepte une répétition avec fenêtre, refuse les valeurs invalides", async () => {
+    await as(ids.lea, async () => {
+      await ins("repeat_every, end_time, until_done", "30, '18:00', true");
+      expect(await fails(() => ins("repeat_every", "30"))).toBe(true); // répétition sans heure de fin
+      expect(await fails(() => ins("repeat_every, end_time", "2, '18:00'"))).toBe(true); // trop fréquent (min 5)
+      expect(await fails(() => ins("repeat_every, end_time", "1000, '18:00'"))).toBe(true);
+      expect(await fails(() => ins("repeat_every, end_time", "30, '25:00'"))).toBe(true);
+    });
+  });
+
+  it("par défaut : une seule fois, jusqu'à ce que ce soit coché, pas en pause", async () => {
+    const r = await q("select repeat_every, until_done, paused from public.tasks where user_id = $1 and title = 'Tâche de Léa'", [ids.lea]);
+    expect(r.rows[0]).toEqual({ repeat_every: null, until_done: true, paused: false });
+  });
+
+  it("on peut mettre en pause SA tâche, pas celle d'un autre", async () => {
+    const tomTask = (await q("select id from public.tasks where user_id = $1 limit 1", [ids.tom])).rows[0]!.id;
+    await as(ids.lea, async () => {
+      expect((await q("update public.tasks set paused = true where title = 'Tâche de Léa' returning id")).rows).toHaveLength(1);
+      expect((await q("update public.tasks set paused = true where id = $1 returning id", [tomTask])).rows).toHaveLength(0);
+    });
+    await q("update public.tasks set paused = false where user_id = $1", [ids.lea]);
+  });
+
+  it("push_sent (anti-doublon) est inaccessible aux utilisateurs, même le responsable", async () => {
+    for (const who of [ids.lea, ids.boss, null]) {
+      expect(await as(who, () => fails(() => q("select * from public.push_sent")))).toBe(true);
+      expect(await as(who, () => fails(() => q("insert into public.push_sent (user_id, task_id, service_date, slot_at) values (gen_random_uuid(), gen_random_uuid(), '2026-11-26', now())")))).toBe(true);
+    }
+  });
+
+  it("push_sent : un même créneau ne peut être enregistré qu'une fois (rôle serveur)", async () => {
+    const task = (await q("select id from public.tasks where user_id = $1 limit 1", [ids.lea])).rows[0]!.id;
+    const ins2 = () => q("insert into public.push_sent (user_id, task_id, service_date, slot_at) values ($1, $2, '2026-11-26', '2026-11-26T10:00:00Z')", [ids.lea, task]);
+    await ins2();
+    expect(await fails(ins2)).toBe(true);
+    expect((await q("insert into public.push_sent (user_id, task_id, service_date, slot_at) values ($1, $2, '2026-11-26', '2026-11-26T10:30:00Z') returning 1", [ids.lea, task])).rows).toHaveLength(1);
+  });
+
+  it("abonnements push : on peut renouveler sa clé, mais pas l'abonnement d'un autre", async () => {
+    await as(ids.lea, async () => {
+      expect((await q("update public.push_subscriptions set p256dh = 'k2' where endpoint = 'https://push/lea' returning id")).rows).toHaveLength(1);
+    });
+    await as(ids.tom, async () => {
+      expect((await q("update public.push_subscriptions set p256dh = 'pirate' where endpoint = 'https://push/lea' returning id")).rows).toHaveLength(0);
+    });
+  });
+});
+
+describe("fonctions du planificateur (push_*), protégées par un secret", () => {
+  const SECRET = "secret-de-test";
+  const call = (who: string | null, sql: string, params: unknown[]) => as(who, () => q(sql, params));
+
+  it("refusent tout sans le bon secret, pour tout le monde (anon, caissier, responsable)", async () => {
+    for (const who of [null, ids.lea, ids.boss]) {
+      for (const secret of ["mauvais", "", null]) {
+        expect(await fails(() => call(who, "select public.push_tick_data($1, '{2026-11-26}')", [secret]))).toBe(true);
+        expect(await fails(() => call(who, "select public.push_claim($1, gen_random_uuid(), gen_random_uuid(), '2026-11-26', now())", [secret]))).toBe(true);
+        expect(await fails(() => call(who, "select public.push_remove_sub($1, 'x')", [secret]))).toBe(true);
+        expect(await fails(() => call(who, "select public.push_purge($1)", [secret]))).toBe(true);
+      }
+    }
+  });
+
+  it("push_assert n'est pas appelable directement (pas d'oracle pour deviner le secret)", async () => {
+    for (const who of [null, ids.lea]) expect(await fails(() => call(who, "select public.push_assert($1)", [SECRET]))).toBe(true);
+  });
+
+  it("renvoient abonnements, réglages, tâches (sans pause) et tâches faites avec le bon secret (rôle anon)", async () => {
+    await q("update public.tasks set paused = true where user_id = $1 and title = 'Tâche de Léa'", [ids.lea]);
+    const r = await call(null, "select public.push_tick_data($1, '{2026-11-23}') as d", [SECRET]);
+    const d = r.rows[0]!.d as { subs: { user_id: string }[]; tasks: { title: string; user_id: string }[]; done: unknown[]; settings: unknown[] };
+    expect(d.subs.map((x) => x.user_id)).toContain(ids.lea);
+    expect(d.tasks.some((t) => t.title === "Tâche de Léa")).toBe(false); // en pause
+    expect(d.tasks.every((t) => t.user_id === ids.lea)).toBe(true); // seulement les utilisateurs abonnés
+    expect(d.done.length).toBeGreaterThan(0);
+    expect(d.settings.length).toBeGreaterThan(0);
+    await q("update public.tasks set paused = false where user_id = $1", [ids.lea]);
+    const none = await call(null, "select public.push_tick_data($1, '{2030-01-01}') as d", [SECRET]);
+    expect((none.rows[0]!.d as { done: unknown[] }).done).toHaveLength(0); // aucune tâche faite à cette date
+  });
+
+  it("push_claim : vrai la première fois, faux ensuite (anti-doublon)", async () => {
+    const task = (await q("select id from public.tasks where user_id = $1 limit 1", [ids.lea])).rows[0]!.id;
+    const claim = () => call(null, "select public.push_claim($1, $2, $3, '2026-11-27', '2026-11-27T09:00:00Z') as ok", [SECRET, ids.lea, task]);
+    expect((await claim()).rows[0]!.ok).toBe(true);
+    expect((await claim()).rows[0]!.ok).toBe(false);
+    expect((await claim()).rows[0]!.ok).toBe(false);
+  });
+
+  it("push_remove_sub supprime l'abonnement ; push_purge supprime les vieux créneaux", async () => {
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/expire', 'k', 'a')", [ids.lea]);
+    await call(null, "select public.push_remove_sub($1, 'https://push/expire')", [SECRET]);
+    expect((await q("select 1 from public.push_subscriptions where endpoint = 'https://push/expire'")).rows).toHaveLength(0);
+    await q("update public.push_sent set sent_at = now() - interval '5 days' where slot_at = '2026-11-26T10:00:00Z'");
+    await call(null, "select public.push_purge($1)", [SECRET]);
+    expect((await q("select 1 from public.push_sent where slot_at = '2026-11-26T10:00:00Z'")).rows).toHaveLength(0);
+  });
+});
+
 describe("contraintes de données", () => {
   it("refuse une heure, une catégorie ou un rappel invalide", async () => {
     await as(ids.lea, async () => {
@@ -231,7 +338,8 @@ describe("contraintes de données", () => {
       expect(await bad("'Caisse', '25:00', '{0}', 5")).toBe(true);
       expect(await bad("'Piscine', '20:00', '{0}', 5")).toBe(true);
       expect(await bad("'Caisse', '20:00', '{9}', 5")).toBe(true);
-      expect(await bad("'Caisse', '20:00', '{0}', 7")).toBe(true);
+      expect(await bad("'Caisse', '20:00', '{0}', 300")).toBe(true); // rappel max 240 min
+      expect(await bad("'Caisse', '20:00', '{0}', 7")).toBe(false); // rappel libre (7 min avant)
       expect(await bad("'Caisse', '20:00', '{0}', 5")).toBe(false);
     });
   });

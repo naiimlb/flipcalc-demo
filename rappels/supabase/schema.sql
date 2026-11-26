@@ -79,12 +79,25 @@ create table if not exists public.tasks (
   days        smallint[] not null default '{}' check (days <@ array[0, 1, 2, 3, 4, 5, 6]::smallint[]),
   once_date   date,                                                         -- tâche ponctuelle (service de ce jour)
   team        text not null default 'both' check (team in ('jour', 'soir', 'both')), -- pour quelle équipe
-  remind      smallint not null default 5 check (remind in (0, 5, 15)),
+  remind      smallint not null default 5 check (remind between 0 and 240),        -- rappel X minutes avant
+  repeat_every smallint check (repeat_every between 5 and 720),                       -- répéter toutes les X min (null = une seule fois)
+  end_time    text check (end_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),               -- fin de la fenêtre de répétition
+  until_done  boolean not null default true,                                           -- arrêter les rappels dès que la tâche est cochée
+  paused      boolean not null default false,                                          -- tâche en pause : ni affichée ni rappelée
   note        text check (char_length(note) <= 200),
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  constraint tasks_repeat_needs_end check (repeat_every is null or end_time is not null)
 );
--- Mise à jour d'une base existante : les tâches déjà créées restent visibles pour les deux équipes.
+-- Mise à jour d'une base existante (sans effet sur une base neuve) : les tâches déjà créées gardent leur comportement.
 alter table public.tasks add column if not exists team text not null default 'both' check (team in ('jour', 'soir', 'both'));
+alter table public.tasks add column if not exists repeat_every smallint check (repeat_every between 5 and 720);
+alter table public.tasks add column if not exists end_time text check (end_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$');
+alter table public.tasks add column if not exists until_done boolean not null default true;
+alter table public.tasks add column if not exists paused boolean not null default false;
+alter table public.tasks drop constraint if exists tasks_remind_check;
+alter table public.tasks add constraint tasks_remind_check check (remind between 0 and 240);
+alter table public.tasks drop constraint if exists tasks_repeat_needs_end;
+alter table public.tasks add constraint tasks_repeat_needs_end check (repeat_every is null or end_time is not null);
 create index if not exists tasks_user_idx on public.tasks (user_id);
 
 -- Tâches faites : une ligne par tâche et par service.
@@ -97,7 +110,7 @@ create table if not exists public.task_done (
 );
 create index if not exists task_done_user_idx on public.task_done (user_id, service_date);
 
--- ------------------------------------------------- notifications push (plus tard) ---
+-- ------------------------------------------------------------ notifications push ---
 create table if not exists public.push_subscriptions (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users (id) on delete cascade,
@@ -107,6 +120,18 @@ create table if not exists public.push_subscriptions (
   created_at timestamptz not null default now()
 );
 
+-- Rappels déjà envoyés : une ligne par tâche, par journée de service et par créneau. La clé primaire empêche tout
+-- doublon : le serveur « réserve » le créneau en insérant la ligne AVANT d'envoyer. Aucun accès pour les utilisateurs.
+create table if not exists public.push_sent (
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  task_id      uuid not null references public.tasks (id) on delete cascade,
+  service_date date not null,
+  slot_at      timestamptz not null,
+  sent_at      timestamptz not null default now(),
+  primary key (task_id, service_date, slot_at)
+);
+create index if not exists push_sent_sent_at_idx on public.push_sent (sent_at);
+
 -- =============================================================================
 --  SÉCURITÉ : RLS partout + droits minimum
 -- =============================================================================
@@ -115,11 +140,13 @@ alter table public.settings           enable row level security;
 alter table public.tasks              enable row level security;
 alter table public.task_done          enable row level security;
 alter table public.push_subscriptions enable row level security;
+alter table public.push_sent          enable row level security;
 
 -- On retire tout, puis on redonne seulement ce qui est nécessaire (anon = personne).
 revoke all on public.profiles, public.settings, public.tasks, public.task_done,
-              public.push_subscriptions
+              public.push_subscriptions, public.push_sent
   from anon, authenticated;
+-- push_sent : aucune policy et aucun droit → seules les fonctions push_* ci-dessous (protégées par un secret) y touchent.
 
 -- profiles : je me vois ; le responsable voit les caissiers. Je ne peux changer que mon prénom.
 grant select on public.profiles to authenticated;
@@ -139,7 +166,7 @@ create policy settings_own on public.settings for all to authenticated
 
 -- tasks : je lis/modifie/supprime les miennes. Je ne peux pas changer user_id ni assigned_by.
 grant select, insert, delete on public.tasks to authenticated;
-grant update (title, category, at_time, days, once_date, team, remind, note) on public.tasks to authenticated;
+grant update (title, category, at_time, days, once_date, team, remind, repeat_every, end_time, until_done, paused, note) on public.tasks to authenticated;
 drop policy if exists tasks_select on public.tasks;
 create policy tasks_select on public.tasks for select to authenticated
   using (user_id = auth.uid());
@@ -172,9 +199,81 @@ create policy task_done_own on public.task_done for all to authenticated
 
 -- push_subscriptions : les miennes uniquement.
 grant select, insert, delete on public.push_subscriptions to authenticated;
+grant update (p256dh, auth_key) on public.push_subscriptions to authenticated;
 drop policy if exists push_own on public.push_subscriptions;
 create policy push_own on public.push_subscriptions for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ------------------------------------------------------------ planificateur de rappels ---
+-- Fonctions appelées UNIQUEMENT par la route /api/push/tick, avec un secret partagé (CRON_SECRET) stocké dans le
+-- coffre-fort de Supabase (Vault, nom « hb_cron_secret »). Sans le bon secret, elles refusent tout. Cela évite de
+-- confier la clé service_role à l'application.
+create or replace function public.push_assert(p_secret text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if p_secret is null or p_secret = '' or not exists (
+    select 1 from vault.decrypted_secrets where name = 'hb_cron_secret' and decrypted_secret = p_secret
+  ) then
+    raise exception 'non autorisé' using errcode = '42501';
+  end if;
+end;
+$$;
+
+-- Tout ce qu'il faut pour calculer les rappels dus : abonnements, réglages, tâches non en pause, tâches faites.
+create or replace function public.push_tick_data(p_secret text, p_dates date[]) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uids uuid[];
+begin
+  perform public.push_assert(p_secret);
+  select array_agg(distinct user_id) into uids from public.push_subscriptions;
+  uids := coalesce(uids, '{}');
+  return jsonb_build_object(
+    'subs', coalesce((select jsonb_agg(jsonb_build_object('user_id', user_id, 'endpoint', endpoint, 'p256dh', p256dh, 'auth_key', auth_key)) from public.push_subscriptions), '[]'::jsonb),
+    'settings', coalesce((select jsonb_agg(jsonb_build_object('user_id', user_id, 'notify', notify, 'schedule', schedule)) from public.settings where user_id = any (uids)), '[]'::jsonb),
+    'tasks', coalesce((select jsonb_agg(to_jsonb(t) - 'created_at') from public.tasks t where t.user_id = any (uids) and not t.paused), '[]'::jsonb),
+    'done', coalesce((select jsonb_agg(jsonb_build_object('task_id', task_id, 'service_date', service_date, 'user_id', user_id)) from public.task_done where user_id = any (uids) and service_date = any (p_dates)), '[]'::jsonb)
+  );
+end;
+$$;
+
+-- Réserve un créneau de rappel : renvoie true si c'est la première fois (donc la seule qui enverra la notification).
+create or replace function public.push_claim(p_secret text, p_user uuid, p_task uuid, p_date date, p_slot timestamptz) returns boolean
+language plpgsql security definer set search_path = '' as $$
+declare n integer;
+begin
+  perform public.push_assert(p_secret);
+  insert into public.push_sent (user_id, task_id, service_date, slot_at) values (p_user, p_task, p_date, p_slot)
+    on conflict (task_id, service_date, slot_at) do nothing;
+  get diagnostics n = row_count;
+  return n > 0;
+end;
+$$;
+
+create or replace function public.push_remove_sub(p_secret text, p_endpoint text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform public.push_assert(p_secret);
+  delete from public.push_subscriptions where endpoint = p_endpoint;
+end;
+$$;
+
+create or replace function public.push_purge(p_secret text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform public.push_assert(p_secret);
+  delete from public.push_sent where sent_at < now() - interval '3 days';
+end;
+$$;
+
+revoke all on function public.push_assert(text) from public, anon, authenticated;
+revoke all on function public.push_tick_data(text, date[]) from public;
+revoke all on function public.push_claim(text, uuid, uuid, date, timestamptz) from public;
+revoke all on function public.push_remove_sub(text, text) from public;
+revoke all on function public.push_purge(text) from public;
+grant execute on function public.push_tick_data(text, date[]) to anon, authenticated;
+grant execute on function public.push_claim(text, uuid, uuid, date, timestamptz) to anon, authenticated;
+grant execute on function public.push_remove_sub(text, text) to anon, authenticated;
+grant execute on function public.push_purge(text) to anon, authenticated;
 
 -- =============================================================================
 --  DÉSIGNER UN RESPONSABLE (à faire ici, jamais dans l'app) :

@@ -20,7 +20,8 @@
     "@supabase/supabase-js": "2.118.0",
     "next": "16.4.6",
     "react": "19.2.9",
-    "react-dom": "19.2.9"
+    "react-dom": "19.2.9",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.6.0",
@@ -28,6 +29,7 @@
     "@types/node": "22.20.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
+    "@types/web-push": "3.6.4",
     "eslint": "9.39.4",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",

@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { rowToProfile, type ProfileRow } from "./db-map";
 import { getSupabase, isSupabaseConfigured } from "./supabase";
+import { disablePush } from "./push";
 import { loadStore, resetStore } from "./store";
 import type { Profile } from "./types";
 
@@ -104,6 +105,8 @@ export async function signUp(prenom: string, email: string, password: string): P
 }
 
 export async function signOut(): Promise<void> {
+  // Cet appareil ne doit plus recevoir les rappels de ce compte (téléphone partagé).
+  if (auth.status === "signedIn") await disablePush(auth.profile.id);
   await getSupabase().auth.signOut();
 }
 

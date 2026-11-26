@@ -76,6 +76,9 @@ export default function SettingsPage() {
           <Link href="/planning" className="mb-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-pink text-base font-extrabold text-white shadow-pop">
             Mon planning (Jour / Soir / Repos)
           </Link>
+          <Link href="/taches" className="mb-4 inline-flex min-h-12 w-full items-center justify-center rounded-full border-2 border-pink bg-white text-base font-extrabold text-pink-deep">
+            Mes tâches (modifier, dupliquer, pause)
+          </Link>
           <p className="mb-2 text-sm font-semibold text-mute">Heure de relève entre l&apos;équipe jour et l&apos;équipe soir</p>
           <div className="grid grid-cols-2 gap-2">
             {HANDOVER_CHOICES.map((h) => (

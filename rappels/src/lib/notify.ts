@@ -1,20 +1,11 @@
 "use client";
 
-import { formatTime, reminderLabel } from "./service";
+import type { NotificationContent } from "./notification-text";
+import { reminderLabel } from "./service";
 import { showToast } from "./toast";
-import type { Task } from "./types";
 
-export type NotificationContent = { title: string; body: string };
-
-/** Texte du push : même format pour l'aperçu, le test et (plus tard) le vrai push serveur. */
-export function buildNotification(task: Task, serviceLabel?: string): NotificationContent {
-  const lead = task.remind === 0 ? "c'est l'heure !" : `dans ${task.remind} min, prépare-toi !`;
-  const where = serviceLabel ? ` · ${serviceLabel}` : "";
-  return {
-    title: `⏰ ${task.title}`,
-    body: `${formatTime(task.time)} · ${task.category}${where} — ${lead}`,
-  };
-}
+export type { NotificationContent } from "./notification-text";
+export { buildNotification, buildSlotNotification } from "./notification-text";
 
 export function notificationsSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator;
@@ -33,7 +24,7 @@ export async function requestPermission(): Promise<NotificationPermission | "uns
 
 /**
  * Simulation locale : bandeau dans l'app + notification système si la permission est accordée.
- * (Un vrai push, lui, arrivera même app fermée : voir docs/PUSH.md.)
+ * (Les vrais push, eux, arrivent même app fermée : voir docs/NOTIFICATIONS.md.)
  */
 export async function sendLocalNotification({ title, body }: NotificationContent, tag = "hb-test") {
   showToast(title, body);

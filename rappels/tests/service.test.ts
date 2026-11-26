@@ -3,15 +3,19 @@ import { sampleTasks } from "@/lib/samples";
 import {
   dateKey,
   dayPlanFor,
+  describeFrequency,
+  frequencyLabel,
   isOutsideService,
   isOutsideTeamRange,
   isServiceLive,
+  notificationSlots,
   occurrenceAt,
   parisInstant,
   planForService,
   reminderAt,
   serviceDate,
   sortKey,
+  validateFrequency,
   visiblePlan,
   weekdayIndex,
 } from "@/lib/service";
@@ -20,7 +24,7 @@ import type { Task } from "@/lib/types";
 // Les instants sont donnés en UTC ; à Paris : UTC+1 l'hiver (CET), UTC+2 l'été (CEST).
 const utc = (iso: string) => new Date(iso);
 const monday = new Date(Date.UTC(2026, 10, 23)); // lundi 23 novembre 2026
-const task = (extra: Partial<Task>): Task => ({ id: "x", title: "T", category: "Caisse", time: "12:00", days: [0, 1, 2, 3, 4, 5, 6], team: "both", remind: 0, ...extra });
+const task = (extra: Partial<Task>): Task => ({ id: "x", title: "T", category: "Caisse", time: "12:00", days: [0, 1, 2, 3, 4, 5, 6], team: "both", remind: 0, untilDone: true, paused: false, ...extra });
 
 describe("journée de service 11h → 2h (Europe/Paris)", () => {
   it("01h30 appartient à la journée de la veille", () => {
@@ -163,5 +167,76 @@ describe("tâches d'exemple", () => {
   it("toutes les exemples sont dans la plage de leur équipe", () => {
     for (const t of sampleTasks(1110)) expect(isOutsideTeamRange(t.time, t.team, 1110)).toBe(false);
     for (const t of sampleTasks(1080)) expect(isOutsideTeamRange(t.time, t.team, 1080)).toBe(false);
+  });
+});
+
+describe("fréquence des rappels", () => {
+  const iso = (slots: { at: Date }[]) => slots.map((s) => s.at.toISOString());
+
+  it("une seule fois à l'heure (ou X min avant)", () => {
+    expect(iso(notificationSlots(task({ time: "12:00" }), monday))).toEqual(["2026-11-23T11:00:00.000Z"]);
+    expect(iso(notificationSlots(task({ time: "12:00", remind: 15 }), monday))).toEqual(["2026-11-23T10:45:00.000Z"]);
+  });
+
+  it("toutes les 30 min de 11h00 à 18h00 : 15 rappels, 11h00 et 18h00 compris", () => {
+    const slots = notificationSlots(task({ time: "11:00", repeatEvery: 30, endTime: "18:00" }), monday);
+    expect(slots).toHaveLength(15);
+    expect(slots[0]!.at.toISOString()).toBe("2026-11-23T10:00:00.000Z"); // 11h00 Paris
+    expect(slots[14]!.at.toISOString()).toBe("2026-11-23T17:00:00.000Z"); // 18h00 Paris
+  });
+
+  it("le premier rappel part X min avant, puis le rythme continue jusqu'à la fin", () => {
+    const slots = notificationSlots(task({ time: "11:00", remind: 10, repeatEvery: 30, endTime: "12:00" }), monday);
+    expect(iso(slots)).toEqual(["2026-11-23T09:50:00.000Z", "2026-11-23T10:20:00.000Z", "2026-11-23T10:50:00.000Z"]); // 10h50, 11h20, 11h50
+  });
+
+  it("les répétitions passent minuit : 23h00 → 01h00 toutes les 30 min, dans la journée de la veille", () => {
+    const slots = notificationSlots(task({ time: "23:00", repeatEvery: 30, endTime: "01:00" }), monday);
+    expect(iso(slots)).toEqual([
+      "2026-11-23T22:00:00.000Z", // 23h00
+      "2026-11-23T22:30:00.000Z", // 23h30
+      "2026-11-23T23:00:00.000Z", // 00h00 (mardi)
+      "2026-11-23T23:30:00.000Z", // 00h30
+      "2026-11-24T00:00:00.000Z", // 01h00
+    ]);
+  });
+
+  it("une tâche à 01h00 appartient à la journée de la veille", () => {
+    const plan = planForService([task({ time: "01:00" })], monday);
+    expect(plan[0]!.at.toISOString()).toBe("2026-11-24T00:00:00.000Z"); // mardi 01h00 Paris
+    expect(plan[0]!.afterMidnight).toBe(true);
+  });
+
+  it("heure d'été : la répétition de la nuit du 28 au 29 mars reste à l'heure de Paris", () => {
+    const sat = new Date(Date.UTC(2026, 2, 28));
+    const slots = notificationSlots(task({ time: "23:30", repeatEvery: 30, endTime: "01:30" }), sat);
+    expect(iso(slots)).toEqual(["2026-03-28T22:30:00.000Z", "2026-03-28T23:00:00.000Z", "2026-03-28T23:30:00.000Z", "2026-03-29T00:00:00.000Z", "2026-03-29T00:30:00.000Z"]);
+  });
+
+  it("jamais plus de 200 rappels", () => {
+    expect(notificationSlots(task({ time: "11:00", repeatEvery: 5, endTime: "01:55" }), monday).length).toBeLessThanOrEqual(200);
+  });
+
+  it("valide la fréquence", () => {
+    expect(validateFrequency({ time: "11:00" })).toBeNull();
+    expect(validateFrequency({ time: "11:00", repeatEvery: 30, endTime: "18:00" })).toBeNull();
+    expect(validateFrequency({ time: "11:00", repeatEvery: 3, endTime: "18:00" })).toMatch(/entre 5 et 720/);
+    expect(validateFrequency({ time: "18:00", repeatEvery: 30, endTime: "11:00" })).toMatch(/après l'heure de début/);
+    expect(validateFrequency({ time: "23:00", repeatEvery: 30, endTime: "01:00" })).toBeNull(); // après minuit = plus tard
+  });
+
+  it("aperçu en français", () => {
+    expect(describeFrequency(task({ time: "11:00", repeatEvery: 30, endTime: "18:00" }))).toBe(
+      "Tu seras notifié toutes les 30 min, de 11h00 à 18h00 : 15 rappels au plus, jusqu'à ce que tu coches la tâche.",
+    );
+    expect(describeFrequency(task({ time: "11:00", repeatEvery: 60, endTime: "13:00", untilDone: false }))).toBe("Tu seras notifié toutes les heures, de 11h00 à 13h00 : 3 rappels au plus.");
+    expect(describeFrequency(task({ time: "14:00" }))).toBe("Tu seras notifié une seule fois, à 14h00.");
+    expect(describeFrequency(task({ time: "14:00", remind: 15 }))).toBe("Tu seras notifié une seule fois, 15 min avant (à 13h45).");
+    expect(frequencyLabel(task({ time: "11:00", repeatEvery: 30, endTime: "18:00" }))).toBe("toutes les 30 min jusqu'à 18h00");
+  });
+
+  it("une tâche en pause n'apparaît plus", () => {
+    expect(planForService([task({ paused: true })], monday)).toHaveLength(0);
+    expect(visiblePlan([task({ paused: true })], monday, null)).toHaveLength(0);
   });
 });

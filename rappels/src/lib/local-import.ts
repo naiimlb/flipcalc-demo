@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORIES, REMINDERS, type Category, type Reminder, type Task } from "./types";
+import { CATEGORIES, type Category, type Task } from "./types";
 import { updateState } from "./store";
 
 // Anciennes données : avant les comptes, les tâches vivaient dans le localStorage du téléphone.
@@ -26,7 +26,9 @@ export function sanitizeLocalTask(raw: unknown): Task | null {
     days: days.length ? days : [0],
     ...(date ? { date } : {}),
     team: "both", // les anciennes tâches restent visibles pour les deux équipes
-    remind: (REMINDERS as readonly number[]).includes(Number(raw.remind)) ? (Number(raw.remind) as Reminder) : 5,
+    remind: Number.isInteger(raw.remind) && Number(raw.remind) >= 0 && Number(raw.remind) <= 240 ? Number(raw.remind) : 5,
+    untilDone: true,
+    paused: false,
     ...(note ? { note } : {}),
   };
 }

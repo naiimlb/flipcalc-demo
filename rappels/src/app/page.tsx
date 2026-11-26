@@ -142,6 +142,13 @@ export default function TodayPage() {
       )}
 
       <Link
+        href="/taches"
+        className="mt-4 flex min-h-12 items-center justify-center rounded-full text-sm font-bold text-pink-deep underline underline-offset-4"
+      >
+        Gérer toutes mes tâches ({state.tasks.length})
+      </Link>
+
+      <Link
         href="/tache/nouvelle"
         aria-label="Ajouter une tâche"
         className="fixed bottom-24 right-4 z-20 flex size-14 items-center justify-center rounded-full bg-pink text-white shadow-pop active:scale-95"

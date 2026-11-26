@@ -79,4 +79,4 @@ Prénom, email, tâches (et leur état « fait »), réglages, et plus tard les 
 - Un caissier peut modifier ou supprimer une tâche que son responsable lui a assignée.
 - Le responsable ne voit **que** la liste des caissiers (prénom, email) et peut leur créer des tâches : il ne lit ni leurs tâches, ni leur avancement.
 - Les changements d'un autre téléphone apparaissent quand on revient sur l'app (ou en rechargeant), pas en temps réel.
-- Le rappel « envoyé » est mémorisé par téléphone : les rappels sonnent tant que l'app est ouverte (vrais push : voir `PUSH.md`).
+- Le rappel « envoyé » est mémorisé par téléphone : les rappels du serveur arrivent même app fermée (voir `NOTIFICATIONS.md`).

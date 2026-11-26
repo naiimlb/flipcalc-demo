@@ -4,7 +4,7 @@ import { sanitizeLocalTask } from "@/lib/local-import";
 import { diffState, isEmptyOps } from "@/lib/sync-diff";
 import type { AppState, Task } from "@/lib/types";
 
-const task = (id: string, extra: Partial<Task> = {}): Task => ({ id, title: "Ouvrir la caisse", category: "Caisse", time: "19:00", days: [0, 1], team: "both", remind: 5, ...extra });
+const task = (id: string, extra: Partial<Task> = {}): Task => ({ id, title: "Ouvrir la caisse", category: "Caisse", time: "19:00", days: [0, 1], team: "both", remind: 5, untilDone: true, paused: false, ...extra });
 const state = (extra: Partial<AppState> = {}): AppState => ({
   tasks: [task("a"), task("b")],
   done: {},
@@ -45,14 +45,22 @@ describe("diffState : ce qui part dans la base", () => {
     expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1080, schedule: null } })).settingsChanged).toBe(true);
     expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: "JSRJSR-" } })).settingsChanged).toBe(true);
     expect(diffState(state(), state({ tasks: [task("a", { team: "soir" }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);
+    expect(diffState(state(), state({ tasks: [task("a", { paused: true }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);
+    expect(diffState(state(), state({ tasks: [task("a", { repeatEvery: 30, endTime: "18:00" }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);
   });
 });
 
 describe("correspondance base ↔ app", () => {
-  const row: TaskRow = { id: "x", user_id: "u1", assigned_by: "boss", title: "Frigo", category: "Stock", at_time: "00:30", days: [4, 0], once_date: "2026-11-23", team: "soir", remind: 15, note: null };
+  const row: TaskRow = { id: "x", user_id: "u1", assigned_by: "boss", title: "Frigo", category: "Stock", at_time: "00:30", days: [4, 0], once_date: "2026-11-23", team: "soir", remind: 15, repeat_every: 30, end_time: "18:00", until_done: false, paused: true, note: null };
 
   it("lit une ligne de la base", () => {
-    expect(rowToTask(row)).toEqual({ id: "x", title: "Frigo", category: "Stock", time: "00:30", days: [0, 4], date: "2026-11-23", team: "soir", remind: 15, assigned: true });
+    expect(rowToTask(row)).toEqual({ id: "x", title: "Frigo", category: "Stock", time: "00:30", days: [0, 4], date: "2026-11-23", team: "soir", remind: 15, repeatEvery: 30, endTime: "18:00", untilDone: false, paused: true, assigned: true });
+  });
+
+  it("écrit la fréquence : répétition seulement si l'heure de fin existe", () => {
+    expect(taskToFields(task("a", { repeatEvery: 30, endTime: "18:00" }))).toMatchObject({ repeat_every: 30, end_time: "18:00", until_done: true, paused: false });
+    expect(taskToFields(task("a", { repeatEvery: 30 }))).toMatchObject({ repeat_every: null, end_time: null });
+    expect(taskToFields(task("a"))).toMatchObject({ repeat_every: null, end_time: null });
   });
 
   it("n'écrit jamais user_id ni assigned_by dans les champs modifiables", () => {
@@ -75,7 +83,7 @@ describe("import des anciennes tâches du téléphone", () => {
   });
 
   it("corrige ce qui est douteux et refuse ce qui est inutilisable", () => {
-    expect(sanitizeLocalTask({ title: "X", category: "Piscine", time: "20:00", days: [2], remind: 7 })).toMatchObject({ category: "Autre", remind: 5 });
+    expect(sanitizeLocalTask({ title: "X", category: "Piscine", time: "20:00", days: [2], remind: 700 })).toMatchObject({ category: "Autre", remind: 5 });
     expect(sanitizeLocalTask({ title: "X", category: "Caisse", time: "25:00", days: [2] })).toBeNull();
     expect(sanitizeLocalTask({ title: "", category: "Caisse", time: "20:00", days: [2] })).toBeNull();
     expect(sanitizeLocalTask({ title: "X", category: "Caisse", time: "20:00", days: [] })).toBeNull();
