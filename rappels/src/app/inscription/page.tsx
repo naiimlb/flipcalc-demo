@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { InstallHint } from "@/components/InstallHint";
 import { AuthShell, ErrorMessage, inputCls, linkBtn, primaryBtn } from "@/components/AuthShell";
 import { PasswordInput } from "@/components/PasswordInput";
 import { signUp } from "@/lib/auth";
@@ -60,6 +61,7 @@ export default function SignupPage() {
       hint={hints[step]}
       footer={<Link href="/connexion" className={linkBtn}>J&apos;ai déjà un compte</Link>}
     >
+      <InstallHint />
       <div className="mb-5 flex items-center gap-2" role="progressbar" aria-valuemin={1} aria-valuemax={STEPS} aria-valuenow={step + 1} aria-label={`Étape ${step + 1} sur ${STEPS}`}>
         {Array.from({ length: STEPS }, (_, i) => (
           <span key={i} className={`h-2 flex-1 rounded-full ${i <= step ? "bg-pink" : "bg-pink-soft"}`} />

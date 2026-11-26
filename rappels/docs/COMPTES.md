@@ -71,6 +71,32 @@ Un navigateur = une session. Utilise **deux fenêtres qui ne partagent pas leurs
 2. **Redéploie** (Deployments → ⋯ → Redeploy) : les variables `NEXT_PUBLIC_…` sont intégrées à la construction de l'app, elles ne sont prises en compte qu'au déploiement suivant.
 3. Teste sur <https://hb-rappels.vercel.app> avec ton téléphone.
 
+## Connexion persistante (rester connecté des semaines)
+
+Une fois connecté, tu restes connecté (même après avoir fermé l'app ou redémarré le téléphone) tant que tu ne cliques pas sur **Réglages → Me déconnecter** (avec confirmation). Il n'y a aucun délai d'inactivité dans l'app.
+
+**Comment ça marche**
+- La session est stockée dans des **cookies de 400 jours** (le maximum accepté par les navigateurs), `Secure` en ligne et `SameSite=Lax`, via `@supabase/ssr`.
+- Un **proxy** (`src/proxy.ts`, nom Next 16 du middleware) renouvelle la session à chaque visite si le jeton d'accès (1 h) a expiré. Il ne redirige jamais et ne bloque jamais une page.
+- Côté navigateur, le jeton se renouvelle **tout seul, en silence** (`autoRefreshToken` et `persistSession` activés). Le jeton de renouvellement, lui, n'expire pas.
+- Au lancement, un écran de chargement aux couleurs de la marque s'affiche **pendant la vérification de la session** : si tu es connecté, tu arrives directement sur « Aujourd'hui », sans voir l'écran de connexion.
+- **Réseau coupé au lancement** (cave, sous-sol) : tu restes connecté et l'app affiche les dernières données enregistrées sur le téléphone, avec un bandeau « Hors ligne ». Tu n'es renvoyé vers la connexion que si le serveur répond clairement que la session est invalide. Hors ligne, l'app est en lecture : les modifications ne sont enregistrées qu'avec du réseau.
+- Les anciennes sessions (avant les cookies) sont reprises automatiquement : pas besoin de se reconnecter une fois.
+
+**À savoir**
+- Les cookies ne sont pas `httpOnly` : les données sont lues directement depuis le navigateur (protégées par la RLS de la base), qui doit donc pouvoir lire la session.
+- **iPhone** : la session de **Safari n'est pas partagée** avec l'app ajoutée à l'écran d'accueil. Ajoute d'abord l'app (Partager → Sur l'écran d'accueil), puis **connecte-toi depuis l'icône**. L'app te le rappelle sur l'écran de connexion et à la première connexion.
+- Si tu supprimes l'app de l'écran d'accueil ou effaces les données du site, la session est perdue (il faut se reconnecter).
+
+**Réglages à vérifier dans Supabase** (les libellés peuvent varier) :
+1. **Authentication → Sessions** (ces options sont réservées au plan Pro ; sur le plan gratuit elles n'existent pas, donc rien n'est limité) :
+   - **Time-box user sessions** : désactivé (« Never »).
+   - **Inactivity timeout** : désactivé (« Never »).
+   - **Single session per user** : désactivé (sinon se connecter sur un 2e téléphone déconnecte le 1er).
+2. **Project Settings → JWT** (ou *API*) : **JWT expiry** laissé à 3600 s (valeur par défaut). Ne le raccourcis pas.
+3. **Authentication → Sessions / Advanced** : « Refresh token reuse interval » laissé à 10 s (par défaut).
+4. Ne clique pas sur « Sign out all sessions / Revoke » sauf si tu veux déconnecter tout le monde.
+
 ## Ce que la base stocke
 Prénom, email, tâches (et leur état « fait »), réglages, et plus tard les abonnements aux notifications push. Rien d'autre.
 

@@ -155,6 +155,7 @@ export default function SettingsPage() {
           type="button"
           disabled={busyOut}
           onClick={async () => {
+            if (!window.confirm("Te déconnecter ? Tu devras te reconnecter avec ton email et ton mot de passe.")) return;
             setBusyOut(true);
             await signOut();
           }}
@@ -162,6 +163,7 @@ export default function SettingsPage() {
         >
           {busyOut ? "Déconnexion…" : "Me déconnecter"}
         </button>
+        <p className="text-center text-xs text-mute">Tu restes connecté tant que tu ne te déconnectes pas ici.</p>
       </div>
     </>
   );

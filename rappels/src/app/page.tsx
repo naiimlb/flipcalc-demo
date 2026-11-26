@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useState } from "react";
 import { Header } from "@/components/Header";
 import { ImportLocalCard } from "@/components/ImportLocalCard";
+import { InstallHint } from "@/components/InstallHint";
 import { Skeleton } from "@/components/Skeleton";
 import { TaskRow } from "@/components/TaskRow";
 import { TeamBadge } from "@/components/TeamBadge";
@@ -42,6 +43,8 @@ export default function TodayPage() {
   return (
     <>
       <Header title={`Salut ${state.profile.prenom} 👋`} />
+
+      <InstallHint dismissible />
 
       <ImportLocalCard userId={state.profile.id} />
 

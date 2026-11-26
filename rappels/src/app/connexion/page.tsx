@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { InstallHint } from "@/components/InstallHint";
 import { AuthShell, ErrorMessage, inputCls, linkBtn, primaryBtn } from "@/components/AuthShell";
 import { PasswordInput } from "@/components/PasswordInput";
 import { signIn } from "@/lib/auth";
@@ -35,6 +36,7 @@ export default function LoginPage() {
         </>
       }
     >
+      <InstallHint />
       <form onSubmit={submit} noValidate className="space-y-3">
         <input
           type="email"

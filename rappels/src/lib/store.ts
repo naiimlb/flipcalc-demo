@@ -37,6 +37,44 @@ function saveNotified(uid: string, map: Record<string, true>) {
   }
 }
 
+// ----- copie locale : l'app reste utilisable (en lecture) quand le réseau est coupé -----
+const snapshotKey = (uid: string) => `hb-snapshot:${uid}`;
+type Snapshot = { v: 1; profile: Profile; tasks: AppState["tasks"]; done: AppState["done"]; settings: AppState["settings"] };
+
+function saveSnapshot(s: AppState) {
+  try {
+    const snap: Snapshot = { v: 1, profile: s.profile, tasks: s.tasks, done: s.done, settings: s.settings };
+    localStorage.setItem(snapshotKey(s.profile.id), JSON.stringify(snap));
+  } catch {
+    /* stockage plein ou indisponible : sans gravité */
+  }
+}
+
+export function readSnapshot(uid: string): Snapshot | null {
+  try {
+    const snap = JSON.parse(localStorage.getItem(snapshotKey(uid)) ?? "null") as Snapshot | null;
+    return snap && snap.v === 1 && snap.profile?.id === uid && Array.isArray(snap.tasks) ? snap : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Affiche les dernières données connues (réseau coupé au lancement). */
+export function applySnapshot(snap: Snapshot) {
+  state = { profile: snap.profile, tasks: snap.tasks, done: snap.done, settings: snap.settings, notified: loadNotified(snap.profile.id) };
+  emit();
+}
+
+/** À la déconnexion : on efface les données de ce compte sur ce téléphone. */
+export function clearSnapshot(uid: string) {
+  try {
+    localStorage.removeItem(snapshotKey(uid));
+    localStorage.removeItem(notifiedKey(uid));
+  } catch {
+    /* ignoré */
+  }
+}
+
 // ----- lecture -----
 async function fetchState(profile: Profile, notified: Record<string, true>): Promise<AppState> {
   const sb = getSupabase();
@@ -61,6 +99,7 @@ async function fetchState(profile: Profile, notified: Record<string, true>): Pro
 /** Charge les données du compte connecté (appelé une fois la session ouverte). */
 export async function loadStore(profile: Profile): Promise<void> {
   state = await fetchState(profile, loadNotified(profile.id));
+  saveSnapshot(state);
   // L'ancien historique de chat (fonction supprimée) n'a plus lieu d'être.
   try {
     localStorage.removeItem("hb-assistant:v1");
@@ -88,6 +127,7 @@ export async function refreshStore(force = false): Promise<void> {
     const fresh = await fetchState(state.profile, state.notified);
     if (state) {
       state = fresh;
+      saveSnapshot(fresh);
       emit();
     }
   } catch {
@@ -139,6 +179,7 @@ export function updateState(fn: (s: AppState) => AppState): Promise<boolean> {
   const next = fn(prev);
   state = next;
   if (next.notified !== prev.notified) saveNotified(next.profile.id, next.notified);
+  saveSnapshot(next);
   emit();
 
   const ops = diffState(prev, next);

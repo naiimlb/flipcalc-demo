@@ -34,7 +34,7 @@ Ouvre-la en vue mobile (390 px). Pour la tester sur ton iPhone, passe plutôt pa
 
 Tout est expliqué pas à pas dans **[docs/COMPTES.md](docs/COMPTES.md)** : création du projet, `supabase/schema.sql` (tables + sécurité RLS), clés, `.env.local`, Vercel, test avec 2 comptes.
 
-- Connexion et création de compte libres (email + mot de passe), session gardée sur le téléphone.
+- Connexion et création de compte libres (email + mot de passe). **Connexion persistante** : cookies de 400 jours renouvelés par un proxy, jeton renouvelé en silence, lancement tolérant au hors-ligne, déconnexion seulement par le bouton (avec confirmation) : voir [docs/COMPTES.md](docs/COMPTES.md#connexion-persistante-rester-connecté-des-semaines).
 - Rôles `caissier` (par défaut) et `responsable` (désigné à la main dans Supabase). Un caissier ne voit jamais les données d'un autre ; le responsable voit la liste des caissiers et peut leur assigner une tâche, rien de plus.
 - Sécurité testée sur le vrai schéma SQL dans un Postgres embarqué : `npm test` (`tests/rls.test.ts`).
 - `.env.local` : `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publiques) ; pour les push : `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CRON_SECRET` (voir `.env.example`).
