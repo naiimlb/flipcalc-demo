@@ -1,12 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { applySharedMeta, doneKey, parseDoneKey, rowToSettings, rowToTask, taskToFields, type DoneRow, type SettingsRow, type SharedMeta, type TaskRow } from "./db-map";
+import { applySharedMeta, doneKey, parseDoneKey, rowToSettings, rowToTask, rowToTransfer, taskToFields, type DoneRow, type SettingsRow, type SharedMeta, type TaskRow, type TransferRow } from "./db-map";
 import { addDays, dateKey, serviceDate } from "./service";
 import { getSupabase } from "./supabase";
 import { diffState, isEmptyOps, type SyncOps } from "./sync-diff";
 import { showToast } from "./toast";
-import type { AppState, Profile } from "./types";
+import type { AppState, OutcomeStatus, Profile } from "./types";
 
 // Données de l'utilisateur connecté (tâches, tâches faites, réglages, profil), stockées dans Supabase.
 // Les écrans lisent useAppState() et écrivent avec updateState() : l'écran change tout de suite,
@@ -40,11 +40,11 @@ function saveNotified(uid: string, map: Record<string, true>) {
 
 // ----- copie locale : l'app reste utilisable (en lecture) quand le réseau est coupé -----
 const snapshotKey = (uid: string) => `hb-snapshot:${uid}`;
-type Snapshot = { v: 1; profile: Profile; tasks: AppState["tasks"]; done: AppState["done"]; settings: AppState["settings"]; claims?: AppState["claims"] };
+type Snapshot = { v: 1; profile: Profile; tasks: AppState["tasks"]; done: AppState["done"]; settings: AppState["settings"]; claims?: AppState["claims"]; outcomes?: AppState["outcomes"]; transfers?: AppState["transfers"] };
 
 function saveSnapshot(s: AppState) {
   try {
-    const snap: Snapshot = { v: 1, profile: s.profile, tasks: s.tasks, done: s.done, settings: s.settings, claims: s.claims };
+    const snap: Snapshot = { v: 1, profile: s.profile, tasks: s.tasks, done: s.done, settings: s.settings, claims: s.claims, outcomes: s.outcomes, transfers: s.transfers };
     localStorage.setItem(snapshotKey(s.profile.id), JSON.stringify(snap));
   } catch {
     /* stockage plein ou indisponible : sans gravité */
@@ -62,7 +62,7 @@ export function readSnapshot(uid: string): Snapshot | null {
 
 /** Affiche les dernières données connues (réseau coupé au lancement). */
 export function applySnapshot(snap: Snapshot) {
-  state = { profile: snap.profile, tasks: snap.tasks, done: snap.done, settings: snap.settings, claims: snap.claims ?? {}, notified: loadNotified(snap.profile.id) };
+  state = { profile: snap.profile, tasks: snap.tasks, done: snap.done, settings: snap.settings, claims: snap.claims ?? {}, outcomes: snap.outcomes ?? {}, transfers: snap.transfers ?? [], notified: loadNotified(snap.profile.id) };
   emit();
 }
 
@@ -83,20 +83,31 @@ async function fetchState(profile: Profile, notified: Record<string, true>): Pro
   // Qui s'occupe de quoi : hier et aujourd'hui (une tâche de 01h30 appartient à la journée de la veille).
   const today = serviceDate(new Date());
   const claimDates = [addDays(today, -1), today, addDays(today, 1)].map(dateKey);
-  const [tasks, done, settings, shared, claims] = await Promise.all([
-    sb.from("tasks").select("id,user_id,assigned_by,title,category,at_time,days,once_date,team,remind,note,share_mode").order("created_at"),
+  const [tasks, done, settings, shared, claims, outcomes, transfers] = await Promise.all([
+    sb.from("tasks").select("id,user_id,assigned_by,title,category,at_time,days,once_date,team,remind,note,share_mode,created_at").order("created_at"),
     sb.from("task_done").select("task_id,service_date").gte("service_date", since),
-    sb.from("settings").select("default_remind,notify,handover_min,schedule").maybeSingle(),
+    sb.from("settings").select("default_remind,notify,handover_min,schedule,bilan_lead_min").maybeSingle(),
     sb.rpc("shared_with_me"),
     sb.rpc("claims_overview", { p_dates: claimDates }),
+    sb.rpc("my_outcomes", { p_since: since }),
+    sb.rpc("transfers_overview", { p_since: since }),
   ]);
   if (tasks.error) throw tasks.error;
   if (done.error) throw done.error;
   if (settings.error) throw settings.error;
   if (shared.error) throw shared.error;
   if (claims.error) throw claims.error;
+  if (outcomes.error) throw outcomes.error;
+  if (transfers.error) throw transfers.error;
   return {
     profile,
+    outcomes: Object.fromEntries(
+      ((outcomes.data as { task_id: string; service_date: string; status: string; reason: string | null }[]) ?? []).map((o) => [
+        doneKey(o.task_id, o.service_date),
+        { status: o.status as OutcomeStatus, ...(o.reason ? { reason: o.reason } : {}) },
+      ]),
+    ),
+    transfers: ((transfers.data as TransferRow[]) ?? []).map(rowToTransfer),
     tasks: applySharedMeta((tasks.data as TaskRow[]).map(rowToTask), (shared.data as SharedMeta[]) ?? [], profile.id),
     claims: Object.fromEntries(((claims.data as { task_id: string; service_date: string; user_id: string; prenom: string }[]) ?? []).map((c) => [doneKey(c.task_id, c.service_date), { userId: c.user_id, prenom: c.prenom }])),
     done: Object.fromEntries((done.data as DoneRow[]).map((d) => [doneKey(d.task_id, d.service_date), true as const])),
@@ -170,7 +181,7 @@ async function push(ops: SyncOps, next: AppState) {
   }
   if (ops.settingsChanged) {
     await check(
-      sb.from("settings").upsert({ user_id: uid, default_remind: next.settings.defaultRemind, notify: next.settings.notify, handover_min: next.settings.handover, schedule: next.settings.schedule, updated_at: new Date().toISOString() }, { onConflict: "user_id" }),
+      sb.from("settings").upsert({ user_id: uid, default_remind: next.settings.defaultRemind, notify: next.settings.notify, handover_min: next.settings.handover, schedule: next.settings.schedule, bilan_lead_min: next.settings.bilanLead, updated_at: new Date().toISOString() }, { onConflict: "user_id" }),
     );
   }
   if (ops.profileChanged) await check(sb.from("profiles").update({ prenom: next.profile.prenom }).eq("id", uid));

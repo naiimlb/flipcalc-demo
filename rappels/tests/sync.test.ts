@@ -10,7 +10,9 @@ const state = (extra: Partial<AppState> = {}): AppState => ({
   done: {},
   notified: {},
   claims: {},
-  settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: null },
+  outcomes: {},
+  transfers: [],
+  settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: null, bilanLead: 15 },
   profile: { id: "u1", email: "l@hb.fr", prenom: "Léa", role: "caissier" },
   ...extra,
 });
@@ -38,13 +40,13 @@ describe("diffState : ce qui part dans la base", () => {
   });
 
   it("détecte réglages et prénom", () => {
-    const ops = diffState(state(), state({ settings: { defaultRemind: 15, notify: true, handover: 1110, schedule: null }, profile: { id: "u1", email: "l@hb.fr", prenom: "Léa B.", role: "caissier" } }));
+    const ops = diffState(state(), state({ settings: { defaultRemind: 15, notify: true, handover: 1110, schedule: null, bilanLead: 15 }, profile: { id: "u1", email: "l@hb.fr", prenom: "Léa B.", role: "caissier" } }));
     expect(ops.settingsChanged && ops.profileChanged).toBe(true);
   });
 
   it("détecte relève, planning et équipe d'une tâche", () => {
-    expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1080, schedule: null } })).settingsChanged).toBe(true);
-    expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: "JSRJSR-" } })).settingsChanged).toBe(true);
+    expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1080, schedule: null, bilanLead: 15 } })).settingsChanged).toBe(true);
+    expect(diffState(state(), state({ settings: { defaultRemind: 5, notify: true, handover: 1110, schedule: "JSRJSR-", bilanLead: 15 } })).settingsChanged).toBe(true);
     expect(diffState(state(), state({ tasks: [task("a", { team: "soir" }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);
     expect(diffState(state(), state({ tasks: [task("a", { paused: true }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);
     expect(diffState(state(), state({ tasks: [task("a", { repeatEvery: 30, endTime: "18:00" }), task("b")] })).taskUpdates.map((t) => t.id)).toEqual(["a"]);

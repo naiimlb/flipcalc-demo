@@ -18,6 +18,7 @@ import { cleanPrenom, isPrenom } from "@/lib/validate";
 
 const card = "rounded-3xl bg-white p-4 shadow-card";
 const h2 = "h-street mb-3 text-xl";
+const BILAN_LEADS = [0, 5, 10, 15, 30, 45] as const;
 const field = "min-h-12 w-full rounded-2xl border-2 border-line bg-white px-4 text-[17px] font-semibold focus:border-pink";
 
 export default function SettingsPage() {
@@ -125,6 +126,28 @@ export default function SettingsPage() {
               <span className={`absolute top-1 size-7 rounded-full bg-white shadow transition-all ${settings.notify ? "left-8" : "left-1"}`} />
             </button>
           </div>
+        </section>
+
+        <section className={card}>
+          <h2 className={h2}>Bilan de fin de service</h2>
+          <p className="mb-2 text-sm font-semibold text-mute">Envoyer le bilan avant la fin de mon équipe</p>
+          <div className="grid grid-cols-3 gap-2" role="group" aria-label="Envoyer le bilan avant la fin">
+            {BILAN_LEADS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={settings.bilanLead === m}
+                onClick={() => void updateState((s) => ({ ...s, settings: { ...s.settings, bilanLead: m } }))}
+                className={`min-h-12 rounded-2xl border-2 px-1 text-sm font-bold leading-tight ${settings.bilanLead === m ? "border-pink bg-pink text-white" : "border-line bg-white"}`}
+              >
+                {m === 0 ? "À la fin" : `${m} min avant`}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-mute">
+            Fin de l&apos;équipe Jour = ta relève ({formatMinutes(settings.handover)}), fin de l&apos;équipe Soir = 02h00. Pas de notification s&apos;il ne reste rien. Il faut avoir indiqué ton équipe dans « Mon planning ».
+          </p>
+          <Link href="/historique" className="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-pink-deep underline underline-offset-4">Voir l&apos;historique</Link>
         </section>
 
         <section className={card}>

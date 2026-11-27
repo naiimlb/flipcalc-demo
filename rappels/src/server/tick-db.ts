@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { doneKey, rowToTask, type DoneRow, type TaskRow } from "@/lib/db-map";
-import type { Notice, Target, TickDb } from "./push-tick";
+import type { BilanReminder, Notice, Target, TickDb } from "./push-tick";
 
 type SubRow = { user_id: string; endpoint: string; p256dh: string; auth_key: string };
-type SettingRow = { user_id: string; notify: boolean; schedule: string | null };
+type SettingRow = { user_id: string; notify: boolean; schedule: string | null; handover_min?: number; bilan_lead_min?: number };
 type TickTask = TaskRow & { for_user?: string; shared?: boolean };
 type TickData = {
   subs: SubRow[];
@@ -11,15 +11,20 @@ type TickData = {
   tasks: TickTask[];
   done: (DoneRow & { user_id: string })[];
   claims?: { task_id: string; service_date: string; user_id: string }[];
+  outcomes?: { task_id: string; service_date: string; user_id: string; status: string }[];
+  transfers_in?: (TaskRow & { for_user: string; target_date: string })[];
 };
 type SubJson = { endpoint: string; p256dh: string; auth_key: string };
-type NoticeRow = { user_id: string; task_id: string; service_date?: string; title: string; subs: SubJson[]; owner_prenom?: string; claimer_prenom?: string };
+type NoticeRow = { user_id: string; task_id: string; service_date?: string; title: string; subs: SubJson[]; owner_prenom?: string; claimer_prenom?: string; who?: string | null; kind?: string; detail?: string | null; why?: string | null };
 const toNotice = (r: NoticeRow): Notice => ({
   userId: r.user_id,
   taskId: r.task_id,
   serviceDate: r.service_date,
   title: r.title,
-  who: r.owner_prenom ?? r.claimer_prenom,
+  who: r.owner_prenom ?? r.claimer_prenom ?? r.who ?? undefined,
+  kind: r.kind,
+  detail: r.detail,
+  why: r.why,
   subs: (r.subs ?? []).map((s) => ({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth_key })),
 });
 
@@ -39,10 +44,12 @@ export function createTickDb(sb: SupabaseClient, secret: string): TickDb {
       const d = await rpc<TickData>("push_tick_data", { p_dates: serviceDates });
       const muted = new Set(d.settings.filter((s) => !s.notify).map((s) => s.user_id));
       const schedule = new Map(d.settings.map((s) => [s.user_id, s.schedule]));
+      const handover = new Map(d.settings.map((s) => [s.user_id, s.handover_min === 1080 ? 1080 : 1110]));
+      const lead = new Map(d.settings.map((s) => [s.user_id, Number.isInteger(s.bilan_lead_min) ? (s.bilan_lead_min as number) : 15]));
       const byUser = new Map<string, Target>();
       for (const s of d.subs) {
         if (muted.has(s.user_id)) continue;
-        if (!byUser.has(s.user_id)) byUser.set(s.user_id, { userId: s.user_id, schedule: schedule.get(s.user_id) ?? null, subs: [], tasks: [], done: new Set(), claims: new Map() });
+        if (!byUser.has(s.user_id)) byUser.set(s.user_id, { userId: s.user_id, schedule: schedule.get(s.user_id) ?? null, subs: [], tasks: [], done: new Set(), claims: new Map(), outcomes: new Map(), handover: handover.get(s.user_id) ?? 1110, bilanLead: lead.get(s.user_id) ?? 15, transferTasks: [], transferIn: new Set() });
         byUser.get(s.user_id)!.subs.push({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth_key });
       }
       for (const t of d.tasks) {
@@ -53,6 +60,13 @@ export function createTickDb(sb: SupabaseClient, secret: string): TickDb {
         target.tasks.push(t.shared ? { ...task, shareStatus: "accepted" } : task);
       }
       for (const x of d.done) byUser.get(x.user_id)?.done.add(doneKey(x.task_id, x.service_date));
+      for (const o of d.outcomes ?? []) byUser.get(o.user_id)?.outcomes.set(doneKey(o.task_id, o.service_date), o.status);
+      for (const x of d.transfers_in ?? []) {
+        const target = byUser.get(x.for_user);
+        if (!target) continue;
+        target.transferTasks.push({ ...rowToTask(x), transferOnly: true });
+        target.transferIn.add(doneKey(x.id, x.target_date));
+      }
       for (const c of d.claims ?? []) {
         const key = doneKey(c.task_id, c.service_date);
         for (const target of byUser.values()) target.claims.set(key, c.user_id);
@@ -68,8 +82,13 @@ export function createTickDb(sb: SupabaseClient, secret: string): TickDb {
       return { relances: (r.relances ?? []).map(toNotice), postponed: (r.postponed ?? []).map(toNotice) };
     },
     async notices() {
-      const r = await rpc<{ shares: NoticeRow[]; claims: NoticeRow[] }>("push_notices", {});
-      return { shares: (r.shares ?? []).map(toNotice), claims: (r.claims ?? []).map(toNotice) };
+      const r = await rpc<{ shares: NoticeRow[]; claims: NoticeRow[]; outbox?: NoticeRow[] }>("push_notices", {});
+      return { shares: (r.shares ?? []).map(toNotice), claims: (r.claims ?? []).map(toNotice), outbox: (r.outbox ?? []).map(toNotice) };
+    },
+    bilanClaim: (userId, serviceDate, team, remaining) => rpc<boolean>("push_bilan_claim", { p_user: userId, p_date: serviceDate, p_team: team, p_remaining: remaining }),
+    async bilanReminders() {
+      const r = await rpc<{ user_id: string; service_date: string; team: string; subs: SubJson[] }[]>("push_bilan_reminders", {});
+      return (r ?? []).map((x): BilanReminder => ({ userId: x.user_id, serviceDate: x.service_date, team: x.team === "jour" ? "jour" : "soir", subs: (x.subs ?? []).map((s) => ({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth_key })) }));
     },
   };
 }

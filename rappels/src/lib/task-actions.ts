@@ -13,7 +13,7 @@ import type { Task } from "./types";
  */
 export async function setTaskDone(task: Task, date: string, makeDone: boolean): Promise<boolean> {
   const key = doneKey(task.id, date);
-  const shared = task.shareMode !== undefined || task.shareStatus !== undefined;
+  const shared = task.shareMode !== undefined || task.shareStatus !== undefined || task.transferOnly === true;
   if (makeDone && shared) {
     const r = await occAct(task.id, date, "done");
     if (!r.ok) {
@@ -29,5 +29,26 @@ export async function setTaskDone(task: Task, date: string, makeDone: boolean): 
     else delete done[key];
     return { ...s, done };
   });
+  return true;
+}
+
+/** « Refuser » : je ne ferai pas cette tâche aujourd'hui (motif facultatif). Notifie qui me l'a envoyée. */
+export async function declineTask(task: Task, date: string, reason: string): Promise<boolean> {
+  const r = await occAct(task.id, date, "decline", 10, reason);
+  if (!r.ok) {
+    showToast("⚠️ Pas enregistré", "Vérifie ta connexion et réessaie.");
+    return false;
+  }
+  await refreshStore(true);
+  return true;
+}
+
+/** « Laisser tomber » : la tâche est abandonnée pour cette journée (gardée dans l'historique). */
+export async function abandonTask(task: Task, date: string): Promise<boolean> {
+  const r = await occAct(task.id, date, "abandon");
+  if (!r.ok) {
+    showToast("⚠️ Pas enregistré", "Vérifie ta connexion et réessaie.");
+    return false;
+  }
   return true;
 }

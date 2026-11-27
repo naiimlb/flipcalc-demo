@@ -172,13 +172,21 @@ export type PlannedTask = {
   afterMidnight: boolean;
 };
 
-/** Toutes les tâches d'une journée de service, triées dans l'ordre de la journée (sans filtre d'équipe). */
-export function planForService(tasks: Task[], sDate: Date): PlannedTask[] {
+/**
+ * Toutes les tâches d'une journée de service, triées dans l'ordre de la journée (sans filtre d'équipe).
+ * `transferIn` : clés « tâche@journée » des tâches qu'un collègue m'a transmises ET que j'ai acceptées.
+ */
+export function planForService(tasks: Task[], sDate: Date, transferIn?: ReadonlySet<string>): PlannedTask[] {
   const dow = weekdayIndex(sDate);
   const key = dateKey(sDate);
   return tasks
-    // Une tâche partagée n'entre dans mon planning qu'une fois acceptée (en attente ou refusée : pas de rappel).
-    .filter((t) => !t.paused && (t.shareStatus === undefined || t.shareStatus === "accepted") && (t.date ? t.date === key : t.days.includes(dow)))
+    .filter((t) => {
+      if (t.paused) return false;
+      // Tâche transmise : elle n'existe pour moi QUE pour la journée acceptée (pas ses jours habituels).
+      if (t.transferOnly) return transferIn?.has(`${t.id}@${key}`) === true;
+      // Une tâche partagée n'entre dans mon planning qu'une fois acceptée (en attente ou refusée : pas de rappel).
+      return (t.shareStatus === undefined || t.shareStatus === "accepted") && (t.date ? t.date === key : t.days.includes(dow));
+    })
     .map((task) => ({
       task,
       at: occurrenceAt(task, sDate),
@@ -192,14 +200,41 @@ export function planForService(tasks: Task[], sDate: Date): PlannedTask[] {
  * Tâches à afficher (et à rappeler) pour ce caissier ce jour-là : celles de SON équipe d'après son planning.
  * Planning non indiqué : toutes les tâches. Jour de repos : aucune.
  */
-export function visiblePlan(tasks: Task[], sDate: Date, schedule: string | null): PlannedTask[] {
-  const plan = planForService(tasks, sDate);
+export function visiblePlan(tasks: Task[], sDate: Date, schedule: string | null, transferIn?: ReadonlySet<string>): PlannedTask[] {
+  const plan = planForService(tasks, sDate, transferIn);
   const dp = dayPlanFor(schedule, sDate);
   if (dp === null) return plan;
   if (dp === "R") return [];
   const team: Team = dp === "J" ? "jour" : "soir";
   // Une tâche qu'un collègue m'a partagée est pour moi, quelle que soit son équipe.
-  return plan.filter((p) => p.task.shareStatus !== undefined || p.task.team === "both" || p.task.team === team);
+  return plan.filter((p) => p.task.shareStatus !== undefined || p.task.transferOnly === true || p.task.team === "both" || p.task.team === team);
+}
+
+// ----- fin d'équipe, prochaine équipe -----
+/** Fin de l'équipe en « minutes étendues » : relève pour l'équipe Jour, 2h du matin (1560) pour l'équipe Soir. */
+export function teamEndExt(team: Team, handover: number): number {
+  return team === "jour" ? handover : SERVICE_END + 24 * 60;
+}
+
+/** Équipe de ce jour d'après mon planning (null : repos ou pas indiqué). */
+export function myTeam(schedule: string | null, sDate: Date): Team | null {
+  const dp = dayPlanFor(schedule, sDate);
+  return dp === "J" ? "jour" : dp === "S" ? "soir" : null;
+}
+
+/** Instant de la fin de l'équipe pour la journée de service `sDate`. */
+export function teamEndAt(team: Team, handover: number, sDate: Date): Date {
+  return slotInstant(sDate, teamEndExt(team, handover));
+}
+
+/** Prochaine équipe : Jour → équipe Soir du même jour ; Soir → équipe Jour du lendemain (11h). */
+export function nextShift(team: Team, sDate: Date): { team: Team; date: Date } {
+  return team === "jour" ? { team: "soir", date: sDate } : { team: "jour", date: addDays(sDate, 1) };
+}
+
+/** Début de l'équipe (11h pour le Jour, la relève pour le Soir), en minutes étendues. */
+export function teamStartExt(team: Team, handover: number): number {
+  return team === "jour" ? SERVICE_OPEN : handover;
 }
 
 /** Mode « un seul s'en occupe » : le collègue qui l'a prise (pas moi), sinon null. */

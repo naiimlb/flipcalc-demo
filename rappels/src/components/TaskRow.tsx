@@ -11,15 +11,17 @@ type Props = {
   onToggle: () => void;
   /** Mode « un seul s'en occupe » : prénom du collègue qui a pris la tâche (elle est alors grisée, sans rappel). */
   takenBy?: string;
+  /** Refusée / transmise / abandonnée : la tâche est grisée avec ce libellé et ne compte plus. */
+  outcomeLabel?: string;
 };
 
-export function TaskRow({ planned: { task, afterMidnight, key }, done, lateBy, onToggle, takenBy }: Props) {
-  const late = !done && !takenBy && lateBy > 0;
+export function TaskRow({ planned: { task, afterMidnight, key }, done, lateBy, onToggle, takenBy, outcomeLabel }: Props) {
+  const late = !done && !takenBy && !outcomeLabel && lateBy > 0;
   const date = key.split("@")[1] ?? "";
   return (
     <li
       className={`flex items-stretch gap-3 rounded-3xl p-3 shadow-card transition-colors ${
-        takenBy ? "bg-white/60 opacity-70" : late ? "bg-pink text-white" : done ? "bg-white/70" : "bg-white"
+        takenBy || outcomeLabel ? "bg-white/60 opacity-70" : late ? "bg-pink text-white" : done ? "bg-white/70" : "bg-white"
       }`}
     >
       <button
@@ -52,6 +54,8 @@ export function TaskRow({ planned: { task, afterMidnight, key }, done, lateBy, o
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-ink text-white"}`}>🌙 nuit</span>
           )}
           <ShareBadge task={task} light={late} />
+          {outcomeLabel && <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-white">{outcomeLabel}</span>}
+          {task.transferOnly && <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-pink-soft text-pink-deep"}`}>📥 Transmise</span>}
           {takenBy && <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-white">🙌 {takenBy} s&apos;en occupe</span>}
           {task.assigned && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${late ? "bg-white/25" : "bg-pink-soft text-pink-deep"}`}>📌 Assignée</span>

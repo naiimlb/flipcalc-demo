@@ -10,10 +10,11 @@ import { Skeleton } from "@/components/Skeleton";
 import { TaskRow } from "@/components/TaskRow";
 import { TeamBadge } from "@/components/TeamBadge";
 import { sampleTasks } from "@/lib/samples";
-import { claimedByOther, dayPlanFor, formatServiceDate, formatTime, isOutsideService, isServiceLive, planForService, serviceDate, visiblePlan } from "@/lib/service";
+import { claimedByOther, dateKey, dayPlanFor, formatServiceDate, formatTime, isOutsideService, isServiceLive, planForService, serviceDate, visiblePlan } from "@/lib/service";
 import { updateState, useAppState, useNowMs } from "@/lib/store";
+import { acceptedTransferKeys } from "@/lib/transfers";
 import { setTaskDone } from "@/lib/task-actions";
-import { isMine } from "@/lib/types";
+import { isMine, OCC_LABEL } from "@/lib/types";
 
 export default function TodayPage() {
   const state = useAppState();
@@ -26,12 +27,15 @@ export default function TodayPage() {
   const dp = dayPlanFor(state.settings.schedule, sDate);
   const resting = dp === "R" && !showAll;
   // Uniquement les tâches de mon équipe ce jour-là (planning non indiqué : toutes).
-  const plan = dp === "R" ? (showAll ? planForService(state.tasks, sDate) : []) : visiblePlan(state.tasks, sDate, state.settings.schedule);
+  const transferIn = acceptedTransferKeys(state.transfers, state.profile.id);
+  const plan = dp === "R" ? (showAll ? planForService(state.tasks, sDate, transferIn) : []) : visiblePlan(state.tasks, sDate, state.settings.schedule, transferIn);
   const live = isServiceLive(now);
   // Mode « un seul s'en occupe » : une tâche prise par un collègue est grisée et ne compte plus pour moi.
   const uid = state.profile.id;
   const takenBy = (key: string) => claimedByOther(state.claims, key, uid)?.prenom;
-  const mine = plan.filter((p) => !takenBy(p.key));
+  const outcomeLabel = (key: string) => (state.outcomes[key] ? OCC_LABEL[state.outcomes[key]!.status] : undefined);
+  // Refusées, transmises ou abandonnées : grisées, elles ne comptent ni dans la progression ni dans les retards.
+  const mine = plan.filter((p) => !takenBy(p.key) && !state.outcomes[p.key]);
   const doneCount = mine.filter((p) => state.done[p.key]).length;
   const lateCount = mine.filter((p) => !state.done[p.key] && p.at.getTime() < nowMs).length;
   // Anciennes tâches dont l'heure tombe entre 02h et 10h30 : hors des horaires du restaurant.
@@ -59,9 +63,12 @@ export default function TodayPage() {
               {live ? "🔥 Service en cours · 11h → 2h" : "⏳ Le service démarre à 11h"}
             </p>
           </div>
-          <Link href="/planning" aria-label="Mon planning" className="flex min-h-11 items-center">
-            {dp && dp !== "-" ? <TeamBadge plan={dp} /> : <span className="rounded-full border-2 border-pink px-3 py-1 text-xs font-extrabold text-pink-deep">Mon planning</span>}
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href={`/bilan?j=${dateKey(sDate)}`} aria-label="Bilan du service" className="flex min-h-11 items-center rounded-full border-2 border-line px-3 text-xs font-extrabold">📋 Bilan</Link>
+            <Link href="/planning" aria-label="Mon planning" className="flex min-h-11 items-center">
+              {dp && dp !== "-" ? <TeamBadge plan={dp} /> : <span className="rounded-full border-2 border-pink px-3 py-1 text-xs font-extrabold text-pink-deep">Mon planning</span>}
+            </Link>
+          </div>
         </div>
         <div className="mt-3 flex items-end justify-between">
           <p className="h-street text-4xl">
@@ -131,7 +138,7 @@ export default function TodayPage() {
       ) : (
         <ul className="space-y-3">
           {plan.map((p, i) => {
-            const late = live ? nowMs - p.at.getTime() : 0;
+            const late = live && !p.task.transferOnly ? nowMs - p.at.getTime() : 0;
             return (
               <Fragment key={p.key}>
                 {i === firstAfterMidnight && (
@@ -140,7 +147,7 @@ export default function TodayPage() {
                     <span className="h-px flex-1 bg-line" />
                   </li>
                 )}
-                <TaskRow planned={p} done={!!state.done[p.key]} lateBy={late} onToggle={() => toggle(p)} takenBy={takenBy(p.key)} />
+                <TaskRow planned={p} done={!!state.done[p.key]} lateBy={late} onToggle={() => toggle(p)} takenBy={takenBy(p.key)} outcomeLabel={outcomeLabel(p.key)} />
               </Fragment>
             );
           })}

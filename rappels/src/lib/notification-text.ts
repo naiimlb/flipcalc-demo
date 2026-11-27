@@ -39,3 +39,36 @@ export function buildShareNotification(ownerPrenom: string, title: string): Noti
 export function buildClaimNotification(claimerPrenom: string, title: string): NotificationContent {
   return { title: `🙌 ${claimerPrenom} s'en occupe : ${title}`, body: "Tu n'as plus rien à faire pour celle-ci." };
 }
+
+const plural = (n: number, one: string, many = `${one}s`) => (n > 1 ? many : one);
+
+/** Adresse du bilan d'une journée de service (et de mon équipe, si on la connaît). */
+export const bilanUrl = (serviceDate: string, team?: string) => `/bilan?j=${serviceDate}${team ? `&e=${team}` : ""}`;
+
+/** Bilan de fin de service : combien de tâches restent. */
+export function buildBilanNotification(remaining: number, reminder = false): NotificationContent {
+  const n = `${remaining} ${plural(remaining, "tâche")} non ${plural(remaining, "faite")}`;
+  return reminder
+    ? { title: "📋 Bilan du service", body: `Il te reste ${n}. Dernier rappel : touche pour faire le bilan.` }
+    : { title: `📋 Il te reste ${n}`, body: "Touche pour faire le bilan du service." };
+}
+
+/** Quelqu'un a refusé ma tâche (partagée, assignée ou transmise). */
+export function buildDeclinedNotification(who: string | null, title: string, reason?: string | null): NotificationContent {
+  return { title: `${who ?? "La prochaine équipe"} a refusé : ${title}`, body: reason || "Touche pour voir." };
+}
+
+/** Un collègue m'a transmis une tâche (à accepter ou refuser). */
+export function buildTransferNotification(who: string, title: string, message?: string | null): NotificationContent {
+  return { title: `${who} t'a transmis : ${title}`, body: message || "Touche pour accepter ou refuser." };
+}
+
+/** Ma transmission est restée sans réponse. */
+export function buildTransferExpiredNotification(who: string | null, title: string): NotificationContent {
+  return { title: `Pas de réponse : ${title}`, body: `${who ?? "Personne"} n'a pas répondu. La tâche te revient.` };
+}
+
+/** La tâche transmise et acceptée : c'est le début de mon équipe. */
+export function buildTransferStartNotification(who: string | null, title: string): NotificationContent {
+  return { title: `📥 À toi : ${title}`, body: who ? `Transmise par ${who}.` : "Tâche transmise." };
+}

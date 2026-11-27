@@ -29,6 +29,7 @@ export function diffState(prev: AppState, next: AppState): SyncOps {
     doneRemoves: Object.keys(prev.done).filter((k) => !next.done[k]),
     settingsChanged: prev.settings.defaultRemind !== next.settings.defaultRemind || prev.settings.notify !== next.settings.notify ||
       prev.settings.handover !== next.settings.handover ||
+      prev.settings.bilanLead !== next.settings.bilanLead ||
       prev.settings.schedule !== next.settings.schedule,
     profileChanged: prev.profile.prenom !== next.profile.prenom,
   };

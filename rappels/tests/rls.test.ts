@@ -641,3 +641,350 @@ describe("relances automatiques et notifications de partage", () => {
     }
   });
 });
+
+// =============================================================================================
+//  PAGE DÉTAIL (Fait / Plus tard / Refuser), TRANSMISSION, BILAN DE FIN DE SERVICE
+// =============================================================================================
+describe("page détail : vu, plus tard, refuser, reprendre", () => {
+  const SECRET = "secret-de-test";
+  const D = "2026-11-26";
+  let mine = ""; // tâche de Léa, jamais partagée
+  let assigned = ""; // tâche de Tom assignée par le responsable
+  let shared = ""; // tâche de Léa partagée avec Tom
+  const act = async (who: string, task: string, action: string, extra = "") => (await as(who, () => q(`select public.occ_act($1, $2, '${action}'${extra}) as r`, [task, D]))).rows[0]!.r as Record<string, unknown>;
+  const status = async (who: string, task: string) => (await as(who, () => q("select public.my_status($1, $2) as r", [task, D]))).rows[0]!.r as Record<string, unknown>;
+  const outbox = async () => (await q("select user_id, kind, who, detail from public.push_outbox order by id")).rows;
+  const newT = async (owner: string, title: string, extra = "") => (await q(`insert into public.tasks (user_id, title, category, at_time, days ${extra ? ", assigned_by" : ""}) values ($1, $2, 'Autre', '12:00', '{0,1,2,3,4,5,6}' ${extra ? ", $3" : ""}) returning id`, extra ? [owner, title, extra] : [owner, title])).rows[0]!.id as string;
+
+  beforeAll(async () => {
+    mine = await newT(ids.lea, "Compter le fond");
+    assigned = await newT(ids.tom, "Nettoyer la machine", ids.boss);
+    shared = await newT(ids.lea, "Vider les bacs");
+    await q("insert into public.task_shares (task_id, recipient_id, status, notified_at) values ($1, $2, 'accepted', now())", [shared, ids.tom]);
+    await q("delete from public.push_outbox");
+  });
+
+  it("ouvrir la page = « vue » (une seule ligne d'historique), et le statut le dit", async () => {
+    expect((await status(ids.lea, mine)).status).toBe("todo");
+    await act(ids.lea, mine, "seen");
+    await act(ids.lea, mine, "seen");
+    expect((await status(ids.lea, mine)).status).toBe("seen");
+    expect((await q("select count(*)::int as n from public.task_events where task_id = $1 and action = 'seen'", [mine])).rows[0]!.n).toBe(1);
+  });
+
+  it("« Rappelle-moi plus tard » : durée libre (bornée), statut « reportée », jamais relancée pendant le délai", async () => {
+    await as(null, () => q("select public.push_claim($1, $2, $3, $4, '2026-11-26T11:00:00Z')", [SECRET, ids.lea, mine, D]));
+    await q("update public.task_occurrences set last_sent_at = now() - interval '10 minutes' where task_id = $1", [mine]);
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/lea', 'k', 'a') on conflict do nothing", [ids.lea]);
+    await act(ids.lea, mine, "postpone", ", 45");
+    const st = await status(ids.lea, mine);
+    expect(st.status).toBe("postponed");
+    const mins = (await q("select extract(epoch from (postponed_until - now()))/60 as m from public.task_occurrences where task_id = $1 and status = 'postponed'", [mine])).rows[0]!.m as number;
+    expect(Math.round(mins)).toBe(45);
+    const fu = (await as(null, () => q("select public.push_followups($1) as r", [SECRET]))).rows[0]!.r as { relances: unknown[]; postponed: unknown[] };
+    expect(fu.relances).toHaveLength(0); // la relance des 5 min est suspendue
+    expect(fu.postponed).toHaveLength(0); // et le rappel reporté n'est pas encore dû
+    await act(ids.lea, mine, "postpone", ", 5000"); // borne : 720 min au plus
+    expect(Math.round((await q("select extract(epoch from (max(postponed_until) - now()))/60 as m from public.task_occurrences where task_id = $1", [mine])).rows[0]!.m as number)).toBe(720);
+    await act(ids.lea, mine, "postpone", ", 10");
+    await q("update public.task_occurrences set postponed_until = now() - interval '1 minute' where task_id = $1 and status = 'postponed'", [mine]);
+    const due = (await as(null, () => q("select public.push_followups($1) as r", [SECRET]))).rows[0]!.r as { postponed: { title: string; why: unknown }[] };
+    expect(due.postponed.map((x) => x.title)).toContain("Compter le fond"); // revient à l'heure choisie
+  });
+
+  it("« Refuser » ma propre tâche : annulée pour aujourd'hui, personne n'est notifié, plus de relance", async () => {
+    await act(ids.lea, mine, "decline", ", 10, 'pas aujourd''hui'");
+    expect((await status(ids.lea, mine))).toMatchObject({ status: "declined", reason: "pas aujourd'hui" });
+    expect((await outbox()).filter((o) => o.kind === "declined")).toHaveLength(0);
+    await q("update public.task_occurrences set status = 'sent', last_sent_at = now() - interval '10 minutes' where task_id = $1", [mine]);
+    const fu = (await as(null, () => q("select public.push_followups($1) as r", [SECRET]))).rows[0]!.r as { relances: unknown[] };
+    expect(fu.relances).toHaveLength(0); // une tâche refusée n'est jamais relancée
+    // un autre jour n'est pas touché
+    expect((await as(ids.lea, () => q("select public.my_status($1, '2026-11-27') as r", [mine]))).rows[0]!.r).toMatchObject({ status: "todo" });
+  });
+
+  it("« Refuser » une tâche assignée : le responsable est notifié ; partagée : le créateur est notifié", async () => {
+    await act(ids.tom, assigned, "decline", ", 10, 'en panne'");
+    await act(ids.tom, shared, "decline");
+    const o = await outbox();
+    expect(o.find((x) => x.user_id === ids.boss)).toMatchObject({ kind: "declined", who: "Tom", detail: "en panne" });
+    expect(o.find((x) => x.user_id === ids.lea)).toMatchObject({ kind: "declined", who: "Tom", detail: null });
+  });
+
+  it("le motif est limité à une ligne (140 caractères)", async () => {
+    const t = await newT(ids.lea, "Tâche motif");
+    await act(ids.lea, t, "decline", `, 10, '${"x".repeat(300)}'`);
+    expect(((await status(ids.lea, t)).reason as string).length).toBe(140);
+  });
+
+  it("« Fait » après un refus : la tâche redevient faite ; « Reprendre » annule le refus ; « Laisser tomber » est gardé", async () => {
+    await act(ids.tom, assigned, "done");
+    expect((await status(ids.tom, assigned)).status).toBe("done");
+    expect((await q("select count(*)::int as n from public.task_outcomes where task_id = $1", [assigned])).rows[0]!.n).toBe(0);
+    await act(ids.tom, shared, "reopen");
+    expect((await status(ids.tom, shared)).status).toBe("todo");
+    await act(ids.tom, shared, "abandon");
+    expect((await status(ids.tom, shared)).status).toBe("abandoned");
+    expect((await q("select count(*)::int as n from public.tasks where id = $1", [shared])).rows[0]!.n).toBe(1); // pas supprimée
+  });
+
+  it("historique : qui, quand, quoi — visible par ceux qui voient la tâche, refusé aux autres", async () => {
+    const h = await as(ids.lea, () => q("select prenom, action, detail from public.task_history($1, $2)", [shared, D]));
+    expect(h.rows.map((r) => [r.prenom, r.action])).toEqual(expect.arrayContaining([["Tom", "declined"], ["Tom", "reopened"], ["Tom", "abandoned"]]));
+    expect((await as(ids.tom, () => q("select * from public.task_history($1, $2)", [shared, D]))).rows.length).toBeGreaterThan(0);
+    expect(await fails(() => as(ids.boss, () => q("select * from public.task_history($1, $2)", [shared, D])))).toBe(true);
+    expect(await fails(() => as(ids.boss, () => q("select public.my_status($1, $2)", [mine, D])))).toBe(true);
+  });
+
+  it("« fait » est écrit dans l'historique (même coché sans passer par la page)", async () => {
+    const t = await newT(ids.lea, "Cochée à la main");
+    await as(ids.lea, () => q("insert into public.task_done (task_id, service_date, user_id) values ($1, $2, $3)", [t, D, ids.lea]));
+    expect((await q("select action, actor_id from public.task_events where task_id = $1", [t])).rows).toEqual([{ action: "done", actor_id: ids.lea }]);
+  });
+
+  it("mes issues : chacun ne lit que les siennes ; un étranger ne peut pas agir", async () => {
+    expect((await as(ids.tom, () => q("select task_id from public.my_outcomes('2026-11-01')"))).rows.map((r) => r.task_id)).toEqual([shared]);
+    expect((await as(ids.boss, () => q("select * from public.my_outcomes('2026-11-01')"))).rows).toHaveLength(0);
+    expect(await fails(() => act(ids.boss, mine, "decline"))).toBe(true);
+    expect(await fails(() => act(ids.lea, mine, "supprimer"))).toBe(true);
+    expect(await as(ids.lea, () => q("select * from public.task_outcomes").then(() => false, () => true))).toBe(true); // table fermée
+  });
+});
+
+describe("transmission à la prochaine équipe", () => {
+  const SECRET = "secret-de-test";
+  const D = "2026-11-26"; // jeudi
+  const N = "2026-11-27"; // vendredi
+  let zoe = "";
+  let max = "";
+  let jade = "";
+  let t1 = "";
+  const outbox = async (kind?: string) => (await q("select user_id, kind, who, detail, sent_at from public.push_outbox where ($1::text is null or kind = $1) order by id", [kind ?? null])).rows;
+  const newT = async (title: string, owner = ids.lea) => (await q("insert into public.tasks (user_id, title, category, at_time, days) values ($1, $2, 'Autre', '15:00', '{0,1,2,3,4,5,6}') returning id", [owner, title])).rows[0]!.id as string;
+  const send = async (who: string, task: string, to: string[] | null, extra = { date: D, target: D, team: "soir", msg: null as string | null }) =>
+    (await as(who, () => q("select public.transfer_send($1, $2, $3::uuid[], $4, $5, $6) as r", [task, extra.date, to, extra.target, extra.team, extra.msg]))).rows[0]!.r as Record<string, unknown>;
+  const respond = async (who: string, id: string, accept: boolean) => (await as(who, () => q("select public.transfer_respond($1, $2) as r", [id, accept]))).rows[0]!.r as Record<string, unknown>;
+  const rows = async (task: string) => (await q("select id, to_user, status, group_id from public.task_transfers where task_id = $1 order by created_at, id", [task])).rows;
+  const notices = async () => (await as(null, () => q("select public.push_notices($1) as r", [SECRET]))).rows[0]!.r as { outbox: { kind: string; user_id: string; who: string | null; title: string; detail: string | null }[] };
+
+  beforeAll(async () => {
+    zoe = await newUser("zoe@hb.fr", "Zoé");
+    max = await newUser("max@hb.fr", "Max");
+    jade = await newUser("jade@hb.fr", "Jade");
+    // planning lun → dim : jeudi = 4e lettre
+    await q("update public.settings set schedule = '---S---' where user_id in ($1, $2)", [zoe, max]); // Soir le jeudi
+    await q("update public.settings set schedule = '---J---' where user_id = $1", [jade]); // Jour le jeudi
+    await q("update public.settings set schedule = '----J--' where user_id = $1", [zoe]); // …puis Zoé : Jour le vendredi
+    await q("update public.settings set schedule = '---SJ--' where user_id = $1", [zoe]);
+    await q("update public.settings set schedule = '---S---' where user_id = $1", [ids.lea]);
+    t1 = await newT("Faire la clôture");
+    await q("delete from public.push_outbox");
+  });
+
+  it("la prochaine équipe = les collègues dont le planning indique cette équipe ce jour-là (prénoms seulement)", async () => {
+    const soir = await as(ids.lea, () => q("select * from public.next_team_members($1, 'soir')", [D]));
+    expect(soir.rows.map((r) => r.prenom).sort()).toEqual(["Max", "Zoé"]);
+    expect(Object.keys(soir.rows[0]!).sort()).toEqual(["id", "prenom"]);
+    expect((await as(ids.lea, () => q("select prenom from public.next_team_members($1, 'jour')", [D]))).rows.map((r) => r.prenom)).toEqual(["Jade"]);
+    expect((await as(ids.lea, () => q("select prenom from public.next_team_members($1, 'jour')", [N]))).rows.map((r) => r.prenom)).toEqual(["Zoé"]); // Soir → équipe Jour du lendemain
+    expect(await as(null, () => q("select * from public.next_team_members($1, 'soir')", [D]).then(() => false, () => true))).toBe(true); // refusé aux anonymes
+  });
+
+  it("transmettre à toute l'équipe : une demande par membre, notification « Prénom t'a transmis », la tâche est marquée transmise", async () => {
+    const r = await send(ids.lea, t1, null, { date: D, target: D, team: "soir", msg: "Il manque 20 € de monnaie" });
+    expect(r).toMatchObject({ ok: true, count: 2, whole_team: true });
+    const rs = await rows(t1);
+    expect(rs).toHaveLength(2);
+    expect(new Set(rs.map((x) => x.group_id)).size).toBe(1);
+    expect((await outbox("transfer")).map((o) => [o.user_id, o.who, o.detail]).sort()).toEqual([[zoe, "Léa B.", "Il manque 20 € de monnaie"], [max, "Léa B.", "Il manque 20 € de monnaie"]].sort());
+    expect((await as(ids.lea, () => q("select public.my_status($1, $2) as r", [t1, D]))).rows[0]!.r).toMatchObject({ status: "handed", handed_to: "toute la prochaine équipe" });
+  });
+
+  it("interdits : retransmettre, tâche déjà faite, mauvaise date/équipe, collègue invalide, équipe vide, étranger", async () => {
+    expect(await fails(() => send(ids.lea, t1, null))).toBe(true); // déjà transmise
+    const done = await newT("Déjà faite");
+    await q("insert into public.task_done (task_id, service_date, user_id) values ($1, $2, $3)", [done, D, ids.lea]);
+    expect(await fails(() => send(ids.lea, done, [zoe]))).toBe(true);
+    const t = await newT("Autre tâche");
+    expect(await fails(() => send(ids.lea, t, [zoe], { date: D, target: "2026-11-29", team: "soir", msg: null }))).toBe(true); // trop loin
+    expect(await fails(() => send(ids.lea, t, [zoe], { date: D, target: D, team: "nuit", msg: null }))).toBe(true);
+    expect(await fails(() => send(ids.lea, t, [ids.boss]))).toBe(true); // un responsable n'est pas un caissier
+    expect(await fails(() => send(ids.lea, t, [ids.lea]))).toBe(true); // soi-même
+    expect(await fails(() => send(ids.lea, t, null, { date: D, target: N, team: "soir", msg: null }))).toBe(true); // personne en équipe Soir vendredi
+    expect(await fails(() => send(ids.tom, t, [zoe]))).toBe(true); // Tom n'a aucun droit sur cette tâche
+    expect((await rows(t))).toHaveLength(0);
+  });
+
+  it("le destinataire voit la tâche (et elle seule), ne peut ni la modifier ni agir tant qu'il n'a pas accepté", async () => {
+    for (const u of [zoe, max]) {
+      expect((await as(u, () => q("select title from public.tasks"))).rows.map((r) => r.title)).toContain("Faire la clôture");
+      expect((await as(u, () => q("update public.tasks set title = 'x' where id = $1 returning id", [t1]))).rows).toHaveLength(0);
+      expect(await fails(() => as(u, () => q("select public.occ_act($1, $2, 'seen')", [t1, D])))).toBe(true); // pas encore accepté
+    }
+    expect((await as(jade, () => q("select title from public.tasks"))).rows.map((r) => r.title)).not.toContain("Faire la clôture"); // l'équipe Jour ne la voit pas
+    const mineOnly = await as(zoe, () => q("select to_prenom, from_prenom, status from public.transfers_overview('2026-11-01')"));
+    expect(mineOnly.rows).toEqual([{ to_prenom: "Zoé", from_prenom: "Léa B.", status: "pending" }]); // elle ne voit pas la ligne de Max
+    expect((await as(ids.lea, () => q("select * from public.transfers_overview('2026-11-01')"))).rows).toHaveLength(2); // l'expéditeur voit tout
+    expect((await as(jade, () => q("select * from public.transfers_overview('2026-11-01')"))).rows).toHaveLength(0);
+  });
+
+  it("toute l'équipe : le premier qui accepte la prend, l'autre voit « Zoé la prend » ; un rappel est prévu au début de l'équipe", async () => {
+    const [rz, rm] = [(await rows(t1)).find((x) => x.to_user === zoe)!, (await rows(t1)).find((x) => x.to_user === max)!];
+    expect(await respond(zoe, rz.id as string, true)).toEqual({ ok: true });
+    expect(await respond(max, rm.id as string, true)).toEqual({ ok: false, taken_by: "Zoé" });
+    expect((await rows(t1)).map((x) => x.status).sort()).toEqual(["accepted", "closed"]);
+    expect(await respond(max, rm.id as string, true)).toMatchObject({ ok: false, taken_by: "Zoé" }); // réponse déjà donnée
+    const occ = (await q("select status, reason, service_date::text as d, postponed_until from public.task_occurrences where task_id = $1 and user_id = $2", [t1, zoe])).rows[0]!;
+    expect(occ).toMatchObject({ status: "postponed", reason: "transfer", d: D });
+    expect(await fails(() => respond(max, rz.id as string, true))).toBe(true); // ce n'est pas sa demande
+    // Zoé peut maintenant agir ; Max et Jade non
+    await as(zoe, () => q("select public.occ_act($1, $2, 'done')", [t1, D]));
+    expect(await fails(() => as(max, () => q("insert into public.task_done (task_id, service_date, user_id) values ($1, $2, $3)", [t1, D, max])))).toBe(true);
+    expect(await fails(() => as(jade, () => q("select public.occ_act($1, $2, 'done')", [t1, D])))).toBe(true);
+    expect((await as(max, () => q("select public.my_status($1, $2) as r", [t1, D]))).rows[0]!.r).toMatchObject({ status: "todo" });
+  });
+
+  it("le rappel d'une tâche transmise part au début de l'équipe : « Prénom t'a transmis », avec le prénom de l'expéditeur", async () => {
+    const t = await newT("À reprendre au début du service");
+    await send(ids.lea, t, [zoe], { date: "2027-03-10", target: "2027-03-10", team: "soir", msg: null });
+    await respond(zoe, (await rows(t))[0]!.id as string, true);
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/zoe', 'k', 'a') on conflict do nothing", [zoe]);
+    const fu = async () => (await as(null, () => q("select public.push_followups($1) as r", [SECRET]))).rows[0]!.r as { postponed: { title: string; why: string; who: string; user_id: string }[] };
+    expect((await fu()).postponed.some((x) => x.title === "À reprendre au début du service")).toBe(false); // l'équipe n'a pas commencé
+    await q("update public.task_occurrences set postponed_until = now() - interval '1 minute' where task_id = $1", [t]);
+    expect((await fu()).postponed.find((x) => x.title === "À reprendre au début du service")).toMatchObject({ why: "transfer", who: "Léa B.", user_id: zoe });
+    expect((await fu()).postponed.some((x) => x.title === "À reprendre au début du service")).toBe(false); // une seule fois
+  });
+
+  it("heure de début de l'équipe Soir = relève du collègue, à l'heure de Paris (heure d'hiver : 18h30 = 17h30 UTC)", async () => {
+    const t = await newT("Test heure");
+    await send(ids.lea, t, [zoe], { date: "2027-02-10", target: "2027-02-10", team: "soir", msg: null });
+    const rz = (await rows(t))[0]!;
+    await respond(zoe, rz.id as string, true);
+    const at = (await q("select to_char(postponed_until at time zone 'UTC', 'YYYY-MM-DD HH24:MI') as u from public.task_occurrences where task_id = $1", [t])).rows[0]!.u;
+    expect(at).toBe("2027-02-10 17:30"); // 18h30 à Paris en hiver
+    const t2 = await newT("Test heure été");
+    await send(ids.lea, t2, [zoe], { date: "2027-07-10", target: "2027-07-10", team: "soir", msg: null });
+    await respond(zoe, (await rows(t2))[0]!.id as string, true);
+    expect((await q("select to_char(postponed_until at time zone 'UTC', 'YYYY-MM-DD HH24:MI') as u from public.task_occurrences where task_id = $1", [t2])).rows[0]!.u).toBe("2027-07-10 16:30"); // 18h30 à Paris en été
+  });
+
+  it("refus : l'expéditeur est prévenu « Zoé a refusé », la tâche lui revient et il peut la retransmettre", async () => {
+    const t = await newT("Ranger la réserve");
+    await send(ids.lea, t, [zoe]);
+    await q("delete from public.push_outbox");
+    const r = (await rows(t))[0]!;
+    expect(await respond(zoe, r.id as string, false)).toEqual({ ok: true });
+    expect((await outbox("transfer_declined"))).toEqual([expect.objectContaining({ user_id: ids.lea, who: "Zoé" })]);
+    expect((await as(ids.lea, () => q("select public.my_status($1, $2) as r", [t, D]))).rows[0]!.r).toMatchObject({ status: "todo" });
+    expect(await respond(zoe, r.id as string, true)).toMatchObject({ ok: false, state: "declined" });
+    expect(await send(ids.lea, t, [max])).toMatchObject({ ok: true }); // retransmettre à quelqu'un d'autre
+  });
+
+  it("toute l'équipe : un seul message à l'expéditeur, quand le DERNIER a refusé", async () => {
+    const t = await newT("Nettoyer la vitrine");
+    await send(ids.lea, t, null);
+    await q("delete from public.push_outbox");
+    const [a, b] = await rows(t);
+    await respond(a!.to_user as string, a!.id as string, false);
+    expect(await outbox("transfer_declined")).toHaveLength(0); // l'autre peut encore accepter
+    await respond(b!.to_user as string, b!.id as string, false);
+    expect(await outbox("transfer_declined")).toEqual([expect.objectContaining({ user_id: ids.lea, who: null })]); // « la prochaine équipe a refusé »
+  });
+
+  it("pas de réponse dans le délai (réglable) : clôturée, l'expéditeur est prévenu UNE fois", async () => {
+    const t = await newT("Sans réponse");
+    await send(ids.lea, t, [zoe]);
+    await notices(); // vide la boîte (message « t'a transmis »)
+    expect((await rows(t))[0]!.status).toBe("pending");
+    const cfg = (await q("select value from public.app_config where key = 'transfer_timeout_min'")).rows[0]!.value;
+    expect(cfg).toBe(60);
+    await q("update public.task_transfers set expires_at = now() + interval '5 minutes' where task_id = $1", [t]);
+    expect((await notices()).outbox.filter((o) => o.kind === "transfer_expired")).toHaveLength(0); // pas encore
+    await q("update public.task_transfers set expires_at = now() - interval '1 minute' where task_id = $1", [t]);
+    const n = await notices();
+    expect(n.outbox.filter((o) => o.kind === "transfer_expired")).toEqual([expect.objectContaining({ user_id: ids.lea, who: "Zoé", title: "Sans réponse" })]);
+    expect((await notices()).outbox.filter((o) => o.kind === "transfer_expired")).toHaveLength(0); // une seule fois
+    expect((await rows(t))[0]!.status).toBe("expired");
+    expect((await as(ids.lea, () => q("select public.my_status($1, $2) as r", [t, D]))).rows[0]!.r).toMatchObject({ status: "todo" });
+    expect(await respond(zoe, (await rows(t))[0]!.id as string, true)).toMatchObject({ ok: false, state: "expired" });
+  });
+
+  it("la boîte d'envoi ne renvoie jamais deux fois la même notification", async () => {
+    const t = await newT("Une seule notif");
+    await send(ids.lea, t, [zoe]);
+    const a = (await notices()).outbox.filter((o) => o.title === "Une seule notif");
+    expect(a).toEqual([expect.objectContaining({ kind: "transfer", user_id: zoe, who: "Léa B." })]);
+    expect((await notices()).outbox.filter((o) => o.title === "Une seule notif")).toHaveLength(0);
+  });
+
+  it("accepter puis refuser : la tâche retourne à l'expéditeur, prévenu ; « fait » côté expéditeur ferme une demande en attente", async () => {
+    const t = await newT("Accepter puis refuser");
+    await send(ids.lea, t, [zoe]);
+    await respond(zoe, (await rows(t))[0]!.id as string, true);
+    await q("delete from public.push_outbox");
+    await as(zoe, () => q("select public.occ_act($1, $2, 'decline')", [t, D]));
+    expect((await rows(t))[0]!.status).toBe("declined");
+    expect(await outbox("declined")).toHaveLength(0); // pas de double message
+    expect(await outbox("transfer_declined")).toEqual([expect.objectContaining({ user_id: ids.lea, who: "Zoé" })]);
+    const t2 = await newT("Faite par moi finalement");
+    await send(ids.lea, t2, [max]);
+    await as(ids.lea, () => q("select public.occ_act($1, $2, 'done')", [t2, D]));
+    expect((await rows(t2))[0]!.status).toBe("closed");
+    expect((await as(ids.lea, () => q("select public.my_status($1, $2) as r", [t2, D]))).rows[0]!.r).toMatchObject({ status: "done" });
+  });
+
+  it("le planificateur reçoit les tâches acceptées (transfers_in), les issues, et les réglages du bilan", async () => {
+    const t = await newT("Pour le planificateur");
+    await send(ids.lea, t, [zoe]);
+    await respond(zoe, (await rows(t))[0]!.id as string, true);
+    const d = (await as(null, () => q("select public.push_tick_data($1, $2::date[]) as d", [SECRET, [D]]))).rows[0]!.d as { transfers_in: { title: string; for_user: string; target_date: string }[]; outcomes: { status: string }[]; settings: { user_id: string; handover_min: number; bilan_lead_min: number }[] };
+    expect(d.transfers_in.find((x) => x.title === "Pour le planificateur")).toMatchObject({ for_user: zoe, target_date: D });
+    expect(d.outcomes.some((o) => o.status === "handed")).toBe(true);
+    expect(d.settings.find((s) => s.user_id === zoe)).toMatchObject({ handover_min: 1110, bilan_lead_min: 15 });
+  });
+});
+
+describe("bilan de fin de service", () => {
+  const SECRET = "secret-de-test";
+  const D = "2026-11-26";
+  const claim = async (user: string, team = "soir", remaining = 3) => (await as(null, () => q("select public.push_bilan_claim($1, $2, $3, $4, $5) as ok", [SECRET, user, D, team, remaining]))).rows[0]!.ok;
+  const reminders = async () => (await as(null, () => q("select public.push_bilan_reminders($1) as r", [SECRET]))).rows[0]!.r as { user_id: string; team: string }[];
+
+  it("verrou : un seul bilan par personne, journée et équipe", async () => {
+    expect(await claim(ids.tom)).toBe(true);
+    expect(await claim(ids.tom)).toBe(false);
+    expect(await claim(ids.tom, "jour")).toBe(true); // une autre équipe, un autre bilan
+    expect(await claim(ids.lea)).toBe(true);
+  });
+
+  it("second rappel : 10 minutes plus tard seulement, une seule fois, jamais si le bilan a été ouvert", async () => {
+    expect(await reminders()).toHaveLength(0); // trop tôt
+    await q("update public.service_reports set sent_at = now() - interval '11 minutes'");
+    await as(ids.lea, () => q("select public.bilan_open($1)", [D])); // Léa ouvre son bilan
+    const r = await reminders();
+    expect(r.map((x) => x.user_id).sort()).toEqual([ids.tom, ids.tom].sort()); // Tom (soir et jour), pas Léa
+    expect(await reminders()).toHaveLength(0); // jamais un troisième message
+  });
+
+  it("on ne peut ouvrir que son propre bilan", async () => {
+    await claim(ids.boss, "soir");
+    await as(ids.lea, () => q("select public.bilan_open($1)", [D]));
+    expect((await q("select opened_at from public.service_reports where user_id = $1", [ids.boss])).rows[0]!.opened_at).toBeNull();
+  });
+
+  it("réglage « bilan X minutes avant la fin » : 15 par défaut, entre 0 et 120", async () => {
+    expect((await q("select bilan_lead_min from public.settings where user_id = $1", [ids.lea])).rows[0]!.bilan_lead_min).toBe(15);
+    await as(ids.lea, () => q("update public.settings set bilan_lead_min = 30 where user_id = $1", [ids.lea]));
+    expect((await q("select bilan_lead_min from public.settings where user_id = $1", [ids.lea])).rows[0]!.bilan_lead_min).toBe(30);
+    expect(await fails(() => as(ids.lea, () => q("update public.settings set bilan_lead_min = 500 where user_id = $1", [ids.lea])))).toBe(true);
+  });
+
+  it("les fonctions du planificateur refusent un mauvais secret ; les tables sont fermées", async () => {
+    expect(await fails(() => as(null, () => q("select public.push_bilan_reminders('mauvais')")))).toBe(true);
+    expect(await fails(() => as(null, () => q("select public.push_bilan_claim('mauvais', $1, $2, 'soir', 1)", [ids.lea, D])))).toBe(true);
+    for (const t of ["service_reports", "task_transfers", "push_outbox", "task_events", "task_outcomes"]) {
+      expect(await fails(() => as(ids.lea, () => q(`select * from public.${t}`)))).toBe(true);
+    }
+  });
+});

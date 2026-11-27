@@ -6,7 +6,7 @@ import type { ShareMode, ShareStatus } from "./types";
 // Appels vers les fonctions SQL de partage (supabase/schema.sql). Tout est contrôlé côté base (RLS + fonctions).
 export type Colleague = { id: string; prenom: string };
 export type Participant = { userId: string; prenom: string; isOwner: boolean; shareStatus: ShareStatus; progress: "sent" | "seen" | "taken" | "done" };
-export type ActAction = "seen" | "taken" | "done" | "postpone";
+export type ActAction = "seen" | "taken" | "done" | "postpone" | "decline" | "abandon" | "reopen";
 export type ActResult = { ok: true } | { ok: false; takenBy: string } | { ok: false; error: string };
 
 const fail = (e: { message: string }) => new Error(e.message);
@@ -44,8 +44,8 @@ export async function shareOverview(taskId: string, date: string): Promise<Parti
 }
 
 /** Une réaction sur une tâche (vu, je m'en occupe, fait, reporter) : arrête les relances. */
-export async function occAct(taskId: string, date: string, action: ActAction, minutes = 10): Promise<ActResult> {
-  const { data, error } = await getSupabase().rpc("occ_act", { p_task: taskId, p_date: date, p_action: action, p_minutes: minutes });
+export async function occAct(taskId: string, date: string, action: ActAction, minutes = 10, reason?: string): Promise<ActResult> {
+  const { data, error } = await getSupabase().rpc("occ_act", { p_task: taskId, p_date: date, p_action: action, p_minutes: minutes, p_reason: reason ?? null });
   if (error) return { ok: false, error: error.message };
   const r = data as { ok: boolean; taken_by?: string };
   return r.ok ? { ok: true } : { ok: false, takenBy: r.taken_by ?? "Un collègue" };
