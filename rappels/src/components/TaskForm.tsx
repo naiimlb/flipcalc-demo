@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { IntInput } from "@/components/NumInput";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -289,12 +290,11 @@ export function TaskForm({ initial, assignTo }: { initial?: Task; assignTo?: Ass
               </div>
               {custom && (
                 <div className="mt-3 flex items-center gap-2">
-                  <input
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                  <IntInput
                     aria-label="Nombre de minutes entre deux rappels"
-                    value={every || ""}
-                    onChange={(e) => setEvery(parseInt(e.target.value.replace(/\D/g, ""), 10) || 0)}
+                    value={every}
+                    max={720}
+                    onChange={setEvery}
                     placeholder="20"
                     className="h-12 w-24 rounded-2xl border-2 border-line bg-white text-center text-[17px] font-extrabold focus:border-pink"
                   />

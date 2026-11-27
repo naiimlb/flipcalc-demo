@@ -72,3 +72,26 @@ textarea {
     animation: none;
   }
 }
+
+/* ---- Saisie au clavier numérique (voir NumKeyboardBar) ----
+   --kb-h : hauteur du clavier ; --kb-offset : distance entre le bas de l'écran et le haut du clavier. */
+html[data-kb] .kb-pad {
+  /* de la place pour faire remonter les dernières cases au-dessus du clavier, de la barre et des totaux */
+  padding-bottom: calc(var(--kb-h, 0px) + 14rem);
+}
+.kb-totals {
+  bottom: calc(3.5rem + max(env(safe-area-inset-bottom), 0.5rem) + 1px);
+}
+html[data-kb] .kb-totals {
+  /* clavier ouvert : les totaux se posent juste au-dessus de la barre « Suivant / OK » */
+  bottom: calc(var(--kb-offset, 0px) + 3rem);
+}
+.kb-compact {
+  display: none;
+}
+html[data-kb] .kb-compact {
+  display: flex;
+}
+html[data-kb] .kb-full {
+  display: none;
+}

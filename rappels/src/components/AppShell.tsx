@@ -5,6 +5,7 @@ import { useEffect, type ReactNode } from "react";
 import { retryAuth, useAuth } from "@/lib/auth";
 import { loginUrl, nextFromSearch, safeNext } from "@/lib/redirect";
 import { Logo } from "./Logo";
+import { NumKeyboardBar } from "./NumKeyboardBar";
 import { Reminders } from "./Reminders";
 import { ServiceWorkerRegistration } from "./ServiceWorker";
 import { Splash } from "./Splash";
@@ -74,7 +75,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <ServiceWorkerRegistration />
       {signedIn && <Reminders />}
       <Toast />
-      <div className="pt-safe mx-auto min-h-dvh max-w-[430px] px-4 pb-32">
+      <NumKeyboardBar />
+      <div className="pt-safe kb-pad mx-auto min-h-dvh max-w-[430px] px-4 pb-32">
         {auth.status === "signedIn" && auth.offline && (
           <p role="status" className="mb-4 rounded-2xl bg-ink px-4 py-3 text-sm font-bold text-white">
             📡 Hors ligne : tu vois tes dernières données. Tu restes connecté ; tes modifications ne seront enregistrées qu&apos;avec du réseau.

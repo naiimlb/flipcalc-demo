@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
+import { AmountInput, IntInput } from "@/components/NumInput";
 import { Skeleton } from "@/components/Skeleton";
 import { cashTotals, computeGap, formatDenomination, formatEuro, plural, toCents } from "@/lib/money";
 import { useAppState } from "@/lib/store";
@@ -41,6 +42,16 @@ function CashCounter({ uid }: { uid: string }) {
   const [fondRaw, setFondRaw] = useState(saved.fond);
   const [attenduRaw, setAttenduRaw] = useState(saved.attendu);
   const [show500, setShow500] = useState(saved.show500);
+  // Hauteur réelle du bloc de totaux fixé en bas : la marge de la page s'adapte, rien n'est jamais caché dessous.
+  const totalsRef = useRef<HTMLDivElement>(null);
+  const [totalsH, setTotalsH] = useState(230);
+  useEffect(() => {
+    const el = totalsRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setTotalsH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     try {
@@ -69,23 +80,23 @@ function CashCounter({ uid }: { uid: string }) {
     setAttenduRaw("");
   }
 
+  // Les boutons + / − ne retirent pas le focus d'une case : le clavier reste ouvert.
+  const keepFocus = (e: React.MouseEvent) => e.preventDefault();
+
   const row = (d: number) => {
     const q = get(d);
     return (
       <li key={d} className="flex items-center gap-2 py-1.5">
         <span className="w-[4.25rem] shrink-0 text-lg font-extrabold tabular-nums">{formatDenomination(d)}</span>
-        <button type="button" aria-label={`Moins un ${formatDenomination(d)}`} onClick={() => setQuantity(d, q - 1)} className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-white text-2xl font-bold active:bg-pink-soft">−</button>
-        <input
-          inputMode="numeric"
-          pattern="[0-9]*"
+        <button type="button" aria-label={`Moins un ${formatDenomination(d)}`} onMouseDown={keepFocus} onClick={() => setQuantity(d, q - 1)} className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-white text-2xl font-bold active:bg-pink-soft">−</button>
+        <IntInput
           aria-label={`Quantité de ${formatDenomination(d)}`}
-          value={q === 0 ? "" : q}
+          value={q}
           placeholder="0"
-          onChange={(e) => setQuantity(d, parseInt(e.target.value.replace(/\D/g, ""), 10) || 0)}
-          onFocus={(e) => e.currentTarget.select()}
+          onChange={(n) => setQuantity(d, n)}
           className="h-11 w-16 min-w-0 rounded-2xl border-2 border-line bg-white text-center text-[17px] font-extrabold focus:border-pink"
         />
-        <button type="button" aria-label={`Plus un ${formatDenomination(d)}`} onClick={() => setQuantity(d, q + 1)} className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pink text-2xl font-bold text-white active:scale-95">+</button>
+        <button type="button" aria-label={`Plus un ${formatDenomination(d)}`} onMouseDown={keepFocus} onClick={() => setQuantity(d, q + 1)} className="flex size-11 shrink-0 items-center justify-center rounded-full bg-pink text-2xl font-bold text-white active:scale-95">+</button>
         <span className={`ml-auto min-w-0 text-right text-[13px] font-bold leading-tight tabular-nums ${q ? "text-ink" : "text-mute/60"}`}>
           {q > 0 ? `${q} × ${formatDenomination(d)} = ${formatEuro(d * q)}` : "0,00 €"}
         </span>
@@ -120,11 +131,11 @@ function CashCounter({ uid }: { uid: string }) {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <label htmlFor="fond" className="w-28 shrink-0 text-sm font-extrabold leading-tight">Fond de caisse (€)</label>
-            <input id="fond" inputMode="decimal" value={fondRaw} onChange={(e) => setFondRaw(e.target.value)} placeholder="150,00" className={fieldCls} />
+            <AmountInput id="fond" value={fondRaw} onChange={setFondRaw} placeholder="150,00" className={fieldCls} />
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="attendu" className="w-28 shrink-0 text-sm font-extrabold leading-tight">Montant attendu (€)</label>
-            <input id="attendu" inputMode="decimal" value={attenduRaw} onChange={(e) => setAttenduRaw(e.target.value)} placeholder="ticket Z, espèces" className={fieldCls} />
+            <AmountInput id="attendu" value={attenduRaw} onChange={setAttenduRaw} placeholder="ticket Z, espèces" className={fieldCls} />
           </div>
           {((fondText && fond === null) || (attenduText && attendu === null)) && (
             <p role="alert" className="rounded-2xl bg-ink px-3 py-2 text-sm font-bold text-white">Montant illisible : écris par exemple 250,50</p>
@@ -135,30 +146,38 @@ function CashCounter({ uid }: { uid: string }) {
       <button type="button" onClick={reset} className="mt-4 min-h-12 w-full rounded-full border-2 border-ink/15 bg-white text-base font-bold">
         Tout remettre à zéro
       </button>
-      <div className="h-72" aria-hidden />
+      {/* marge = hauteur du bloc de totaux + barre de navigation : tout reste accessible en défilant */}
+      <div aria-hidden style={{ height: `calc(${totalsH}px + 3.5rem + max(env(safe-area-inset-bottom), 0.5rem) + 1.5rem)` }} />
 
-      <div className="fixed inset-x-0 z-20" style={{ bottom: "calc(3.5rem + max(env(safe-area-inset-bottom), 0.5rem) + 1px)" }}>
+      <div ref={totalsRef} data-kb-totals="" className="kb-totals fixed inset-x-0 z-20">
         <div className="mx-auto max-w-[430px] px-3 pb-2">
           <div className="rounded-3xl bg-white p-3 shadow-pop ring-2 ring-pink" aria-label="Résumé du comptage">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[15px]">
+            {/* clavier ouvert : une seule ligne, pour laisser la place aux cases */}
+            <div className="kb-compact items-end justify-between gap-3" aria-live="polite">
+              <p className="text-xs font-bold leading-tight text-mute">
+                Billets {formatEuro(bills.total)}<br />Pièces {formatEuro(coins.total)}
+              </p>
+              <p className="h-street text-3xl text-pink">{formatEuro(total)}</p>
+            </div>
+            <dl className="kb-full grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[15px]">
               <dt className="font-bold text-mute">Total billets</dt>
               <dd className="text-right font-extrabold tabular-nums">{formatEuro(bills.total)} <span className="text-xs font-semibold text-mute">· {plural(bills.count, "billet")}</span></dd>
               <dt className="font-bold text-mute">Total pièces</dt>
               <dd className="text-right font-extrabold tabular-nums">{formatEuro(coins.total)} <span className="text-xs font-semibold text-mute">· {plural(coins.count, "pièce")}</span></dd>
             </dl>
-            <div className="mt-1 flex items-end justify-between border-t-2 border-line pt-1">
+            <div className="kb-full mt-1 flex items-end justify-between border-t-2 border-line pt-1">
               <p className="text-xs font-extrabold uppercase tracking-wide text-mute">Total caisse</p>
               <p className="h-street text-3xl text-pink" aria-live="polite">{formatEuro(total)}</p>
             </div>
             {fond !== null && fond > 0 && (
-              <p className="text-right text-sm font-bold tabular-nums">
+              <p className="kb-full text-right text-sm font-bold tabular-nums">
                 − fond {formatEuro(fond)} = <span className="font-extrabold">recette {formatEuro(recette)}</span>
               </p>
             )}
             {gap && (
               <p
                 role="status"
-                className={`mt-2 rounded-2xl px-3 py-2 text-[15px] font-extrabold ${
+                className={`kb-full mt-2 rounded-2xl px-3 py-2 text-[15px] font-extrabold ${
                   gap.kind === "exact"
                     ? "bg-ink text-white"
                     : gap.kind === "shortage"
