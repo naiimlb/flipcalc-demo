@@ -353,4 +353,23 @@ describe("planificateur de rappels (serveur)", () => {
     const none = await runTick(at("2026-11-23T17:25:10Z"), fakeDb([bilanTarget([day()], { done: new Set(["j1@2026-11-23"]) })], { reminders: [reminder] }).db, okSender().send);
     expect(none.bilanReminders).toBe(0);
   });
+
+  it("compteurs et journal d'anomalies : envois réussis, échecs, abonnement expiré", async () => {
+    const base = fakeDb([target([task({ time: "12:00" })], { subs: [sub(1), sub(2), sub(3)] })]);
+    const anomalies: [string, string | null, string][] = [];
+    const db: TickDb = { ...base.db, anomaly: async (kind, userId, detail) => void anomalies.push([kind, userId, detail]) };
+    const send: Sender = async (s) => (s.endpoint.endsWith("/1") ? "ok" : s.endpoint.endsWith("/2") ? "error" : "gone");
+    const r = await runTick(at("2026-11-23T11:00:10Z"), db, send);
+    expect(r).toMatchObject({ delivered: 1, failed: 1, removedSubs: 1 });
+    expect(anomalies.map((a) => a[0])).toEqual(["echec_envoi", "abonnement_expire"]);
+    expect(anomalies[0]![1]).toBe("u1");
+    expect(JSON.stringify(anomalies)).not.toContain("push.example"); // jamais l'adresse de l'appareil
+  });
+
+  it("une écriture de journal qui échoue ne bloque jamais le planificateur", async () => {
+    const base = fakeDb([target([task({ time: "12:00" })])]);
+    const db: TickDb = { ...base.db, anomaly: async () => { throw new Error("base indisponible"); } };
+    const r = await runTick(at("2026-11-23T11:00:10Z"), db, async () => "error");
+    expect(r.failed).toBe(1);
+  });
 });

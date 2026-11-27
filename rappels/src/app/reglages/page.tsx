@@ -69,6 +69,9 @@ export default function SettingsPage() {
             <Link href="/equipe" className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-pink text-base font-extrabold text-white shadow-pop">
               Ouvrir mon équipe
             </Link>
+            <Link href="/test" className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-full border-2 border-pink bg-white text-base font-extrabold text-pink-deep">
+              🧪 Mode test
+            </Link>
           </section>
         )}
 

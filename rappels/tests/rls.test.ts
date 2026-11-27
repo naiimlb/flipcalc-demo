@@ -988,3 +988,212 @@ describe("bilan de fin de service", () => {
     }
   });
 });
+
+// =============================================================================================
+//  MODE TEST (responsable seulement)
+// =============================================================================================
+describe("mode test : accès, isolation des données de test, garde-fous", () => {
+  const SECRET = "secret-de-test";
+  const D = "2026-11-26";
+  let tester = ""; // compte de test désigné
+  let tt = ""; // tâche de test du responsable
+  const call = (who: string | null, sql: string, params: unknown[] = []) => as(who, () => q(sql, params));
+  const json = async (who: string, sql: string, params: unknown[] = []) => (await call(who, sql, params)).rows[0]!.r as Record<string, unknown>;
+  const mkTest = async (title: string, owner = ids.boss) => (await q("insert into public.tasks (user_id, title, category, at_time, days, is_test) values ($1, $2, 'Autre', '12:00', '{0,1,2,3,4,5,6}', true) returning id", [owner, title])).rows[0]!.id as string;
+
+  beforeAll(async () => {
+    tester = await newUser("testeur@hb.fr", "Testeur");
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/boss', 'k', 'a'), ($2, 'https://push/testeur', 'k', 'a') on conflict do nothing", [ids.boss, tester]);
+    tt = await mkTest("Tâche de test");
+  });
+
+  it("un caissier (ou un anonyme) ne peut appeler AUCUNE fonction de test : refus côté base", async () => {
+    const calls = [
+      "select public.test_status()", "select * from public.test_target_subs('self')", "select public.test_cleanup()", "select public.test_clear_anomalies()", "select public.test_scan()",
+      "select public.test_notices()", "select public.test_followups(30)", "select public.test_as('tasks')", "select public.test_set_account('tom@hb.fr')",
+      "select * from public.test_anomalies(10)", "select public.test_log('x', 'y')",
+    ];
+    for (const sql of calls) {
+      expect(await fails(() => call(ids.lea, sql)), `caissier : ${sql}`).toBe(true);
+      expect(await fails(() => call(null, sql)), `anonyme : ${sql}`).toBe(true);
+    }
+    expect(await fails(() => call(ids.lea, "select public.test_inspect($1)", [tt]))).toBe(true);
+    expect(await fails(() => call(ids.lea, "select public.test_age($1, 10)", [tt]))).toBe(true);
+    expect(await fails(() => call(ids.lea, "select public.test_sim_occurrence($1, $2, $3)", [tt, ids.lea, D]))).toBe(true);
+    // une erreur « réservé au responsable » et pas autre chose
+    await call(ids.lea, "select public.test_status()").catch((e: { code?: string; message: string }) => expect(e.message).toMatch(/réservé au responsable|permission/));
+  });
+
+  it("le responsable y a accès", async () => {
+    const st = await json(ids.boss, "select public.test_status() as r");
+    expect(st).toMatchObject({ test_user: null, test_tasks: 1 });
+    expect(Object.keys(st).sort()).toEqual(["anomalies", "pending", "planner", "server_now", "subs", "test_tasks", "test_user"]);
+  });
+
+  it("les tables du mode test sont fermées à tous (même au responsable) : on passe par les fonctions", async () => {
+    for (const t of ["test_config", "planner_state", "anomalies"]) {
+      expect(await fails(() => call(ids.boss, `select * from public.${t}`)), t).toBe(true);
+      expect(await fails(() => call(ids.lea, `select * from public.${t}`)), t).toBe(true);
+    }
+  });
+
+  it("seul un responsable peut créer une tâche de test ; is_test n'est pas modifiable ensuite", async () => {
+    expect(await fails(() => call(ids.lea, "insert into public.tasks (user_id, title, category, at_time, days, is_test) values ($1, 'Piratage', 'Autre', '12:00', '{0}', true)", [ids.lea]))).toBe(true);
+    await call(ids.boss, "insert into public.tasks (user_id, title, category, at_time, days, is_test) values ($1, 'Test du responsable', 'Autre', '12:00', '{0}', true)", [ids.boss]);
+    expect(await fails(() => call(ids.boss, "update public.tasks set is_test = false where id = $1", [tt]))).toBe(true);
+    expect(await fails(() => call(ids.lea, "update public.tasks set is_test = true where user_id = $1", [ids.lea]))).toBe(true);
+  });
+
+  it("désigner le compte de test : caissier existant seulement, jamais soi-même ni un inconnu ; retirable", async () => {
+    expect(await fails(() => call(ids.boss, "select public.test_set_account('inconnu@hb.fr')"))).toBe(true);
+    expect(await fails(() => call(ids.boss, "select public.test_set_account('boss@hb.fr')"))).toBe(true); // soi-même (et responsable)
+    expect(await fails(() => call(ids.boss, "select * from public.test_target_subs('test')"))).toBe(true); // personne de désigné
+    const r = await json(ids.boss, "select public.test_set_account('testeur@hb.fr') as r");
+    expect(r).toMatchObject({ ok: true, test_user: { prenom: "Testeur" } });
+    expect((await json(ids.boss, "select public.test_status() as r")).test_user).toMatchObject({ prenom: "Testeur" });
+  });
+
+  it("les notifications de test ne peuvent partir que vers MES appareils ou ceux du compte de test", async () => {
+    expect((await call(ids.boss, "select endpoint from public.test_target_subs('self')")).rows).toEqual([{ endpoint: "https://push/boss" }]);
+    expect((await call(ids.boss, "select endpoint from public.test_target_subs('test')")).rows).toEqual([{ endpoint: "https://push/testeur" }]);
+    expect(await fails(() => call(ids.boss, "select * from public.test_target_subs('lea')"))).toBe(true);
+    expect(await fails(() => call(ids.boss, "select * from public.test_target_subs($1)", [ids.lea]))).toBe(true);
+  });
+
+  it("une tâche de test ne se partage / transmet qu'au compte de test : jamais un vrai collègue", async () => {
+    expect(await fails(() => call(ids.boss, "select public.share_task($1, $2::uuid[], 'each')", [tt, [ids.lea]]))).toBe(true); // Léa est un vrai caissier
+    expect(await fails(() => call(ids.boss, "select public.share_task($1, $2::uuid[], 'each')", [tt, [ids.lea, tester]]))).toBe(true);
+    await call(ids.boss, "select public.share_task($1, $2::uuid[], 'each')", [tt, [tester]]); // OK
+    expect(await fails(() => call(ids.boss, "select public.transfer_send($1, $2, $3::uuid[], $4, 'soir', null)", [tt, D, [ids.lea], D]))).toBe(true);
+    await q("update public.settings set schedule = '---S---' where user_id in ($1, $2)", [tester, ids.lea]); // Léa ET le testeur sont Soir le jeudi
+    const r = await json(ids.boss, "select public.transfer_send($1, $2, null, $3, 'soir', 'test') as r", [tt, D, D]); // toute l'équipe → seulement le testeur
+    expect(r).toMatchObject({ ok: true, count: 1, whole_team: true });
+    expect((await q("select to_user from public.task_transfers where task_id = $1", [tt])).rows).toEqual([{ to_user: tester }]);
+  });
+
+  it("visibilité : le compte de test voit la tâche partagée ; aucun autre caissier ne la voit, même si une ligne de partage existait", async () => {
+    expect((await call(tester, "select title from public.tasks where id = $1", [tt])).rows).toHaveLength(1);
+    expect((await call(ids.lea, "select title from public.tasks where id = $1", [tt])).rows).toHaveLength(0);
+    await q("insert into public.task_shares (task_id, recipient_id, status) values ($1, $2, 'accepted')", [tt, ids.lea]); // contournement direct de la base
+    expect((await call(ids.lea, "select title from public.tasks where id = $1", [tt])).rows).toHaveLength(0); // la règle RLS bloque quand même
+    expect(await call(ids.lea, "select * from public.shared_with_me()").then((r) => r.rows.filter((x) => x.task_id === tt).length)).toBe(1); // (la liste des partages existe, la tâche reste illisible)
+    await q("delete from public.task_shares where recipient_id = $1 and task_id = $2", [ids.lea, tt]);
+    expect(await fails(() => call(ids.lea, "select public.my_status($1, $2)", [tt, D]))).toBe(true); // et aucune fonction ne lui en révèle le contenu
+  });
+
+  it("le VRAI planificateur ignore toute donnée de test (tâches, relances, notifications)", async () => {
+    const d = (await as(null, () => q("select public.push_tick_data($1, $2::date[]) as d", [SECRET, [D]]))).rows[0]!.d as { tasks: { id: string }[]; transfers_in: { id: string }[] };
+    expect(d.tasks.some((t) => t.id === tt)).toBe(false);
+    expect(d.transfers_in.some((t) => t.id === tt)).toBe(false);
+    await as(null, () => q("select public.push_notices($1)", [SECRET])); // le vrai planificateur vide SA boîte
+    const test = await json(ids.boss, "select public.test_notices() as r");
+    const out = test.outbox as { kind: string; user_id: string; title: string }[];
+    expect(out.some((o) => o.kind === "transfer" && o.user_id === tester && o.title === "Tâche de test")).toBe(true); // …et les notifications de test sont restées pour le test
+    expect((await json(ids.boss, "select public.test_notices() as r")).outbox).toEqual([]); // une seule fois
+    expect((await q("select is_test from public.push_outbox where task_id = $1", [tt])).rows.every((r) => r.is_test === true)).toBe(true); // marquées test
+  });
+
+  it("relance accélérée (30 s) sur les tâches de test seulement ; la vraie relance (5 min) n'y touche pas", async () => {
+    const t = await mkTest("Relance test");
+    const real = (await q("insert into public.tasks (user_id, title, category, at_time, days) values ($1, 'Vraie tâche', 'Autre', '12:00', '{0,1,2,3,4,5,6}') returning id", [ids.lea])).rows[0]!.id as string;
+    await q("insert into public.push_subscriptions (user_id, endpoint, p256dh, auth_key) values ($1, 'https://push/lea', 'k', 'a') on conflict do nothing", [ids.lea]);
+    await json(ids.boss, "select public.test_sim_occurrence($1, $2, $3) as r", [t, ids.boss, D]);
+    await as(null, () => q("select public.push_claim($1, $2, $3, $4, '2026-11-26T11:00:00Z')", [SECRET, ids.lea, real, D]));
+    const fu = (delay: number) => json(ids.boss, "select public.test_followups($1) as r", [delay]);
+    expect(((await fu(30)).relances as unknown[]).length).toBe(0); // pas encore 30 s
+    await call(ids.boss, "select public.test_age($1, 31)", [t]);
+    await q("update public.task_occurrences set last_sent_at = now() - interval '10 minutes' where task_id = $1", [real]);
+    const r1 = (await fu(30)).relances as { n: number; title: string }[];
+    expect(r1).toEqual([expect.objectContaining({ n: 1, title: "Relance test" })]); // la vraie tâche de Léa n'est PAS touchée
+    expect((await q("select reminders from public.task_occurrences where task_id = $1", [real])).rows[0]!.reminders).toBe(0);
+    await call(ids.boss, "select public.test_age($1, 31)", [t]);
+    expect(((await fu(30)).relances as { n: number }[])[0]!.n).toBe(2);
+    await call(ids.boss, "select public.occ_act($1, $2, 'seen')", [t, D]); // je réagis : la relance s'arrête
+    await call(ids.boss, "select public.test_age($1, 31)", [t]);
+    expect(((await fu(30)).relances as unknown[]).length).toBe(0);
+    const real1 = (await as(null, () => q("select public.push_followups($1) as r", [SECRET]))).rows[0]!.r as { relances: { title: string }[] };
+    expect(real1.relances.map((x) => x.title)).toEqual(["Vraie tâche"]); // le vrai planificateur ne relance que le vrai
+  });
+
+  it("verrou anti-doublon : le même créneau réservé deux fois est refusé", async () => {
+    const t = await mkTest("Verrou");
+    const claim = async () => (await json(ids.boss, "select public.test_claim($1, $2, $3, '2026-11-26T12:00:00Z') as r", [t, ids.boss, D])) as unknown as boolean;
+    expect(await claim()).toBe(true);
+    expect(await claim()).toBe(false);
+    expect(await fails(() => call(ids.boss, "select public.test_claim($1, $2, $3, now())", [t, ids.lea, D]))).toBe(true); // jamais pour un vrai collègue
+  });
+
+  it("agir comme le compte de test : seulement lui, seulement sur des tâches de test, et l'identité est restituée", async () => {
+    const t = await mkTest("Pour le testeur");
+    await call(ids.boss, "select public.share_task($1, $2::uuid[], 'one')", [t, [tester]]);
+    const tasks = (await json(ids.boss, "select public.test_as('tasks') as r")) as unknown as { id: string }[];
+    expect(tasks.map((x) => x.id)).toContain(t);
+    const leaTask = (await q("select id from public.tasks where user_id = $1 limit 1", [ids.lea])).rows[0]!.id as string;
+    expect(tasks.map((x) => x.id)).not.toContain(leaTask); // le testeur ne voit pas les tâches des autres
+    await call(ids.boss, "select public.test_as('respond_share', $1::jsonb)", [JSON.stringify({ task: t, accept: true })]);
+    expect((await q("select status from public.task_shares where task_id = $1 and recipient_id = $2", [t, tester])).rows[0]!.status).toBe("accepted");
+    const taken = await json(ids.boss, "select public.test_as('occ_act', $1::jsonb) as r", [JSON.stringify({ task: t, date: D, action: "taken" })]);
+    expect(taken).toEqual({ ok: true });
+    expect(await json(ids.boss, "select public.occ_act($1, $2, 'taken') as r", [t, D])).toEqual({ ok: false, taken_by: "Testeur" }); // le responsable arrive deuxième
+    expect((await call(ids.boss, "select auth.uid() as u")).rows[0]!.u).toBe(ids.boss); // identité restituée
+    // garde-fous
+    const realTask = (await q("select id from public.tasks where not is_test limit 1")).rows[0]!.id as string;
+    expect(await fails(() => call(ids.boss, "select public.test_as('occ_act', $1::jsonb)", [JSON.stringify({ task: realTask, date: D, action: "done" })]))).toBe(true);
+    expect(await fails(() => call(ids.boss, "select public.test_as('delete_everything')"))).toBe(true);
+    expect(await fails(() => call(ids.boss, "select public.test_as('occ_act', $1::jsonb)", [JSON.stringify({ task: t, date: D, action: "supprimer" })]))).toBe(true);
+  });
+
+  it("inspection d'une tâche de test uniquement", async () => {
+    const info = await json(ids.boss, "select public.test_inspect($1) as r", [tt]);
+    expect(Object.keys(info).sort()).toEqual(["claims", "done", "events", "occurrences", "outbox", "outcomes", "shares", "transfers"]);
+    const realTask = (await q("select id from public.tasks where not is_test limit 1")).rows[0]!.id as string;
+    expect(await fails(() => call(ids.boss, "select public.test_inspect($1)", [realTask]))).toBe(true);
+  });
+
+  it("anomalies : le planificateur les écrit (avec le secret), le responsable les lit, copie et efface", async () => {
+    await as(null, () => q("select public.push_log_anomaly($1, 'push_error', $2, 'envoi échoué (HTTP 500)')", [SECRET, ids.lea]));
+    expect(await fails(() => as(null, () => q("select public.push_log_anomaly('mauvais', 'x', null, 'y')")))).toBe(true);
+    await call(ids.boss, "select public.test_log('doublon', 'rappel envoyé deux fois')");
+    const list = (await call(ids.boss, "select prenom, kind, detail, is_test from public.test_anomalies(10)")).rows;
+    expect(list.find((x) => x.kind === "push_error")).toMatchObject({ prenom: "Léa B.", detail: "envoi échoué (HTTP 500)", is_test: false });
+    expect(list.find((x) => x.kind === "doublon")).toMatchObject({ prenom: "Sam", is_test: true });
+    expect(await fails(() => call(ids.lea, "select * from public.test_anomalies(10)"))).toBe(true);
+    expect(await call(ids.boss, "select public.test_clear_anomalies() as n").then((r) => r.rows[0]!.n)).toBeGreaterThanOrEqual(2);
+    expect((await call(ids.boss, "select * from public.test_anomalies(10)")).rows).toHaveLength(0);
+  });
+
+  it("état du planificateur : passage, résultat, compteurs ; refusé sans le secret", async () => {
+    await as(null, () => q("select public.push_heartbeat($1, '{\"sent\":3}'::jsonb, null, 3, 1)", [SECRET]));
+    await as(null, () => q("select public.push_heartbeat($1, null, 'échec réseau', 0, 2)", [SECRET]));
+    expect(await fails(() => as(null, () => q("select public.push_heartbeat('mauvais', null, null, 1, 1)")))).toBe(true);
+    const p = (await json(ids.boss, "select public.test_status() as r")).planner as Record<string, unknown>;
+    expect(p).toMatchObject({ runs: 2, sent_total: 3, failed_total: 3, last_error: "échec réseau" });
+    expect(p.last_run_at).toBeTruthy();
+    expect(p.last_ok_at).toBeTruthy();
+  });
+
+  it("détection d'incohérences : transmission sans statut, notification bloquée… (sans doublon sur 1 h)", async () => {
+    const t = (await q("insert into public.tasks (user_id, title, category, at_time, days) values ($1, 'Incohérente', 'Autre', '12:00', '{0}') returning id", [ids.lea])).rows[0]!.id as string;
+    await q("insert into public.task_outcomes (task_id, user_id, service_date, status) values ($1, $2, $3, 'handed')", [t, ids.lea, D]);
+    await q("insert into public.push_outbox (user_id, kind, task_id, service_date, created_at) values ($1, 'declined', $2, $3, now() - interval '30 minutes')", [ids.lea, t, D]);
+    const found = (await json(ids.boss, "select public.test_scan() as r")) as unknown as { kind: string }[];
+    expect(found.map((f) => f.kind).sort()).toEqual(expect.arrayContaining(["notification_bloquee", "transmission_sans_statut"]));
+    const n1 = (await call(ids.boss, "select count(*)::int as n from public.test_anomalies(100)")).rows[0]!.n as number;
+    await call(ids.boss, "select public.test_scan()");
+    expect((await call(ids.boss, "select count(*)::int as n from public.test_anomalies(100)")).rows[0]!.n).toBe(n1); // pas de doublon
+    expect(await fails(() => call(ids.lea, "select public.test_scan()"))).toBe(true);
+  });
+
+  it("« Nettoyer les données de test » : supprime les tâches de test et ce qui en dépend, jamais les vraies", async () => {
+    const before = (await q("select count(*)::int as n from public.tasks where not is_test")).rows[0]!.n as number;
+    expect((await q("select count(*)::int as n from public.task_events e join public.tasks t on t.id = e.task_id where t.is_test")).rows[0]!.n).toBeGreaterThan(0);
+    const r = await json(ids.boss, "select public.test_cleanup() as r");
+    expect((r as { tasks: number }).tasks).toBeGreaterThanOrEqual(5);
+    expect((await q("select count(*)::int as n from public.tasks where is_test")).rows[0]!.n).toBe(0);
+    expect((await q("select count(*)::int as n from public.tasks where not is_test")).rows[0]!.n).toBe(before);
+    for (const t of ["task_shares", "task_transfers", "task_occurrences", "task_events"]) {
+      expect((await q(`select count(*)::int as n from public.${t} x where not exists (select 1 from public.tasks t where t.id = x.task_id)`)).rows[0]!.n, t).toBe(0);
+    }
+    expect(await fails(() => call(ids.lea, "select public.test_cleanup()"))).toBe(true);
+  });
+});

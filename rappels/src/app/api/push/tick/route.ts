@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { runTick, type Sender } from "@/server/push-tick";
-import { createTickDb, purgeOldClaims } from "@/server/tick-db";
+import { createTickDb, purgeOldClaims, recordHeartbeat } from "@/server/tick-db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,9 +46,12 @@ async function handle(request: Request) {
   try {
     const result = await runTick(new Date(), createTickDb(sb, secret), send);
     if (new Date().getUTCMinutes() === 0) await purgeOldClaims(sb, secret); // une fois par heure
+    await recordHeartbeat(sb, secret, result, null, result.delivered, result.failed);
     return json(200, result);
   } catch (err) {
     console.error("[push] tick échoué", err instanceof Error ? err.message.slice(0, 200) : "");
+    await recordHeartbeat(sb, secret, null, err instanceof Error ? err.message.slice(0, 200) : "erreur", 0, 0);
+    await sb.rpc("push_log_anomaly", { p_secret: secret, p_kind: "echec_planificateur", p_user: null, p_detail: err instanceof Error ? err.message.slice(0, 200) : "erreur" });
     return json(500, { error: "échec du planificateur" });
   }
 }

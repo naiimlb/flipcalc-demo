@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useAppState } from "@/lib/store";
 
 const icon = (d: ReactNode) => (
   <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -18,8 +19,13 @@ const TABS = [
   { href: "/reglages", label: "Réglages", icon: icon(<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></>) },
 ];
 
+// Onglet « Test » : seulement pour le responsable. (L'accès est AUSSI refusé côté serveur et par la base : cacher le bouton ne protège rien.)
+const TEST_TAB = { href: "/test", label: "Test", icon: icon(<><path d="M9 3h6M10 3v6.5L4.6 19a1.5 1.5 0 0 0 1.3 2.2h12.2a1.5 1.5 0 0 0 1.3-2.2L14 9.5V3" /><path d="M7.5 15h9" /></>) };
+
 export function TabBar() {
   const pathname = usePathname();
+  const isManager = useAppState()?.profile.role === "responsable";
+  const tabs = isManager ? [...TABS.slice(0, 4), TEST_TAB, TABS[4]!] : TABS;
   if (["/tache", "/taches/", "/partager/", "/equipe/"].some((p) => pathname === p || pathname.startsWith(p.endsWith("/") ? p : `${p}/`))) return null; // les formulaires ont leur propre en-tête
   return (
     <nav
@@ -27,16 +33,16 @@ export function TabBar() {
       className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur"
     >
       <ul className="mx-auto flex max-w-[430px]">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href);
           return (
             <li key={t.href} className="flex-1">
               <Link
                 href={t.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 pt-1.5 text-[11px] font-bold ${active ? "text-pink-deep" : "text-mute"}`}
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 pt-1.5 text-[10.5px] font-bold ${active ? "text-pink-deep" : "text-mute"}`}
               >
-                <span className={`rounded-full px-4 py-0.5 ${active ? "bg-pink-soft" : ""}`}>{t.icon}</span>
+                <span className={`rounded-full px-3.5 py-0.5 ${active ? "bg-pink-soft" : ""}`}>{t.icon}</span>
                 {t.label}
               </Link>
             </li>

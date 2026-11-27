@@ -76,6 +76,8 @@ export type TickDb = {
   bilanClaim(userId: string, serviceDate: string, team: "jour" | "soir", remaining: number): Promise<boolean>;
   /** Seconds rappels du bilan à envoyer (10 min après le premier, bilan non ouvert) ; chacun ne sort qu'une fois. */
   bilanReminders(): Promise<BilanReminder[]>;
+  /** Journal d'anomalies (échec d'envoi, abonnement expiré…). Facultatif : un échec d'écriture ne doit jamais bloquer le planificateur. */
+  anomaly?(kind: string, userId: string | null, detail: string): Promise<void>;
 };
 export type SendResult = "ok" | "gone" | "error";
 export type PushPayload = { title: string; body: string; tag: string; url: string };
@@ -99,6 +101,9 @@ export type TickResult = {
   outbox: number;
   bilans: number;
   bilanReminders: number;
+  /** Notifications effectivement remises au service push, et échecs d'envoi. */
+  delivered: number;
+  failed: number;
 };
 
 export async function runTick(now: Date, db: TickDb, send: Sender): Promise<TickResult> {
@@ -106,16 +111,22 @@ export async function runTick(now: Date, db: TickDb, send: Sender): Promise<Tick
   const today = serviceDate(now);
   const days = [addDays(today, -1), today];
   const targets = await db.loadTargets(days.map(dateKey));
-  const result: TickResult = { checked: 0, sent: 0, skippedDone: 0, skippedClaimed: 0, skippedOutcome: 0, duplicates: 0, removedSubs: 0, relances: 0, postponed: 0, shares: 0, claims: 0, outbox: 0, bilans: 0, bilanReminders: 0 };
+  const result: TickResult = { checked: 0, sent: 0, skippedDone: 0, skippedClaimed: 0, skippedOutcome: 0, duplicates: 0, removedSubs: 0, relances: 0, postponed: 0, shares: 0, claims: 0, outbox: 0, bilans: 0, bilanReminders: 0, delivered: 0, failed: 0 };
 
-  const deliver = async (subs: PushSub[], payload: PushPayload) => {
+  const deliver = async (subs: PushSub[], payload: PushPayload, userId: string | null = null) => {
     let ok = 0;
     for (const sub of subs) {
       const r = await send(sub, payload);
-      if (r === "ok") ok++;
-      else if (r === "gone") {
+      if (r === "ok") {
+        ok++;
+        result.delivered++;
+      } else if (r === "gone") {
         await db.removeSubscription(sub.endpoint); // appareil désinscrit ou app désinstallée
         result.removedSubs++;
+        await db.anomaly?.("abonnement_expire", userId, "appareil désinscrit, abonnement supprimé").catch(() => undefined);
+      } else {
+        result.failed++;
+        await db.anomaly?.("echec_envoi", userId, `envoi refusé par le service push (« ${payload.title.slice(0, 60)} »)`).catch(() => undefined);
       }
     }
     return ok;
@@ -150,7 +161,7 @@ export async function runTick(now: Date, db: TickDb, send: Sender): Promise<Tick
             continue;
           }
           const { title, body } = buildSlotNotification(p.task, slot.ext);
-          result.sent += await deliver(t.subs, { title, body, tag: p.key, url: taskUrl(p.task.id, dateKey(sDate)) });
+          result.sent += await deliver(t.subs, { title, body, tag: p.key, url: taskUrl(p.task.id, dateKey(sDate)) }, t.userId);
         }
       }
     }
@@ -161,22 +172,22 @@ export async function runTick(now: Date, db: TickDb, send: Sender): Promise<Tick
   const f = await db.followups();
   for (const n of f.relances) {
     const { title, body } = buildRelanceNotification(n.title);
-    result.relances += (await deliver(n.subs, { title, body, tag: `${n.taskId}@${dayOf(n)}`, url: taskUrl(n.taskId, dayOf(n)) })) > 0 ? 1 : 0;
+    result.relances += (await deliver(n.subs, { title, body, tag: `${n.taskId}@${dayOf(n)}`, url: taskUrl(n.taskId, dayOf(n)) }, n.userId)) > 0 ? 1 : 0;
   }
   for (const n of f.postponed) {
     const { title, body } = n.why === "transfer" ? buildTransferStartNotification(n.who ?? null, n.title) : buildPostponedNotification(n.title);
-    result.postponed += (await deliver(n.subs, { title, body, tag: `${n.taskId}@${dayOf(n)}`, url: taskUrl(n.taskId, dayOf(n)) })) > 0 ? 1 : 0;
+    result.postponed += (await deliver(n.subs, { title, body, tag: `${n.taskId}@${dayOf(n)}`, url: taskUrl(n.taskId, dayOf(n)) }, n.userId)) > 0 ? 1 : 0;
   }
 
   // Partages et « untel s'en occupe » (même étiquette que le rappel : la notification précédente est remplacée).
   const notices = await db.notices();
   for (const n of notices.shares) {
     const { title, body } = buildShareNotification(n.who ?? "Un collègue", n.title);
-    result.shares += (await deliver(n.subs, { title, body, tag: `share:${n.taskId}`, url: taskUrl(n.taskId, dayOf(n)) })) > 0 ? 1 : 0;
+    result.shares += (await deliver(n.subs, { title, body, tag: `share:${n.taskId}`, url: taskUrl(n.taskId, dayOf(n)) }, n.userId)) > 0 ? 1 : 0;
   }
   for (const n of notices.claims) {
     const { title, body } = buildClaimNotification(n.who ?? "Un collègue", n.title);
-    result.claims += (await deliver(n.subs, { title, body, tag: `${n.taskId}@${dayOf(n)}`, url: taskUrl(n.taskId, dayOf(n)) })) > 0 ? 1 : 0;
+    result.claims += (await deliver(n.subs, { title, body, tag: `${n.taskId}@${dayOf(n)}`, url: taskUrl(n.taskId, dayOf(n)) }, n.userId)) > 0 ? 1 : 0;
   }
   for (const n of notices.outbox) {
     const day = dayOf(n);
@@ -197,7 +208,7 @@ export async function runTick(now: Date, db: TickDb, send: Sender): Promise<Tick
       default:
         text = buildDeclinedNotification(n.who ?? "Un collègue", n.title, n.detail);
     }
-    result.outbox += (await deliver(n.subs, { ...text, tag: `evt:${n.taskId}:${n.kind}`, url })) > 0 ? 1 : 0;
+    result.outbox += (await deliver(n.subs, { ...text, tag: `evt:${n.taskId}:${n.kind}`, url }, n.userId)) > 0 ? 1 : 0;
   }
 
   // Bilan de fin de service : « Il te reste X tâches non faites » (rien s'il ne reste rien), X minutes avant la fin de mon équipe.
@@ -221,7 +232,7 @@ export async function runTick(now: Date, db: TickDb, send: Sender): Promise<Tick
       if (remaining === 0) continue; // rien à signaler : aucune notification
       if (!(await db.bilanClaim(t.userId, dateKey(sDate), team, remaining))) continue; // déjà envoyé
       const { title, body } = buildBilanNotification(remaining);
-      result.bilans += (await deliver(t.subs, { title, body, tag: `bilan:${dateKey(sDate)}`, url: bilanUrl(dateKey(sDate), team) })) > 0 ? 1 : 0;
+      result.bilans += (await deliver(t.subs, { title, body, tag: `bilan:${dateKey(sDate)}`, url: bilanUrl(dateKey(sDate), team) }, t.userId)) > 0 ? 1 : 0;
     }
   }
   // Second (et dernier) rappel : 10 minutes plus tard si le bilan n'a pas été ouvert, et seulement s'il reste des tâches.
@@ -231,7 +242,7 @@ export async function runTick(now: Date, db: TickDb, send: Sender): Promise<Tick
     const remaining = pendingTasks(bilanTaskInput(t), parseDateKey(r.serviceDate), r.team).length;
     if (remaining === 0) continue;
     const { title, body } = buildBilanNotification(remaining, true);
-    result.bilanReminders += (await deliver(r.subs.length ? r.subs : t.subs, { title, body, tag: `bilan:${r.serviceDate}`, url: bilanUrl(r.serviceDate, r.team) })) > 0 ? 1 : 0;
+    result.bilanReminders += (await deliver(r.subs.length ? r.subs : t.subs, { title, body, tag: `bilan:${r.serviceDate}`, url: bilanUrl(r.serviceDate, r.team) }, t.userId)) > 0 ? 1 : 0;
   }
   return result;
 }

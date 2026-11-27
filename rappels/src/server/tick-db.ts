@@ -85,6 +85,9 @@ export function createTickDb(sb: SupabaseClient, secret: string): TickDb {
       const r = await rpc<{ shares: NoticeRow[]; claims: NoticeRow[]; outbox?: NoticeRow[] }>("push_notices", {});
       return { shares: (r.shares ?? []).map(toNotice), claims: (r.claims ?? []).map(toNotice), outbox: (r.outbox ?? []).map(toNotice) };
     },
+    async anomaly(kind, userId, detail) {
+      await rpc("push_log_anomaly", { p_kind: kind, p_user: userId, p_detail: detail });
+    },
     bilanClaim: (userId, serviceDate, team, remaining) => rpc<boolean>("push_bilan_claim", { p_user: userId, p_date: serviceDate, p_team: team, p_remaining: remaining }),
     async bilanReminders() {
       const r = await rpc<{ user_id: string; service_date: string; team: string; subs: SubJson[] }[]>("push_bilan_reminders", {});
@@ -96,4 +99,13 @@ export function createTickDb(sb: SupabaseClient, secret: string): TickDb {
 /** Nettoyage : les créneaux de plus de 3 jours ne servent plus à rien. */
 export async function purgeOldClaims(sb: SupabaseClient, secret: string) {
   await sb.rpc("push_purge", { p_secret: secret });
+}
+
+/** Passage du planificateur : date, résultat et compteurs, pour l'écran « Mode test ». Ne doit jamais faire échouer le passage. */
+export async function recordHeartbeat(sb: SupabaseClient, secret: string, result: unknown, error: string | null, delivered: number, failed: number) {
+  try {
+    await sb.rpc("push_heartbeat", { p_secret: secret, p_result: result ?? null, p_error: error, p_delivered: delivered, p_failed: failed });
+  } catch {
+    /* sans gravité */
+  }
 }
